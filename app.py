@@ -160,7 +160,7 @@ def gerar_pdf_relatorio(titulo, dataframe):
   c.drawString(
       margem_esq,
       altura - 48,
-      "Sistema de Gestão de Frota e Operações | Powered by Castro Technology",
+      "Sistema de Gestão de Frota e Operações | Powered by Castro Tech",
   )
 
   c.setFillColorRGB(0.15, 0.15, 0.15)
@@ -238,7 +238,7 @@ def gerar_pdf_relatorio(titulo, dataframe):
       margem_esq,
       30,
       "TABALMIX CONCRETO — Todos os direitos reservados. Tecnologia Castro"
-      " Technology.",
+      " Tech.",
   )
   c.drawRightString(
       largura - margem_esq,
@@ -254,7 +254,6 @@ def gerar_pdf_relatorio(titulo, dataframe):
 def gerar_csv_relatorio(dataframe):
   output = io.StringIO()
   df_export = dataframe.copy()
-  # Formata os nomes das colunas em maiúsculo para o Excel
   df_export.columns = [
       str(col).replace("_", " ").upper() for col in df_export.columns
   ]
@@ -424,7 +423,7 @@ with st.sidebar:
                 <h3 style="color: #2ecc71; margin: 0; font-size: 18px; font-weight: 800;">TABALMIX CONCRETO</h3>
                 <p style="color: #94a3b8; font-size: 10px; margin: 2px 0 6px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
                 <p style="color: #e2e8f0; font-size: 11px; font-style: italic; font-weight: 500; line-height: 1.3; margin-bottom: 15px;">
-                    "Tecnologia e robustez na concretagem por Castro Technology."
+                    "Tecnologia e robustez na concretagem por Castro Tech."
                 </p>
             </div>
         """,
@@ -441,7 +440,7 @@ with st.sidebar:
                 <h3 style="color: #2ecc71; margin: 0; font-size: 18px; font-weight: 800;">TABALMIX CONCRETO</h3>
                 <p style="color: #94a3b8; font-size: 10px; margin: 2px 0 6px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
                 <p style="color: #e2e8f0; font-size: 11px; font-style: italic; font-weight: 500; line-height: 1.3; margin-bottom: 15px;">
-                    "Tecnologia e robustez na concretagem por Castro Technology."
+                    "Tecnologia e robustez na concretagem por Castro Tech."
                 </p>
             </div>
         """,
@@ -559,7 +558,7 @@ if menu == "📊 Visão Geral":
                     <img src="data:image/jpeg;base64,{encoded_string}" style="width: 100%; height: 280px; object-fit: cover; display: block;">
                 </div>
                 <h2 style="color: #2ecc71 !important; margin: 0 0 6px 0; font-size: 22px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
-                <p style="color: #cbd5e1 !important; font-size: 14px; margin: 0; font-weight: 500;">Sistema corporativo avançado para controle de caminhões betoneira, maquinário pesado, obras e manutenções | Powered by Castro Technology.</p>
+                <p style="color: #cbd5e1 !important; font-size: 14px; margin: 0; font-weight: 500;">Sistema corporativo avançado para controle de caminhões betoneira, maquinário pesado, obras e manutenções | Powered by Castro Tech.</p>
             </div>
         """,
         unsafe_allow_html=True,
@@ -569,7 +568,7 @@ if menu == "📊 Visão Geral":
         """
             <div style="background: linear-gradient(135deg, rgba(15, 30, 20, 0.95) 0%, rgba(5, 15, 10, 0.95) 100%); border: 2px solid #2ecc71; border-radius: 16px; padding: 25px; margin-bottom: 25px;">
                 <h2 style="color: #2ecc71 !important; margin: 0 0 6px 0; font-size: 22px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
-                <p style="color: #cbd5e1 !important; font-size: 14px; margin: 0; font-weight: 500;">Sistema corporativo avançado para controle de caminhões betoneira, maquinário pesado, obras e manutenções | Powered by Castro Technology.</p>
+                <p style="color: #cbd5e1 !important; font-size: 14px; margin: 0; font-weight: 500;">Sistema corporativo avançado para controle de caminhões betoneira, maquinário pesado, obras e manutenções | Powered by Castro Tech.</p>
             </div>
         """,
         unsafe_allow_html=True,
