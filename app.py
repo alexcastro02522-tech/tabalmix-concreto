@@ -24,15 +24,8 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Descobrir a imagem local da frota para aplicar no CSS de fundo com transparência
-arquivos_img = glob.glob("*.jpg") + glob.glob("*.jpeg") + glob.glob("*.png")
-fotos_candidatas = [
-    f for f in arquivos_img if f != "app.py" and not f.startswith("frota")
-]
-imagem_fundo_base64 = ""
-if fotos_candidatas:
-  with open(fotos_candidatas[0], "rb") as img_file:
-    imagem_fundo_base64 = base64.b64encode(img_file.read()).decode("utf-8")
+# Imagem de fundo corporativa de caminhões betoneira para a nuvem
+imagem_url_fundo = "https://images.unsplash.com/photo-1541888946425-d0fbb18f1f7d?auto=format&fit=crop&w=1200&q=80"
 
 # Estilização Visual Corporativa Avançada
 st.markdown(
@@ -85,9 +78,9 @@ st.markdown(
         border-color: #2ecc71;
         color: #2ecc71 !important;
     }}
-    .hero-banner {{
+   .hero-banner {{
         background: linear-gradient(135deg, rgba(5, 20, 10, 0.88) 0%, rgba(8, 30, 15, 0.82) 100%), 
-                    url('data:image/jpeg;base64,{imagem_fundo_base64}');
+                    url('{imagem_url_fundo}');
         background-size: cover;
         background-position: center;
         padding: 40px;
@@ -95,6 +88,7 @@ st.markdown(
         border: 2px solid #2ecc71;
         box-shadow: 0 20px 40px -15px rgba(46, 204, 113, 0.4);
         margin-bottom: 25px;
+    }}
     }}
     div[data-testid="stMetric"] {{
         background: linear-gradient(135deg, #143820 0%, #0a1f10 100%) !important;
