@@ -11,9 +11,9 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import streamlit as st
 
-# CONFIGURAÇÃO DO MERCADO PAGO (Token Oficial Integrado)
+# CONFIGURAÇÃO DO MERCADO PAGO (Token Oficial de Produção Integrado)
 MERCADO_PAGO_ACCESS_TOKEN = (
-    "APP_USR-5959521111272944-091612-0753df7e8e6f3065d831fff33f2257af-3692527935"
+    "APP_USR-7480302560366070-091611-1118388bbc787e8f88ea1da583096dbc-2919829212"
 )
 
 # Configuração da Página com Menu Fixo Expandido
@@ -459,8 +459,8 @@ def verificar_licenca_para_acao():
         )
         if checkout_url:
           st.markdown(
-              f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO MENSAL NO MERCADO"
-              f" PAGO]({checkout_url})**"
+              f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO MENSAL (PIX / CARTÃO)"
+              f"]({checkout_url})**"
           )
       except Exception as e:
         st.error(f"Erro ao gerar link de pagamento: {e}")
@@ -491,8 +491,8 @@ def verificar_licenca_para_acao():
         )
         if checkout_url:
           st.markdown(
-              f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO ANUAL NO MERCADO"
-              f" PAGO]({checkout_url})**"
+              f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO ANUAL (PIX / CARTÃO)"
+              f"]({checkout_url})**"
           )
       except Exception as e:
         st.error(f"Erro ao gerar link de pagamento: {e}")
@@ -618,7 +618,6 @@ if menu == "📊 Visão Geral":
 elif menu == "🚜 Frota e Maquinários":
   st.title("🚜 Cadastro Completo de Veículos e Maquinário Pesado")
 
-  # Verifica licença antes de mostrar o formulário
   if modo_admin_liberado:
     with st.form("form_frota", clear_on_submit=False):
       col1, col2 = st.columns(2)
