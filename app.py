@@ -325,7 +325,7 @@ def init_db():
             equipamento TEXT,
             litros REAL,
             valor_total REAL,
-            km_horimetro REAL,
+            km_horimetro TEXT,
             posto_posto TEXT,
             motorista TEXT,
             data TEXT
@@ -506,13 +506,22 @@ menu = st.sidebar.radio(
 )
 
 if menu == "📊 Visão Geral":
-  # Exibindo a foto real dos caminhões da Tabalmix enviada para o GitHub
+  # Renderização segura via Base64 da foto 'caminhoes.jpg'
   try:
-    st.image("caminhoes.jpg", use_container_width=True)
-  except:
+    with open("caminhoes.jpg", "rb") as image_file:
+      encoded_string = base64.b64encode(image_file.read()).decode()
+    st.markdown(
+        f"""
+            <div style="width: 100%; border-radius: 14px; overflow: hidden; border: 2px solid #2ecc71; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <img src="data:image/jpeg;base64,{encoded_string}" style="width: 100%; display: block; object-fit: cover;">
+            </div>
+        """,
+        unsafe_allow_html=True,
+    )
+  except Exception:
     st.info(
-        "💡 Dica: Certifique-se de que a foto 'caminhoes.jpg' foi enviada para o"
-        " repositório do GitHub."
+        "💡 Dica: Certifique-se de que o arquivo 'caminhoes.jpg' está enviado"
+        " no GitHub."
     )
 
   st.markdown(
@@ -767,9 +776,7 @@ elif menu == "⛽ Abastecimentos & Combustível":
             "Valor Total Pago (R$)", min_value=0.0, value=600.0, format="%.2f"
         )
       with col2:
-        km_horimetro = st.number_input(
-            "KM ou Horímetro Atual do Veículo", min_value=0.0, value=15000.0
-        )
+        km_horimetro = st.text_input("KM ou Horímetro Atual do Veículo")
         posto = st.text_input("Posto / Fornecedor de Combustível")
         motorista = st.text_input("Motorista / Responsável")
         data_abastecimento = st.date_input("Data do Abastecimento")
@@ -785,7 +792,7 @@ elif menu == "⛽ Abastecimentos & Combustível":
                   equipamento_comb,
                   float(litros),
                   float(valor_total),
-                  float(km_horimetro),
+                  str(km_horimetro),
                   posto,
                   motorista,
                   str(data_abastecimento),
@@ -897,10 +904,8 @@ elif menu == "🏗️ Mobilização / Desmobilização":
             ],
         )
         destino_origem = st.text_input("Nome da Obra / Local de Destino-Origem")
-        horimetro_km_mov = st.number_input(
-            "Horímetro / KM no Momento da Movimentação",
-            min_value=0,
-            value=15000,
+        horimetro_km_mov = st.text_input(
+            "Horímetro / KM no Momento da Movimentação"
         )
       with col2:
         responsavel = st.text_input("Responsável pela Liberação")
@@ -923,7 +928,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
                   destino_origem,
                   responsavel,
                   str(data_mob),
-                  int(horimetro_km_mov),
+                  str(horimetro_km_mov),
                   motivo_condicao,
                   observacao,
               ),
