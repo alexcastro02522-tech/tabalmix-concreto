@@ -506,33 +506,32 @@ menu = st.sidebar.radio(
 )
 
 if menu == "📊 Visão Geral":
-  # Renderização segura via Base64 da foto 'caminhoes.jpg'
+  # Banner compacto com borda arredondada idêntico à sua referência
   try:
     with open("caminhoes.jpg", "rb") as image_file:
       encoded_string = base64.b64encode(image_file.read()).decode()
     st.markdown(
         f"""
-            <div style="width: 100%; border-radius: 14px; overflow: hidden; border: 2px solid #2ecc71; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
-                <img src="data:image/jpeg;base64,{encoded_string}" style="width: 100%; display: block; object-fit: cover;">
+            <div style="background: linear-gradient(135deg, rgba(15, 30, 20, 0.95) 0%, rgba(5, 15, 10, 0.95) 100%); border: 2px solid #2ecc71; border-radius: 16px; padding: 18px; margin-bottom: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);">
+                <div style="border-radius: 12px; overflow: hidden; max-height: 320px; border: 1px solid rgba(46, 204, 113, 0.4); margin-bottom: 15px;">
+                    <img src="data:image/jpeg;base64,{encoded_string}" style="width: 100%; height: 280px; object-fit: cover; display: block;">
+                </div>
+                <h2 style="color: #2ecc71 !important; margin: 0 0 6px 0; font-size: 22px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
+                <p style="color: #cbd5e1 !important; font-size: 14px; margin: 0; font-weight: 500;">Sistema corporativo avançado para controle de caminhões betoneira, maquinário pesado, obras e manutenções.</p>
             </div>
         """,
         unsafe_allow_html=True,
     )
   except Exception:
-    st.info(
-        "💡 Dica: Certifique-se de que o arquivo 'caminhoes.jpg' está enviado"
-        " no GitHub."
-    )
-
-  st.markdown(
-      """
-            <div style="background: linear-gradient(135deg, rgba(5, 20, 10, 0.9) 0%, rgba(8, 30, 15, 0.85) 100%); padding: 30px; border-radius: 14px; border: 2px solid #2ecc71; margin-top: 15px; margin-bottom: 25px;">
-                <h1 style="color: #2ecc71 !important; margin-bottom: 8px; font-size: 26px;">🏗️ Tabalmix - Painel Operacional da Frota</h1>
-                <p style="color: #f1f5f9 !important; font-size: 15px; margin: 0; font-weight: 500;">Sistema corporativo avançado para controle de caminhões betoneira, maquinário pesado, obras e manutenções.</p>
+    st.markdown(
+        """
+            <div style="background: linear-gradient(135deg, rgba(15, 30, 20, 0.95) 0%, rgba(5, 15, 10, 0.95) 100%); border: 2px solid #2ecc71; border-radius: 16px; padding: 25px; margin-bottom: 25px;">
+                <h2 style="color: #2ecc71 !important; margin: 0 0 6px 0; font-size: 22px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
+                <p style="color: #cbd5e1 !important; font-size: 14px; margin: 0; font-weight: 500;">Sistema corporativo avançado para controle de caminhões betoneira, maquinário pesado, obras e manutenções.</p>
             </div>
         """,
-      unsafe_allow_html=True,
-  )
+        unsafe_allow_html=True,
+    )
 
   df_veiculos = pd.read_sql("SELECT * FROM veiculos", conn)
   df_manut = pd.read_sql("SELECT * FROM manutencoes", conn)
