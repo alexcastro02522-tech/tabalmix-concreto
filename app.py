@@ -398,13 +398,18 @@ chave_pix_recebimento = (
     else "seu-pix@email.com"
 )
 
-# Verificação invisível de Administrador via URL param (?admin=1)
-query_params = st.query_params
-admin_token_url = query_params.get("admin", "")
-
+# Verificação blindada de Administrador via URL param (?admin=1)
 modo_admin_liberado = False
-if admin_token_url == "1":
-  modo_admin_liberado = True
+try:
+  query_params = st.query_params
+  if (
+      query_params.get("admin") == "1"
+      or query_params.get("admin") == ["1"]
+      or str(query_params).find("admin=1") != -1
+  ):
+    modo_admin_liberado = True
+except Exception:
+  pass
 
 # Menu Lateral & Blindagem com Selo Oficial
 with st.sidebar:
@@ -1539,7 +1544,7 @@ elif menu == "⚙️ Painel de Licença (Admin)":
           )
           if checkout_url:
             st.markdown(
-                f"🔗 **[👉 CLIQUE AQUI PARA ABRIRO PAGAMENTO]({checkout_url})**"
+                f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO]({checkout_url})**"
             )
         except Exception as e:
           st.error(f"Erro ao conectar com Mercado Pago: {e}")
