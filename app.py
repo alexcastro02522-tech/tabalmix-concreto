@@ -349,7 +349,7 @@ def init_db():
         "INSERT INTO licenca (status_assinatura, plano_atual, data_vencimento,"
         " chave_pix) VALUES (?, ?, ?, ?)",
         (
-            "Ativo",
+            "Inativo",
             "Mensal (R$ 250,00)",
             vencimento_padrao,
             "seu-email-pix@dominio.com",
@@ -365,7 +365,7 @@ cursor = conn.cursor()
 
 df_licenca = pd.read_sql("SELECT * FROM licenca", conn)
 status_atual = (
-    df_licenca.iloc[0]["status_assinatura"] if not df_licenca.empty else "Ativo"
+    df_licenca.iloc[0]["status_assinatura"] if not df_licenca.empty else "Inativo"
 )
 plano_atual = (
     df_licenca.iloc[0]["plano_atual"]
@@ -379,12 +379,55 @@ chave_pix_recebimento = (
 )
 
 
-# Função para bloquear ações de cadastro caso o status esteja inativo e exibir Mercado Pago
+# Verificação invisível de Administrador via URL param (?admin=1) ou senha oculta
+query_params = st.query_params
+admin_token_url = query_params.get("admin", "")
+
+modo_admin_liberado = False
+if admin_token_url == "1":
+  modo_admin_liberado = True
+
+# Menu Lateral & Blindagem de Acesso
+with st.sidebar:
+  st.markdown(
+      """
+            <div style="text-align: center; padding: 10px 0 15px 0;">
+                <div style="font-size: 40px; margin-bottom: 2px;">🟢 🏗️</div>
+                <h3 style="color: #2ecc71; margin: 0; font-size: 18px; font-weight: 800;">TABALMIX CONCRETO</h3>
+                <p style="color: #94a3b8; font-size: 10px; margin: 2px 0 8px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
+                <p style="color: #e2e8f0; font-size: 11px; font-style: italic; font-weight: 500; line-height: 1.3; margin-bottom: 15px;">
+                    "Tecnologia e robustez na concretagem."
+                </p>
+            </div>
+        """,
+      unsafe_allow_html=True,
+  )
+
+  if modo_admin_liberado:
+    st.success("🔓 **Modo Admin Ativo:** Sistema Liberado!")
+  else:
+    # Opção discreta no rodapé da barra lateral para você colocar sua senha forte se não usar o link com ?admin=1
+    with st.expander("⚙️ Configurações"):
+      senha_secreta_digitada = st.text_input(
+          "Chave Mestra", type="password", key="chave_seg"
+      )
+      if senha_secreta_digitada == "@Tabalmix#2026$ProSecure!":
+        modo_admin_liberado = True
+        st.success("Liberado!")
+
+  st.markdown("---")
+
+
+# Função para bloquear ações caso não seja admin
 def verificar_licenca_para_acao():
+  if modo_admin_liberado:
+    return True
+
   if status_atual != "Ativo":
     st.warning(
-        "🔒 **Ação Bloqueada:** O sistema está com a licença pendente ou inativa."
-        " Para cadastrar novos registros, contrate o plano abaixo:"
+        "🔒 **Ação Bloqueada:** O sistema está operando no modo de"
+        " demonstração. Para cadastrar novos registros, assine um plano"
+        " abaixo:"
     )
 
     col_p1, col_p2 = st.columns(2)
@@ -394,10 +437,7 @@ def verificar_licenca_para_acao():
           sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
           preference_data = {
               "items": [{
-                  "title": (
-                      "Tabalmix Concreto - Assinatura Mensal de Sistema de"
-                      " Gestão"
-                  ),
+                  "title": "Tabalmix Concreto - Assinatura Mensal",
                   "quantity": 1,
                   "unit_price": 250.0,
                   "currency_id": "BRL",
@@ -420,9 +460,9 @@ def verificar_licenca_para_acao():
                 f'<meta http-equiv="refresh" content="0;url={checkout_url}">',
                 unsafe_allow_html=True,
             )
-            st.success(f"[Clique aqui para pagar via Mercado Pago]({checkout_url})")
+            st.success(f"[Pagar via Mercado Pago]({checkout_url})")
         except Exception as e:
-          st.error(f"Erro ao gerar pagamento: {e}")
+          st.error(f"Erro: {e}")
 
     with col_p2:
       if st.button("🌟 Pagar Plano Anual (R$ 2.400,00)"):
@@ -453,41 +493,12 @@ def verificar_licenca_para_acao():
                 f'<meta http-equiv="refresh" content="0;url={checkout_url}">',
                 unsafe_allow_html=True,
             )
-            st.success(f"[Clique aqui para pagar via Mercado Pago]({checkout_url})")
+            st.success(f"[Pagar via Mercado Pago]({checkout_url})")
         except Exception as e:
-          st.error(f"Erro ao gerar pagamento: {e}")
+          st.error(f"Erro: {e}")
     return False
   return True
 
-
-# Menu Lateral
-with st.sidebar:
-  st.markdown(
-      """
-            <div style="text-align: center; padding: 10px 0 15px 0;">
-                <div style="font-size: 40px; margin-bottom: 2px;">🟢 🏗️</div>
-                <h3 style="color: #2ecc71; margin: 0; font-size: 18px; font-weight: 800;">TABALMIX CONCRETO</h3>
-                <p style="color: #94a3b8; font-size: 10px; margin: 2px 0 8px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
-                <p style="color: #e2e8f0; font-size: 11px; font-style: italic; font-weight: 500; line-height: 1.3; margin-bottom: 15px;">
-                    "Tecnologia e robustez na concretagem."
-                </p>
-            </div>
-        """,
-      unsafe_allow_html=True,
-  )
-
-  if status_atual == "Ativo":
-    st.success(
-        "🛡️ **SISTEMA LICENCIADO**\n\n"
-        f"**Plano:** {plano_atual}\n\n"
-        "• Frota, Obras & Oficina\n"
-        "• Powered by De Castro Tech"
-    )
-  else:
-    st.error(
-        "⚠️ **LICENÇA EXPIRADA**\n\nCadastros novos bloqueados até a renovação."
-    )
-  st.markdown("---")
 
 menu = st.sidebar.radio(
     "Navegação do Sistema",
@@ -506,7 +517,6 @@ menu = st.sidebar.radio(
 )
 
 if menu == "📊 Visão Geral":
-  # Banner compacto com borda arredondada idêntico à sua referência
   try:
     with open("caminhoes.jpg", "rb") as image_file:
       encoded_string = base64.b64encode(image_file.read()).decode()
@@ -1367,16 +1377,17 @@ elif menu == "🔍 Consulta / Busca Geral":
 elif menu == "⚙️ Painel de Licença (Admin)":
   st.title("⚙️ Painel de Controle de Licença, Planos e Assinaturas")
   st.markdown(
-      "Gerencie o status de acesso do sistema e defina o modelo comercial"
-      " (Planos Mensal, Trimestral, Semestral ou Anual)."
+      "Gerencie o status de acesso padrão para os colaboradores e defina o"
+      " modelo comercial."
   )
 
   with st.form("form_licenca"):
     novo_status = st.selectbox(
-        "Status da Licença", ["Ativo", "Bloqueado por Inadimplência"]
+        "Status Padrão (Para visitantes e colaboradores)",
+        ["Inativo", "Ativo"],
     )
     escolha_plano = st.selectbox(
-        "Plano Comercial Contratado",
+        "Plano Comercial Exibido",
         [
             "Mensal (R$ 250,00)",
             "Trimestral (R$ 700,00)",
@@ -1387,7 +1398,7 @@ elif menu == "⚙️ Painel de Licença (Admin)":
     nova_chave_pix = st.text_input(
         "Sua Chave Pix (E-mail, CPF ou CNPJ)", value=chave_pix_recebimento
     )
-    atualizar_licenca = st.form_submit_button("Salvar Configurações de Licença")
+    atualizar_licenca = st.form_submit_button("Salvar Configurações")
     if atualizar_licenca:
       cursor.execute(
           "UPDATE licenca SET status_assinatura = ?, plano_atual = ?, chave_pix"
@@ -1395,16 +1406,11 @@ elif menu == "⚙️ Painel de Licença (Admin)":
           (novo_status, escolha_plano, nova_chave_pix),
       )
       conn.commit()
-      st.success("✅ Configurações de licença e planos atualizadas!")
+      st.success("✅ Configurações atualizadas!")
       st.rerun()
 
   st.divider()
   st.subheader("💳 Área de Pagamento e Checkout Mercado Pago")
-  st.write(
-      "Caso deseje testar a contratação imediata via Pix/Cartão do Mercado"
-      " Pago:"
-  )
-
   col_m1, col_m2 = st.columns(2)
   with col_m1:
     if st.button("Pagar Plano Mensal (R$ 250,00)"):
