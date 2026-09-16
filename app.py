@@ -421,7 +421,7 @@ with st.sidebar:
   st.markdown("---")
 
 
-# Função para bloquear ações E EXIBIR OS BOTÕES DE PAGAMENTO DO MERCADO PAGO
+# Função para exibir o aviso e os botões de pagamento FORA do formulário
 def verificar_licenca_para_acao():
   if modo_admin_liberado:
     return True
@@ -434,7 +434,7 @@ def verificar_licenca_para_acao():
 
   col_p1, col_p2 = st.columns(2)
   with col_p1:
-    if st.button("💳 Pagar Plano Mensal (R$ 250,00)"):
+    if st.button("💳 Pagar Plano Mensal (R$ 250,00)", key="btn_mensal_geral"):
       try:
         sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
         preference_data = {
@@ -459,18 +459,14 @@ def verificar_licenca_para_acao():
         )
         if checkout_url:
           st.markdown(
-              f'<meta http-equiv="refresh" content="0;url={checkout_url}">',
-              unsafe_allow_html=True,
-          )
-          st.markdown(
-              f"🔗 **[Clique aqui para abrir o pagamento no Mercado"
-              f" Pago]({checkout_url})**"
+              f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO MENSAL NO MERCADO"
+              f" PAGO]({checkout_url})**"
           )
       except Exception as e:
         st.error(f"Erro ao gerar link de pagamento: {e}")
 
   with col_p2:
-    if st.button("🌟 Pagar Plano Anual (R$ 2.400,00)"):
+    if st.button("🌟 Pagar Plano Anual (R$ 2.400,00)", key="btn_anual_geral"):
       try:
         sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
         preference_data = {
@@ -495,12 +491,8 @@ def verificar_licenca_para_acao():
         )
         if checkout_url:
           st.markdown(
-              f'<meta http-equiv="refresh" content="0;url={checkout_url}">',
-              unsafe_allow_html=True,
-          )
-          st.markdown(
-              f"🔗 **[Clique aqui para abrir o pagamento anual no Mercado"
-              f" Pago]({checkout_url})**"
+              f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO ANUAL NO MERCADO"
+              f" PAGO]({checkout_url})**"
           )
       except Exception as e:
         st.error(f"Erro ao gerar link de pagamento: {e}")
@@ -625,55 +617,57 @@ if menu == "📊 Visão Geral":
 
 elif menu == "🚜 Frota e Maquinários":
   st.title("🚜 Cadastro Completo de Veículos e Maquinário Pesado")
-  with st.form("form_frota", clear_on_submit=False):
-    col1, col2 = st.columns(2)
-    with col1:
-      codigo_patrimonio = st.text_input(
-          "Código Interno / Patrimônio (Ex: EQ-001)"
-      )
-      tipo = st.selectbox(
-          "Tipo de Equipamento",
-          [
-              "Caminhão Betoneira",
-              "Caminhão Basculante",
-              "Escavadeira / Maquinário Pesado",
-              "Carro / Utilitário",
-              "Trator / Agrícola",
-          ],
-      )
-      marca = st.text_input("Marca (Ex: Volvo, Mercedes, Caterpillar)")
-      modelo = st.text_input("Modelo")
-      ano = st.number_input(
-          "Ano de Fabricação", min_value=1950, value=2024, step=1
-      )
-      chassi = st.text_input("Número de Série / Chassi (Opcional)")
-      placa = st.text_input("Placa (Quando houver)")
-    with col2:
-      horimetro_km = st.number_input(
-          "Horímetro ou Quilometragem Atual", min_value=0, value=15000, step=100
-      )
-      combustivel = st.selectbox(
-          "Combustível", ["Diesel S10", "Diesel S500", "Gasolina", "Flex"]
-      )
-      local_atual = st.text_input("Local Atual / Obra")
-      responsavel = st.text_input("Responsável pelo Ativo")
-      status = st.selectbox(
-          "Situação / Status",
-          [
-              "Ativo",
-              "Em manutenção",
-              "Parado",
-              "Mobilizado",
-              "Desmobilizado",
-              "Inativo",
-          ],
-      )
-      data_entrada = st.date_input("Data de Entrada na Empresa")
-      observacoes = st.text_input("Observações / Documentação")
 
-    salvar_ativo = st.form_submit_button("Cadastrar Ativo na Frota Pro")
-    if salvar_ativo:
-      if verificar_licenca_para_acao():
+  # Verifica licença antes de mostrar o formulário
+  if modo_admin_liberado:
+    with st.form("form_frota", clear_on_submit=False):
+      col1, col2 = st.columns(2)
+      with col1:
+        codigo_patrimonio = st.text_input(
+            "Código Interno / Patrimônio (Ex: EQ-001)"
+        )
+        tipo = st.selectbox(
+            "Tipo de Equipamento",
+            [
+                "Caminhão Betoneira",
+                "Caminhão Basculante",
+                "Escavadeira / Maquinário Pesado",
+                "Carro / Utilitário",
+                "Trator / Agrícola",
+            ],
+        )
+        marca = st.text_input("Marca (Ex: Volvo, Mercedes, Caterpillar)")
+        modelo = st.text_input("Modelo")
+        ano = st.number_input(
+            "Ano de Fabricação", min_value=1950, value=2024, step=1
+        )
+        chassi = st.text_input("Número de Série / Chassi (Opcional)")
+        placa = st.text_input("Placa (Quando houver)")
+      with col2:
+        horimetro_km = st.number_input(
+            "Horímetro ou Quilometragem Atual", min_value=0, value=15000, step=100
+        )
+        combustivel = st.selectbox(
+            "Combustível", ["Diesel S10", "Diesel S500", "Gasolina", "Flex"]
+        )
+        local_atual = st.text_input("Local Atual / Obra")
+        responsavel = st.text_input("Responsável pelo Ativo")
+        status = st.selectbox(
+            "Situação / Status",
+            [
+                "Ativo",
+                "Em manutenção",
+                "Parado",
+                "Mobilizado",
+                "Desmobilizado",
+                "Inativo",
+            ],
+        )
+        data_entrada = st.date_input("Data de Entrada na Empresa")
+        observacoes = st.text_input("Observações / Documentação")
+
+      salvar_ativo = st.form_submit_button("Cadastrar Ativo na Frota Pro")
+      if salvar_ativo:
         if modelo and codigo_patrimonio:
           cursor.execute(
               "INSERT INTO veiculos (codigo_patrimonio, tipo, marca, modelo,"
@@ -706,6 +700,8 @@ elif menu == "🚜 Frota e Maquinários":
           st.error(
               "⚠️ Preencha o Código de Patrimônio e o Modelo obrigatoriamente."
           )
+  else:
+    verificar_licenca_para_acao()
 
   st.divider()
   st.subheader("Frota Registrada & Gerenciamento")
@@ -731,16 +727,16 @@ elif menu == "🚜 Frota e Maquinários":
 
     st.dataframe(df_f_filtrado, use_container_width=True)
 
-    col_del1, col_del2 = st.columns([2, 1])
-    with col_del1:
-      veiculo_para_excluir = st.selectbox(
-          "Selecione o ID do Equipamento para Excluir", df_f["id"].tolist()
-      )
-    with col_del2:
-      st.write("")
-      st.write("")
-      if st.button("🗑️ Excluir Equipamento"):
-        if verificar_licenca_para_acao():
+    if modo_admin_liberado:
+      col_del1, col_del2 = st.columns([2, 1])
+      with col_del1:
+        veiculo_para_excluir = st.selectbox(
+            "Selecione o ID do Equipamento para Excluir", df_f["id"].tolist()
+        )
+      with col_del2:
+        st.write("")
+        st.write("")
+        if st.button("🗑️ Excluir Equipamento"):
           cursor.execute(
               "DELETE FROM veiculos WHERE id = ?", (veiculo_para_excluir,)
           )
@@ -776,30 +772,30 @@ elif menu == "⛽ Abastecimentos & Combustível":
   if df_v.empty:
     st.warning("Cadastre equipamentos na frota antes de registrar abastecimentos.")
   else:
-    with st.form("form_combustivel", clear_on_submit=False):
-      col1, col2 = st.columns(2)
-      with col1:
-        equipamento_comb = st.selectbox(
-            "Equipamento / Patrimônio", df_v["codigo_patrimonio"].tolist()
-        )
-        litros = st.number_input(
-            "Quantidade de Litros Abastecidos",
-            min_value=0.1,
-            value=100.0,
-            format="%.2f",
-        )
-        valor_total = st.number_input(
-            "Valor Total Pago (R$)", min_value=0.0, value=600.0, format="%.2f"
-        )
-      with col2:
-        km_horimetro = st.text_input("KM ou Horímetro Atual do Veículo")
-        posto = st.text_input("Posto / Fornecedor de Combustível")
-        motorista = st.text_input("Motorista / Responsável")
-        data_abastecimento = st.date_input("Data do Abastecimento")
+    if modo_admin_liberado:
+      with st.form("form_combustivel", clear_on_submit=False):
+        col1, col2 = st.columns(2)
+        with col1:
+          equipamento_comb = st.selectbox(
+              "Equipamento / Patrimônio", df_v["codigo_patrimonio"].tolist()
+          )
+          litros = st.number_input(
+              "Quantidade de Litros Abastecidos",
+              min_value=0.1,
+              value=100.0,
+              format="%.2f",
+          )
+          valor_total = st.number_input(
+              "Valor Total Pago (R$)", min_value=0.0, value=600.0, format="%.2f"
+          )
+        with col2:
+          km_horimetro = st.text_input("KM ou Horímetro Atual do Veículo")
+          posto = st.text_input("Posto / Fornecedor de Combustível")
+          motorista = st.text_input("Motorista / Responsável")
+          data_abastecimento = st.date_input("Data do Abastecimento")
 
-      salvar_comb = st.form_submit_button("Registrar Abastecimento")
-      if salvar_comb:
-        if verificar_licenca_para_acao():
+        salvar_comb = st.form_submit_button("Registrar Abastecimento")
+        if salvar_comb:
           cursor.execute(
               "INSERT INTO combustivel (equipamento, litros, valor_total,"
               " km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?,"
@@ -816,6 +812,8 @@ elif menu == "⛽ Abastecimentos & Combustível":
           )
           conn.commit()
           st.success("✅ Abastecimento registrado com sucesso!")
+    else:
+      verificar_licenca_para_acao()
 
     st.divider()
     st.subheader("Histórico de Abastecimentos Registrados")
@@ -858,17 +856,17 @@ elif menu == "⛽ Abastecimentos & Combustível":
           f" Litros | **Gasto Total:** R$ {total_gasto_filtrado:,.2f}"
       )
 
-      col_dc1, col_dc2 = st.columns([2, 1])
-      with col_dc1:
-        comb_para_excluir = st.selectbox(
-            "Selecione o ID para Remover do Histórico",
-            df_c_hist["id"].tolist(),
-        )
-      with col_dc2:
-        st.write("")
-        st.write("")
-        if st.button("🗑️ Excluir Abastecimento"):
-          if verificar_licenca_para_acao():
+      if modo_admin_liberado:
+        col_dc1, col_dc2 = st.columns([2, 1])
+        with col_dc1:
+          comb_para_excluir = st.selectbox(
+              "Selecione o ID para Remover do Histórico",
+              df_c_hist["id"].tolist(),
+          )
+        with col_dc2:
+          st.write("")
+          st.write("")
+          if st.button("🗑️ Excluir Abastecimento"):
             cursor.execute(
                 "DELETE FROM combustivel WHERE id = ?", (comb_para_excluir,)
             )
@@ -904,36 +902,36 @@ elif menu == "🏗️ Mobilização / Desmobilização":
   if df_v.empty:
     st.warning("Cadastre equipamentos na frota antes de registrar mobilizações.")
   else:
-    with st.form("form_mob", clear_on_submit=False):
-      col1, col2 = st.columns(2)
-      with col1:
-        equipamento_mob = st.selectbox(
-            "Equipamento (Patrimônio / Modelo)",
-            df_v["codigo_patrimonio"].tolist(),
-        )
-        tipo_movimento = st.selectbox(
-            "Tipo de Movimentação",
-            [
-                "Mobilização (Envio para Obra)",
-                "Desmobilização (Retorno de Obra)",
-                "Remanejamento entre Frentes",
-            ],
-        )
-        destino_origem = st.text_input("Nome da Obra / Local de Destino-Origem")
-        horimetro_km_mov = st.text_input(
-            "Horímetro / KM no Momento da Movimentação"
-        )
-      with col2:
-        responsavel = st.text_input("Responsável pela Liberação")
-        data_mob = st.date_input("Data da Movimentação")
-        motivo_condicao = st.text_input(
-            "Motivo da Saída / Condição do Equipamento"
-        )
-        observacao = st.text_input("Observações Gerais")
+    if modo_admin_liberado:
+      with st.form("form_mob", clear_on_submit=False):
+        col1, col2 = st.columns(2)
+        with col1:
+          equipamento_mob = st.selectbox(
+              "Equipamento (Patrimônio / Modelo)",
+              df_v["codigo_patrimonio"].tolist(),
+          )
+          tipo_movimento = st.selectbox(
+              "Tipo de Movimentação",
+              [
+                  "Mobilização (Envio para Obra)",
+                  "Desmobilização (Retorno de Obra)",
+                  "Remanejamento entre Frentes",
+              ],
+          )
+          destino_origem = st.text_input("Nome da Obra / Local de Destino-Origem")
+          horimetro_km_mov = st.text_input(
+              "Horímetro / KM no Momento da Movimentação"
+          )
+        with col2:
+          responsavel = st.text_input("Responsável pela Liberação")
+          data_mob = st.date_input("Data da Movimentação")
+          motivo_condicao = st.text_input(
+              "Motivo da Saída / Condição do Equipamento"
+          )
+          observacao = st.text_input("Observações Gerais")
 
-      salvar_mob = st.form_submit_button("Registrar Movimentação de Obra")
-      if salvar_mob:
-        if verificar_licenca_para_acao():
+        salvar_mob = st.form_submit_button("Registrar Movimentação de Obra")
+        if salvar_mob:
           cursor.execute(
               "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
               " destino_origem, responsavel, data, horimetro_km_mov,"
@@ -951,23 +949,25 @@ elif menu == "🏗️ Mobilização / Desmobilização":
           )
           conn.commit()
           st.success("✅ Histórico de mobilização registrado com sucesso!")
+    else:
+      verificar_licenca_para_acao()
 
     st.divider()
     st.subheader("Histórico de Mobilizações e Desmobilizações")
     df_mob_hist = pd.read_sql("SELECT * FROM mobilizacoes", conn)
     if not df_mob_hist.empty:
       st.dataframe(df_mob_hist, use_container_width=True)
-      col_dm1, col_dm2 = st.columns([2, 1])
-      with col_dm1:
-        mob_para_excluir = st.selectbox(
-            "Selecione o ID para Remover do Histórico",
-            df_mob_hist["id"].tolist(),
-        )
-      with col_dm2:
-        st.write("")
-        st.write("")
-        if st.button("🗑️ Excluir Registro de Mobilização"):
-          if verificar_licenca_para_acao():
+      if modo_admin_liberado:
+        col_dm1, col_dm2 = st.columns([2, 1])
+        with col_dm1:
+          mob_para_excluir = st.selectbox(
+              "Selecione o ID para Remover do Histórico",
+              df_mob_hist["id"].tolist(),
+          )
+        with col_dm2:
+          st.write("")
+          st.write("")
+          if st.button("🗑️ Excluir Registro de Mobilização"):
             cursor.execute(
                 "DELETE FROM mobilizacoes WHERE id = ?", (mob_para_excluir,)
             )
@@ -1018,54 +1018,54 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
         "Cadastre pelo menos um equipamento antes de abrir uma Ordem de Serviço."
     )
   else:
-    with st.form("form_os", clear_on_submit=False):
-      col1, col2 = st.columns(2)
-      with col1:
-        equipamento_escolhido = st.selectbox(
-            "Equipamento / Patrimônio", df_v["codigo_patrimonio"].tolist()
-        )
-        tipo_manutencao = st.selectbox(
-            "Tipo de Manutenção",
-            ["Preventiva", "Corretiva", "Preditiva", "Revisão Geral"],
-        )
-        horimetro_km_manut = st.text_input("Horímetro / KM na Entrada")
-        problema = st.text_area(
-            "Solicitação / Defeito Apresentado / Problema"
-        )
-        servico_realizado = st.text_area(
-            "Serviços a Realizar / Realizados"
-        )
-      with col2:
-        pecas_utilizadas = st.text_input(
-            "Peças Utilizadas / Necessárias"
-        )
-        custo_pecas = st.number_input(
-            "Valor Total das Peças (R$)", min_value=0.0, format="%.2f"
-        )
-        mao_de_obra = st.number_input(
-            "Valor da Mão de Obra (R$)", min_value=0.0, format="%.2f"
-        )
-        oficina = st.text_input("Oficina / Fornecedor Responsável")
-        responsavel_os = st.text_input("Responsável Técnico / Mecânico")
-        status_os = st.selectbox(
-            "Status da OS",
-            [
-                "Aberta",
-                "Em análise",
-                "Aguardando peça",
-                "Em manutenção",
-                "Aguardando aprovação",
-                "Concluída",
-                "Cancelada",
-            ],
-        )
-        data_os = st.date_input("Data de Abertura")
+    if modo_admin_liberado:
+      with st.form("form_os", clear_on_submit=False):
+        col1, col2 = st.columns(2)
+        with col1:
+          equipamento_escolhido = st.selectbox(
+              "Equipamento / Patrimônio", df_v["codigo_patrimonio"].tolist()
+          )
+          tipo_manutencao = st.selectbox(
+              "Tipo de Manutenção",
+              ["Preventiva", "Corretiva", "Preditiva", "Revisão Geral"],
+          )
+          horimetro_km_manut = st.text_input("Horímetro / KM na Entrada")
+          problema = st.text_area(
+              "Solicitação / Defeito Apresentado / Problema"
+          )
+          servico_realizado = st.text_area(
+              "Serviços a Realizar / Realizados"
+          )
+        with col2:
+          pecas_utilizadas = st.text_input(
+              "Peças Utilizadas / Necessárias"
+          )
+          custo_pecas = st.number_input(
+              "Valor Total das Peças (R$)", min_value=0.0, format="%.2f"
+          )
+          mao_de_obra = st.number_input(
+              "Valor da Mão de Obra (R$)", min_value=0.0, format="%.2f"
+          )
+          oficina = st.text_input("Oficina / Fornecedor Responsável")
+          responsavel_os = st.text_input("Responsável Técnico / Mecânico")
+          status_os = st.selectbox(
+              "Status da OS",
+              [
+                  "Aberta",
+                  "Em análise",
+                  "Aguardando peça",
+                  "Em manutenção",
+                  "Aguardando aprovação",
+                  "Concluída",
+                  "Cancelada",
+              ],
+          )
+          data_os = st.date_input("Data de Abertura")
 
-      abrir_os = st.form_submit_button(
-          "Salvar e Emitir Ordem de Serviço (OS)"
-      )
-      if abrir_os:
-        if verificar_licenca_para_acao():
+        abrir_os = st.form_submit_button(
+            "Salvar e Emitir Ordem de Serviço (OS)"
+        )
+        if abrir_os:
           custo_total = custo_pecas + mao_de_obra
           cursor.execute(
               "INSERT INTO manutencoes (equipamento, tipo_manutencao,"
@@ -1092,6 +1092,8 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
           conn.commit()
           st.success("✅ Ordem de Serviço gerada e salva com sucesso!")
           st.rerun()
+    else:
+      verificar_licenca_para_acao()
 
   st.divider()
   st.subheader("🖨️ Histórico de Ordens de Serviço & Recibo Oficial")
@@ -1133,16 +1135,16 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
         f" {custo_periodo_filtrado:,.2f}"
     )
 
-    col_os1, col_os2 = st.columns([2, 1])
-    with col_os1:
-      os_para_excluir = st.selectbox(
-          "Selecione o ID da OS para Excluir", df_m["id"].tolist()
-      )
-    with col_os2:
-      st.write("")
-      st.write("")
-      if st.button("🗑️ Excluir OS Selecionada"):
-        if verificar_licenca_para_acao():
+    if modo_admin_liberado:
+      col_os1, col_os2 = st.columns([2, 1])
+      with col_os1:
+        os_para_excluir = st.selectbox(
+            "Selecione o ID da OS para Excluir", df_m["id"].tolist()
+        )
+      with col_os2:
+        st.write("")
+        st.write("")
+        if st.button("🗑️ Excluir OS Selecionada"):
           cursor.execute(
               "DELETE FROM manutencoes WHERE id = ?", (os_para_excluir,)
           )
@@ -1197,31 +1199,31 @@ elif menu == "🔩 Peças e Ferramentas":
   st.title("🔩 Controle de Peças, Insumos e Ferramentas de Oficina")
   tab1, tab2 = st.tabs(["Cadastrar Item", "Inventário Atual"])
   with tab1:
-    with st.form("form_estoque", clear_on_submit=False):
-      col1, col2 = st.columns(2)
-      with col1:
-        nome_item = st.text_input(
-            "Nome da Peça, Filtro ou Ferramenta (Ex: Óleo 15W40)"
-        )
-        categoria = st.selectbox(
-            "Categoria",
-            [
-                "Peça de Reposição",
-                "Filtro e Lubrificante",
-                "Ferramenta de Oficina",
-                "Insumo de Concretagem",
-            ],
-        )
-      with col2:
-        quantidade = st.number_input(
-            "Quantidade em Estoque", min_value=1, value=1
-        )
-        valor_unitario = st.number_input(
-            "Valor Unitário (R$)", min_value=0.0, format="%.2f"
-        )
-      salvar_item = st.form_submit_button("Adicionar ao Estoque")
-      if salvar_item:
-        if verificar_licenca_para_acao():
+    if modo_admin_liberado:
+      with st.form("form_estoque", clear_on_submit=False):
+        col1, col2 = st.columns(2)
+        with col1:
+          nome_item = st.text_input(
+              "Nome da Peça, Filtro ou Ferramenta (Ex: Óleo 15W40)"
+          )
+          categoria = st.selectbox(
+              "Categoria",
+              [
+                  "Peça de Reposição",
+                  "Filtro e Lubrificante",
+                  "Ferramenta de Oficina",
+                  "Insumo de Concretagem",
+              ],
+          )
+        with col2:
+          quantidade = st.number_input(
+              "Quantidade em Estoque", min_value=1, value=1
+          )
+          valor_unitario = st.number_input(
+              "Valor Unitário (R$)", min_value=0.0, format="%.2f"
+          )
+        salvar_item = st.form_submit_button("Adicionar ao Estoque")
+        if salvar_item:
           if nome_item:
             cursor.execute(
                 "INSERT INTO pecas (nome_item, categoria, quantidade,"
@@ -1234,20 +1236,22 @@ elif menu == "🔩 Peças e Ferramentas":
             )
           else:
             st.error("⚠️ Informe o nome da peça.")
+    else:
+      verificar_licenca_para_acao()
   with tab2:
     df_p = pd.read_sql("SELECT * FROM pecas", conn)
     if not df_p.empty:
       st.dataframe(df_p, use_container_width=True)
-      col_p1, col_p2 = st.columns([2, 1])
-      with col_p1:
-        peca_para_excluir = st.selectbox(
-            "Selecione o ID do Item para Remover", df_p["id"].tolist()
-        )
-      with col_p2:
-        st.write("")
-        st.write("")
-        if st.button("🗑️ Excluir Item"):
-          if verificar_licenca_para_acao():
+      if modo_admin_liberado:
+        col_p1, col_p2 = st.columns([2, 1])
+        with col_p1:
+          peca_para_excluir = st.selectbox(
+              "Selecione o ID do Item para Remover", df_p["id"].tolist()
+          )
+        with col_p2:
+          st.write("")
+          st.write("")
+          if st.button("🗑️ Excluir Item"):
             cursor.execute(
                 "DELETE FROM pecas WHERE id = ?", (peca_para_excluir,)
             )
@@ -1278,19 +1282,19 @@ elif menu == "🔩 Peças e Ferramentas":
 
 elif menu == "👥 Gestão de Clientes":
   st.title("👥 Cadastro de Clientes e Terceiros (Opcional)")
-  with st.form("form_cliente_prof", clear_on_submit=False):
-    col1, col2 = st.columns(2)
-    with col1:
-      nome = st.text_input("Nome Completo / Razão Social")
-      empresa = st.text_input("Nome Fantasia da Empresa")
-      telefone = st.text_input("Telefone / WhatsApp de Contato")
-    with col2:
-      documento = st.text_input("CPF ou CNPJ")
-      email = st.text_input("E-mail Comercial")
-      endereco = st.text_input("Endereço Completo / Cidade")
-    salvar_cliente = st.form_submit_button("Salvar Cadastro de Cliente")
-    if salvar_cliente:
-      if verificar_licenca_para_acao():
+  if modo_admin_liberado:
+    with st.form("form_cliente_prof", clear_on_submit=False):
+      col1, col2 = st.columns(2)
+      with col1:
+        nome = st.text_input("Nome Completo / Razão Social")
+        empresa = st.text_input("Nome Fantasia da Empresa")
+        telefone = st.text_input("Telefone / WhatsApp de Contato")
+      with col2:
+        documento = st.text_input("CPF ou CNPJ")
+        email = st.text_input("E-mail Comercial")
+        endereco = st.text_input("Endereço Completo / Cidade")
+      salvar_cliente = st.form_submit_button("Salvar Cadastro de Cliente")
+      if salvar_cliente:
         if nome:
           cursor.execute(
               "INSERT INTO clientes (nome, empresa, telefone, documento, email,"
@@ -1301,46 +1305,49 @@ elif menu == "👥 Gestão de Clientes":
           st.success(f"✅ Cliente '{nome}' cadastrado com sucesso!")
         else:
           st.error("⚠️ O nome do cliente é obrigatório.")
+  else:
+    verificar_licenca_para_acao()
+
   st.divider()
   st.subheader("Base de Clientes Cadastrados")
   df_cli = pd.read_sql("SELECT * FROM clientes", conn)
   if not df_cli.empty:
     st.dataframe(df_cli, use_container_width=True)
-    col_c1, col_c2 = st.columns([2, 1])
-    with col_c1:
-      cliente_para_excluir = st.selectbox(
-          "Selecione o ID do Cliente para Remover", df_cli["id"].tolist()
-      )
-    with col_c2:
-      st.write("")
-      st.write("")
-      if st.button("🗑️ Excluir Cliente"):
-        if verificar_licenca_para_acao():
+    if modo_admin_liberado:
+      col_c1, col_c2 = st.columns([2, 1])
+      with col_c1:
+        cliente_para_excluir = st.selectbox(
+            "Selecione o ID do Cliente para Remover", df_cli["id"].tolist()
+        )
+      with col_c2:
+        st.write("")
+        st.write("")
+        if st.button("🗑️ Excluir Cliente"):
           cursor.execute(
               "DELETE FROM clientes WHERE id = ?", (cliente_para_excluir,)
           )
           conn.commit()
           st.success("✅ Cliente removido!")
           st.rerun()
-      col_down1, col_down2 = st.columns(2)
-      with col_down1:
-        pdf_buffer = gerar_pdf_relatorio(
-            "BASE DE CLIENTES - TABALMIX", df_cli
-        )
-        st.download_button(
-            label="📥 Baixar Lista de Clientes em PDF",
-            data=pdf_buffer,
-            file_name="lista_clientes_tabalmix.pdf",
-            mime="application/pdf",
-        )
-      with col_down2:
-        csv_buffer = gerar_csv_relatorio(df_cli)
-        st.download_button(
-            label="📊 Baixar Clientes em Planilha (.csv)",
-            data=csv_buffer,
-            file_name="lista_clientes_tabalmix.csv",
-            mime="text/csv",
-        )
+    col_down1, col_down2 = st.columns(2)
+    with col_down1:
+      pdf_buffer = gerar_pdf_relatorio(
+          "BASE DE CLIENTES - TABALMIX", df_cli
+      )
+      st.download_button(
+          label="📥 Baixar Lista de Clientes em PDF",
+          data=pdf_buffer,
+          file_name="lista_clientes_tabalmix.pdf",
+          mime="application/pdf",
+      )
+    with col_down2:
+      csv_buffer = gerar_csv_relatorio(df_cli)
+      st.download_button(
+          label="📊 Baixar Clientes em Planilha (.csv)",
+          data=csv_buffer,
+          file_name="lista_clientes_tabalmix.csv",
+          mime="text/csv",
+      )
   else:
     st.info("Nenhum cliente cadastrado no momento.")
 
@@ -1444,7 +1451,9 @@ elif menu == "⚙️ Painel de Licença (Admin)":
             else ""
         )
         if checkout_url:
-          st.success(f"[Clique aqui para abrir o pagamento]({checkout_url})")
+          st.markdown(
+              f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO]({checkout_url})**"
+          )
       except Exception as e:
         st.error(f"Erro ao conectar com Mercado Pago: {e}")
 
@@ -1473,6 +1482,8 @@ elif menu == "⚙️ Painel de Licença (Admin)":
             else ""
         )
         if checkout_url:
-          st.success(f"[Clique aqui para abrir o pagamento]({checkout_url})")
+          st.markdown(
+              f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO]({checkout_url})**"
+          )
       except Exception as e:
         st.error(f"Erro ao conectar com Mercado Pago: {e}")
