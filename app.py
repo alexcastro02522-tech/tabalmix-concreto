@@ -506,11 +506,15 @@ menu = st.sidebar.radio(
 )
 
 if menu == "📊 Visão Geral":
-  # Imagem corporativa de destaque e banner com os caminhões
-  st.image(
-      "https://images.unsplash.com/photo-1541888946425-d0fbb18f1f7d?auto=format&fit=crop&w=1200&q=80",
-      use_container_width=True,
-  )
+  # Exibindo a foto real dos caminhões da Tabalmix enviada para o GitHub
+  try:
+    st.image("caminhoes.jpg", use_container_width=True)
+  except:
+    st.info(
+        "💡 Dica: Certifique-se de que a foto 'caminhoes.jpg' foi enviada para o"
+        " repositório do GitHub."
+    )
+
   st.markdown(
       """
             <div style="background: linear-gradient(135deg, rgba(5, 20, 10, 0.9) 0%, rgba(8, 30, 15, 0.85) 100%); padding: 30px; border-radius: 14px; border: 2px solid #2ecc71; margin-top: 15px; margin-bottom: 25px;">
