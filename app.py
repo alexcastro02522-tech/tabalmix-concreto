@@ -357,7 +357,6 @@ def init_db():
     )
     conn.commit()
   else:
-    # FORÇA O STATUS COMO INATIVO NO BANCO PARA BLOQUEAR COLABORADORES
     cursor.execute(
         "UPDATE licenca SET status_assinatura = 'Inativo' WHERE id = 1"
     )
@@ -383,7 +382,6 @@ chave_pix_recebimento = (
     if not df_licenca.empty
     else "seu-pix@email.com"
 )
-
 
 # Verificação invisível de Administrador via URL param (?admin=1) ou senha oculta
 query_params = st.query_params
@@ -423,15 +421,15 @@ with st.sidebar:
   st.markdown("---")
 
 
-# Função para bloquear ações caso não seja admin
+# Função para bloquear ações E EXIBIR OS BOTÕES DE PAGAMENTO DO MERCADO PAGO
 def verificar_licenca_para_acao():
   if modo_admin_liberado:
     return True
 
   st.warning(
       "🔒 **Ação Bloqueada:** O sistema está operando no modo restrito para"
-      " colaboradores. Para cadastrar novos registros, assine um plano"
-      " abaixo:"
+      " colaboradores. Para efetuar cadastros ou liberar o acesso completo,"
+      " escolha um plano de assinatura abaixo:"
   )
 
   col_p1, col_p2 = st.columns(2)
@@ -447,9 +445,9 @@ def verificar_licenca_para_acao():
                 "currency_id": "BRL",
             }],
             "back_urls": {
-                "success": "https://streamlit.io",
-                "failure": "https://streamlit.io",
-                "pending": "https://streamlit.io",
+                "success": "https://tabalmix-concreto.streamlit.app",
+                "failure": "https://tabalmix-concreto.streamlit.app",
+                "pending": "https://tabalmix-concreto.streamlit.app",
             },
             "auto_return": "approved",
         }
@@ -464,9 +462,12 @@ def verificar_licenca_para_acao():
               f'<meta http-equiv="refresh" content="0;url={checkout_url}">',
               unsafe_allow_html=True,
           )
-          st.success(f"[Pagar via Mercado Pago]({checkout_url})")
+          st.markdown(
+              f"🔗 **[Clique aqui para abrir o pagamento no Mercado"
+              f" Pago]({checkout_url})**"
+          )
       except Exception as e:
-        st.error(f"Erro: {e}")
+        st.error(f"Erro ao gerar link de pagamento: {e}")
 
   with col_p2:
     if st.button("🌟 Pagar Plano Anual (R$ 2.400,00)"):
@@ -480,9 +481,9 @@ def verificar_licenca_para_acao():
                 "currency_id": "BRL",
             }],
             "back_urls": {
-                "success": "https://streamlit.io",
-                "failure": "https://streamlit.io",
-                "pending": "https://streamlit.io",
+                "success": "https://tabalmix-concreto.streamlit.app",
+                "failure": "https://tabalmix-concreto.streamlit.app",
+                "pending": "https://tabalmix-concreto.streamlit.app",
             },
             "auto_return": "approved",
         }
@@ -497,9 +498,12 @@ def verificar_licenca_para_acao():
               f'<meta http-equiv="refresh" content="0;url={checkout_url}">',
               unsafe_allow_html=True,
           )
-          st.success(f"[Pagar via Mercado Pago]({checkout_url})")
+          st.markdown(
+              f"🔗 **[Clique aqui para abrir o pagamento anual no Mercado"
+              f" Pago]({checkout_url})**"
+          )
       except Exception as e:
-        st.error(f"Erro: {e}")
+        st.error(f"Erro ao gerar link de pagamento: {e}")
   return False
 
 
@@ -1416,7 +1420,7 @@ elif menu == "⚙️ Painel de Licença (Admin)":
   st.subheader("💳 Área de Pagamento e Checkout Mercado Pago")
   col_m1, col_m2 = st.columns(2)
   with col_m1:
-    if st.button("Pagar Plano Mensal (R$ 250,00)"):
+    if st.button("Pagar Plano Mensal (R$ 250,00)", key="btn_adm_mensal"):
       try:
         sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
         preference_data = {
@@ -1427,9 +1431,9 @@ elif menu == "⚙️ Painel de Licença (Admin)":
                 "currency_id": "BRL",
             }],
             "back_urls": {
-                "success": "https://streamlit.io",
-                "failure": "https://streamlit.io",
-                "pending": "https://streamlit.io",
+                "success": "https://tabalmix-concreto.streamlit.app",
+                "failure": "https://tabalmix-concreto.streamlit.app",
+                "pending": "https://tabalmix-concreto.streamlit.app",
             },
             "auto_return": "approved",
         }
@@ -1445,7 +1449,7 @@ elif menu == "⚙️ Painel de Licença (Admin)":
         st.error(f"Erro ao conectar com Mercado Pago: {e}")
 
   with col_m2:
-    if st.button("Pagar Plano Anual (R$ 2.400,00)"):
+    if st.button("Pagar Plano Anual (R$ 2.400,00)", key="btn_adm_anual"):
       try:
         sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
         preference_data = {
@@ -1456,9 +1460,9 @@ elif menu == "⚙️ Painel de Licença (Admin)":
                 "currency_id": "BRL",
             }],
             "back_urls": {
-                "success": "https://streamlit.io",
-                "failure": "https://streamlit.io",
-                "pending": "https://streamlit.io",
+                "success": "https://tabalmix-concreto.streamlit.app",
+                "failure": "https://tabalmix-concreto.streamlit.app",
+                "pending": "https://tabalmix-concreto.streamlit.app",
             },
             "auto_return": "approved",
         }
