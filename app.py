@@ -149,7 +149,7 @@ def gerar_pdf_relatorio(titulo, dataframe):
   c.drawString(
       margem_esq,
       altura - 48,
-      "Sistema de Gestão de Frota e Operações | Powered by De Castro Tech",
+      "Sistema de Gestão de Frota e Operações | Powered by Castro Technology",
   )
 
   c.setFillColorRGB(0.15, 0.15, 0.15)
@@ -226,8 +226,8 @@ def gerar_pdf_relatorio(titulo, dataframe):
   c.drawString(
       margem_esq,
       30,
-      "TABALMIX CONCRETO — Todos os direitos reservados. Tecnologia De Castro"
-      " Tech.",
+      "TABALMIX CONCRETO — Todos os direitos reservados. Tecnologia Castro"
+      " Technology.",
   )
   c.drawRightString(
       largura - margem_esq,
@@ -391,21 +391,46 @@ modo_admin_liberado = False
 if admin_token_url == "1":
   modo_admin_liberado = True
 
-# Menu Lateral & Blindagem de Acesso
+# Menu Lateral & Blindagem de Acesso com Selo Oficial e Identidade Castro Technology
 with st.sidebar:
-  st.markdown(
-      """
+  try:
+    with open("caminhoes.jpg", "rb") as image_file:
+      encoded_logo = base64.b64encode(image_file.read()).decode()
+    st.markdown(
+        f"""
             <div style="text-align: center; padding: 10px 0 15px 0;">
-                <div style="font-size: 40px; margin-bottom: 2px;">🟢 🏗️</div>
+                <div style="border-radius: 12px; overflow: hidden; max-height: 110px; border: 2px solid #2ecc71; margin-bottom: 10px; box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);">
+                    <img src="data:image/jpeg;base64,{encoded_logo}" style="width: 100%; height: 95px; object-fit: cover; display: block;">
+                </div>
+                <div style="display: inline-block; background: rgba(46, 204, 113, 0.15); border: 1px solid #2ecc71; border-radius: 20px; padding: 3px 12px; margin-bottom: 6px;">
+                    <span style="color: #2ecc71; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">🛡️ SELO OFICIAL DE GARANTIA</span>
+                </div>
                 <h3 style="color: #2ecc71; margin: 0; font-size: 18px; font-weight: 800;">TABALMIX CONCRETO</h3>
-                <p style="color: #94a3b8; font-size: 10px; margin: 2px 0 8px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
+                <p style="color: #94a3b8; font-size: 10px; margin: 2px 0 6px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
                 <p style="color: #e2e8f0; font-size: 11px; font-style: italic; font-weight: 500; line-height: 1.3; margin-bottom: 15px;">
-                    "Tecnologia e robustez na concretagem."
+                    "Tecnologia e robustez na concretagem por Castro Technology."
                 </p>
             </div>
         """,
-      unsafe_allow_html=True,
-  )
+        unsafe_allow_html=True,
+    )
+  except Exception:
+    st.markdown(
+        """
+            <div style="text-align: center; padding: 10px 0 15px 0;">
+                <div style="font-size: 40px; margin-bottom: 2px;">🟢 🛡️</div>
+                <div style="display: inline-block; background: rgba(46, 204, 113, 0.15); border: 1px solid #2ecc71; border-radius: 20px; padding: 3px 12px; margin-bottom: 6px;">
+                    <span style="color: #2ecc71; font-size: 11px; font-weight: 700; letter-spacing: 0.5px;">🛡️ SELO OFICIAL DE GARANTIA</span>
+                </div>
+                <h3 style="color: #2ecc71; margin: 0; font-size: 18px; font-weight: 800;">TABALMIX CONCRETO</h3>
+                <p style="color: #94a3b8; font-size: 10px; margin: 2px 0 6px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
+                <p style="color: #e2e8f0; font-size: 11px; font-style: italic; font-weight: 500; line-height: 1.3; margin-bottom: 15px;">
+                    "Tecnologia e robustez na concretagem por Castro Technology."
+                </p>
+            </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
   if modo_admin_liberado:
     st.success("🔓 **Modo Admin Ativo:** Sistema Liberado!")
@@ -526,7 +551,7 @@ if menu == "📊 Visão Geral":
                     <img src="data:image/jpeg;base64,{encoded_string}" style="width: 100%; height: 280px; object-fit: cover; display: block;">
                 </div>
                 <h2 style="color: #2ecc71 !important; margin: 0 0 6px 0; font-size: 22px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
-                <p style="color: #cbd5e1 !important; font-size: 14px; margin: 0; font-weight: 500;">Sistema corporativo avançado para controle de caminhões betoneira, maquinário pesado, obras e manutenções.</p>
+                <p style="color: #cbd5e1 !important; font-size: 14px; margin: 0; font-weight: 500;">Sistema corporativo avançado para controle de caminhões betoneira, maquinário pesado, obras e manutenções | Powered by Castro Technology.</p>
             </div>
         """,
         unsafe_allow_html=True,
@@ -536,7 +561,7 @@ if menu == "📊 Visão Geral":
         """
             <div style="background: linear-gradient(135deg, rgba(15, 30, 20, 0.95) 0%, rgba(5, 15, 10, 0.95) 100%); border: 2px solid #2ecc71; border-radius: 16px; padding: 25px; margin-bottom: 25px;">
                 <h2 style="color: #2ecc71 !important; margin: 0 0 6px 0; font-size: 22px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
-                <p style="color: #cbd5e1 !important; font-size: 14px; margin: 0; font-weight: 500;">Sistema corporativo avançado para controle de caminhões betoneira, maquinário pesado, obras e manutenções.</p>
+                <p style="color: #cbd5e1 !important; font-size: 14px; margin: 0; font-weight: 500;">Sistema corporativo avançado para controle de caminhões betoneira, maquinário pesado, obras e manutenções | Powered by Castro Technology.</p>
             </div>
         """,
         unsafe_allow_html=True,
@@ -1161,7 +1186,7 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
       recibo_html = f"""
                 <div style="background-color: #ffffff; color: #000000; padding: 30px; border-radius: 10px; font-family: Arial, sans-serif; border: 2px solid #2ecc71;">
                     <h2 style="text-align: center; color: #1b7a3e; margin-bottom: 5px;">TABALMIX CONCRETO - ORDEM DE SERVIÇO #{os_dados['id']}</h2>
-                    <p style="text-align: center; color: #555; font-size: 14px;">Controle Oficial de Manutenção e Oficina de Frotas</p>
+                    <p style="text-align: center; color: #555; font-size: 14px;">Controle Oficial de Manutenção e Oficina de Frotas | Castro Technology</p>
                     <hr style="border: 1px solid #ccc; margin: 20px 0;">
                     <p><b>Equipamento / Patrimônio:</b> {os_dados['equipamento']}</p>
                     <p><b>Data de Abertura:</b> {os_dados['data']} | <b>Tipo:</b> {os_dados['tipo_manutencao']}</p>
