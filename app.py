@@ -509,7 +509,7 @@ if menu == "📊 Visão Geral":
   # Imagem corporativa de destaque e banner com os caminhões
   st.image(
       "https://images.unsplash.com/photo-1541888946425-d0fbb18f1f7d?auto=format&fit=crop&w=1200&q=80",
-      use_column_width=True,
+      use_container_width=True,
   )
   st.markdown(
       """
