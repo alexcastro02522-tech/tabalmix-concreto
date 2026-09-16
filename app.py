@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Corporativa Avançada
+# Estilização Visual Corporativa Avançada + Blindagem Anti-F12 / Inspeção
 st.markdown(
     """
     <style>
@@ -128,6 +128,18 @@ st.markdown(
         box-shadow: 0 10px 30px rgba(0,0,0,0.4);
     }
     </style>
+    <script>
+    // Bloqueio de F12, Ctrl+Shift+I, Ctrl+U e Clique Direito para Proteção de Admin
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'u')) {
+            e.preventDefault();
+            alert('Acesso restrito pelo sistema de segurança.');
+        }
+    });
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    });
+    </script>
 """,
     unsafe_allow_html=True,
 )
@@ -242,8 +254,13 @@ def gerar_pdf_relatorio(titulo, dataframe):
 
 def gerar_csv_relatorio(dataframe):
   output = io.StringIO()
-  dataframe.to_csv(output, index=False, sep=";")
-  return output.getvalue().encode("utf-8")
+  # Converte colunas com nomes formatados em negrito/maiúsculo para o CSV
+  df_export = dataframe.copy()
+  df_export.columns = [
+      str(col).replace("_", " ").upper() for col in df_export.columns
+  ]
+  df_export.to_csv(output, index=False, sep=";", encoding="utf-8-sig")
+  return output.getvalue().encode("utf-8-sig")
 
 
 def init_db():
@@ -383,7 +400,7 @@ chave_pix_recebimento = (
     else "seu-pix@email.com"
 )
 
-# Verificação invisível de Administrador via URL param (?admin=1) ou senha oculta
+# Verificação invisível de Administrador via URL param (?admin=1)
 query_params = st.query_params
 admin_token_url = query_params.get("admin", "")
 
@@ -434,14 +451,6 @@ with st.sidebar:
 
   if modo_admin_liberado:
     st.success("🔓 **Modo Admin Ativo:** Sistema Liberado!")
-  else:
-    with st.expander("⚙️ Configurações"):
-      senha_secreta_digitada = st.text_input(
-          "Chave Mestra", type="password", key="chave_seg"
-      )
-      if senha_secreta_digitada == "@Tabalmix#2026$ProSecure!":
-        modo_admin_liberado = True
-        st.success("Liberado!")
 
   st.markdown("---")
 
@@ -1413,101 +1422,107 @@ elif menu == "🔍 Consulta / Busca Geral":
     )
 
 elif menu == "⚙️ Painel de Licença (Admin)":
-  st.title("⚙️ Painel de Controle de Licença, Planos e Assinaturas")
-  st.markdown(
-      "Gerencie o status de acesso padrão para os colaboradores e defina o"
-      " modelo comercial."
-  )
+  if modo_admin_liberado:
+    st.title("⚙️ Painel de Controle de Licença, Planos e Assinaturas")
+    st.markdown(
+        "Gerencie o status de acesso padrão para os colaboradores e defina o"
+        " modelo comercial."
+    )
 
-  with st.form("form_licenca"):
-    novo_status = st.selectbox(
-        "Status Padrão (Para visitantes e colaboradores)",
-        ["Inativo", "Ativo"],
-    )
-    escolha_plano = st.selectbox(
-        "Plano Comercial Exibido",
-        [
-            "Mensal (R$ 250,00)",
-            "Trimestral (R$ 700,00)",
-            "Semestral (R$ 1.300,00)",
-            "Anual (R$ 2.400,00)",
-        ],
-    )
-    nova_chave_pix = st.text_input(
-        "Sua Chave Pix (E-mail, CPF ou CNPJ)", value=chave_pix_recebimento
-    )
-    atualizar_licenca = st.form_submit_button("Salvar Configurações")
-    if atualizar_licenca:
-      cursor.execute(
-          "UPDATE licenca SET status_assinatura = ?, plano_atual = ?, chave_pix"
-          " = ? WHERE id = 1",
-          (novo_status, escolha_plano, nova_chave_pix),
+    with st.form("form_licenca"):
+      novo_status = st.selectbox(
+          "Status Padrão (Para visitantes e colaboradores)",
+          ["Inativo", "Ativo"],
       )
-      conn.commit()
-      st.success("✅ Configurações atualizadas!")
-      st.rerun()
-
-  st.divider()
-  st.subheader("💳 Área de Pagamento e Checkout Mercado Pago")
-  col_m1, col_m2 = st.columns(2)
-  with col_m1:
-    if st.button("Pagar Plano Mensal (R$ 250,00)", key="btn_adm_mensal"):
-      try:
-        sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
-        preference_data = {
-            "items": [{
-                "title": "Tabalmix Concreto - Mensal",
-                "quantity": 1,
-                "unit_price": 250.0,
-                "currency_id": "BRL",
-            }],
-            "back_urls": {
-                "success": "https://tabalmix-concreto.streamlit.app",
-                "failure": "https://tabalmix-concreto.streamlit.app",
-                "pending": "https://tabalmix-concreto.streamlit.app",
-            },
-            "auto_return": "approved",
-        }
-        preference_response = sdk.preference().create(preference_data)
-        checkout_url = (
-            preference_response["response"].get("init_point")
-            if "response" in preference_response
-            else ""
+      escolha_plano = st.selectbox(
+          "Plano Comercial Exibido",
+          [
+              "Mensal (R$ 250,00)",
+              "Trimestral (R$ 700,00)",
+              "Semestral (R$ 1.300,00)",
+              "Anual (R$ 2.400,00)",
+          ],
+      )
+      nova_chave_pix = st.text_input(
+          "Sua Chave Pix (E-mail, CPF ou CNPJ)", value=chave_pix_recebimento
+      )
+      atualizar_licenca = st.form_submit_button("Salvar Configurações")
+      if atualizar_licenca:
+        cursor.execute(
+            "UPDATE licenca SET status_assinatura = ?, plano_atual = ?, chave_pix"
+            " = ? WHERE id = 1",
+            (novo_status, escolha_plano, nova_chave_pix),
         )
-        if checkout_url:
-          st.markdown(
-              f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO]({checkout_url})**"
-          )
-      except Exception as e:
-        st.error(f"Erro ao conectar com Mercado Pago: {e}")
+        conn.commit()
+        st.success("✅ Configurações atualizadas!")
+        st.rerun()
 
-  with col_m2:
-    if st.button("Pagar Plano Anual (R$ 2.400,00)", key="btn_adm_anual"):
-      try:
-        sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
-        preference_data = {
-            "items": [{
-                "title": "Tabalmix Concreto - Anual",
-                "quantity": 1,
-                "unit_price": 2400.0,
-                "currency_id": "BRL",
-            }],
-            "back_urls": {
-                "success": "https://tabalmix-concreto.streamlit.app",
-                "failure": "https://tabalmix-concreto.streamlit.app",
-                "pending": "https://tabalmix-concreto.streamlit.app",
-            },
-            "auto_return": "approved",
-        }
-        preference_response = sdk.preference().create(preference_data)
-        checkout_url = (
-            preference_response["response"].get("init_point")
-            if "response" in preference_response
-            else ""
-        )
-        if checkout_url:
-          st.markdown(
-              f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO]({checkout_url})**"
+    st.divider()
+    st.subheader("💳 Área de Pagamento e Checkout Mercado Pago")
+    col_m1, col_m2 = st.columns(2)
+    with col_m1:
+      if st.button("Pagar Plano Mensal (R$ 250,00)", key="btn_adm_mensal"):
+        try:
+          sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+          preference_data = {
+              "items": [{
+                  "title": "Tabalmix Concreto - Mensal",
+                  "quantity": 1,
+                  "unit_price": 250.0,
+                  "currency_id": "BRL",
+              }],
+              "back_urls": {
+                  "success": "https://tabalmix-concreto.streamlit.app",
+                  "failure": "https://tabalmix-concreto.streamlit.app",
+                  "pending": "https://tabalmix-concreto.streamlit.app",
+              },
+              "auto_return": "approved",
+          }
+          preference_response = sdk.preference().create(preference_data)
+          checkout_url = (
+              preference_response["response"].get("init_point")
+              if "response" in preference_response
+              else ""
           )
-      except Exception as e:
-        st.error(f"Erro ao conectar com Mercado Pago: {e}")
+          if checkout_url:
+            st.markdown(
+                f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO]({checkout_url})**"
+            )
+        except Exception as e:
+          st.error(f"Erro ao conectar com Mercado Pago: {e}")
+
+    with col_m2:
+      if st.button("Pagar Plano Anual (R$ 2.400,00)", key="btn_adm_anual"):
+        try:
+          sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+          preference_data = {
+              "items": [{
+                  "title": "Tabalmix Concreto - Anual",
+                  "quantity": 1,
+                  "unit_price": 2400.0,
+                  "currency_id": "BRL",
+              }],
+              "back_urls": {
+                  "success": "https://tabalmix-concreto.streamlit.app",
+                  "failure": "https://tabalmix-concreto.streamlit.app",
+                  "pending": "https://tabalmix-concreto.streamlit.app",
+              },
+              "auto_return": "approved",
+          }
+          preference_response = sdk.preference().create(preference_data)
+          checkout_url = (
+              preference_response["response"].get("init_point")
+              if "response" in preference_response
+              else ""
+          )
+          if checkout_url:
+            st.markdown(
+                f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO]({checkout_url})**"
+            )
+        except Exception as e:
+          st.error(f"Erro ao conectar com Mercado Pago: {e}")
+  else:
+    st.error(
+        "🔒 Acesso restrito. Esta área é exclusiva para a administração do"
+        " sistema."
+    )
