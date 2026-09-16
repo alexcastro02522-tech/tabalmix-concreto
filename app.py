@@ -24,45 +24,42 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Imagem de fundo corporativa de caminhões betoneira para a nuvem
-imagem_url_fundo = "https://images.unsplash.com/photo-1541888946425-d0fbb18f1f7d?auto=format&fit=crop&w=1200&q=80"
-
-# Estilização Visual Corporativa Avançada
+# Estilização Visual Corporativa Avançada com Imagem de Fundo Garantida na Nuvem
 st.markdown(
-    f"""
+    """
     <style>
-    header[data-testid="stHeader"] {{
+    header[data-testid="stHeader"] {
         background: transparent !important;
-    }}
-    .block-container {{
+    }
+    .block-container {
         padding-top: 1.5rem !important;
         padding-bottom: 1.5rem !important;
-    }}
-    [data-testid="stSidebar"] {{
+    }
+    [data-testid="stSidebar"] {
         min-width: 310px !important;
         width: 310px !important;
         background: linear-gradient(180deg, rgba(10, 40, 20, 0.98) 0%, rgba(2, 10, 5, 1) 100%) !important;
         border-right: 1px solid rgba(46, 204, 113, 0.3);
         padding-top: 10px;
-    }}
-    [data-testid="stSidebar"] > div:first-child {{
+    }
+    [data-testid="stSidebar"] > div:first-child {
         width: 310px !important;
-    }}
-    .stApp {{
+    }
+    .stApp {
         background: radial-gradient(circle at top left, #0f172a 0%, #07090e 60%);
         color: #f8fafc;
-    }}
-    h1, h2, h3 {{
+    }
+    h1, h2, h3 {
         color: #2ecc71 !important;
         font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         font-weight: 700;
         letter-spacing: -0.5px;
-    }}
-    p, label, span, .stMarkdown {{
+    }
+    p, label, span, .stMarkdown {
         color: #cbd5e1 !important;
         font-size: 15px;
-    }}
-    [data-testid="stSidebar"] .stRadio label {{
+    }
+    [data-testid="stSidebar"] .stRadio label {
         color: #e2e8f0 !important;
         font-weight: 600;
         font-size: 14px;
@@ -72,13 +69,13 @@ st.markdown(
         margin-bottom: 5px;
         border: 1px solid rgba(46, 204, 113, 0.2);
         transition: all 0.3s ease;
-    }}
-    [data-testid="stSidebar"] .stRadio label:hover {{
+    }
+    [data-testid="stSidebar"] .stRadio label:hover {
         background: rgba(46, 204, 113, 0.25);
         border-color: #2ecc71;
         color: #2ecc71 !important;
-    }}
-   .hero-banner {{
+    }
+    .hero-banner {
         background: linear-gradient(135deg, rgba(5, 20, 10, 0.88) 0%, rgba(8, 30, 15, 0.82) 100%), 
                     url('https://images.unsplash.com/photo-1541888946425-d0fbb18f1f7d?auto=format&fit=crop&w=1200&q=80');
         background-size: cover;
@@ -88,39 +85,37 @@ st.markdown(
         border: 2px solid #2ecc71;
         box-shadow: 0 20px 40px -15px rgba(46, 204, 113, 0.4);
         margin-bottom: 25px;
-    }}
-    }}
-    }}
-    div[data-testid="stMetric"] {{
+    }
+    div[data-testid="stMetric"] {
         background: linear-gradient(135deg, #143820 0%, #0a1f10 100%) !important;
         border: 1px solid rgba(46, 204, 113, 0.3) !important;
         border-left: 4px solid #2ecc71 !important;
         padding: 22px !important;
         border-radius: 14px !important;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-    }}
-    div[data-testid="stMetric"] label {{
+    }
+    div[data-testid="stMetric"] label {
         color: #94a3b8 !important;
         font-weight: 600 !important;
         font-size: 13px !important;
         text-transform: uppercase;
         letter-spacing: 0.8px;
-    }}
-    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {{
+    }
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
         color: #ffffff !important;
         font-size: 30px !important;
         font-weight: 800 !important;
-    }}
+    }
     div.stTextInput > div > div > input, 
     div.stNumberInput > div > div > input, 
-    div.stSelectbox > div > div > div {{
+    div.stSelectbox > div > div > div {
         background-color: rgba(15, 23, 42, 0.9) !important;
         color: #ffffff !important;
         border: 1px solid #334155 !important;
         border-radius: 10px !important;
         min-height: 44px !important;
-    }}
-    .stButton button {{
+    }
+    .stButton button {
         background: linear-gradient(135deg, #1b7a3e 0%, #12542a 100%) !important;
         color: white !important;
         font-weight: 600;
@@ -129,20 +124,20 @@ st.markdown(
         padding: 0.65rem 1.8rem;
         box-shadow: 0 6px 20px rgba(27, 122, 62, 0.35);
         transition: all 0.25s ease-in-out;
-    }}
-    .stButton button:hover {{
+    }
+    .stButton button:hover {
         background: linear-gradient(135deg, #12542a 0%, #0d381c 100%) !important;
         border-color: #ffffff;
         box-shadow: 0 8px 25px rgba(27, 122, 62, 0.55);
         transform: translateY(-1px);
-    }}
-    div[data-testid="stDataFrame"] {{
+    }
+    div[data-testid="stDataFrame"] {
         background-color: #0f172a;
         border-radius: 14px;
         padding: 12px;
         border: 1px solid rgba(46, 204, 113, 0.2);
         box-shadow: 0 10px 30px rgba(0,0,0,0.4);
-    }}
+    }
     </style>
 """,
     unsafe_allow_html=True,
@@ -395,7 +390,7 @@ chave_pix_recebimento = (
 )
 
 
-# Função auxiliar para verificar se pode cadastrar ou se exibe o bloqueio de plano
+# Função para bloquear ações de cadastro caso o status esteja inativo e exibir Mercado Pago
 def verificar_licenca_para_acao():
   if status_atual != "Ativo":
     st.warning(
@@ -476,7 +471,7 @@ def verificar_licenca_para_acao():
   return True
 
 
-# Menu Lateral sempre visível para navegar e explorar todo o programa
+# Menu Lateral
 with st.sidebar:
   st.markdown(
       """
