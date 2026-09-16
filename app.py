@@ -356,6 +356,12 @@ def init_db():
         ),
     )
     conn.commit()
+  else:
+    # FORÇA O STATUS COMO INATIVO NO BANCO PARA BLOQUEAR COLABORADORES
+    cursor.execute(
+        "UPDATE licenca SET status_assinatura = 'Inativo' WHERE id = 1"
+    )
+    conn.commit()
   conn.commit()
   return conn
 
@@ -406,7 +412,6 @@ with st.sidebar:
   if modo_admin_liberado:
     st.success("🔓 **Modo Admin Ativo:** Sistema Liberado!")
   else:
-    # Opção discreta no rodapé da barra lateral para você colocar sua senha forte se não usar o link com ?admin=1
     with st.expander("⚙️ Configurações"):
       senha_secreta_digitada = st.text_input(
           "Chave Mestra", type="password", key="chave_seg"
@@ -423,81 +428,79 @@ def verificar_licenca_para_acao():
   if modo_admin_liberado:
     return True
 
-  if status_atual != "Ativo":
-    st.warning(
-        "🔒 **Ação Bloqueada:** O sistema está operando no modo de"
-        " demonstração. Para cadastrar novos registros, assine um plano"
-        " abaixo:"
-    )
+  st.warning(
+      "🔒 **Ação Bloqueada:** O sistema está operando no modo restrito para"
+      " colaboradores. Para cadastrar novos registros, assine um plano"
+      " abaixo:"
+  )
 
-    col_p1, col_p2 = st.columns(2)
-    with col_p1:
-      if st.button("💳 Pagar Plano Mensal (R$ 250,00)"):
-        try:
-          sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
-          preference_data = {
-              "items": [{
-                  "title": "Tabalmix Concreto - Assinatura Mensal",
-                  "quantity": 1,
-                  "unit_price": 250.0,
-                  "currency_id": "BRL",
-              }],
-              "back_urls": {
-                  "success": "https://streamlit.io",
-                  "failure": "https://streamlit.io",
-                  "pending": "https://streamlit.io",
-              },
-              "auto_return": "approved",
-          }
-          preference_response = sdk.preference().create(preference_data)
-          checkout_url = (
-              preference_response["response"].get("init_point")
-              if "response" in preference_response
-              else ""
+  col_p1, col_p2 = st.columns(2)
+  with col_p1:
+    if st.button("💳 Pagar Plano Mensal (R$ 250,00)"):
+      try:
+        sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+        preference_data = {
+            "items": [{
+                "title": "Tabalmix Concreto - Assinatura Mensal",
+                "quantity": 1,
+                "unit_price": 250.0,
+                "currency_id": "BRL",
+            }],
+            "back_urls": {
+                "success": "https://streamlit.io",
+                "failure": "https://streamlit.io",
+                "pending": "https://streamlit.io",
+            },
+            "auto_return": "approved",
+        }
+        preference_response = sdk.preference().create(preference_data)
+        checkout_url = (
+            preference_response["response"].get("init_point")
+            if "response" in preference_response
+            else ""
+        )
+        if checkout_url:
+          st.markdown(
+              f'<meta http-equiv="refresh" content="0;url={checkout_url}">',
+              unsafe_allow_html=True,
           )
-          if checkout_url:
-            st.markdown(
-                f'<meta http-equiv="refresh" content="0;url={checkout_url}">',
-                unsafe_allow_html=True,
-            )
-            st.success(f"[Pagar via Mercado Pago]({checkout_url})")
-        except Exception as e:
-          st.error(f"Erro: {e}")
+          st.success(f"[Pagar via Mercado Pago]({checkout_url})")
+      except Exception as e:
+        st.error(f"Erro: {e}")
 
-    with col_p2:
-      if st.button("🌟 Pagar Plano Anual (R$ 2.400,00)"):
-        try:
-          sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
-          preference_data = {
-              "items": [{
-                  "title": "Tabalmix Concreto - Assinatura Anual",
-                  "quantity": 1,
-                  "unit_price": 2400.0,
-                  "currency_id": "BRL",
-              }],
-              "back_urls": {
-                  "success": "https://streamlit.io",
-                  "failure": "https://streamlit.io",
-                  "pending": "https://streamlit.io",
-              },
-              "auto_return": "approved",
-          }
-          preference_response = sdk.preference().create(preference_data)
-          checkout_url = (
-              preference_response["response"].get("init_point")
-              if "response" in preference_response
-              else ""
+  with col_p2:
+    if st.button("🌟 Pagar Plano Anual (R$ 2.400,00)"):
+      try:
+        sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+        preference_data = {
+            "items": [{
+                "title": "Tabalmix Concreto - Assinatura Anual",
+                "quantity": 1,
+                "unit_price": 2400.0,
+                "currency_id": "BRL",
+            }],
+            "back_urls": {
+                "success": "https://streamlit.io",
+                "failure": "https://streamlit.io",
+                "pending": "https://streamlit.io",
+            },
+            "auto_return": "approved",
+        }
+        preference_response = sdk.preference().create(preference_data)
+        checkout_url = (
+            preference_response["response"].get("init_point")
+            if "response" in preference_response
+            else ""
+        )
+        if checkout_url:
+          st.markdown(
+              f'<meta http-equiv="refresh" content="0;url={checkout_url}">',
+              unsafe_allow_html=True,
           )
-          if checkout_url:
-            st.markdown(
-                f'<meta http-equiv="refresh" content="0;url={checkout_url}">',
-                unsafe_allow_html=True,
-            )
-            st.success(f"[Pagar via Mercado Pago]({checkout_url})")
-        except Exception as e:
-          st.error(f"Erro: {e}")
-    return False
-  return True
+          st.success(f"[Pagar via Mercado Pago]({checkout_url})")
+      except Exception as e:
+        st.error(f"Erro: {e}")
+  return False
 
 
 menu = st.sidebar.radio(
