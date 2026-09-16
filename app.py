@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Corporativa Avançada com Imagem de Fundo Garantida na Nuvem
+# Estilização Visual Corporativa Avançada
 st.markdown(
     """
     <style>
@@ -74,17 +74,6 @@ st.markdown(
         background: rgba(46, 204, 113, 0.25);
         border-color: #2ecc71;
         color: #2ecc71 !important;
-    }
-    .hero-banner {
-        background: linear-gradient(135deg, rgba(5, 20, 10, 0.88) 0%, rgba(8, 30, 15, 0.82) 100%), 
-                    url('https://images.unsplash.com/photo-1541888946425-d0fbb18f1f7d?auto=format&fit=crop&w=1200&q=80');
-        background-size: cover;
-        background-position: center;
-        padding: 40px;
-        border-radius: 16px;
-        border: 2px solid #2ecc71;
-        box-shadow: 0 20px 40px -15px rgba(46, 204, 113, 0.4);
-        margin-bottom: 25px;
     }
     div[data-testid="stMetric"] {
         background: linear-gradient(135deg, #143820 0%, #0a1f10 100%) !important;
@@ -517,11 +506,16 @@ menu = st.sidebar.radio(
 )
 
 if menu == "📊 Visão Geral":
+  # Imagem corporativa de destaque e banner com os caminhões
+  st.image(
+      "https://images.unsplash.com/photo-1541888946425-d0fbb18f1f7d?auto=format&fit=crop&w=1200&q=80",
+      use_column_width=True,
+  )
   st.markdown(
       """
-            <div class="hero-banner">
-                <h1 style="color: #2ecc71 !important; margin-bottom: 8px; font-size: 28px;">🏗️ Tabalmix - Painel Operacional da Frota</h1>
-                <p style="color: #f1f5f9 !important; font-size: 16px; margin: 0; font-weight: 500;">Sistema corporativo avançado para controle de caminhões betoneira, maquinário pesado, obras e manutenções.</p>
+            <div style="background: linear-gradient(135deg, rgba(5, 20, 10, 0.9) 0%, rgba(8, 30, 15, 0.85) 100%); padding: 30px; border-radius: 14px; border: 2px solid #2ecc71; margin-top: 15px; margin-bottom: 25px;">
+                <h1 style="color: #2ecc71 !important; margin-bottom: 8px; font-size: 26px;">🏗️ Tabalmix - Painel Operacional da Frota</h1>
+                <p style="color: #f1f5f9 !important; font-size: 15px; margin: 0; font-weight: 500;">Sistema corporativo avançado para controle de caminhões betoneira, maquinário pesado, obras e manutenções.</p>
             </div>
         """,
       unsafe_allow_html=True,
