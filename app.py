@@ -80,7 +80,7 @@ st.markdown(
     }}
    .hero-banner {{
         background: linear-gradient(135deg, rgba(5, 20, 10, 0.88) 0%, rgba(8, 30, 15, 0.82) 100%), 
-                    url('{imagem_url_fundo}');
+                    url('https://images.unsplash.com/photo-1541888946425-d0fbb18f1f7d?auto=format&fit=crop&w=1200&q=80');
         background-size: cover;
         background-position: center;
         padding: 40px;
@@ -88,6 +88,7 @@ st.markdown(
         border: 2px solid #2ecc71;
         box-shadow: 0 20px 40px -15px rgba(46, 204, 113, 0.4);
         margin-bottom: 25px;
+    }}
     }}
     }}
     div[data-testid="stMetric"] {{
