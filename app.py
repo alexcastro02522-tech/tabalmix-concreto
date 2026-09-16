@@ -129,7 +129,6 @@ st.markdown(
     }
     </style>
     <script>
-    // Bloqueio de F12, Ctrl+Shift+I, Ctrl+U e Clique Direito para Proteção de Admin
     document.addEventListener('keydown', function(e) {
         if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'u')) {
             e.preventDefault();
@@ -254,8 +253,8 @@ def gerar_pdf_relatorio(titulo, dataframe):
 
 def gerar_csv_relatorio(dataframe):
   output = io.StringIO()
-  # Converte colunas com nomes formatados em negrito/maiúsculo para o CSV
   df_export = dataframe.copy()
+  # Formata os nomes das colunas em maiúsculo para o Excel
   df_export.columns = [
       str(col).replace("_", " ").upper() for col in df_export.columns
   ]
@@ -408,7 +407,7 @@ modo_admin_liberado = False
 if admin_token_url == "1":
   modo_admin_liberado = True
 
-# Menu Lateral & Blindagem de Acesso com Selo Oficial e Identidade Castro Technology
+# Menu Lateral & Blindagem com Selo Oficial
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
@@ -627,24 +626,30 @@ if menu == "📊 Visão Geral":
 
     st.dataframe(df_filtrado, use_container_width=True)
 
-    col_down1, col_down2 = st.columns(2)
-    with col_down1:
-      pdf_buffer = gerar_pdf_relatorio(
-          f"RELATÓRIO DE FROTA ({filtro_status}) - TABALMIX", df_filtrado
-      )
-      st.download_button(
-          label="📥 Baixar Relatório Filtrado em PDF",
-          data=pdf_buffer,
-          file_name="relatorio_frota_tabalmix.pdf",
-          mime="application/pdf",
-      )
-    with col_down2:
-      csv_buffer = gerar_csv_relatorio(df_filtrado)
-      st.download_button(
-          label="📊 Baixar Relatório Filtrado em Planilha (.csv)",
-          data=csv_buffer,
-          file_name="relatorio_frota_tabalmix.csv",
-          mime="text/csv",
+    if modo_admin_liberado:
+      col_down1, col_down2 = st.columns(2)
+      with col_down1:
+        pdf_buffer = gerar_pdf_relatorio(
+            f"RELATÓRIO DE FROTA ({filtro_status}) - TABALMIX", df_filtrado
+        )
+        st.download_button(
+            label="📥 Baixar Relatório Filtrado em PDF",
+            data=pdf_buffer,
+            file_name="relatorio_frota_tabalmix.pdf",
+            mime="application/pdf",
+        )
+      with col_down2:
+        csv_buffer = gerar_csv_relatorio(df_filtrado)
+        st.download_button(
+            label="📊 Baixar Relatório Filtrado em Planilha (.csv)",
+            data=csv_buffer,
+            file_name="relatorio_frota_tabalmix.csv",
+            mime="text/csv",
+        )
+    else:
+      st.info(
+          "🔒 *Os botões de download de relatórios estão disponíveis apenas"
+          " para assinantes/administradores do sistema.*"
       )
   else:
     st.info("Nenhum equipamento cadastrado.")
@@ -777,24 +782,29 @@ elif menu == "🚜 Frota e Maquinários":
           st.success("✅ Equipamento removido!")
           st.rerun()
 
-    col_down1, col_down2 = st.columns(2)
-    with col_down1:
-      pdf_buffer = gerar_pdf_relatorio(
-          "RELATÓRIO DE FROTA PRO - TABALMIX", df_f_filtrado
-      )
-      st.download_button(
-          label="📥 Baixar Relatório em PDF",
-          data=pdf_buffer,
-          file_name="relatorio_frota_tabalmix.pdf",
-          mime="application/pdf",
-      )
-    with col_down2:
-      csv_buffer = gerar_csv_relatorio(df_f_filtrado)
-      st.download_button(
-          label="📊 Baixar Relatório em Planilha (.csv)",
-          data=csv_buffer,
-          file_name="relatorio_frota_tabalmix.csv",
-          mime="text/csv",
+      col_down1, col_down2 = st.columns(2)
+      with col_down1:
+        pdf_buffer = gerar_pdf_relatorio(
+            "RELATÓRIO DE FROTA PRO - TABALMIX", df_f_filtrado
+        )
+        st.download_button(
+            label="📥 Baixar Relatório em PDF",
+            data=pdf_buffer,
+            file_name="relatorio_frota_tabalmix.pdf",
+            mime="application/pdf",
+        )
+      with col_down2:
+        csv_buffer = gerar_csv_relatorio(df_f_filtrado)
+        st.download_button(
+            label="📊 Baixar Relatório em Planilha (.csv)",
+            data=csv_buffer,
+            file_name="relatorio_frota_tabalmix.csv",
+            mime="text/csv",
+        )
+    else:
+      st.info(
+          "🔒 *Os relatórios em PDF e Planilha estão disponíveis apenas para"
+          " contas liberadas.*"
       )
   else:
     st.info("Nenhum equipamento cadastrado na frota.")
@@ -907,25 +917,27 @@ elif menu == "⛽ Abastecimentos & Combustível":
             st.success("✅ Registro removido!")
             st.rerun()
 
-      col_down1, col_down2 = st.columns(2)
-      with col_down1:
-        pdf_buffer = gerar_pdf_relatorio(
-            "RELATÓRIO DE COMBUSTÍVEL - TABALMIX", df_c_filtrado
-        )
-        st.download_button(
-            label="📥 Baixar Histórico Filtrado em PDF",
-            data=pdf_buffer,
-            file_name="relatorio_combustivel_tabalmix.pdf",
-            mime="application/pdf",
-        )
-      with col_down2:
-        csv_buffer = gerar_csv_relatorio(df_c_filtrado)
-        st.download_button(
-            label="📊 Baixar Histórico Filtrado em Planilha (.csv)",
-            data=csv_buffer,
-            file_name="relatorio_combustivel_tabalmix.csv",
-            mime="text/csv",
-        )
+        col_down1, col_down2 = st.columns(2)
+        with col_down1:
+          pdf_buffer = gerar_pdf_relatorio(
+              "RELATÓRIO DE COMBUSTÍVEL - TABALMIX", df_c_filtrado
+          )
+          st.download_button(
+              label="📥 Baixar Histórico Filtrado em PDF",
+              data=pdf_buffer,
+              file_name="relatorio_combustivel_tabalmix.pdf",
+              mime="application/pdf",
+          )
+        with col_down2:
+          csv_buffer = gerar_csv_relatorio(df_c_filtrado)
+          st.download_button(
+              label="📊 Baixar Histórico Filtrado em Planilha (.csv)",
+              data=csv_buffer,
+              file_name="relatorio_combustivel_tabalmix.csv",
+              mime="text/csv",
+          )
+      else:
+        st.info("🔒 *Baixe relatórios exclusivos com a conta Pro.*")
     else:
       st.info("Nenhum abastecimento registrado até o momento.")
 
@@ -1008,25 +1020,27 @@ elif menu == "🏗️ Mobilização / Desmobilização":
             st.success("✅ Registro removido!")
             st.rerun()
 
-      col_down1, col_down2 = st.columns(2)
-      with col_down1:
-        pdf_buffer = gerar_pdf_relatorio(
-            "HISTÓRICO DE MOBILIZAÇÕES - TABALMIX", df_mob_hist
-        )
-        st.download_button(
-            label="📥 Baixar Histórico em PDF",
-            data=pdf_buffer,
-            file_name="historico_mobilizacoes_tabalmix.pdf",
-            mime="application/pdf",
-        )
-      with col_down2:
-        csv_buffer = gerar_csv_relatorio(df_mob_hist)
-        st.download_button(
-            label="📊 Baixar Histórico em Planilha (.csv)",
-            data=csv_buffer,
-            file_name="historico_mobilizacoes_tabalmix.csv",
-            mime="text/csv",
-        )
+        col_down1, col_down2 = st.columns(2)
+        with col_down1:
+          pdf_buffer = gerar_pdf_relatorio(
+              "HISTÓRICO DE MOBILIZAÇÕES - TABALMIX", df_mob_hist
+          )
+          st.download_button(
+              label="📥 Baixar Histórico em PDF",
+              data=pdf_buffer,
+              file_name="historico_mobilizacoes_tabalmix.pdf",
+              mime="application/pdf",
+          )
+        with col_down2:
+          csv_buffer = gerar_csv_relatorio(df_mob_hist)
+          st.download_button(
+              label="📊 Baixar Histórico em Planilha (.csv)",
+              data=csv_buffer,
+              file_name="historico_mobilizacoes_tabalmix.csv",
+              mime="text/csv",
+          )
+      else:
+        st.info("🔒 *Downloads bloqueados para contas não assinantes.*")
     else:
       st.info("Nenhuma mobilização registrada até o momento.")
 
@@ -1218,13 +1232,16 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
             " seu teclado."
         )
       with col_down2:
-        csv_buffer = gerar_csv_relatorio(pd.DataFrame([os_dados]))
-        st.download_button(
-            label="📊 Baixar OS em Planilha (.csv)",
-            data=csv_buffer,
-            file_name=f"ordem_servico_{os_dados['id']}_tabalmix.csv",
-            mime="text/csv",
-        )
+        if modo_admin_liberado:
+          csv_buffer = gerar_csv_relatorio(pd.DataFrame([os_dados]))
+          st.download_button(
+              label="📊 Baixar OS em Planilha (.csv)",
+              data=csv_buffer,
+              file_name=f"ordem_servico_{os_dados['id']}_tabalmix.csv",
+              mime="text/csv",
+          )
+        else:
+          st.info("🔒 *Download de OS restrito a assinantes.*")
   else:
     st.info("Nenhuma Ordem de Serviço cadastrada ainda.")
 
@@ -1291,25 +1308,28 @@ elif menu == "🔩 Peças e Ferramentas":
             conn.commit()
             st.success("✅ Item removido!")
             st.rerun()
-      col_down1, col_down2 = st.columns(2)
-      with col_down1:
-        pdf_buffer = gerar_pdf_relatorio(
-            "INVENTÁRIO DE PEÇAS - TABALMIX", df_p
-        )
-        st.download_button(
-            label="📥 Baixar Inventário em PDF",
-            data=pdf_buffer,
-            file_name="inventario_pecas_tabalmix.pdf",
-            mime="application/pdf",
-        )
-      with col_down2:
-        csv_buffer = gerar_csv_relatorio(df_p)
-        st.download_button(
-            label="📊 Baixar Inventário em Planilha (.csv)",
-            data=csv_buffer,
-            file_name="inventario_pecas_tabalmix.csv",
-            mime="text/csv",
-        )
+
+        col_down1, col_down2 = st.columns(2)
+        with col_down1:
+          pdf_buffer = gerar_pdf_relatorio(
+              "INVENTÁRIO DE PEÇAS - TABALMIX", df_p
+          )
+          st.download_button(
+              label="📥 Baixar Inventário em PDF",
+              data=pdf_buffer,
+              file_name="inventario_pecas_tabalmix.pdf",
+              mime="application/pdf",
+          )
+        with col_down2:
+          csv_buffer = gerar_csv_relatorio(df_p)
+          st.download_button(
+              label="📊 Baixar Inventário em Planilha (.csv)",
+              data=csv_buffer,
+              file_name="inventario_pecas_tabalmix.csv",
+              mime="text/csv",
+          )
+      else:
+        st.info("🔒 *Inventário disponível para download apenas para assinantes.*")
     else:
       st.info("Nenhuma peça cadastrada no estoque.")
 
@@ -1362,25 +1382,28 @@ elif menu == "👥 Gestão de Clientes":
           conn.commit()
           st.success("✅ Cliente removido!")
           st.rerun()
-    col_down1, col_down2 = st.columns(2)
-    with col_down1:
-      pdf_buffer = gerar_pdf_relatorio(
-          "BASE DE CLIENTES - TABALMIX", df_cli
-      )
-      st.download_button(
-          label="📥 Baixar Lista de Clientes em PDF",
-          data=pdf_buffer,
-          file_name="lista_clientes_tabalmix.pdf",
-          mime="application/pdf",
-      )
-    with col_down2:
-      csv_buffer = gerar_csv_relatorio(df_cli)
-      st.download_button(
-          label="📊 Baixar Clientes em Planilha (.csv)",
-          data=csv_buffer,
-          file_name="lista_clientes_tabalmix.csv",
-          mime="text/csv",
-      )
+
+      col_down1, col_down2 = st.columns(2)
+      with col_down1:
+        pdf_buffer = gerar_pdf_relatorio(
+            "BASE DE CLIENTES - TABALMIX", df_cli
+        )
+        st.download_button(
+            label="📥 Baixar Lista de Clientes em PDF",
+            data=pdf_buffer,
+            file_name="lista_clientes_tabalmix.pdf",
+            mime="application/pdf",
+        )
+      with col_down2:
+        csv_buffer = gerar_csv_relatorio(df_cli)
+        st.download_button(
+            label="📊 Baixar Clientes em Planilha (.csv)",
+            data=csv_buffer,
+            file_name="lista_clientes_tabalmix.csv",
+            mime="text/csv",
+        )
+    else:
+      st.info("🔒 *Baixe relatórios exclusivos com a conta Pro.*")
   else:
     st.info("Nenhum cliente cadastrado no momento.")
 
