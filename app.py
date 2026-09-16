@@ -1539,7 +1539,7 @@ elif menu == "⚙️ Painel de Licença (Admin)":
           )
           if checkout_url:
             st.markdown(
-                f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO]({checkout_url})**"
+                f"🔗 **[👉 CLIQUE AQUI PARA ABRIRO PAGAMENTO]({checkout_url})**"
             )
         except Exception as e:
           st.error(f"Erro ao conectar com Mercado Pago: {e}")
