@@ -1515,10 +1515,63 @@ elif menu == "⚙️ meu perfil / dados":
     st.info(f"logado como: {usuario_atual['nome']} ({usuario_atual['email']})")
 
 elif menu == "⚙️ painel de licença (admin)":
-  st.title("⚙️ painel administrativo")
-  df_users = pd.read_sql("SELECT * FROM usuarios_sistema", conn)
+  st.title("⚙️ painel administrativo de colaboradores")
+  st.markdown("Gerencie o status de acesso ou remova cadastros do sistema:")
+
+  df_users = pd.read_sql(
+      "SELECT id, nome_completo, email, status_assinatura, cargo_setor,"
+      " data_cadastro FROM usuarios_sistema",
+      conn,
+  )
   if not df_users.empty:
     exibir_tabela_padronizada(df_users, "usuarios_sistema")
+
+    st.markdown("---")
+    st.subheader("🛠️ Ações Administrativas de Gestão de Usuários")
+
+    user_dict_map = {
+        f"#{r['id']} - {r['nome_completo']} ({r['email']})": r["id"]
+        for _, r in df_users.iterrows()
+    }
+
+    if user_dict_map:
+      sel_user_str = st.selectbox(
+          "Selecione o colaborador para gerenciar:", list(user_dict_map.keys())
+      )
+      selected_user_id = user_dict_map[sel_user_str]
+
+      col_acao1, col_acao2 = st.columns(2)
+      with col_acao1:
+        novo_status_adm = st.selectbox(
+            "Alterar status de assinatura:", ["Ativo", "Inativo"]
+        )
+        if st.button("🔄 Atualizar Status do Usuário"):
+          cursor.execute(
+              "UPDATE usuarios_sistema SET status_assinatura = ? WHERE id = ?",
+              (novo_status_adm, selected_user_id),
+          )
+          conn.commit()
+          st.success(
+              f"✅ Status do usuário #{selected_user_id} atualizado para"
+              f" '{novo_status_adm}' com sucesso!"
+          )
+          st.rerun()
+
+      with col_acao2:
+        st.markdown(
+            "<p style='color: #dc2626; font-weight: bold; margin-bottom:"
+            " 18px;'>⚠️ Zona de Exclusão</p>",
+            unsafe_allow_html=True,
+        )
+        if st.button("🗑️ Excluir Definitivamente este Cadastro"):
+          cursor.execute(
+              "DELETE FROM usuarios_sistema WHERE id = ?", (selected_user_id,)
+          )
+          conn.commit()
+          st.success(
+              f"✅ Cadastro #{selected_user_id} excluído com sucesso!"
+          )
+          st.rerun()
   else:
     st.info("nenhum usuário cadastrado.")
 
@@ -1549,7 +1602,6 @@ if st.session_state["chat_aberto"]:
       unsafe_allow_html=True,
   )
 
-  # Buscar usuários ativos para mostrar quem está online
   cursor.execute(
       "SELECT apelido, cargo_setor FROM usuarios_sistema WHERE status_assinatura = 'Ativo'"
   )
@@ -1568,7 +1620,6 @@ if st.session_state["chat_aberto"]:
       f"**Conversando com:** `{st.session_state['chat_destinatario']}`"
   )
 
-  # Formulário de envio de mensagem e documentos
   with st.form("form_chat_flutuante", clear_on_submit=True):
     txt_msg = st.text_area("Digite sua mensagem de trabalho ou dúvida:")
     arq_doc = st.file_uploader(
@@ -1623,7 +1674,6 @@ if st.session_state["chat_aberto"]:
         st.success("✅ Mensagem enviada com sucesso!")
         st.rerun()
 
-  # Histórico de Mensagens
   st.markdown("---")
   st.markdown("##### 📜 Histórico de Mensagens e Documentos Compartilhados:")
   df_mensagens = pd.read_sql(
