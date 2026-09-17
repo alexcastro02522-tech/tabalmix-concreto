@@ -270,6 +270,16 @@ def init_db():
             observacoes TEXT
         )
     """)
+  # Garantir compatibilidade caso a tabela antiga exista sem os campos novos
+  try:
+    cursor.execute("ALTER TABLE veiculos ADD COLUMN tag_prefixo TEXT")
+  except Exception:
+    pass
+  try:
+    cursor.execute("ALTER TABLE veiculos ADD COLUMN operador_condutor TEXT")
+  except Exception:
+    pass
+
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS manutencoes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -742,9 +752,13 @@ elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
 
 elif menu == "⛽ Abastecimentos & Combustível":
   st.title("⛽ Controle de Abastecimento e Combustível")
-  df_v = pd.read_sql("SELECT tag_prefixo, modelo FROM veiculos", conn)
+  try:
+    df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
+  except Exception:
+    df_v = pd.DataFrame()
+
   if df_v.empty:
-    st.warning("Cadastre equipamentos primeiro.")
+    st.warning("Cadastre equipamentos primeiro na aba 'CADASTRO DE EQUIPAMENTOS'.")
   else:
     if modo_admin_liberado:
       with st.form("form_comb"):
@@ -787,9 +801,13 @@ elif menu == "⛽ Abastecimentos & Combustível":
 
 elif menu == "🏗️ Mobilização / Desmobilização":
   st.title("🏗️ Mobilização e Desmobilização de Obras")
-  df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
+  try:
+    df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
+  except Exception:
+    df_v = pd.DataFrame()
+
   if df_v.empty:
-    st.warning("Cadastre equipamentos primeiro.")
+    st.warning("Cadastre equipamentos primeiro na aba 'CADASTRO DE EQUIPAMENTOS'.")
   else:
     if modo_admin_liberado:
       with st.form("form_mob"):
@@ -842,7 +860,11 @@ elif menu == "🏗️ Mobilização / Desmobilização":
 elif menu == "🛠️ Ordens de Serviço (OS)":
   st.title("🛠️ Gestão Unificada de Ordens de Serviço (OS)")
 
-  df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
+  try:
+    df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
+  except Exception:
+    df_v = pd.DataFrame()
+
   if df_v.empty:
     st.warning("Cadastre equipamentos antes de abrir uma OS.")
   else:
