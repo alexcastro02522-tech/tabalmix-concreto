@@ -80,20 +80,20 @@ st.markdown(
         background: #ffffff !important;
         border: 1px solid #cbd5e1 !important;
         border-left: 4px solid #1b7a3e !important;
-        padding: 18px !important;
+        padding: 14px !important;
         border-radius: 12px !important;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     }
     div[data-testid="stMetric"] label {
         color: #475569 !important;
         font-weight: 600 !important;
-        font-size: 12px !important;
+        font-size: 11px !important;
         text-transform: uppercase;
         letter-spacing: 0.8px;
     }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
         color: #0f172a !important;
-        font-size: 26px !important;
+        font-size: 22px !important;
         font-weight: 800 !important;
     }
     div.stTextInput > div > div > input, 
@@ -540,12 +540,12 @@ if menu == "📊 Visão Geral":
       encoded_string = base64.b64encode(image_file.read()).decode()
     st.markdown(
         f"""
-            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.04);">
-                <div style="border-radius: 8px; overflow: hidden; max-height: 200px; border: 1px solid #e2e8f0; margin-bottom: 10px;">
-                    <img src="data:image/jpeg;base64,{encoded_string}" style="width: 100%; height: 180px; object-fit: cover; display: block;">
+            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.04);">
+                <div style="border-radius: 8px; overflow: hidden; max-height: 160px; border: 1px solid #e2e8f0; margin-bottom: 8px;">
+                    <img src="data:image/jpeg;base64,{encoded_string}" style="width: 100%; height: 140px; object-fit: cover; display: block;">
                 </div>
-                <h2 style="color: #1b7a3e !important; margin: 0 0 4px 0; font-size: 18px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
-                <p style="color: #475569 !important; font-size: 13px; margin: 0; font-weight: 500;">Controle avançado de caminhões betoneira, maquinário e manutenções | Powered by Castro Tech.</p>
+                <h2 style="color: #1b7a3e !important; margin: 0 0 2px 0; font-size: 16px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
+                <p style="color: #475569 !important; font-size: 12px; margin: 0; font-weight: 500;">Controle avançado de caminhões betoneira, maquinário e manutenções | Powered by Castro Tech.</p>
             </div>
         """,
         unsafe_allow_html=True,
@@ -553,9 +553,9 @@ if menu == "📊 Visão Geral":
   except Exception:
     st.markdown(
         """
-            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
-                <h2 style="color: #1b7a3e !important; margin: 0 0 4px 0; font-size: 18px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
-                <p style="color: #475569 !important; font-size: 13px; margin: 0; font-weight: 500;">Controle avançado de caminhões betoneira, maquinário e manutenções | Powered by Castro Tech.</p>
+            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 15px; margin-bottom: 15px;">
+                <h2 style="color: #1b7a3e !important; margin: 0 0 2px 0; font-size: 16px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
+                <p style="color: #475569 !important; font-size: 12px; margin: 0; font-weight: 500;">Controle avançado de caminhões betoneira, maquinário e manutenções | Powered by Castro Tech.</p>
             </div>
         """,
         unsafe_allow_html=True,
@@ -582,12 +582,20 @@ if menu == "📊 Visão Geral":
     )
     ativos_parados = total_frota - ativos_trabalhando
 
-  col1, col2, col3, col4, col5 = st.columns(5)
-  col1.metric("Total Frota", total_frota)
-  col2.metric("🟢 Trabalhando", ativos_trabalhando)
-  col3.metric("🔴 Parados", ativos_parados)
-  col4.metric("Custo Manut.", f"R$ {total_custo:,.2f}")
-  col5.metric("Gasto Comb.", f"R$ {total_combustivel:,.2f}")
+  # Organizando os cards lado a lado perfeitamente (Grid 2 colunas para celular/desktop)
+  r1_c1, r1_c2 = st.columns(2)
+  with r1_c1:
+    st.metric("Total Frota", total_frota)
+  with r1_c2:
+    st.metric("🟢 Trabalhando", ativos_trabalhando)
+
+  r2_c1, r2_c2 = st.columns(2)
+  with r2_c1:
+    st.metric("🔴 Parados", ativos_parados)
+  with r2_c2:
+    st.metric("Custo Manut.", f"R$ {total_custo:,.2f}")
+
+  st.metric("Gasto Total Combustível", f"R$ {total_combustivel:,.2f}")
 
   st.divider()
   st.subheader("📋 Status da Frota e Equipamentos")
