@@ -494,10 +494,6 @@ def init_db():
             data_cadastro TEXT
         )
     """)
-  
-  # MANTER CONTA COMO INATIVA CASO NÃO TENHA PAGAMENTO
-  cursor.execute("UPDATE usuarios_sistema SET status_assinatura = 'Inativo', plano_atual = 'Pendente' WHERE status_assinatura = 'Ativo' AND email != 'admin@tabalmix.com'")
-  
   conn.commit()
   return conn
 
@@ -598,19 +594,19 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
       )
       with st.form("form_novo_cadastro"):
         c_nome = st.text_input("Nome Completo / Responsável")
-        c_cpf = st.text_input("CPF (Necessário para Pix)")
+        c_cpf = st.text_input("CPF")
         c_email = st.text_input("E-mail (Seu Login)")
         c_senha = st.text_input("Criar Senha", type="password")
         c_cel = st.text_input("Celular / Contato de Segurança")
         btn_cadastrar = st.form_submit_button("Finalizar Cadastro")
 
         if btn_cadastrar:
-          if c_nome and c_email and c_senha:
+          if c_nome and c_cpf and c_email and c_senha:
             try:
               cursor.execute(
                   "INSERT INTO usuarios_sistema (nome_completo, cpf, email,"
                   " senha, celular_seguranca, status_assinatura, plano_atual,"
-                  " data_cadastro) VALUES (?, ?, ?, ?, ?, 'Inativo', 'Pendente',"
+                  " data_cadastro) VALUES (?, ?, ?, ?, ?, 'Inativo', 'Nenhum',"
                   " ?)",
                   (
                       c_nome,
@@ -623,7 +619,8 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
               )
               conn.commit()
               st.success(
-                  "✅ Conta criada com sucesso! Faça login na aba 'Entrar'."
+                  "✅ Conta criada com sucesso! Vá na aba 'Entrar' para fazer"
+                  " seu login."
               )
             except Exception as e:
               st.error(
@@ -631,7 +628,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                   f" {str(e)}"
               )
           else:
-            st.error("⚠️ Preencha Nome, E-mail e Senha.")
+            st.error("⚠️ Preencha todos os campos obrigatórios.")
 
     with tab_recuperar:
       st.markdown(
@@ -669,19 +666,16 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
 
   st.stop()
 
-# ATUALIZAR DADOS DO USUÁRIO LOGADO DIRETO DO BANCO
-cursor.execute("SELECT * FROM usuarios_sistema WHERE id = ?", (st.session_state["usuario_logado"]["id"],))
-u_db = cursor.fetchone()
-if u_db:
-  st.session_state["usuario_logado"] = {
-      "id": u_db[0],
-      "nome": u_db[1],
-      "cpf": u_db[2],
-      "email": u_db[3],
-      "status": u_db[6],
-  }
-
 usuario_atual = st.session_state["usuario_logado"]
+status_usuario_ativo = (
+    True
+    if modo_admin_liberado
+    else (
+        usuario_atual["status"] == "Ativo"
+        if usuario_atual
+        else False
+    )
+)
 
 with st.sidebar:
   try:
@@ -719,7 +713,8 @@ with st.sidebar:
     st.success("🔓 **Modo Admin Ativo**")
   elif usuario_atual:
     st.info(
-        f"👤 **Usuário:** {usuario_atual['nome']}\n\n📊 **Status:** {usuario_atual['status']}"
+        f"👤 **Usuário:** {usuario_atual['nome']}\n\n📊 **Status:**"
+        f" {usuario_atual['status']}"
     )
     if st.button("🚪 Sair / Trocar Conta"):
       st.session_state["usuario_logado"] = None
@@ -727,7 +722,110 @@ with st.sidebar:
 
   st.markdown("---")
 
-# MENU COMPLETO VISÍVEL
+
+def verificar_licenca_para_acao():
+  if status_usuario_ativo or modo_admin_liberado:
+    return True
+
+  st.warning(
+      "🔒 **Sua assinatura está Inativa ou Pendente:**\n\nEscolha um plano"
+      " abaixo para ativar o seu acesso de qualquer dispositivo:"
+  )
+  escolha_metodo = st.radio(
+      "Forma de Pagamento:",
+      [
+          "💳 Pagamento Automático (Mercado Pago)",
+          "🔑 Transferência Direta (Chave Pix)",
+      ],
+      label_visibility="collapsed",
+  )
+
+  if "Mercado Pago" in escolha_metodo:
+    col_p1, col_p2 = st.columns(2)
+    with col_p1:
+      if st.button("💳 Mensal (R$ 250,00)", key="btn_mensal_esc"):
+        try:
+          sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+          pref_data = {
+              "items": [{
+                  "title": (
+                      f"Tabalmix - Mensal ({usuario_atual['email'] if usuario_atual else 'Cliente'})"
+                  ),
+                  "quantity": 1,
+                  "unit_price": 250.0,
+                  "currency_id": "BRL",
+              }],
+              "back_urls": {
+                  "success": "https://tabalmix-concreto.streamlit.app",
+                  "failure": "https://tabalmix-concreto.streamlit.app",
+                  "pending": "https://tabalmix-concreto.streamlit.app",
+              },
+              "auto_return": "approved",
+          }
+          res = sdk.preference().create(pref_data)
+          url = (
+              res["response"].get("init_point") if "response" in res else ""
+          )
+          if url:
+            if usuario_atual:
+              cursor.execute(
+                  "UPDATE usuarios_sistema SET status_assinatura = 'Ativo',"
+                  " plano_atual = 'Mensal' WHERE id = ?",
+                  (usuario_atual["id"],),
+              )
+              conn.commit()
+            st.markdown(
+                f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**\n\n*(Após o"
+                " pagamento, atualize a página)*"
+            )
+        except Exception as e:
+          st.error(f"Erro: {e}")
+    with col_p2:
+      if st.button("🌟 Anual (R$ 2.400,00)", key="btn_anual_esc"):
+        try:
+          sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+          pref_data = {
+              "items": [{
+                  "title": (
+                      f"Tabalmix - Anual ({usuario_atual['email'] if usuario_atual else 'Cliente'})"
+                  ),
+                  "quantity": 1,
+                  "unit_price": 2400.0,
+                  "currency_id": "BRL",
+              }],
+              "back_urls": {
+                  "success": "https://tabalmix-concreto.streamlit.app",
+                  "failure": "https://tabalmix-concreto.streamlit.app",
+                  "pending": "https://tabalmix-concreto.streamlit.app",
+              },
+              "auto_return": "approved",
+          }
+          res = sdk.preference().create(pref_data)
+          url = (
+              res["response"].get("init_point") if "response" in res else ""
+          )
+          if url:
+            if usuario_atual:
+              cursor.execute(
+                  "UPDATE usuarios_sistema SET status_assinatura = 'Ativo',"
+                  " plano_atual = 'Anual' WHERE id = ?",
+                  (usuario_atual["id"],),
+              )
+              conn.commit()
+            st.markdown(
+                f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**\n\n*(Após o"
+                " pagamento, atualize a página)*"
+            )
+        except Exception as e:
+          st.error(f"Erro: {e}")
+  else:
+    st.info(
+        "🔑 **Chave Pix para Depósito:** `sua-chave-pix@dominio.com`\nEnvie o"
+        " comprovante para liberar o seu acesso instantâneo."
+    )
+  return False
+
+
 menu = st.sidebar.radio(
     "Navegação",
     [
@@ -740,86 +838,9 @@ menu = st.sidebar.radio(
         "👥 Gestão de Clientes",
         "🔍 Consulta / Busca Geral",
         "⚙️ Painel de Licença (Admin)",
-        "👤 Meu Perfil e Dados Cadastrais",
     ],
     label_visibility="collapsed",
 )
-
-esta_ativo = (usuario_atual and usuario_atual["status"] == "Ativo") or modo_admin_liberado
-
-
-def exibir_bloqueio_estilo_imagem(chave_aba):
-  st.warning(
-      "🔒 **Acesso Restrito ao Sistema de Testes / Assinatura:**\n\nEscolha uma"
-      " das opções abaixo para continuar:"
-  )
-  opcao_pag = st.radio(
-      "Selecione o Método",
-      [
-          "💳 Pagamento Automático (Mercado Pago)",
-          "🔑 Transferência Direta (Chave Pix)",
-      ],
-      key=f"radio_{chave_aba}",
-      label_visibility="collapsed",
-  )
-
-  if "Mercado Pago" in opcao_pag:
-    c_m1, c_m2 = st.columns(2)
-    with c_m1:
-      if st.button("💳 Mensal (R$ 250,00)", key=f"btn_mensal_{chave_aba}"):
-        try:
-          sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
-          preference_data = {
-              "items": [{
-                  "title": "Tabalmix Concreto - Plano Mensal",
-                  "quantity": 1,
-                  "unit_price": 250.00,
-                  "currency_id": "BRL",
-              }],
-              "payer": {
-                  "email": usuario_atual["email"],
-                  "name": usuario_atual["nome"],
-              },
-              "auto_return": "approved",
-          }
-          pref_res = sdk.preference().create(preference_data)
-          init_p = pref_res["response"]["init_point"]
-          st.markdown(
-              f"👉 **[CLIQUE AQUI PARA PAGAR R$ 250,00 NO MERCADO PAGO]({init_p})**"
-          )
-        except Exception as e:
-          st.error(f"Erro ao gerar link de pagamento: {e}")
-    with c_m2:
-      if st.button("🌟 Anual (R$ 2.400,00)", key=f"btn_anual_{chave_aba}"):
-        try:
-          sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
-          preference_data = {
-              "items": [{
-                  "title": "Tabalmix Concreto - Plano Anual",
-                  "quantity": 1,
-                  "unit_price": 2400.00,
-                  "currency_id": "BRL",
-              }],
-              "payer": {
-                  "email": usuario_atual["email"],
-                  "name": usuario_atual["nome"],
-              },
-              "auto_return": "approved",
-          }
-          pref_res = sdk.preference().create(preference_data)
-          init_p = pref_res["response"]["init_point"]
-          st.markdown(
-              f"👉 **[CLIQUE AQUI PARA PAGAR R$ 2.400,00 NO MERCADO PAGO]({init_p})**"
-          )
-        except Exception as e:
-          st.error(f"Erro ao gerar link de pagamento: {e}")
-  else:
-    st.info(
-        "🔑 **Chave Pix CNPJ / E-mail:** `suporte@tabalmix.com`\n\nEnvie o"
-        " comprovante via WhatsApp ou e-mail para ativação imediata do"
-        " sistema."
-    )
-
 
 if menu == "📊 Visão Geral":
   try:
@@ -847,10 +868,6 @@ if menu == "📊 Visão Geral":
         """,
         unsafe_allow_html=True,
     )
-
-  if not esta_ativo:
-    exibir_bloqueio_estilo_imagem("overview")
-    st.markdown("---")
 
   df_veiculos = pd.read_sql("SELECT * FROM veiculos", conn)
   df_manut = pd.read_sql("SELECT * FROM manutencoes", conn)
@@ -903,17 +920,109 @@ if menu == "📊 Visão Geral":
   with r2_c3:
     st.metric("Total Insumos", len(df_pecas))
 
+  if not df_manut.empty or not df_comb.empty:
+    st.divider()
+    st.subheader("📊 Indicadores e Comparativo de Custos")
+    gc1, gc2 = st.columns(2)
+    with gc1:
+      st.markdown("**Despesas de Manutenção (Peças vs Mão de Obra)**")
+      df_custos_chart = pd.DataFrame({
+          "Categoria": ["Peças Utilizadas", "Mão de Obra"],
+          "Valor (R$)": [liberado_pecas, liberado_mo],
+      })
+      st.bar_chart(df_custos_chart, x="Categoria", y="Valor (R$)")
+    with gc2:
+      st.markdown("**Consumo de Combustível por Equipamento**")
+      if not df_comb.empty:
+        df_comb_chart = (
+            df_comb.groupby("equipamento")["valor_total"].sum().reset_index()
+        )
+        st.bar_chart(df_comb_chart, x="equipamento", y="valor_total")
+      else:
+        st.info("Nenhum abastecimento registrado para gerar gráfico.")
+
+    if "data_abertura" in df_manut.columns and not df_manut.empty:
+      st.markdown("---")
+      st.markdown("**📈 Evolução Mensal dos Custos de Manutenção (R$)**")
+      try:
+        df_manut_evol = df_manut.copy()
+        df_manut_evol["mes"] = pd.to_datetime(
+            df_manut_evol["data_abertura"], errors="coerce"
+        ).dt.strftime("%Y-%m")
+        df_mensal = (
+            df_manut_evol.groupby("mes")["custo"].sum().reset_index()
+        )
+        if not df_mensal.empty and df_mensal["mes"].notna().any():
+          st.line_chart(df_mensal.set_index("mes")["custo"])
+        else:
+          st.info("Insira datas válidas nas OS para ver o gráfico mensal.")
+      except Exception:
+        pass
+
   if not df_veiculos.empty:
     st.divider()
-    st.subheader("📋 Status da Frota e Equipamentos")
-    st.dataframe(df_veiculos, use_container_width=True, hide_index=True)
+    st.subheader("⚠️ Alertas de Manutenção Preventiva")
+    alerta_gerado = False
+    for idx, row in df_veiculos.iterrows():
+      h_km = row["horimetro_km"] if row["horimetro_km"] is not None else 0
+      if h_km >= 15000:
+        st.warning(
+            f"🔔 **Atenção Preventiva:** O equipamento **{row['tag_prefixo']}**"
+            f" ({row['modelo']}) atingiu **{h_km:,} KM/Horímetro**. Recomenda-se"
+            " agendar revisão geral."
+        )
+        alerta_gerado = True
+    if not alerta_gerado:
+      st.success(
+          "✅ Todos os equipamentos estão com horímetro/KM dentro do período"
+          " ideal de operação."
+      )
+
+  st.divider()
+  st.subheader("📋 Status da Frota e Equipamentos")
+
+  if not df_veiculos.empty:
+    filtro_status = st.selectbox(
+        "🔍 Filtrar Status",
+        [
+            "Todos os Status",
+            "Ativo",
+            "Mobilizado",
+            "Em manutenção",
+            "Parado",
+            "Desmobilizado",
+            "Inativo",
+        ],
+    )
+    df_filtrado = df_veiculos.copy()
+    if filtro_status != "Todos os Status":
+      df_filtrado = df_veiculos[df_veiculos["status"] == filtro_status]
+
+    st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
+
+    if status_usuario_ativo or modo_admin_liberado:
+      c_d1, c_d2 = st.columns(2)
+      with c_d1:
+        st.download_button(
+            "📥 Baixar PDF",
+            gerar_pdf_relatorio("RELATÓRIO DE FROTA", df_filtrado),
+            "frota.pdf",
+            "application/pdf",
+        )
+      with c_d2:
+        st.download_button(
+            "📊 Baixar Planilha (.csv)",
+            gerar_csv_relatorio(df_filtrado),
+            "frota.csv",
+            "text/csv",
+        )
+  else:
+    st.info("Nenhum equipamento cadastrado.")
 
 elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
   st.title("🚜 CADASTRO DE EQUIPAMENTOS")
 
-  if not esta_ativo:
-    exibir_bloqueio_estilo_imagem("cad_eq")
-  else:
+  if status_usuario_ativo or modo_admin_liberado:
     with st.form("form_frota", clear_on_submit=False):
       col1, col2 = st.columns(2)
       with col1:
@@ -937,10 +1046,7 @@ elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
         placa = st.text_input("Placa")
       with col2:
         horimetro_km = st.number_input(
-            "Horímetro ou Quilometragem Atual",
-            min_value=0,
-            value=15000,
-            step=100,
+            "Horímetro ou Quilometragem Atual", min_value=0, value=15000, step=100
         )
         combustivel = st.selectbox(
             "Combustível", ["Diesel S10", "Diesel S500", "Gasolina", "Flex"]
@@ -966,8 +1072,8 @@ elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
           cursor.execute(
               "INSERT INTO veiculos (tag_prefixo, tipo, marca, modelo, ano,"
               " chassi, placa, horimetro_km, combustivel, local_atual,"
-              " operador_condutor, status, data_entrada, observacoes) VALUES"
-              " (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              " operador_condutor, status, data_entrada, observacoes) VALUES (?,"
+              " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
               (
                   tag_prefixo.upper(),
                   tipo,
@@ -990,31 +1096,84 @@ elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
           st.rerun()
         else:
           st.error("⚠️ Preencha TAG/PREFIXO e Modelo.")
+  else:
+    verificar_licenca_para_acao()
 
   st.divider()
   st.subheader("Equipamentos Cadastrados")
   df_f = pd.read_sql("SELECT * FROM veiculos", conn)
   if not df_f.empty:
     st.dataframe(df_f, use_container_width=True, hide_index=True)
+
+    st.markdown("---")
+    st.subheader("🔎 Ficha Histórica Individual do Equipamento")
+    eq_selecionado_historico = st.selectbox(
+        "Selecione a TAG/Prefixo para ver o Histórico Completo",
+        df_f["tag_prefixo"].tolist(),
+        key="sel_hist_eq",
+    )
+    if eq_selecionado_historico:
+      dados_eq = df_f[df_f["tag_prefixo"] == eq_selecionado_historico].iloc[0]
+      st.info(
+          f"📌 **Ativo:** {dados_eq['tag_prefixo']} | **Modelo:**"
+          f" {dados_eq['modelo']} | **Status Atual:** {dados_eq['status']} |"
+          f" **Horímetro/KM:** {dados_eq['horimetro_km']:,}"
+      )
+
+      col_h1, col_h2 = st.columns(2)
+      with col_h1:
+        st.markdown("**🛠️ Histórico de Manutenções (OS):**")
+        df_hist_os = pd.read_sql(
+            "SELECT id, tipo_manutencao, data_abertura, status_os, custo FROM"
+            " manutencoes WHERE tag_prefixo = ?",
+            conn,
+            params=(eq_selecionado_historico,),
+        )
+        if not df_hist_os.empty:
+          st.dataframe(df_hist_os, use_container_width=True, hide_index=True)
+        else:
+          st.write("Nenhuma OS registrada para este equipamento.")
+      with col_h2:
+        st.markdown("**⛽ Histórico de Abastecimentos:**")
+        df_hist_comb = pd.read_sql(
+            "SELECT data, litros, valor_total, motorista FROM combustivel WHERE"
+            " equipamento = ?",
+            conn,
+            params=(eq_selecionado_historico,),
+        )
+        if not df_hist_comb.empty:
+          st.dataframe(df_hist_comb, use_container_width=True, hide_index=True)
+        else:
+          st.write("Nenhum abastecimento registrado.")
+
+    if status_usuario_ativo or modo_admin_liberado:
+      c_del1, c_del2 = st.columns([2, 1])
+      with c_del1:
+        eq_exc = st.selectbox(
+            "Selecione o ID para Excluir da Frota", df_f["id"].tolist()
+        )
+      with c_del2:
+        st.write("")
+        st.write("")
+        if st.button("🗑️ Excluir"):
+          cursor.execute("DELETE FROM veiculos WHERE id = ?", (eq_exc,))
+          conn.commit()
+          st.success("Removido!")
+          st.rerun()
   else:
     st.info("Nenhum equipamento cadastrado.")
 
 elif menu == "⛽ Abastecimentos & Combustível":
   st.title("⛽ Controle de Abastecimento e Combustível")
+  try:
+    df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
+  except Exception:
+    df_v = pd.DataFrame()
 
-  if not esta_ativo:
-    exibir_bloqueio_estilo_imagem("combustivel")
+  if df_v.empty:
+    st.warning("Cadastre equipamentos primeiro na aba 'CADASTRO DE EQUIPAMENTOS'.")
   else:
-    try:
-      df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
-    except Exception:
-      df_v = pd.DataFrame()
-
-    if df_v.empty:
-      st.warning(
-          "Cadastre equipamentos primeiro na aba 'CADASTRO DE EQUIPAMENTOS'."
-      )
-    else:
+    if status_usuario_ativo or modo_admin_liberado:
       with st.form("form_comb"):
         c1, c2 = st.columns(2)
         with c1:
@@ -1022,9 +1181,7 @@ elif menu == "⛽ Abastecimentos & Combustível":
               "Equipamento / TAG", df_v["tag_prefixo"].tolist()
           )
           litros = st.number_input("Litros", min_value=0.1, value=100.0)
-          val_tot = st.number_input(
-              "Valor Total (R$)", min_value=0.0, value=600.0
-          )
+          val_tot = st.number_input("Valor Total (R$)", min_value=0.0, value=600.0)
         with c2:
           km_h = st.text_input("KM ou Horímetro")
           posto = st.text_input("Posto / Fornecedor")
@@ -1047,31 +1204,41 @@ elif menu == "⛽ Abastecimentos & Combustível":
           )
           conn.commit()
           st.success("✅ Abastecimento registrado!")
+    else:
+      verificar_licenca_para_acao()
 
-  st.divider()
-  st.subheader("📋 Histórico de Abastecimentos")
-  df_c = pd.read_sql("SELECT * FROM combustivel", conn)
-  if not df_c.empty:
-    st.dataframe(df_c, use_container_width=True, hide_index=True)
-  else:
-    st.info("Nenhum abastecimento registrado.")
+    st.divider()
+    st.subheader("📋 Histórico de Abastecimentos")
+    df_c = pd.read_sql("SELECT * FROM combustivel", conn)
+    if not df_c.empty:
+      col_f1, col_f2 = st.columns(2)
+      with col_f1:
+        dt_ini_c = st.date_input("Data Inicial", value=datetime.now().date() - timedelta(days=30))
+      with col_f2:
+        dt_fim_c = st.date_input("Data Final", value=datetime.now().date())
+      
+      try:
+        df_c["data_dt"] = pd.to_datetime(df_c["data"], errors="coerce").dt.date
+        df_c_filtrado = df_c[
+            (df_c["data_dt"] >= dt_ini_c) & (df_c["data_dt"] <= dt_fim_c)
+        ].drop(columns=["data_dt"])
+        st.dataframe(df_c_filtrado, use_container_width=True, hide_index=True)
+      except Exception:
+        st.dataframe(df_c, use_container_width=True, hide_index=True)
+    else:
+      st.info("Nenhum abastecimento registrado.")
 
 elif menu == "🏗️ Mobilização / Desmobilização":
   st.title("🏗️ Mobilização e Desmobilização de Obras")
+  try:
+    df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
+  except Exception:
+    df_v = pd.DataFrame()
 
-  if not esta_ativo:
-    exibir_bloqueio_estilo_imagem("mobilizacao")
+  if df_v.empty:
+    st.warning("Cadastre equipamentos primeiro na aba 'CADASTRO DE EQUIPAMENTOS'.")
   else:
-    try:
-      df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
-    except Exception:
-      df_v = pd.DataFrame()
-
-    if df_v.empty:
-      st.warning(
-          "Cadastre equipamentos primeiro na aba 'CADASTRO DE EQUIPAMENTOS'."
-      )
-    else:
+    if status_usuario_ativo or modo_admin_liberado:
       with st.form("form_mob"):
         c1, c2 = st.columns(2)
         with c1:
@@ -1111,26 +1278,26 @@ elif menu == "🏗️ Mobilização / Desmobilização":
           )
           conn.commit()
           st.success("✅ Registrado com sucesso!")
+    else:
+      verificar_licenca_para_acao()
 
-  st.divider()
-  df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
-  if not df_mobs.empty:
-    st.dataframe(df_mobs, use_container_width=True, hide_index=True)
+    st.divider()
+    df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
+    if not df_mobs.empty:
+      st.dataframe(df_mobs, use_container_width=True, hide_index=True)
 
 elif menu == "🛠️ Ordens de Serviço (OS)":
   st.title("🛠️ Gestão Unificada de Ordens de Serviço (OS)")
 
-  if not esta_ativo:
-    exibir_bloqueio_estilo_imagem("ordens_servico")
-  else:
-    try:
-      df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
-    except Exception:
-      df_v = pd.DataFrame()
+  try:
+    df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
+  except Exception:
+    df_v = pd.DataFrame()
 
-    if df_v.empty:
-      st.warning("Cadastre equipamentos antes de abrir uma OS.")
-    else:
+  if df_v.empty:
+    st.warning("Cadastre equipamentos antes de abrir uma OS.")
+  else:
+    if status_usuario_ativo or modo_admin_liberado:
       st.markdown("### 🟢 Abertura de Nova OS (Etapa 1)")
       with st.form("form_abertura_os", clear_on_submit=True):
         c1, c2 = st.columns(2)
@@ -1175,23 +1342,155 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
           conn.commit()
           st.success("✅ OS aberta com sucesso!")
           st.rerun()
+    else:
+      verificar_licenca_para_acao()
 
-  st.divider()
-  st.subheader("📋 Fechamento e Histórico de Ordens de Serviço")
-  df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
-  if not df_os.empty:
-    st.dataframe(df_os, use_container_width=True, hide_index=True)
-  else:
-    st.info("Nenhuma OS registrada.")
+    st.divider()
+    st.subheader("📋 Fechamento e Histórico de Ordens de Serviço")
+    df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
+    if not df_os.empty:
+      col_fos1, col_fos2 = st.columns(2)
+      with col_fos1:
+        dt_ini_os = st.date_input("Data Inicial OS", value=datetime.now().date() - timedelta(days=30), key="ini_os")
+      with col_fos2:
+        dt_fim_os = st.date_input("Data Final OS", value=datetime.now().date(), key="fim_os")
+      
+      try:
+        df_os["dt_ab_parsed"] = pd.to_datetime(df_os["data_abertura"], errors="coerce").dt.date
+        df_os_filtrado = df_os[
+            (df_os["dt_ab_parsed"] >= dt_ini_os) & (df_os["dt_ab_parsed"] <= dt_fim_os)
+        ].drop(columns=["dt_ab_parsed"])
+        st.dataframe(df_os_filtrado, use_container_width=True, hide_index=True)
+      except Exception:
+        st.dataframe(df_os, use_container_width=True, hide_index=True)
+
+      if status_usuario_ativo or modo_admin_liberado:
+        st.markdown(
+            "### ⚙️ Fechamento / Atualização de OS Existente (Etapa 2)"
+        )
+        os_abertas_ids = df_os["id"].tolist()
+        os_sel = st.selectbox(
+            "Selecione o ID da OS para Preencher e Fechar", os_abertas_ids
+        )
+
+        if os_sel:
+          os_row_data = df_os[df_os["id"] == os_sel]
+          if not os_row_data.empty:
+            os_atual = os_row_data.iloc[0]
+            tag_eq_os = (
+                os_atual.get("tag_prefixo")
+                or os_atual.get("equipamento")
+                or "N/D"
+            )
+            val_dt_ab = os_atual.get("data_abertura") or "N/D"
+            val_hr_ab = os_atual.get("hora_abertura") or "N/D"
+            val_tp_man = os_atual.get("tipo_manutencao") or "Preventiva"
+            val_desc = os_atual.get("descricao_problema") or ""
+            val_st_os = os_atual.get("status_os") or "Aberta"
+
+            with st.form("form_fechamento_os"):
+              st.info(
+                  f"Editando OS #{os_atual['id']} | Equipamento:"
+                  f" {tag_eq_os} | Aberta em:"
+                  f" {val_dt_ab} às {val_hr_ab}"
+              )
+              fc1, fc2 = st.columns(2)
+              with fc1:
+                pecas_util = st.text_input(
+                    "Peças Utilizadas",
+                    value=str(os_atual.get("pecas_utilizadas") or ""),
+                )
+                v_pecas = st.number_input(
+                    "Valor Total das Peças (R$)",
+                    min_value=0.0,
+                    value=float(os_atual.get("custo_pecas") or 0.0),
+                    format="%.2f",
+                )
+                v_mo = st.number_input(
+                    "Valor da Mão de Obra (R$)",
+                    min_value=0.0,
+                    value=float(os_atual.get("mao_de_obra") or 0.0),
+                    format="%.2f",
+                )
+                oficina_resp = st.text_input(
+                    "Oficina Responsável",
+                    value=str(os_atual.get("oficina") or ""),
+                )
+              with fc2:
+                tec_resp = st.text_input(
+                    "Técnico / Mecânico Responsável",
+                    value=str(os_atual.get("tecnico_mecanico") or ""),
+                )
+                dt_fech = st.date_input("Data de Fechamento")
+                hr_fech = st.text_input(
+                    "Horário de Fechamento (Ex: 17:00)", value="17:00"
+                )
+                status_final = st.selectbox(
+                    "Status da OS", ["Aberta", "Em manutenção", "Fechada"]
+                )
+
+              if st.form_submit_button("Salvar e Fechar OS"):
+                custo_total = v_pecas + v_mo
+                cursor.execute(
+                    "UPDATE manutencoes SET pecas_utilizadas = ?, custo_pecas ="
+                    " ?, mao_de_obra = ?, custo = ?, oficina = ?,"
+                    " tecnico_mecanico = ?, data_fechamento = ?, hora_fechamento"
+                    " = ?, status_os = ? WHERE id = ?",
+                    (
+                        pecas_util,
+                        v_pecas,
+                        v_mo,
+                        custo_total,
+                        oficina_resp,
+                        tec_resp,
+                        str(dt_fech),
+                        hr_fech,
+                        status_final,
+                        os_sel,
+                    ),
+                )
+                conn.commit()
+                st.success(f"✅ OS #{os_sel} atualizada e fechada com sucesso!")
+                st.rerun()
+
+            st.markdown("---")
+            st.markdown("### 🖨️ Relatórios Técnicos e Envio")
+            
+            # Correção aplicada com sucesso na variável de tag para o PDF
+            tag_eq_pdf = tag_eq_os
+            pdf_os_buffer = gerar_pdf_os_tecnica(os_atual)
+            st.download_button(
+                "📥 Baixar PDF Técnico Oficial da OS",
+                pdf_os_buffer,
+                file_name=f"OS_Tecnica_{os_atual['id']}_{tag_eq_pdf}.pdf",
+                mime="application/pdf",
+            )
+
+            texto_msg = (
+                f"*TABALMIX CONCRETO - RELATÓRIO DE OS #{os_atual['id']}*\n\n"
+                f"🚜 *Equipamento:* {tag_eq_os}\n"
+                f"🔧 *Tipo:* {val_tp_man}\n"
+                f"📋 *Status:* {val_st_os}\n"
+                f"⚠️ *Problema:* {val_desc}\n"
+                f"🔩 *Peças:* {os_atual.get('pecas_utilizadas') or 'Nenhuma'}\n"
+                f"💰 *Custo Total:* R$ {(os_atual.get('custo') or 0.0):,.2f}\n"
+                f"📅 *Fechamento:* {os_atual.get('data_fechamento') or '-'} às"
+                f" {os_atual.get('hora_fechamento') or '-'}"
+            )
+            encoded_whatsapp = urllib.parse.quote(texto_msg)
+            url_whatsapp = f"https://api.whatsapp.com/send?text={encoded_whatsapp}"
+            st.markdown(
+                f"💬 **[👉 ENVIAR RELATÓRIO VIA WHATSAPP]({url_whatsapp})**",
+                unsafe_allow_html=True,
+            )
+    else:
+      st.info("Nenhuma OS registrada.")
 
 elif menu == "🔩 Peças e Ferramentas":
   st.title("🔩 Controle de Peças e Ferramentas")
-
-  if not esta_ativo:
-    exibir_bloqueio_estilo_imagem("pecas")
-  else:
-    t1, t2 = st.tabs(["Cadastrar", "Inventário"])
-    with t1:
+  t1, t2 = st.tabs(["Cadastrar", "Inventário"])
+  with t1:
+    if status_usuario_ativo or modo_admin_liberado:
       with st.form("form_pecas"):
         c1, c2 = st.columns(2)
         with c1:
@@ -1211,18 +1510,16 @@ elif menu == "🔩 Peças e Ferramentas":
           )
           conn.commit()
           st.success("Cadastrado!")
-
-  st.divider()
-  df_p = pd.read_sql("SELECT * FROM pecas", conn)
-  if not df_p.empty:
-    st.dataframe(df_p, use_container_width=True, hide_index=True)
+    else:
+      verificar_licenca_para_acao()
+  with t2:
+    df_p = pd.read_sql("SELECT * FROM pecas", conn)
+    if not df_p.empty:
+      st.dataframe(df_p, use_container_width=True, hide_index=True)
 
 elif menu == "👥 Gestão de Clientes":
   st.title("👥 Gestão de Clientes")
-
-  if not esta_ativo:
-    exibir_bloqueio_estilo_imagem("clientes")
-  else:
+  if status_usuario_ativo or modo_admin_liberado:
     with st.form("form_cli"):
       c1, c2 = st.columns(2)
       with c1:
@@ -1241,8 +1538,9 @@ elif menu == "👥 Gestão de Clientes":
         )
         conn.commit()
         st.success("Salvo!")
+  else:
+    verificar_licenca_para_acao()
 
-  st.divider()
   df_cli = pd.read_sql("SELECT * FROM clientes", conn)
   if not df_cli.empty:
     st.dataframe(df_cli, use_container_width=True, hide_index=True)
@@ -1306,102 +1604,3 @@ elif menu == "⚙️ Painel de Licença (Admin)":
       st.info("Nenhum usuário cadastrado no sistema ainda.")
   else:
     st.error("Acesso restrito.")
-
-elif menu == "👤 Meu Perfil e Dados Cadastrais":
-  st.title("👤 Meu Perfil e Dados Cadastrais")
-  st.markdown(
-      "Atualize suas informações de contato e verifique o status da sua"
-      " assinatura."
-  )
-
-  cursor.execute(
-      "SELECT nome_completo, cpf, email, celular_seguranca, status_assinatura,"
-      " plano_atual FROM usuarios_sistema WHERE id = ?",
-      (usuario_atual["id"],),
-  )
-  u_info = cursor.fetchone()
-
-  if u_info:
-    with st.form("form_atualizar_perfil"):
-      db_nome = u_info[0] if u_info[0] and "@" not in u_info[0] else ""
-      db_cpf = u_info[1] or ""
-      db_email = (
-          u_info[2] if u_info[2] and "@" in u_info[2] else usuario_atual["email"]
-      )
-      db_cel = u_info[3] or ""
-
-      novo_nome = st.text_input("Nome Completo / Responsável", value=db_nome)
-      novo_cpf = st.text_input("CPF (Necessário para Pix)", value=db_cpf)
-      novo_email = st.text_input("E-mail (Seu Login)", value=db_email)
-      novo_cel = st.text_input("Celular de Segurança", value=db_cel)
-      nova_senha_perfil = st.text_input(
-          "Nova Senha (Deixe em branco para manter a atual)", type="password"
-      )
-
-      st.info(
-          f"📊 **Status Atual da Assinatura no Banco:** {u_info[4]} | **Plano:**"
-          f" {u_info[5]}"
-      )
-
-      btn_salvar_perfil = st.form_submit_button("Salvar Alterações do Perfil")
-      if btn_salvar_perfil:
-        if novo_nome and novo_email:
-          if nova_senha_perfil:
-            cursor.execute(
-                "UPDATE usuarios_sistema SET nome_completo = ?, cpf = ?, email"
-                " = ?, celular_seguranca = ?, senha = ? WHERE id = ?",
-                (
-                    novo_nome,
-                    novo_cpf,
-                    novo_email,
-                    novo_cel,
-                    nova_senha_perfil,
-                    usuario_atual["id"],
-                ),
-            )
-          else:
-            cursor.execute(
-                "UPDATE usuarios_sistema SET nome_completo = ?, cpf = ?, email"
-                " = ?, celular_seguranca = ? WHERE id = ?",
-                (
-                    novo_nome,
-                    novo_cpf,
-                    novo_email,
-                    novo_cel,
-                    usuario_atual["id"],
-                ),
-            )
-          conn.commit()
-          st.success("✅ Perfil atualizado com sucesso!")
-          st.rerun()
-        else:
-          st.error("⚠️ Nome e E-mail são obrigatórios.")
-
-    st.markdown("---")
-    st.markdown("### 🧪 Controle Manual de Status de Assinatura")
-    st.write(
-        "Sua conta está configurada como **Inativo**. Caso queira simular a"
-        " liberação completa para testes, utilize o botão abaixo:"
-    )
-
-    col_t1, col_t2 = st.columns(2)
-    with col_t1:
-      if st.button("🔒 Definir como INATIVO"):
-        cursor.execute(
-            "UPDATE usuarios_sistema SET status_assinatura = 'Inativo',"
-            " plano_atual = 'Pendente' WHERE id = ?",
-            (usuario_atual["id"],),
-        )
-        conn.commit()
-        st.success("Conta definida como Inativa!")
-        st.rerun()
-    with col_t2:
-      if st.button("🔓 Definir como ATIVO (Liberado)"):
-        cursor.execute(
-            "UPDATE usuarios_sistema SET status_assinatura = 'Ativo',"
-            " plano_atual = 'Mensal' WHERE id = ?",
-            (usuario_atual["id"],),
-        )
-        conn.commit()
-        st.success("Conta definida como Ativa!")
-        st.rerun()
