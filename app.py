@@ -603,7 +603,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
         if btn_cadastrar:
           if c_nome and c_email and c_senha:
             try:
-              # NOVO CADASTRO NASCE SEMPRE COMO INATIVO E PENDENTE
               cursor.execute(
                   "INSERT INTO usuarios_sistema (nome_completo, cpf, email,"
                   " senha, celular_seguranca, status_assinatura, plano_atual,"
@@ -843,7 +842,7 @@ def verificar_licenca_para_acao():
   return False
 
 
-# MENU COM A ABA DE PERFIL LOGO NO INÍCIO PARA FÁCIL ACESSO
+# MENU COM A ABA DE PERFIL LOGO NO INÍCIO
 menu = st.sidebar.radio(
     "Navegação",
     [
@@ -892,12 +891,17 @@ if menu == "👤 Meu Perfil e Cadastro":
                 (novo_nome, novo_cpf, novo_email, novo_cel, usuario_atual["id"])
             )
           conn.commit()
-          st.success("✅ Perfil atualizado com sucesso! Atualize a página.")
-          st.rerun()
+          st.success("✅ Perfil atualizado com sucesso!")
         else:
           st.error("⚠️ Nome e E-mail são obrigatórios.")
+          
+    if st.button("🔄 Recarregar / Atualizar Página"):
+      st.rerun()
 
 elif menu == "📊 Visão Geral":
+  if not verificar_licenca_para_acao():
+    st.stop()
+
   try:
     with open("caminhoes.jpg", "rb") as image_file:
       encoded_string = base64.b64encode(image_file.read()).decode()
@@ -1075,84 +1079,83 @@ elif menu == "📊 Visão Geral":
     st.info("Nenhum equipamento cadastrado.")
 
 elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
+  if not verificar_licenca_para_acao():
+    st.stop()
   st.title("🚜 CADASTRO DE EQUIPAMENTOS")
 
-  if status_usuario_ativo or modo_admin_liberado:
-    with st.form("form_frota", clear_on_submit=False):
-      col1, col2 = st.columns(2)
-      with col1:
-        tag_prefixo = st.text_input("TAG/PREFIXO (Ex: EQ-001)")
-        tipo = st.selectbox(
-            "Tipo de Equipamento",
-            [
-                "Caminhão Betoneira",
-                "Caminhão Basculante",
-                "Escavadeira",
-                "Utilitário",
-                "Trator",
-            ],
-        )
-        marca = st.text_input("Marca")
-        modelo = st.text_input("Modelo")
-        ano = st.number_input(
-            "Ano de Fabricação", min_value=1950, value=2024, step=1
-        )
-        chassi = st.text_input("Número de Série / Chassi (Opcional)")
-        placa = st.text_input("Placa")
-      with col2:
-        horimetro_km = st.number_input(
-            "Horímetro ou Quilometragem Atual", min_value=0, value=15000, step=100
-        )
-        combustivel = st.selectbox(
-            "Combustível", ["Diesel S10", "Diesel S500", "Gasolina", "Flex"]
-        )
-        local_atual = st.text_input("Local Atual / Obra")
-        operador_condutor = st.text_input("Operador/Condutor")
-        status = st.selectbox(
-            "Situação / Status",
-            [
-                "Ativo",
-                "Em manutenção",
-                "Parado",
-                "Mobilizado",
-                "Desmobilizado",
-                "Inativo",
-            ],
-        )
-        data_entrada = st.date_input("Data de Entrada na Empresa")
-        observacoes = st.text_input("Observações")
+  with st.form("form_frota", clear_on_submit=False):
+    col1, col2 = st.columns(2)
+    with col1:
+      tag_prefixo = st.text_input("TAG/PREFIXO (Ex: EQ-001)")
+      tipo = st.selectbox(
+          "Tipo de Equipamento",
+          [
+              "Caminhão Betoneira",
+              "Caminhão Basculante",
+              "Escavadeira",
+              "Utilitário",
+              "Trator",
+          ],
+      )
+      marca = st.text_input("Marca")
+      modelo = st.text_input("Modelo")
+      ano = st.number_input(
+          "Ano de Fabricação", min_value=1950, value=2024, step=1
+      )
+      chassi = st.text_input("Número de Série / Chassi (Opcional)")
+      placa = st.text_input("Placa")
+    with col2:
+      horimetro_km = st.number_input(
+          "Horímetro ou Quilometragem Atual", min_value=0, value=15000, step=100
+      )
+      combustivel = st.selectbox(
+          "Combustível", ["Diesel S10", "Diesel S500", "Gasolina", "Flex"]
+      )
+      local_atual = st.text_input("Local Atual / Obra")
+      operador_condutor = st.text_input("Operador/Condutor")
+      status = st.selectbox(
+          "Situação / Status",
+          [
+              "Ativo",
+              "Em manutenção",
+              "Parado",
+              "Mobilizado",
+              "Desmobilizado",
+              "Inativo",
+          ],
+      )
+      data_entrada = st.date_input("Data de Entrada na Empresa")
+      observacoes = st.text_input("Observações")
 
-      if st.form_submit_button("Cadastrar Equipamento"):
-        if modelo and tag_prefixo:
-          cursor.execute(
-              "INSERT INTO veiculos (tag_prefixo, tipo, marca, modelo, ano,"
-              " chassi, placa, horimetro_km, combustivel, local_atual,"
-              " operador_condutor, status, data_entrada, observacoes) VALUES (?,"
-              " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-              (
-                  tag_prefixo.upper(),
-                  tipo,
-                  marca,
-                  modelo,
-                  ano,
-                  chassi,
-                  placa.upper(),
-                  int(horimetro_km),
-                  combustivel,
-                  local_atual,
-                  operador_condutor,
-                  status,
-                  str(data_entrada),
-                  observacoes,
-              ),
-          )
-          conn.commit()
-          st.success(f"✅ Equipamento '{tag_prefixo.upper()}' cadastrado!")
-          st.rerun()
-        else:
-          st.error("⚠️ Preencha TAG/PREFIXO e Modelo.")
-  else:
-    verificar_licenca_para_acao()
+    if st.form_submit_button("Cadastrar Equipamento"):
+      if modelo and tag_prefixo:
+        cursor.execute(
+            "INSERT INTO veiculos (tag_prefixo, tipo, marca, modelo, ano,"
+            " chassi, placa, horimetro_km, combustivel, local_atual,"
+            " operador_condutor, status, data_entrada, observacoes) VALUES (?,"
+            " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                tag_prefixo.upper(),
+                tipo,
+                marca,
+                modelo,
+                ano,
+                chassi,
+                placa.upper(),
+                int(horimetro_km),
+                combustivel,
+                local_atual,
+                operador_condutor,
+                status,
+                str(data_entrada),
+                observacoes,
+            ),
+        )
+        conn.commit()
+        st.success(f"✅ Equipamento '{tag_prefixo.upper()}' cadastrado!")
+        st.rerun()
+      else:
+        st.error("⚠️ Preencha TAG/PREFIXO e Modelo.")
 
   st.divider()
   st.subheader("Equipamentos Cadastrados")
@@ -1201,24 +1204,25 @@ elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
         else:
           st.write("Nenhum abastecimento registrado.")
 
-    if status_usuario_ativo or modo_admin_liberado:
-      c_del1, c_del2 = st.columns([2, 1])
-      with c_del1:
-        eq_exc = st.selectbox(
-            "Selecione o ID para Excluir da Frota", df_f["id"].tolist()
-        )
-      with c_del2:
-        st.write("")
-        st.write("")
-        if st.button("🗑️ Excluir"):
-          cursor.execute("DELETE FROM veiculos WHERE id = ?", (eq_exc,))
-          conn.commit()
-          st.success("Removido!")
-          st.rerun()
+    c_del1, c_del2 = st.columns([2, 1])
+    with c_del1:
+      eq_exc = st.selectbox(
+          "Selecione o ID para Excluir da Frota", df_f["id"].tolist()
+      )
+    with c_del2:
+      st.write("")
+      st.write("")
+      if st.button("🗑️ Excluir"):
+        cursor.execute("DELETE FROM veiculos WHERE id = ?", (eq_exc,))
+        conn.commit()
+        st.success("Removido!")
+        st.rerun()
   else:
     st.info("Nenhum equipamento cadastrado.")
 
 elif menu == "⛽ Abastecimentos & Combustível":
+  if not verificar_licenca_para_acao():
+    st.stop()
   st.title("⛽ Controle de Abastecimento e Combustível")
   try:
     df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
@@ -1228,39 +1232,36 @@ elif menu == "⛽ Abastecimentos & Combustível":
   if df_v.empty:
     st.warning("Cadastre equipamentos primeiro na aba 'CADASTRO DE EQUIPAMENTOS'.")
   else:
-    if status_usuario_ativo or modo_admin_liberado:
-      with st.form("form_comb"):
-        c1, c2 = st.columns(2)
-        with c1:
-          eq_comb = st.selectbox(
-              "Equipamento / TAG", df_v["tag_prefixo"].tolist()
-          )
-          litros = st.number_input("Litros", min_value=0.1, value=100.0)
-          val_tot = st.number_input("Valor Total (R$)", min_value=0.0, value=600.0)
-        with c2:
-          km_h = st.text_input("KM ou Horímetro")
-          posto = st.text_input("Posto / Fornecedor")
-          motorista = st.text_input("Motorista / Responsável")
-          dt_ab = st.date_input("Data")
-        if st.form_submit_button("Registrar Abastecimento"):
-          cursor.execute(
-              "INSERT INTO combustivel (equipamento, litros, valor_total,"
-              " km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?,"
-              " ?, ?, ?, ?)",
-              (
-                  eq_comb,
-                  float(litros),
-                  float(val_tot),
-                  str(km_h),
-                  posto,
-                  motorista,
-                  str(dt_ab),
-              ),
-          )
-          conn.commit()
-          st.success("✅ Abastecimento registrado!")
-    else:
-      verificar_licenca_para_acao()
+    with st.form("form_comb"):
+      c1, c2 = st.columns(2)
+      with c1:
+        eq_comb = st.selectbox(
+            "Equipamento / TAG", df_v["tag_prefixo"].tolist()
+        )
+        litros = st.number_input("Litros", min_value=0.1, value=100.0)
+        val_tot = st.number_input("Valor Total (R$)", min_value=0.0, value=600.0)
+      with c2:
+        km_h = st.text_input("KM ou Horímetro")
+        posto = st.text_input("Posto / Fornecedor")
+        motorista = st.text_input("Motorista / Responsável")
+        dt_ab = st.date_input("Data")
+      if st.form_submit_button("Registrar Abastecimento"):
+        cursor.execute(
+            "INSERT INTO combustivel (equipamento, litros, valor_total,"
+            " km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?,"
+            " ?, ?, ?, ?)",
+            (
+                eq_comb,
+                float(litros),
+                float(val_tot),
+                str(km_h),
+                posto,
+                motorista,
+                str(dt_ab),
+            ),
+        )
+        conn.commit()
+        st.success("✅ Abastecimento registrado!")
 
     st.divider()
     st.subheader("📋 Histórico de Abastecimentos")
@@ -1284,6 +1285,8 @@ elif menu == "⛽ Abastecimentos & Combustível":
       st.info("Nenhum abastecimento registrado.")
 
 elif menu == "🏗️ Mobilização / Desmobilização":
+  if not verificar_licenca_para_acao():
+    st.stop()
   st.title("🏗️ Mobilização e Desmobilização de Obras")
   try:
     df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
@@ -1293,48 +1296,45 @@ elif menu == "🏗️ Mobilização / Desmobilização":
   if df_v.empty:
     st.warning("Cadastre equipamentos primeiro na aba 'CADASTRO DE EQUIPAMENTOS'.")
   else:
-    if status_usuario_ativo or modo_admin_liberado:
-      with st.form("form_mob"):
-        c1, c2 = st.columns(2)
-        with c1:
-          eq_mob = st.selectbox(
-              "Equipamento / TAG", df_v["tag_prefixo"].tolist()
-          )
-          tipo_mov = st.selectbox(
-              "Movimentação",
-              [
-                  "Mobilização (Envio)",
-                  "Desmobilização (Retorno)",
-                  "Remanejamento",
-              ],
-          )
-          destino = st.text_input("Obra / Destino-Origem")
-          km_mov = st.text_input("Horímetro / KM")
-        with c2:
-          resp = st.text_input("Responsável")
-          dt_mob = st.date_input("Data")
-          motivo = st.text_input("Motivo / Condição")
-          obs = st.text_input("Observação")
-        if st.form_submit_button("Registrar Movimentação"):
-          cursor.execute(
-              "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
-              " destino_origem, responsavel, data, horimetro_km_mov,"
-              " motivo_condicao, observacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-              (
-                  eq_mob,
-                  tipo_mov,
-                  destino,
-                  resp,
-                  str(dt_mob),
-                  str(km_mov),
-                  motivo,
-                  obs,
-              ),
-          )
-          conn.commit()
-          st.success("✅ Registrado com sucesso!")
-    else:
-      verificar_licenca_para_acao()
+    with st.form("form_mob"):
+      c1, c2 = st.columns(2)
+      with c1:
+        eq_mob = st.selectbox(
+            "Equipamento / TAG", df_v["tag_prefixo"].tolist()
+        )
+        tipo_mov = st.selectbox(
+            "Movimentação",
+            [
+                "Mobilização (Envio)",
+                "Desmobilização (Retorno)",
+                "Remanejamento",
+            ],
+        )
+        destino = st.text_input("Obra / Destino-Origem")
+        km_mov = st.text_input("Horímetro / KM")
+      with c2:
+        resp = st.text_input("Responsável")
+        dt_mob = st.date_input("Data")
+        motivo = st.text_input("Motivo / Condição")
+        obs = st.text_input("Observação")
+      if st.form_submit_button("Registrar Movimentação"):
+        cursor.execute(
+            "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
+            " destino_origem, responsavel, data, horimetro_km_mov,"
+            " motivo_condicao, observacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                eq_mob,
+                tipo_mov,
+                destino,
+                resp,
+                str(dt_mob),
+                str(km_mov),
+                motivo,
+                obs,
+            ),
+        )
+        conn.commit()
+        st.success("✅ Registrado com sucesso!")
 
     st.divider()
     df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
@@ -1342,6 +1342,8 @@ elif menu == "🏗️ Mobilização / Desmobilização":
       st.dataframe(df_mobs, use_container_width=True, hide_index=True)
 
 elif menu == "🛠️ Ordens de Serviço (OS)":
+  if not verificar_licenca_para_acao():
+    st.stop()
   st.title("🛠️ Gestão Unificada de Ordens de Serviço (OS)")
 
   try:
@@ -1352,53 +1354,50 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
   if df_v.empty:
     st.warning("Cadastre equipamentos antes de abrir uma OS.")
   else:
-    if status_usuario_ativo or modo_admin_liberado:
-      st.markdown("### 🟢 Abertura de Nova OS (Etapa 1)")
-      with st.form("form_abertura_os", clear_on_submit=True):
-        c1, c2 = st.columns(2)
-        with c1:
-          tag_os = st.selectbox(
-              "Tag / Prefixo do Equipamento", df_v["tag_prefixo"].tolist()
-          )
-          tipo_manut = st.selectbox(
-              "Tipo de Manutenção",
-              ["Preventiva", "Corretiva", "Preditiva", "Revisão Geral"],
-          )
-          horimetro_ab = st.text_input("Horímetro / KM na Abertura")
-          origem_f = st.selectbox(
-              "Origem da Falha", ["Falha na Operação", "Falha no Equipamento"]
-          )
-        with c2:
-          data_ab = st.date_input("Data de Abertura")
-          hora_ab = st.text_input(
-              "Horário de Abertura (Ex: 08:30)", value="08:00"
-          )
-          desc_prob = st.text_area(
-              "Descrição do Problema Apresentado pelo Motorista"
-          )
+    st.markdown("### 🟢 Abertura de Nova OS (Etapa 1)")
+    with st.form("form_abertura_os", clear_on_submit=True):
+      c1, c2 = st.columns(2)
+      with c1:
+        tag_os = st.selectbox(
+            "Tag / Prefixo do Equipamento", df_v["tag_prefixo"].tolist()
+        )
+        tipo_manut = st.selectbox(
+            "Tipo de Manutenção",
+            ["Preventiva", "Corretiva", "Preditiva", "Revisão Geral"],
+        )
+        horimetro_ab = st.text_input("Horímetro / KM na Abertura")
+        origem_f = st.selectbox(
+            "Origem da Falha", ["Falha na Operação", "Falha no Equipamento"]
+        )
+      with c2:
+        data_ab = st.date_input("Data de Abertura")
+        hora_ab = st.text_input(
+            "Horário de Abertura (Ex: 08:30)", value="08:00"
+        )
+        desc_prob = st.text_area(
+            "Descrição do Problema Apresentado pelo Motorista"
+        )
 
-        if st.form_submit_button("Abrir Nova OS"):
-          cursor.execute(
-              "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao,"
-              " horimetro_km_manut, origem_falha, descricao_problema,"
-              " data_abertura, hora_abertura, status_os, custo, custo_pecas,"
-              " mao_de_obra) VALUES (?, ?, ?, ?, ?, ?, ?, 'Aberta', 0.0, 0.0,"
-              " 0.0)",
-              (
-                  tag_os,
-                  tipo_manutencao,
-                  horimetro_ab,
-                  origem_f,
-                  desc_prob,
-                  str(data_ab),
-                  hora_ab,
-              ),
-          )
-          conn.commit()
-          st.success("✅ OS aberta com sucesso!")
-          st.rerun()
-    else:
-      verificar_licenca_para_acao()
+      if st.form_submit_button("Abrir Nova OS"):
+        cursor.execute(
+            "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao,"
+            " horimetro_km_manut, origem_falha, descricao_problema,"
+            " data_abertura, hora_abertura, status_os, custo, custo_pecas,"
+            " mao_de_obra) VALUES (?, ?, ?, ?, ?, ?, ?, 'Aberta', 0.0, 0.0,"
+            " 0.0)",
+            (
+                tag_os,
+                tipo_manutencao,
+                horimetro_ab,
+                origem_f,
+                desc_prob,
+                str(data_ab),
+                hora_ab,
+            ),
+        )
+        conn.commit()
+        st.success("✅ OS aberta com sucesso!")
+        st.rerun()
 
     st.divider()
     st.subheader("📋 Fechamento e Histórico de Ordens de Serviço")
@@ -1419,187 +1418,184 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
       except Exception:
         st.dataframe(df_os, use_container_width=True, hide_index=True)
 
-      if status_usuario_ativo or modo_admin_liberado:
-        st.markdown(
-            "### ⚙️ Fechamento / Atualização de OS Existente (Etapa 2)"
-        )
-        os_abertas_ids = df_os["id"].tolist()
-        os_sel = st.selectbox(
-            "Selecione o ID da OS para Preencher e Fechar", os_abertas_ids
-        )
+      st.markdown("### ⚙️ Fechamento / Atualização de OS Existente (Etapa 2)")
+      os_abertas_ids = df_os["id"].tolist()
+      os_sel = st.selectbox(
+          "Selecione o ID da OS para Preencher e Fechar", os_abertas_ids
+      )
 
-        if os_sel:
-          os_row_data = df_os[df_os["id"] == os_sel]
-          if not os_row_data.empty:
-            os_atual = os_row_data.iloc[0]
-            tag_eq_os = (
-                os_atual.get("tag_prefixo")
-                or os_atual.get("equipamento")
-                or "N/D"
+      if os_sel:
+        os_row_data = df_os[df_os["id"] == os_sel]
+        if not os_row_data.empty:
+          os_atual = os_row_data.iloc[0]
+          tag_eq_os = (
+              os_atual.get("tag_prefixo")
+              or os_atual.get("equipamento")
+              or "N/D"
+          )
+          val_dt_ab = os_atual.get("data_abertura") or "N/D"
+          val_hr_ab = os_atual.get("hora_abertura") or "N/D"
+          val_tp_man = os_atual.get("tipo_manutencao") or "Preventiva"
+          val_desc = os_atual.get("descricao_problema") or ""
+          val_st_os = os_atual.get("status_os") or "Aberta"
+
+          with st.form("form_fechamento_os"):
+            st.info(
+                f"Editando OS #{os_atual['id']} | Equipamento:"
+                f" {tag_eq_os} | Aberta em:"
+                f" {val_dt_ab} às {val_hr_ab}"
             )
-            val_dt_ab = os_atual.get("data_abertura") or "N/D"
-            val_hr_ab = os_atual.get("hora_abertura") or "N/D"
-            val_tp_man = os_atual.get("tipo_manutencao") or "Preventiva"
-            val_desc = os_atual.get("descricao_problema") or ""
-            val_st_os = os_atual.get("status_os") or "Aberta"
-
-            with st.form("form_fechamento_os"):
-              st.info(
-                  f"Editando OS #{os_atual['id']} | Equipamento:"
-                  f" {tag_eq_os} | Aberta em:"
-                  f" {val_dt_ab} às {val_hr_ab}"
+            fc1, fc2 = st.columns(2)
+            with fc1:
+              pecas_util = st.text_input(
+                  "Peças Utilizadas",
+                  value=str(os_atual.get("pecas_utilizadas") or ""),
               )
-              fc1, fc2 = st.columns(2)
-              with fc1:
-                pecas_util = st.text_input(
-                    "Peças Utilizadas",
-                    value=str(os_atual.get("pecas_utilizadas") or ""),
-                )
-                v_pecas = st.number_input(
-                    "Valor Total das Peças (R$)",
-                    min_value=0.0,
-                    value=float(os_atual.get("custo_pecas") or 0.0),
-                    format="%.2f",
-                )
-                v_mo = st.number_input(
-                    "Valor da Mão de Obra (R$)",
-                    min_value=0.0,
-                    value=float(os_atual.get("mao_de_obra") or 0.0),
-                    format="%.2f",
-                )
-                oficina_resp = st.text_input(
-                    "Oficina Responsável",
-                    value=str(os_atual.get("oficina") or ""),
-                )
-              with fc2:
-                tec_resp = st.text_input(
-                    "Técnico / Mecânico Responsável",
-                    value=str(os_atual.get("tecnico_mecanico") or ""),
-                )
-                dt_fech = st.date_input("Data de Fechamento")
-                hr_fech = st.text_input(
-                    "Horário de Fechamento (Ex: 17:00)", value="17:00"
-                )
-                status_final = st.selectbox(
-                    "Status da OS", ["Aberta", "Em manutenção", "Fechada"]
-                )
+              v_pecas = st.number_input(
+                  "Valor Total das Peças (R$)",
+                  min_value=0.0,
+                  value=float(os_atual.get("custo_pecas") or 0.0),
+                  format="%.2f",
+              )
+              v_mo = st.number_input(
+                  "Valor da Mão de Obra (R$)",
+                  min_value=0.0,
+                  value=float(os_atual.get("mao_de_obra") or 0.0),
+                  format="%.2f",
+              )
+              oficina_resp = st.text_input(
+                  "Oficina Responsável",
+                  value=str(os_atual.get("oficina") or ""),
+              )
+            with fc2:
+              tec_resp = st.text_input(
+                  "Técnico / Mecânico Responsável",
+                  value=str(os_atual.get("tecnico_mecanico") or ""),
+              )
+              dt_fech = st.date_input("Data de Fechamento")
+              hr_fech = st.text_input(
+                  "Horário de Fechamento (Ex: 17:00)", value="17:00"
+              )
+              status_final = st.selectbox(
+                  "Status da OS", ["Aberta", "Em manutenção", "Fechada"]
+              )
 
-              if st.form_submit_button("Salvar e Fechar OS"):
-                custo_total = v_pecas + v_mo
-                cursor.execute(
-                    "UPDATE manutencoes SET pecas_utilizadas = ?, custo_pecas ="
-                    " ?, mao_de_obra = ?, custo = ?, oficina = ?,"
-                    " tecnico_mecanico = ?, data_fechamento = ?, hora_fechamento"
-                    " = ?, status_os = ? WHERE id = ?",
-                    (
-                        pecas_util,
-                        v_pecas,
-                        v_mo,
-                        custo_total,
-                        oficina_resp,
-                        tec_resp,
-                        str(dt_fech),
-                        hr_fech,
-                        status_final,
-                        os_sel,
-                    ),
-                )
-                conn.commit()
-                st.success(f"✅ OS #{os_sel} atualizada e fechada com sucesso!")
-                st.rerun()
+            if st.form_submit_button("Salvar e Fechar OS"):
+              custo_total = v_pecas + v_mo
+              cursor.execute(
+                  "UPDATE manutencoes SET pecas_utilizadas = ?, custo_pecas ="
+                  " ?, mao_de_obra = ?, custo = ?, oficina = ?,"
+                  " tecnico_mecanico = ?, data_fechamento = ?, hora_fechamento"
+                  " = ?, status_os = ? WHERE id = ?",
+                  (
+                      pecas_util,
+                      v_pecas,
+                      v_mo,
+                      custo_total,
+                      oficina_resp,
+                      tec_resp,
+                      str(dt_fech),
+                      hr_fech,
+                      status_final,
+                      os_sel,
+                  ),
+              )
+              conn.commit()
+              st.success(f"✅ OS #{os_sel} atualizada e fechada com sucesso!")
+              st.rerun()
 
-            st.markdown("---")
-            st.markdown("### 🖨️ Relatórios Técnicos e Envio")
-            
-            tag_eq_pdf = tag_eq_os
-            pdf_os_buffer = gerar_pdf_os_tecnica(os_atual)
-            st.download_button(
-                "📥 Baixar PDF Técnico Oficial da OS",
-                pdf_os_buffer,
-                file_name=f"OS_Tecnica_{os_atual['id']}_{tag_eq_pdf}.pdf",
-                mime="application/pdf",
-            )
+          st.markdown("---")
+          st.markdown("### 🖨️ Relatórios Técnicos e Envio")
+          
+          tag_eq_pdf = tag_eq_os
+          pdf_os_buffer = gerar_pdf_os_tecnica(os_atual)
+          st.download_button(
+              "📥 Baixar PDF Técnico Oficial da OS",
+              pdf_os_buffer,
+              file_name=f"OS_Tecnica_{os_atual['id']}_{tag_eq_pdf}.pdf",
+              mime="application/pdf",
+          )
 
-            texto_msg = (
-                f"*TABALMIX CONCRETO - RELATÓRIO DE OS #{os_atual['id']}*\n\n"
-                f"🚜 *Equipamento:* {tag_eq_os}\n"
-                f"🔧 *Tipo:* {val_tp_man}\n"
-                f"📋 *Status:* {val_st_os}\n"
-                f"⚠️ *Problema:* {val_desc}\n"
-                f"🔩 *Peças:* {os_atual.get('pecas_utilizadas') or 'Nenhuma'}\n"
-                f"💰 *Custo Total:* R$ {(os_atual.get('custo') or 0.0):,.2f}\n"
-                f"📅 *Fechamento:* {os_atual.get('data_fechamento') or '-'} às"
-                f" {os_atual.get('hora_fechamento') or '-'}"
-            )
-            encoded_whatsapp = urllib.parse.quote(texto_msg)
-            url_whatsapp = f"https://api.whatsapp.com/send?text={encoded_whatsapp}"
-            st.markdown(
-                f"💬 **[👉 ENVIAR RELATÓRIO VIA WHATSAPP]({url_whatsapp})**",
-                unsafe_allow_html=True,
-            )
+          texto_msg = (
+              f"*TABALMIX CONCRETO - RELATÓRIO DE OS #{os_atual['id']}*\n\n"
+              f"🚜 *Equipamento:* {tag_eq_os}\n"
+              f"🔧 *Tipo:* {val_tp_man}\n"
+              f"📋 *Status:* {val_st_os}\n"
+              f"⚠️ *Problema:* {val_desc}\n"
+              f"🔩 *Peças:* {os_atual.get('pecas_utilizadas') or 'Nenhuma'}\n"
+              f"💰 *Custo Total:* R$ {(os_atual.get('custo') or 0.0):,.2f}\n"
+              f"📅 *Fechamento:* {os_atual.get('data_fechamento') or '-'} às"
+              f" {os_atual.get('hora_fechamento') or '-'}"
+          )
+          encoded_whatsapp = urllib.parse.quote(texto_msg)
+          url_whatsapp = f"https://api.whatsapp.com/send?text={encoded_whatsapp}"
+          st.markdown(
+              f"💬 **[👉 ENVIAR RELATÓRIO VIA WHATSAPP]({url_whatsapp})**",
+              unsafe_allow_html=True,
+          )
     else:
       st.info("Nenhuma OS registrada.")
 
 elif menu == "🔩 Peças e Ferramentas":
+  if not verificar_licenca_para_acao():
+    st.stop()
   st.title("🔩 Controle de Peças e Ferramentas")
   t1, t2 = st.tabs(["Cadastrar", "Inventário"])
   with t1:
-    if status_usuario_ativo or modo_admin_liberado:
-      with st.form("form_pecas"):
-        c1, c2 = st.columns(2)
-        with c1:
-          nome_i = st.text_input("Nome da Peça ou Ferramenta")
-          cat = st.selectbox(
-              "Categoria",
-              ["Reposição", "Filtro/Óleo", "Ferramenta", "Insumo"],
-          )
-        with c2:
-          qtd = st.number_input("Quantidade", min_value=1, value=1)
-          v_unit = st.number_input("Valor Unitário (R$)", min_value=0.0)
-        if st.form_submit_button("Adicionar"):
-          cursor.execute(
-              "INSERT INTO pecas (nome_item, categoria, quantidade,"
-              " valor_unitario) VALUES (?, ?, ?, ?)",
-              (nome_i, cat, qtd, v_unit),
-          )
-          conn.commit()
-          st.success("Cadastrado!")
-    else:
-      verificar_licenca_para_acao()
+    with st.form("form_pecas"):
+      c1, c2 = st.columns(2)
+      with c1:
+        nome_i = st.text_input("Nome da Peça ou Ferramenta")
+        cat = st.selectbox(
+            "Categoria",
+            ["Reposição", "Filtro/Óleo", "Ferramenta", "Insumo"],
+        )
+      with c2:
+        qtd = st.number_input("Quantidade", min_value=1, value=1)
+        v_unit = st.number_input("Valor Unitário (R$)", min_value=0.0)
+      if st.form_submit_button("Adicionar"):
+        cursor.execute(
+            "INSERT INTO pecas (nome_item, categoria, quantidade,"
+            " valor_unitario) VALUES (?, ?, ?, ?)",
+            (nome_i, cat, qtd, v_unit),
+        )
+        conn.commit()
+        st.success("Cadastrado!")
   with t2:
     df_p = pd.read_sql("SELECT * FROM pecas", conn)
     if not df_p.empty:
       st.dataframe(df_p, use_container_width=True, hide_index=True)
 
 elif menu == "👥 Gestão de Clientes":
+  if not verificar_licenca_para_acao():
+    st.stop()
   st.title("👥 Gestão de Clientes")
-  if status_usuario_ativo or modo_admin_liberado:
-    with st.form("form_cli"):
-      c1, c2 = st.columns(2)
-      with c1:
-        nome_c = st.text_input("Nome / Razão Social")
-        emp = st.text_input("Empresa")
-        tel = st.text_input("Telefone")
-      with c2:
-        doc = st.text_input("CPF / CNPJ")
-        em = st.text_input("E-mail")
-        end = st.text_input("Endereço")
-      if st.form_submit_button("Salvar Cliente"):
-        cursor.execute(
-            "INSERT INTO clientes (nome, empresa, telefone, documento, email,"
-            " endereco) VALUES (?, ?, ?, ?, ?, ?)",
-            (nome_c, emp, tel, doc, em, end),
-        )
-        conn.commit()
-        st.success("Salvo!")
-  else:
-    verificar_licenca_para_acao()
+  with st.form("form_cli"):
+    c1, c2 = st.columns(2)
+    with c1:
+      nome_c = st.text_input("Nome / Razão Social")
+      emp = st.text_input("Empresa")
+      tel = st.text_input("Telefone")
+    with c2:
+      doc = st.text_input("CPF / CNPJ")
+      em = st.text_input("E-mail")
+      end = st.text_input("Endereço")
+    if st.form_submit_button("Salvar Cliente"):
+      cursor.execute(
+          "INSERT INTO clientes (nome, empresa, telefone, documento, email,"
+          " endereco) VALUES (?, ?, ?, ?, ?, ?)",
+          (nome_c, emp, tel, doc, em, end),
+      )
+      conn.commit()
+      st.success("Salvo!")
 
   df_cli = pd.read_sql("SELECT * FROM clientes", conn)
   if not df_cli.empty:
     st.dataframe(df_cli, use_container_width=True, hide_index=True)
 
 elif menu == "🔍 Consulta / Busca Geral":
+  if not verificar_licenca_para_acao():
+    st.stop()
   st.title("🔍 Consulta Geral")
   termo = st.text_input("Digite o termo de busca (TAG, Placa, Cliente...)")
   if termo:
