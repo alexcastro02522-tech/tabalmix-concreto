@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Corporativa Blindada
+# Estilização Visual Corporativa Limpa (Sem filetes verdes nos cards e tabela ajustada)
 st.markdown(
     """
     <style>
@@ -83,7 +83,7 @@ st.markdown(
     div[data-testid="stMetric"] {
         background: #ffffff !important;
         border: 1px solid #cbd5e1 !important;
-        border-left: 4px solid #1b7a3e !important;
+        border-left: 4px solid #cbd5e1 !important;
         padding: 12px !important;
         border-radius: 12px !important;
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
@@ -642,7 +642,7 @@ if menu == "📊 Visão Geral":
     if filtro_status != "Todos os Status":
       df_filtrado = df_veiculos[df_veiculos["status"] == filtro_status]
 
-    st.dataframe(df_filtrado, use_container_width=True)
+    st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
 
     if modo_admin_liberado:
       c_d1, c_d2 = st.columns(2)
@@ -745,7 +745,7 @@ elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
   st.subheader("Equipamentos Cadastrados")
   df_f = pd.read_sql("SELECT * FROM veiculos", conn)
   if not df_f.empty:
-    st.dataframe(df_f, use_container_width=True)
+    st.dataframe(df_f, use_container_width=True, hide_index=True)
     if modo_admin_liberado:
       c_del1, c_del2 = st.columns([2, 1])
       with c_del1:
@@ -810,7 +810,7 @@ elif menu == "⛽ Abastecimentos & Combustível":
     st.divider()
     df_c = pd.read_sql("SELECT * FROM combustivel", conn)
     if not df_c.empty:
-      st.dataframe(df_c, use_container_width=True)
+      st.dataframe(df_c, use_container_width=True, hide_index=True)
 
 elif menu == "🏗️ Mobilização / Desmobilização":
   st.title("🏗️ Mobilização e Desmobilização de Obras")
@@ -868,7 +868,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
     st.divider()
     df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
     if not df_mobs.empty:
-      st.dataframe(df_mobs, use_container_width=True)
+      st.dataframe(df_mobs, use_container_width=True, hide_index=True)
 
 elif menu == "🛠️ Ordens de Serviço (OS)":
   st.title("🛠️ Gestão Unificada de Ordens de Serviço (OS)")
@@ -933,7 +933,7 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
     st.subheader("📋 Fechamento e Histórico de Ordens de Serviço")
     df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
     if not df_os.empty:
-      st.dataframe(df_os, use_container_width=True)
+      st.dataframe(df_os, use_container_width=True, hide_index=True)
 
       if modo_admin_liberado:
         st.markdown(
@@ -1042,7 +1042,7 @@ elif menu == "🔩 Peças e Ferramentas":
   with t2:
     df_p = pd.read_sql("SELECT * FROM pecas", conn)
     if not df_p.empty:
-      st.dataframe(df_p, use_container_width=True)
+      st.dataframe(df_p, use_container_width=True, hide_index=True)
 
 elif menu == "👥 Gestão de Clientes":
   st.title("👥 Gestão de Clientes")
@@ -1070,7 +1070,7 @@ elif menu == "👥 Gestão de Clientes":
 
   df_cli = pd.read_sql("SELECT * FROM clientes", conn)
   if not df_cli.empty:
-    st.dataframe(df_cli, use_container_width=True)
+    st.dataframe(df_cli, use_container_width=True, hide_index=True)
 
 elif menu == "🔍 Consulta / Busca Geral":
   st.title("🔍 Consulta Geral")
@@ -1084,7 +1084,7 @@ elif menu == "🔍 Consulta / Busca Geral":
         params=(t_like, t_like, t_like),
     )
     if not df_bv.empty:
-      st.dataframe(df_bv, use_container_width=True)
+      st.dataframe(df_bv, use_container_width=True, hide_index=True)
     else:
       st.info("Nenhum resultado.")
 
