@@ -180,6 +180,12 @@ def init_db():
             motivo_condicao TEXT, observacao TEXT, foto_checklist TEXT
         )
     """)
+  for col_mob in ["ALTER TABLE mobilizacoes ADD COLUMN foto_checklist TEXT"]:
+    try:
+      cursor.execute(col_mob)
+    except Exception:
+      pass
+
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS combustivel (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -475,11 +481,20 @@ elif menu == "🏗️ mobilização / desmobilização":
       resp = st.text_input("responsável")
       dt_mob = st.date_input("data")
       obs = st.text_input("observação")
+    
+    foto_subida = st.file_uploader("📷 anexar foto do check-list de recebimento / vistoria", type=["png", "jpg", "jpeg"])
+
     if st.form_submit_button("registrar movimentação"):
+      nome_foto = ""
+      if foto_subida is not None:
+        os.makedirs("uploads_checklists", exist_ok=True)
+        nome_foto = f"uploads_checklists/{datetime.now().strftime('%Y%m%d%H%M%S')}_{foto_subida.name}"
+        with open(nome_foto, "wb") as f:
+          f.write(foto_subida.getbuffer())
+
       cursor.execute(
           "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
-          " destino_origem, responsavel, data, observacao) VALUES (?, ?, ?, ?,"
-          " ?, ?)",
+          " destino_origem, responsavel, data, observacao, foto_checklist) VALUES (?, ?, ?, ?, ?, ?, ?)",
           (
               str(eq_mob).upper(),
               tipo_mov,
@@ -487,15 +502,20 @@ elif menu == "🏗️ mobilização / desmobilização":
               resp,
               str(dt_mob),
               obs,
+              nome_foto,
           ),
       )
       conn.commit()
-      st.success("✅ movimentação registrada com sucesso!")
+      st.success("✅ movimentação e check-list fotográfico registrados com sucesso!")
       st.rerun()
 
   df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
   if not df_mobs.empty:
     st.dataframe(df_mobs, use_container_width=True, hide_index=True)
+    for idx, row in df_mobs.iterrows():
+      if row.get("foto_checklist") and os.path.exists(str(row["foto_checklist"])):
+        with st.expander(f"ver foto check-list #{row['id']} - {row['equipamento']}"):
+          st.image(row["foto_checklist"], width=300)
 
 elif menu == "🛠️ ordens de serviço (os)":
   st.title("🛠️ gestão unificada de ordens de serviço (os)")
@@ -542,7 +562,7 @@ elif menu == "🛠️ ordens de serviço (os)":
             " 0.0)",
             (
                 str(tag_os).upper(),
-                tipo_manutencao,
+                tipo_manut,
                 horimetro_ab,
                 origem_f,
                 desc_prob,
