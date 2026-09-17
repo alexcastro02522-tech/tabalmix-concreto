@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Enterprise Ultra-Moderna (Glassmorphism Executivo)
+# Estilização Visual Enterprise com Sidebar em Tema Claro e Selo de Garantia
 st.markdown(
     """
     <style>
@@ -39,12 +39,12 @@ st.markdown(
     [data-testid="stSidebar"] {
         min-width: 310px !important;
         width: 310px !important;
-        background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%) !important;
-        border-right: 1px solid #334155;
+        background: #f1f5f9 !important;
+        border-right: 1px solid #cbd5e1;
         padding-top: 15px;
     }
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label {
-        color: #f8fafc !important;
+        color: #1e293b !important;
     }
     .stApp {
         background: #f8fafc !important;
@@ -57,20 +57,20 @@ st.markdown(
         letter-spacing: -0.8px;
     }
     [data-testid="stSidebar"] .stRadio label {
-        color: #cbd5e1 !important;
+        color: #1e293b !important;
         font-weight: 600;
         font-size: 13.5px;
         padding: 10px 14px;
         border-radius: 10px;
-        background: rgba(255, 255, 255, 0.05) !important;
+        background: #ffffff !important;
         margin-bottom: 6px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        border: 1px solid #cbd5e1;
         transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     [data-testid="stSidebar"] .stRadio label:hover {
-        background: rgba(27, 122, 62, 0.25) !important;
-        border-color: #10b981;
-        color: #ffffff !important;
+        background: #e2e8f0 !important;
+        border-color: #059669;
+        color: #059669 !important;
         transform: translateX(4px);
     }
     div[data-testid="stMetric"] {
@@ -462,7 +462,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                         <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 105px; object-fit: cover; display: block;">
                     </div>
                     <div style="display: inline-block; background: rgba(5, 150, 105, 0.15); border: 1px solid #059669; border-radius: 20px; padding: 3px 14px; margin-bottom: 8px;">
-                        <span style="color: #059669; font-size: 11px; font-weight: 800; letter-spacing: 1px;">🛡️ licença corporativa enterprise</span>
+                        <span style="color: #059669; font-size: 11px; font-weight: 800; letter-spacing: 1px;">🛡️ selo oficial de garantia enterprise</span>
                     </div>
                     <h2 style="color: #0f172a !important; margin: 0; font-size: 20px; font-weight: 900;">tabalmix concreto</h2>
                     <p style="color: #475569; font-size: 11px; margin: 4px 0 2px 0; text-transform: uppercase; letter-spacing: 1.2px;">gestão inteligente de frota e oficina pro</p>
@@ -475,6 +475,9 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
       st.markdown(
           """
                 <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.08); margin-top: 15px; margin-bottom: 15px;">
+                    <div style="display: inline-block; background: rgba(5, 150, 105, 0.15); border: 1px solid #059669; border-radius: 20px; padding: 3px 14px; margin-bottom: 8px;">
+                        <span style="color: #059669; font-size: 11px; font-weight: 800; letter-spacing: 1px;">🛡️ selo oficial de garantia enterprise</span>
+                    </div>
                     <h2 style="color: #0f172a !important; margin: 0; font-size: 20px; font-weight: 900;">tabalmix concreto</h2>
                     <p style="color: #475569; font-size: 11px; margin: 4px 0 2px 0; text-transform: uppercase; letter-spacing: 1.2px;">gestão inteligente de frota e oficina pro</p>
                     <p style="color: #94a3b8; font-size: 9.5px; margin: 0; font-style: italic;">powered by castro tech</p>
@@ -640,7 +643,7 @@ status_usuario_ativo = (
     )
 )
 
-# Sidebar corporativa com navegação otimizada
+# Sidebar em tema claro com o Selo Oficial de Garantia no topo
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
@@ -648,13 +651,23 @@ with st.sidebar:
     st.markdown(
         f"""
             <div style="text-align: center; margin-bottom: 12px;">
-                <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 85px; object-fit: cover; border-radius: 10px; border: 1px solid #10b981;">
+                <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 85px; object-fit: cover; border-radius: 10px; border: 1px solid #059669; margin-bottom: 8px;">
+                <div style="background: #d1fae5; border: 1px solid #059669; border-radius: 8px; padding: 4px; text-align: center;">
+                    <span style="color: #065f46; font-size: 10.5px; font-weight: 800; letter-spacing: 0.5px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
+                </div>
             </div>
         """,
         unsafe_allow_html=True,
     )
   except Exception:
-    pass
+    st.markdown(
+        """
+            <div style="background: #d1fae5; border: 1px solid #059669; border-radius: 8px; padding: 6px; text-align: center; margin-bottom: 12px;">
+                <span style="color: #065f46; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
+            </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
   if modo_admin_liberado:
     st.success("🔓 **modo admin enterprise ativo**")
