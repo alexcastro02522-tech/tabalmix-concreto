@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Enterprise com Sidebar em Tema Claro e Selo de Garantia
+# Estilização Visual Enterprise com Sidebar em Tema Claro e Chat Flutuante Estilizado
 st.markdown(
     """
     <style>
@@ -437,12 +437,11 @@ def init_db():
             ordem_colunas TEXT
         )
     """)
-
-  # Tabela para o Chat Corporativo Interno com suporte a arquivos/documentos
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_interno (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             remetente TEXT,
+            destinatario TEXT,
             cargo TEXT,
             mensagem TEXT,
             arquivo_path TEXT,
@@ -450,6 +449,12 @@ def init_db():
             data_envio TEXT
         )
     """)
+  for col_chat_dest in ["ALTER TABLE chat_interno ADD COLUMN destinatario TEXT"]:
+    try:
+      cursor.execute(col_chat_dest)
+    except Exception:
+      pass
+
   conn.commit()
   return conn
 
@@ -676,13 +681,11 @@ status_usuario_ativo = (
     )
 )
 
-# Garante que apelido e cargo estejam definidos na sessão se logado
 if usuario_atual and "apelido" not in usuario_atual:
   usuario_atual["apelido"] = usuario_atual["nome"].split()[0]
 if usuario_atual and "cargo" not in usuario_atual:
   usuario_atual["cargo"] = "Colaborador"
 
-# Função auxiliar para exibir dataframe travado na ordem salva pelo Admin
 def exibir_tabela_padronizada(df, nome_tabela):
   if df.empty:
     st.info("nenhum registro encontrado.")
@@ -706,7 +709,6 @@ def exibir_tabela_padronizada(df, nome_tabela):
   st.dataframe(df, use_container_width=True, hide_index=True)
 
 
-# Sidebar em tema claro com o Selo Oficial de Garantia no topo
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
@@ -758,7 +760,6 @@ menu = st.sidebar.radio(
     "navegação",
     [
         "📊 visão geral",
-        "💬 chat corporativo interno",
         "🚜 cadastro de equipamentos",
         "⛽ abastecimentos & combustível",
         "🏗️ mobilização / desmobilização",
@@ -909,109 +910,6 @@ if menu == "📊 visão geral":
       )
   else:
     st.info("nenhum equipamento cadastrado na frota.")
-
-elif menu == "💬 chat corporativo interno":
-  st.title("💬 chat corporativo & central de documentos da equipe")
-  st.markdown(
-      "Comunique-se em tempo real com os colaboradores ativos da empresa e"
-      " compartilhe documentos de trabalho, PDFs e imagens."
-  )
-
-  if not status_usuario_ativo and not modo_admin_liberado:
-    st.warning(
-        "🔒 **Acesso restrito:** sua conta está inativa. Você pode visualizar"
-        " o histórico do chat, mas o envio de mensagens está bloqueado."
-    )
-
-  # Área de Envio de Mensagens e Documentos
-  with st.form("form_chat_envio", clear_on_submit=True):
-    msg_texto = st.text_area(
-        "Digite sua mensagem, dúvida ou observação de trabalho:"
-    )
-    doc_enviado = st.file_uploader(
-        "📎 Anexar documento / arquivo (opcional - PDF, Imagem, Word, etc.)",
-        type=["png", "jpg", "jpeg", "pdf", "docx", "xlsx", "txt"],
-    )
-    btn_enviar_msg = st.form_submit_button("📤 Enviar Mensagem no Chat")
-
-    if btn_enviar_msg:
-      if not status_usuario_ativo and not modo_admin_liberado:
-        st.error("⚠️ Conta inativa: você não pode enviar mensagens.")
-      elif not msg_texto.strip() and not doc_enviado:
-        st.error("⚠️ Digite uma mensagem ou anexe um documento.")
-      else:
-        path_arquivo = ""
-        nome_arquivo = ""
-        if doc_enviado is not None:
-          os.makedirs("chat_documentos", exist_ok=True)
-          nome_arquivo = doc_enviado.name
-          path_arquivo = (
-              "chat_documentos/"
-              f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nome_arquivo}"
-          )
-          with open(path_arquivo, "wb") as f_chat:
-            f_chat.write(doc_enviado.getbuffer())
-
-        remetente_nome = (
-            usuario_atual["apelido"]
-            if usuario_atual
-            else ("Administrador" if modo_admin_liberado else "Colaborador")
-        )
-        cargo_nome = (
-            usuario_atual["cargo"] if usuario_atual else "Gestão / Admin"
-        )
-        data_hora_envio = datetime.now().strftime("%d/%m/%Y às %H:%M")
-
-        cursor.execute(
-            "INSERT INTO chat_interno (remetente, cargo, mensagem,"
-            " arquivo_path, arquivo_nome, data_envio) VALUES (?, ?, ?, ?, ?, ?)",
-            (
-                remetente_nome,
-                cargo_nome,
-                msg_texto,
-                path_arquivo,
-                nome_arquivo,
-                data_hora_envio,
-            ),
-        )
-        conn.commit()
-        st.success("✅ Mensagem enviada com sucesso!")
-        st.rerun()
-
-  st.divider()
-  st.subheader("📜 mural de conversas e arquivos da equipe")
-
-  df_chat = pd.read_sql(
-      "SELECT * FROM chat_interno ORDER BY id DESC LIMIT 50", conn
-  )
-  if not df_chat.empty:
-    for idx, row in df_chat.iterrows():
-      with st.container():
-        st.markdown(
-            f"""
-                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                        <span style="font-weight: 800; color: #059669; font-size: 15px;">💬 {row['remetente']} <span style="background: #e2e8f0; color: #475569; font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: normal;">{row['cargo']}</span></span>
-                        <span style="font-size: 11px; color: #94a3b8;">{row['data_envio']}</span>
-                    </div>
-                    <p style="color: #1e293b; font-size: 14px; margin: 4px 0 8px 0; white-space: pre-wrap;">{row['mensagem']}</p>
-                </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if row["arquivo_path"] and os.path.exists(str(row["arquivo_path"])):
-          with open(row["arquivo_path"], "rb") as arq_b:
-            st.download_button(
-                label=f"📥 Baixar documento anexado: {row['arquivo_nome']}",
-                data=arq_b.read(),
-                file_name=row["arquivo_nome"],
-                key=f"dl_chat_{row['id']}",
-            )
-  else:
-    st.info(
-        "Nenhuma mensagem ou documento enviado no chat ainda. Seja o primeiro"
-        " a interagir!"
-    )
 
 elif menu == "🚜 cadastro de equipamentos":
   st.title("🚜 cadastro de equipamentos e frota")
@@ -1623,3 +1521,139 @@ elif menu == "⚙️ painel de licença (admin)":
     exibir_tabela_padronizada(df_users, "usuarios_sistema")
   else:
     st.info("nenhum usuário cadastrado.")
+
+# ==========================================
+# CHAT CORPORATIVO FLUTUANTE (Inferior Direito)
+# ==========================================
+if "chat_aberto" not in st.session_state:
+  st.session_state["chat_aberto"] = False
+if "chat_destinatario" not in st.session_state:
+  st.session_state["chat_destinatario"] = "Geral (Equipe)"
+
+st.markdown("---")
+col_dummy_l, col_chat_btn = st.columns([4, 1.2])
+with col_chat_btn:
+  if st.button("💬 Chat Online da Equipe"):
+    st.session_state["chat_aberto"] = not st.session_state["chat_aberto"]
+    st.rerun()
+
+if st.session_state["chat_aberto"]:
+  st.markdown(
+      """
+        <div style="background: #ffffff; border: 2px solid #059669; border-radius: 16px; padding: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.15); margin-top: 15px; margin-bottom: 30px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: #059669 !important; font-size: 18px;">💬 Chat Corporativo & Central de Documentos</h3>
+                <span style="background: #d1fae5; color: #065f46; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px;">🟢 Online</span>
+            </div>
+    """,
+      unsafe_allow_html=True,
+  )
+
+  # Buscar usuários ativos para mostrar quem está online
+  cursor.execute(
+      "SELECT apelido, cargo_setor FROM usuarios_sistema WHERE status_assinatura = 'Ativo'"
+  )
+  usuarios_ativos_db = cursor.fetchall()
+
+  st.markdown("##### 👥 Colaboradores Online na Empresa:")
+  col_usrs_disp = st.columns(max(len(usuarios_ativos_db), 1))
+  for i, usr in enumerate(usuarios_ativos_db):
+    nome_u, cargo_u = usr
+    with col_usrs_disp[i % len(col_usrs_disp)]:
+      if st.button(f"🟢 {nome_u} ({cargo_u})", key=f"btn_chat_usr_{i}"):
+        st.session_state["chat_destinatario"] = nome_u
+        st.rerun()
+
+  st.markdown(
+      f"**Conversando com:** `{st.session_state['chat_destinatario']}`"
+  )
+
+  # Formulário de envio de mensagem e documentos
+  with st.form("form_chat_flutuante", clear_on_submit=True):
+    txt_msg = st.text_area("Digite sua mensagem de trabalho ou dúvida:")
+    arq_doc = st.file_uploader(
+        "📎 Anexar documento / arquivo (PDF, Imagem, Word, etc.)",
+        type=["png", "jpg", "jpeg", "pdf", "docx", "xlsx", "txt"],
+    )
+    btn_enviar_chat = st.form_submit_button("📤 Enviar Mensagem / Documento")
+
+    if btn_enviar_chat:
+      if not status_usuario_ativo and not modo_admin_liberado:
+        st.error("⚠️ Conta inativa: você não pode enviar mensagens.")
+      elif not txt_msg.strip() and not arq_doc:
+        st.error("⚠️ Digite uma mensagem ou anexe um documento.")
+      else:
+        path_a = ""
+        nome_a = ""
+        if arq_doc is not None:
+          os.makedirs("chat_documentos", exist_ok=True)
+          nome_a = arq_doc.name
+          path_a = (
+              "chat_documentos/"
+              f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nome_a}"
+          )
+          with open(path_a, "wb") as f_d:
+            f_d.write(arq_doc.getbuffer())
+
+        remetente_n = (
+            usuario_atual["apelido"]
+            if usuario_atual
+            else ("Administrador" if modo_admin_liberado else "Colaborador")
+        )
+        cargo_n = (
+            usuario_atual["cargo"] if usuario_atual else "Gestão / Admin"
+        )
+        data_env = datetime.now().strftime("%d/%m/%Y às %H:%M")
+
+        cursor.execute(
+            "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+            " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
+            " ?, ?, ?, ?, ?)",
+            (
+                remetente_n,
+                st.session_state["chat_destinatario"],
+                cargo_n,
+                txt_msg,
+                path_a,
+                nome_a,
+                data_env,
+            ),
+        )
+        conn.commit()
+        st.success("✅ Mensagem enviada com sucesso!")
+        st.rerun()
+
+  # Histórico de Mensagens
+  st.markdown("---")
+  st.markdown("##### 📜 Histórico de Mensagens e Documentos Compartilhados:")
+  df_mensagens = pd.read_sql(
+      "SELECT * FROM chat_interno ORDER BY id DESC LIMIT 30", conn
+  )
+  if not df_mensagens.empty:
+    for _, msg_row in df_mensagens.iterrows():
+      st.markdown(
+          f"""
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px; margin-bottom: 10px;">
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #64748b; margin-bottom: 4px;">
+                        <span><b>{msg_row['remetente']}</b> ({msg_row['cargo']}) ➔ <i>{msg_row['destinatario']}</i></span>
+                        <span>{msg_row['data_envio']}</span>
+                    </div>
+                    <p style="margin: 4px 0 8px 0; color: #0f172a; font-size: 14px; white-space: pre-wrap;">{msg_row['mensagem']}</p>
+                </div>
+            """,
+          unsafe_allow_html=True,
+      )
+      if msg_row["arquivo_path"] and os.path.exists(
+          str(msg_row["arquivo_path"])
+      ):
+        with open(msg_row["arquivo_path"], "rb") as file_download:
+          st.download_button(
+              label=f"📥 Baixar documento: {msg_row['arquivo_nome']}",
+              data=file_download.read(),
+              file_name=msg_row["arquivo_nome"],
+              key=f"dl_chat_flut_{msg_row['id']}",
+          )
+  else:
+    st.info("Nenhuma mensagem trocada ainda.")
+
+  st.markdown("</div>", unsafe_allow_html=True)
