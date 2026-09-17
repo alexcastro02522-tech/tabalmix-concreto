@@ -11,13 +11,6 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import streamlit as st
 
-# CONFIGURAÇÃO DE TEMA NATIVO PARA FORÇAR MODO CLARO
-st.set_option("theme.base", "light")
-st.set_option("theme.primaryColor", "#1b7a3e")
-st.set_option("theme.backgroundColor", "#f4f6f9")
-st.set_option("theme.secondaryBackgroundColor", "#ffffff")
-st.set_option("theme.textColor", "#1e293b")
-
 # CONFIGURAÇÃO DO MERCADO PAGO (Token Oficial de Produção Integrado)
 MERCADO_PAGO_ACCESS_TOKEN = (
     "APP_USR-7480302560366070-091611-1118388bbc787e8f88ea1da583096dbc-2919829212"
@@ -31,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Corporativa Avançada (Fundo Claro Fixo, Campos Brancos e Menu Escuro)
+# Estilização Visual Corporativa Blindada (Forçando Fundo Claro em Selectboxes, Tabelas e Inputs)
 st.markdown(
     """
     <style>
@@ -107,6 +100,7 @@ st.markdown(
         font-size: 20px !important;
         font-weight: 800 !important;
     }
+    /* CAMPOS E SELECTBOXES COM FUNDO BRANCO E TEXTO ESCURO */
     div.stTextInput > div > div > input, 
     div.stNumberInput > div > div > input, 
     div.stSelectbox > div > div > div,
@@ -118,19 +112,25 @@ st.markdown(
         border-radius: 8px !important;
         min-height: 40px !important;
     }
-    div[data-baseweb="menu"], ul[data-baseweb="menu"], li[data-baseweb="option"] {
+    /* FORÇAR LISTAS SUSPENSAS E ITENS DO SELECTBOX COM FUNDO CLARO */
+    div[data-baseweb="menu"], ul[data-baseweb="menu"], li[data-baseweb="option"], div[id*="popover"] {
         background-color: #ffffff !important;
         color: #0f172a !important;
     }
-    div[data-baseweb="menu"] div, span, option {
+    div[data-baseweb="menu"] div, span, option, div[id*="popover"] * {
         color: #0f172a !important;
     }
-    div[data-testid="stDataFrame"] {
+    /* DATAFRAMES E TABELAS COM FUNDO CLARO */
+    div[data-testid="stDataFrame"], .stDataFrame {
         background-color: #ffffff !important;
         border-radius: 12px;
         padding: 10px;
         border: 1px solid #cbd5e1;
         box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+    div[data-testid="stDataFrame"] table, div[data-testid="stDataFrame"] tr, div[data-testid="stDataFrame"] th, div[data-testid="stDataFrame"] td {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
     }
     .stButton button {
         background: linear-gradient(135deg, #1b7a3e 0%, #12542a 100%) !important;
