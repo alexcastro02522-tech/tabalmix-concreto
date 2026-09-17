@@ -5,6 +5,7 @@ import glob
 import io
 import os
 import sqlite3
+import urllib.parse
 import mercadopago
 import pandas as pd
 from reportlab.lib.pagesizes import letter
@@ -777,7 +778,6 @@ if menu == "📊 Visão Geral":
     )
     ativos_parados = total_frota - ativos_trabalhando
 
-  # Métricas Compactas Refinadas
   r1_c1, r1_c2, r1_c3 = st.columns(3)
   with r1_c1:
     st.metric("Total Frota", total_frota)
@@ -794,7 +794,6 @@ if menu == "📊 Visão Geral":
   with r2_c3:
     st.metric("Total Insumos", len(df_pecas))
 
-  # NOVIDADE: Gráficos Gerenciais Dinâmicos na Visão Geral
   if not df_manut.empty or not df_comb.empty:
     st.divider()
     st.subheader("📊 Indicadores e Comparativo de Custos")
@@ -813,14 +812,12 @@ if menu == "📊 Visão Geral":
       else:
         st.info("Nenhum abastecimento registrado para gerar gráfico.")
 
-  # NOVIDADE: Alerta de Manutenção Preventiva por Horímetro/KM
   if not df_veiculos.empty:
     st.divider()
     st.subheader("⚠️ Alertas de Manutenção Preventiva")
     alerta_gerado = False
     for idx, row in df_veiculos.iterrows():
       h_km = row["horimetro_km"] if row["horimetro_km"] is not None else 0
-      # Exemplo de regra preventiva: Alerta se horímetro/KM passar de 15.000 ou múltiplos
       if h_km >= 15000:
         st.warning(
             f"🔔 **Atenção Preventiva:** O equipamento **{row['tag_prefixo']}**"
@@ -960,11 +957,54 @@ elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
   df_f = pd.read_sql("SELECT * FROM veiculos", conn)
   if not df_f.empty:
     st.dataframe(df_f, use_container_width=True, hide_index=True)
+
+    # NOVIDADE: Linha do Tempo / Histórico Individual por Equipamento
+    st.markdown("---")
+    st.subheader("🔎 Ficha Histórica Individual do Equipamento")
+    eq_selecionado_historico = st.selectbox(
+        "Selecione a TAG/Prefixo para ver o Histórico Completo",
+        df_f["tag_prefixo"].tolist(),
+        key="sel_hist_eq",
+    )
+    if eq_selecionado_historico:
+      dados_eq = df_f[df_f["tag_prefixo"] == eq_selecionado_historico].iloc[0]
+      st.info(
+          f"📌 **Ativo:** {dados_eq['tag_prefixo']} | **Modelo:**"
+          f" {dados_eq['modelo']} | **Status Atual:** {dados_eq['status']} |"
+          f" **Horímetro/KM:** {dados_eq['horimetro_km']:,}"
+      )
+
+      col_h1, col_h2 = st.columns(2)
+      with col_h1:
+        st.markdown("**🛠️ Histórico de Manutenções (OS):**")
+        df_hist_os = pd.read_sql(
+            "SELECT id, tipo_manutencao, data_abertura, status_os, custo FROM"
+            " manutencoes WHERE tag_prefixo = ?",
+            conn,
+            params=(eq_selecionado_historico,),
+        )
+        if not df_hist_os.empty:
+          st.dataframe(df_hist_os, use_container_width=True, hide_index=True)
+        else:
+          st.write("Nenhuma OS registrada para este equipamento.")
+      with col_h2:
+        st.markdown("**⛽ Histórico de Abastecimentos:**")
+        df_hist_comb = pd.read_sql(
+            "SELECT data, litros, valor_total, motorista FROM combustivel WHERE"
+            " equipamento = ?",
+            conn,
+            params=(eq_selecionado_historico,),
+        )
+        if not df_hist_comb.empty:
+          st.dataframe(df_hist_comb, use_container_width=True, hide_index=True)
+        else:
+          st.write("Nenhum abastecimento registrado.")
+
     if status_usuario_ativo or modo_admin_liberado:
       c_del1, c_del2 = st.columns([2, 1])
       with c_del1:
         eq_exc = st.selectbox(
-            "Selecione o ID para Excluir", df_f["id"].tolist()
+            "Selecione o ID para Excluir da Frota", df_f["id"].tolist()
         )
       with c_del2:
         st.write("")
@@ -1224,6 +1264,28 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
               conn.commit()
               st.success(f"✅ OS #{os_sel} atualizada e fechada com sucesso!")
               st.rerun()
+
+          # NOVIDADE: Botão de Envio de OS Pronta via WhatsApp
+          st.markdown("---")
+          st.markdown("### 📲 Enviar Relatório da OS via WhatsApp")
+          texto_msg = (
+              f"*TABALMIX CONCRETO - RELATÓRIO DE OS #{os_atual['id']}*\n\n"
+              f"🚜 *Equipamento:* {os_atual['tag_prefixo']}\n"
+              f"🔧 *Tipo:* {os_atual['tipo_manutencao']}\n"
+              f"📋 *Status:* {os_atual['status_os']}\n"
+              f"⚠️ *Problema:* {os_atual['descricao_problema']}\n"
+              f"🔩 *Peças:* {os_atual['pecas_utilizadas'] or 'Nenhuma'}\n"
+              f"💰 *Custo Total:* R$ {(os_atual['custo'] or 0.0):,.2f}\n"
+              f"📅 *Fechamento:* {os_atual['data_fechamento']} às"
+              f" {os_atual['hora_fechamento']}"
+          )
+          encoded_whatsapp = urllib.parse.quote(texto_msg)
+          url_whatsapp = f"https://api.whatsapp.com/send?text={encoded_whatsapp}"
+          st.markdown(
+              f"💬 **[👉 CLIQUE AQUI PARA ENVIAR OS VIA"
+              f" WHATSAPP]({url_whatsapp})**",
+              unsafe_allow_html=True,
+          )
     else:
       st.info("Nenhuma OS registrada.")
 
@@ -1304,7 +1366,23 @@ elif menu == "🔍 Consulta / Busca Geral":
 
 elif menu == "⚙️ Painel de Licença (Admin)":
   if modo_admin_liberado:
-    st.title("⚙️ Painel de Administração de Usuários")
+    st.title("⚙️ Painel de Administração de Usuários e Segurança")
+    
+    # NOVIDADE: Botão de Download de Backup do Banco de Dados (.db)
+    st.markdown("### 📥 Backup do Banco de Dados (Segurança)")
+    try:
+      with open("frota_profissional.db", "rb") as f_db:
+        st.download_button(
+            "💾 Baixar Cópia de Segurança (.db)",
+            f_db,
+            file_name=f"backup_tabalmix_{datetime.now().strftime('%Y%m%d_%H%M')}.db",
+            mime="application/octet-stream"
+        )
+    except Exception as e:
+      st.info("Arquivo de banco de dados gerado após o primeiro uso.")
+
+    st.markdown("---")
+    st.markdown("### Gestão de Usuários e Licenças")
     df_users = pd.read_sql(
         "SELECT id, nome_completo, cpf, email, celular_seguranca,"
         " status_assinatura, plano_atual FROM usuarios_sistema",
@@ -1313,7 +1391,6 @@ elif menu == "⚙️ Painel de Licença (Admin)":
     if not df_users.empty:
       st.dataframe(df_users, use_container_width=True, hide_index=True)
 
-      st.markdown("### Ativar / Inativar Usuário Cadastrado")
       with st.form("form_admin_user"):
         id_sel = st.selectbox(
             "Selecione o ID do Usuário", df_users["id"].tolist()
