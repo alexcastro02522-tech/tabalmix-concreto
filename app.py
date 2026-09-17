@@ -843,9 +843,11 @@ def verificar_licenca_para_acao():
   return False
 
 
+# MENU COM A ABA DE PERFIL LOGO NO INÍCIO PARA FÁCIL ACESSO
 menu = st.sidebar.radio(
     "Navegação",
     [
+        "👤 Meu Perfil e Cadastro",
         "📊 Visão Geral",
         "🚜 CADASTRO DE EQUIPAMENTOS",
         "⛽ Abastecimentos & Combustível",
@@ -854,13 +856,48 @@ menu = st.sidebar.radio(
         "🔩 Peças e Ferramentas",
         "👥 Gestão de Clientes",
         "🔍 Consulta / Busca Geral",
-        "👤 Meu Perfil e Cadastro",
         "⚙️ Painel de Licença (Admin)",
     ],
     label_visibility="collapsed",
 )
 
-if menu == "📊 Visão Geral":
+if menu == "👤 Meu Perfil e Cadastro":
+  st.title("👤 Meu Perfil e Dados Cadastrais")
+  st.markdown("Atualize suas informações de contato e o seu **CPF** (obrigatório para gerar pagamentos via Pix e cartão no Mercado Pago).")
+  
+  cursor.execute("SELECT nome_completo, cpf, email, celular_seguranca, status_assinatura, plano_atual FROM usuarios_sistema WHERE id = ?", (usuario_atual["id"],))
+  u_info = cursor.fetchone()
+  
+  if u_info:
+    with st.form("form_atualizar_perfil"):
+      novo_nome = st.text_input("Nome Completo / Responsável", value=u_info[0] or "")
+      novo_cpf = st.text_input("CPF (Necessário para Pix)", value=u_info[1] or "")
+      novo_email = st.text_input("E-mail (Seu Login)", value=u_info[2] or "")
+      novo_cel = st.text_input("Celular de Segurança", value=u_info[3] or "")
+      nova_senha_perfil = st.text_input("Nova Senha (Deixe em branco para manter a atual)", type="password")
+      
+      st.info(f"📊 **Status Atual da Assinatura:** {u_info[4]} | **Plano:** {u_info[5]}")
+      
+      btn_salvar_perfil = st.form_submit_button("Salvar Alterações do Perfil")
+      if btn_salvar_perfil:
+        if novo_nome and novo_email:
+          if nova_senha_perfil:
+            cursor.execute(
+                "UPDATE usuarios_sistema SET nome_completo = ?, cpf = ?, email = ?, celular_seguranca = ?, senha = ? WHERE id = ?",
+                (novo_nome, novo_cpf, novo_email, novo_cel, nova_senha_perfil, usuario_atual["id"])
+            )
+          else:
+            cursor.execute(
+                "UPDATE usuarios_sistema SET nome_completo = ?, cpf = ?, email = ?, celular_seguranca = ? WHERE id = ?",
+                (novo_nome, novo_cpf, novo_email, novo_cel, usuario_atual["id"])
+            )
+          conn.commit()
+          st.success("✅ Perfil atualizado com sucesso! Atualize a página.")
+          st.rerun()
+        else:
+          st.error("⚠️ Nome e E-mail são obrigatórios.")
+
+elif menu == "📊 Visão Geral":
   try:
     with open("caminhoes.jpg", "rb") as image_file:
       encoded_string = base64.b64encode(image_file.read()).decode()
@@ -1577,42 +1614,6 @@ elif menu == "🔍 Consulta / Busca Geral":
       st.dataframe(df_bv, use_container_width=True, hide_index=True)
     else:
       st.info("Nenhum resultado.")
-
-elif menu == "👤 Meu Perfil e Cadastro":
-  st.title("👤 Meu Perfil e Dados Cadastrais")
-  st.markdown("Atualize suas informações de contato e o seu **CPF** (obrigatório para gerar pagamentos via Pix e cartão).")
-  
-  cursor.execute("SELECT nome_completo, cpf, email, celular_seguranca, status_assinatura, plano_atual FROM usuarios_sistema WHERE id = ?", (usuario_atual["id"],))
-  u_info = cursor.fetchone()
-  
-  if u_info:
-    with st.form("form_atualizar_perfil"):
-      novo_nome = st.text_input("Nome Completo / Responsável", value=u_info[0] or "")
-      novo_cpf = st.text_input("CPF (Necessário para Pix)", value=u_info[1] or "")
-      novo_email = st.text_input("E-mail (Seu Login)", value=u_info[2] or "")
-      novo_cel = st.text_input("Celular de Segurança", value=u_info[3] or "")
-      nova_senha_perfil = st.text_input("Nova Senha (Deixe em branco para manter a atual)", type="password")
-      
-      st.info(f"📊 **Status Atual da Assinatura:** {u_info[4]} | **Plano:** {u_info[5]}")
-      
-      btn_salvar_perfil = st.form_submit_button("Salvar Alterações do Perfil")
-      if btn_salvar_perfil:
-        if novo_nome and novo_email:
-          if nova_senha_perfil:
-            cursor.execute(
-                "UPDATE usuarios_sistema SET nome_completo = ?, cpf = ?, email = ?, celular_seguranca = ?, senha = ? WHERE id = ?",
-                (novo_nome, novo_cpf, novo_email, novo_cel, nova_senha_perfil, usuario_atual["id"])
-            )
-          else:
-            cursor.execute(
-                "UPDATE usuarios_sistema SET nome_completo = ?, cpf = ?, email = ?, celular_seguranca = ? WHERE id = ?",
-                (novo_nome, novo_cpf, novo_email, novo_cel, usuario_atual["id"])
-            )
-          conn.commit()
-          st.success("✅ Perfil atualizado com sucesso! Atualize a página se necessário.")
-          st.rerun()
-        else:
-          st.error("⚠️ Nome e E-mail são obrigatórios.")
 
 elif menu == "⚙️ Painel de Licença (Admin)":
   if modo_admin_liberado:
