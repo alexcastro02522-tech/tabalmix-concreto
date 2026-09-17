@@ -869,7 +869,6 @@ if menu == "👤 Meu Perfil e Cadastro":
   
   if u_info:
     with st.form("form_atualizar_perfil"):
-      # Garante leitura correta dos campos do banco
       db_nome = u_info[0] if u_info[0] and "@" not in u_info[0] else ""
       db_cpf = u_info[1] or ""
       db_email = u_info[2] if u_info[2] and "@" in u_info[2] else usuario_atual["email"]
@@ -897,10 +896,27 @@ if menu == "👤 Meu Perfil e Cadastro":
                 (novo_nome, novo_cpf, novo_email, novo_cel, usuario_atual["id"])
             )
           conn.commit()
-          st.success("✅ Perfil atualizado com sucesso! Atualizando...")
+          st.success("✅ Perfil atualizado com sucesso!")
           st.rerun()
         else:
           st.error("⚠️ Nome e E-mail são obrigatórios.")
+
+    st.markdown("---")
+    st.markdown("### 🧪 Painel de Testes Rápidos de Licença")
+    st.write("Para testar o bloqueio e a tela de pagamento do Mercado Pago, altere seu status abaixo:")
+    col_t1, col_t2 = st.columns(2)
+    with col_t1:
+      if st.button("🔒 Forçar Status para INATIVO (Testar Bloqueio)"):
+        cursor.execute("UPDATE usuarios_sistema SET status_assinatura = 'Inativo' WHERE id = ?", (usuario_atual["id"],))
+        conn.commit()
+        st.success("Conta alterada para Inativa!")
+        st.rerun()
+    with col_t2:
+      if st.button("🔓 Forçar Status para ATIVO (Liberar Sistema)"):
+        cursor.execute("UPDATE usuarios_sistema SET status_assinatura = 'Ativo' WHERE id = ?", (usuario_atual["id"],))
+        conn.commit()
+        st.success("Conta alterada para Ativa!")
+        st.rerun()
 
 elif menu == "📊 Visão Geral":
   if not verificar_licenca_para_acao():
