@@ -239,14 +239,12 @@ def gerar_pdf_relatorio(titulo, dataframe):
   return buffer
 
 
-# NOVIDADE: Gerador de PDF Técnico Individual da Ordem de Serviço (OS)
 def gerar_pdf_os_tecnica(os_row):
   buffer = io.BytesIO()
   c = canvas.Canvas(buffer, pagesize=letter)
   largura, altura = letter
   margem = 40
 
-  # Cabeçalho da OS
   c.setFillColorRGB(0.08, 0.32, 0.16)
   c.rect(0, altura - 70, largura, 70, fill=1, stroke=0)
   c.setFillColorRGB(1, 1, 1)
@@ -259,7 +257,6 @@ def gerar_pdf_os_tecnica(os_row):
       f"Tabalmix Concreto - Sistema de Gestão | OS #{os_row.get('id', 1)}",
   )
 
-  # Dados Principais
   y = altura - 100
   c.setFillColorRGB(0.1, 0.1, 0.1)
   c.setFont("Helvetica-Bold", 11)
@@ -268,9 +265,7 @@ def gerar_pdf_os_tecnica(os_row):
   c.setFont("Helvetica", 10)
 
   tag_eq = os_row.get("tag_prefixo") or os_row.get("equipamento") or "N/D"
-  c.drawString(
-      margem, y, f"• Equipamento (TAG): {tag_eq}"
-  )
+  c.drawString(margem, y, f"• Equipamento (TAG): {tag_eq}")
   y -= 18
   c.drawString(
       margem,
@@ -297,7 +292,6 @@ def gerar_pdf_os_tecnica(os_row):
       f" {os_row.get('hora_abertura', '-')}",
   )
 
-  # Descrição do Problema
   y -= 30
   c.setFont("Helvetica-Bold", 11)
   c.drawString(margem, y, "DESCRIÇÃO DO PROBLEMA:")
@@ -306,7 +300,6 @@ def gerar_pdf_os_tecnica(os_row):
   desc_txt = str(os_row.get("descricao_problema", "Sem descrição."))
   c.drawString(margem, y, desc_txt[:90])
 
-  # Conclusão e Oficina
   y -= 40
   c.setFont("Helvetica-Bold", 11)
   c.drawString(margem, y, "DADOS DE ENCERRAMENTO E CUSTOS:")
@@ -351,7 +344,6 @@ def gerar_pdf_os_tecnica(os_row):
       f" {os_row.get('status_os', 'Aberta')}",
   )
 
-  # Linhas de Assinatura
   y -= 90
   c.setStrokeColorRGB(0.5, 0.5, 0.5)
   c.setLineWidth(1)
@@ -509,7 +501,6 @@ def init_db():
 conn = init_db()
 cursor = conn.cursor()
 
-# Verificação blindada de Administrador via URL param (?admin=1)
 modo_admin_liberado = False
 try:
   query_params = st.query_params
@@ -522,11 +513,9 @@ try:
 except Exception:
   pass
 
-# Gerenciamento de Sessão de Login
 if "usuario_logado" not in st.session_state:
   st.session_state["usuario_logado"] = None
 
-# TELA DE AUTENTICAÇÃO REFINADA COM CARTÃO DE BOAS-VINDAS E LOGO
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
   col_l1, col_l2, col_l3 = st.columns([1, 2.2, 1])
   with col_l2:
@@ -677,7 +666,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
 
   st.stop()
 
-# RECUPERA DADOS DO USUÁRIO LOGADO
 usuario_atual = st.session_state["usuario_logado"]
 status_usuario_ativo = (
     True
@@ -689,7 +677,6 @@ status_usuario_ativo = (
     )
 )
 
-# Menu Lateral Sofisticado com Selo Oficial e Identificação do Usuário
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
@@ -954,7 +941,6 @@ if menu == "📊 Visão Geral":
       else:
         st.info("Nenhum abastecimento registrado para gerar gráfico.")
 
-    # NOVIDADE: Gráfico de Evolução Mensal dos Custos de Manutenção
     if "data_abertura" in df_manut.columns and not df_manut.empty:
       st.markdown("---")
       st.markdown("**📈 Evolução Mensal dos Custos de Manutenção (R$)**")
@@ -1225,7 +1211,6 @@ elif menu == "⛽ Abastecimentos & Combustível":
     st.subheader("📋 Histórico de Abastecimentos")
     df_c = pd.read_sql("SELECT * FROM combustivel", conn)
     if not df_c.empty:
-      # NOVIDADE: Filtro por Período de Datas em Abastecimentos
       col_f1, col_f2 = st.columns(2)
       with col_f1:
         dt_ini_c = st.date_input("Data Inicial", value=datetime.now().date() - timedelta(days=30))
@@ -1364,7 +1349,6 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
     st.subheader("📋 Fechamento e Histórico de Ordens de Serviço")
     df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
     if not df_os.empty:
-      # NOVIDADE: Filtro por Período de Datas em Ordens de Serviço
       col_fos1, col_fos2 = st.columns(2)
       with col_fos1:
         dt_ini_os = st.date_input("Data Inicial OS", value=datetime.now().date() - timedelta(days=30), key="ini_os")
@@ -1472,19 +1456,19 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
             st.markdown("---")
             st.markdown("### 🖨️ Relatórios Técnicos e Envio")
             
-            # NOVIDADE: Botão de Download do PDF Técnico Oficial da OS
+            # Correção aplicada com sucesso na variável de tag para o PDF
+            tag_eq_pdf = tag_eq_os
             pdf_os_buffer = gerar_pdf_os_tecnica(os_atual)
             st.download_button(
                 "📥 Baixar PDF Técnico Oficial da OS",
                 pdf_os_buffer,
-                file_name=f"OS_Tecnica_{os_atual['id']}_{tag_eq}.pdf",
+                file_name=f"OS_Tecnica_{os_atual['id']}_{tag_eq_pdf}.pdf",
                 mime="application/pdf",
             )
 
-            # Envio via WhatsApp
             texto_msg = (
                 f"*TABALMIX CONCRETO - RELATÓRIO DE OS #{os_atual['id']}*\n\n"
-                f"🚜 *Equipamento:* {tag_eq}\n"
+                f"🚜 *Equipamento:* {tag_eq_os}\n"
                 f"🔧 *Tipo:* {val_tp_man}\n"
                 f"📋 *Status:* {val_st_os}\n"
                 f"⚠️ *Problema:* {val_desc}\n"
