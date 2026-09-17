@@ -740,6 +740,10 @@ def verificar_licenca_para_acao():
       label_visibility="collapsed",
   )
 
+  # Dados do usuário logado para injetar no Mercado Pago sem travar o Pix
+  email_cli = usuario_atual['email'] if usuario_atual else "cliente@tabalmix.com"
+  nome_cli = usuario_atual.get('nome', 'Cliente') if usuario_atual else "Cliente"
+
   if "Mercado Pago" in escolha_metodo:
     col_p1, col_p2 = st.columns(2)
     with col_p1:
@@ -748,13 +752,15 @@ def verificar_licenca_para_acao():
           sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
           pref_data = {
               "items": [{
-                  "title": (
-                      f"Tabalmix - Mensal ({usuario_atual['email'] if usuario_atual else 'Cliente'})"
-                  ),
+                  "title": f"Tabalmix - Mensal ({email_cli})",
                   "quantity": 1,
                   "unit_price": 250.0,
                   "currency_id": "BRL",
               }],
+              "payer": {
+                  "email": email_cli,
+                  "name": nome_cli
+              },
               "back_urls": {
                   "success": "https://tabalmix-concreto.streamlit.app",
                   "failure": "https://tabalmix-concreto.streamlit.app",
@@ -786,13 +792,15 @@ def verificar_licenca_para_acao():
           sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
           pref_data = {
               "items": [{
-                  "title": (
-                      f"Tabalmix - Anual ({usuario_atual['email'] if usuario_atual else 'Cliente'})"
-                  ),
+                  "title": f"Tabalmix - Anual ({email_cli})",
                   "quantity": 1,
                   "unit_price": 2400.0,
                   "currency_id": "BRL",
               }],
+              "payer": {
+                  "email": email_cli,
+                  "name": nome_cli
+              },
               "back_urls": {
                   "success": "https://tabalmix-concreto.streamlit.app",
                   "failure": "https://tabalmix-concreto.streamlit.app",
@@ -1456,7 +1464,6 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
             st.markdown("---")
             st.markdown("### 🖨️ Relatórios Técnicos e Envio")
             
-            # Correção aplicada com sucesso na variável de tag para o PDF
             tag_eq_pdf = tag_eq_os
             pdf_os_buffer = gerar_pdf_os_tecnica(os_atual)
             st.download_button(
