@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Corporativa Avançada (Tema Claro Unificado: Cinza Claro e Verde) + Blindagem Anti-F12
+# Estilização Visual Corporativa Avançada (Menu Lateral Escuro Sofisticado + Painel Central Claro Profissional) + Blindagem Anti-F12
 st.markdown(
     """
     <style>
@@ -36,15 +36,15 @@ st.markdown(
         padding-bottom: 1.2rem !important;
     }
     [data-testid="stSidebar"] {
-        min-width: 290px !important;
-        width: 290px !important;
-        background: #e9ecef !important;
-        border-right: 1px solid #cbd5e1 !important;
+        min-width: 300px !important;
+        width: 300px !important;
+        background: linear-gradient(180deg, rgba(12, 35, 20, 1) 0%, rgba(5, 15, 10, 1) 100%) !important;
+        border-right: 1px solid rgba(46, 204, 113, 0.2);
         padding-top: 10px;
     }
     [data-testid="stSidebar"] > div:first-child {
-        width: 290px !important;
-        background: #e9ecef !important;
+        width: 300px !important;
+        background: transparent !important;
     }
     .stApp {
         background: #f4f6f9 !important;
@@ -61,22 +61,24 @@ st.markdown(
         font-size: 14px;
         font-weight: 500;
     }
+    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label {
+        color: #e2e8f0 !important;
+    }
     [data-testid="stSidebar"] .stRadio label {
-        color: #1e293b !important;
+        color: #e2e8f0 !important;
         font-weight: 600;
-        font-size: 14px;
-        padding: 9px 12px;
+        font-size: 13.5px;
+        padding: 10px 12px;
         border-radius: 8px;
-        background: #ffffff !important;
+        background: rgba(255, 255, 255, 0.05) !important;
         margin-bottom: 6px;
-        border: 1px solid #cbd5e1 !important;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+        border: 1px solid rgba(46, 204, 113, 0.15);
         transition: all 0.3s ease;
     }
     [data-testid="stSidebar"] .stRadio label:hover {
-        background: #1b7a3e !important;
+        background: rgba(46, 204, 113, 0.25) !important;
+        border-color: #2ecc71;
         color: #ffffff !important;
-        border-color: #1b7a3e !important;
     }
     div[data-testid="stMetric"] {
         background: #ffffff !important;
@@ -270,7 +272,6 @@ def init_db():
             observacoes TEXT
         )
     """)
-  # Garantir compatibilidade caso a tabela antiga exista sem os campos novos
   try:
     cursor.execute("ALTER TABLE veiculos ADD COLUMN tag_prefixo TEXT")
   except Exception:
@@ -411,7 +412,7 @@ try:
 except Exception:
   pass
 
-# Menu Lateral & Blindagem com Selo Oficial (Estilo Claro)
+# Menu Lateral Sofisticado com Selo Oficial
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
@@ -419,14 +420,14 @@ with st.sidebar:
     st.markdown(
         f"""
             <div style="text-align: center; padding: 10px 0 15px 0;">
-                <div style="border-radius: 10px; overflow: hidden; max-height: 90px; border: 2px solid #1b7a3e; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(27, 122, 62, 0.15);">
+                <div style="border-radius: 10px; overflow: hidden; max-height: 90px; border: 2px solid #2ecc71; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(46, 204, 113, 0.2);">
                     <img src="data:image/jpeg;base64,{encoded_logo}" style="width: 100%; height: 80px; object-fit: cover; display: block;">
                 </div>
-                <div style="display: inline-block; background: rgba(27, 122, 62, 0.15); border: 1px solid #1b7a3e; border-radius: 20px; padding: 2px 10px; margin-bottom: 4px;">
-                    <span style="color: #1b7a3e; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">🛡️ SELO OFICIAL</span>
+                <div style="display: inline-block; background: rgba(46, 204, 113, 0.2); border: 1px solid #2ecc71; border-radius: 20px; padding: 2px 10px; margin-bottom: 4px;">
+                    <span style="color: #2ecc71; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">🛡️ SELO OFICIAL</span>
                 </div>
-                <h3 style="color: #0f172a !important; margin: 0; font-size: 15px; font-weight: 800;">TABALMIX CONCRETO</h3>
-                <p style="color: #475569; font-size: 9px; margin: 2px 0 4px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
+                <h3 style="color: #ffffff !important; margin: 0; font-size: 15px; font-weight: 800;">TABALMIX CONCRETO</h3>
+                <p style="color: #cbd5e1; font-size: 9px; margin: 2px 0 4px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
             </div>
         """,
         unsafe_allow_html=True,
@@ -435,8 +436,8 @@ with st.sidebar:
     st.markdown(
         """
             <div style="text-align: center; padding: 10px 0 15px 0;">
-                <h3 style="color: #0f172a !important; margin: 0; font-size: 15px; font-weight: 800;">TABALMIX CONCRETO</h3>
-                <p style="color: #475569; font-size: 9px; margin: 2px 0 4px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
+                <h3 style="color: #ffffff !important; margin: 0; font-size: 15px; font-weight: 800;">TABALMIX CONCRETO</h3>
+                <p style="color: #cbd5e1; font-size: 9px; margin: 2px 0 4px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
             </div>
         """,
         unsafe_allow_html=True,
