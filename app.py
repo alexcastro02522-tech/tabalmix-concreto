@@ -1383,10 +1383,9 @@ elif menu == "🏗️ mobilização / desmobilização":
     if not df_mobs.empty:
       st.dataframe(df_mobs, use_container_width=True, hide_index=True)
       
-      # Exibir fotos anexadas se houver
       for idx, row in df_mobs.iterrows():
         if row.get("foto_checklist") and os.path.exists(str(row["foto_checklist"])):
-          with st.expander(f"Ver Foto Check-list #{row['id']} - {row['equipamento']}"):
+          with st.expander(f"ver foto check-list #{row['id']} - {row['equipamento']}"):
             st.image(row["foto_checklist"], width=300)
 
 elif menu == "🛠️ ordens de serviço (os)":
@@ -1789,9 +1788,9 @@ elif menu == "⚙️ painel de licença (admin)":
 
     st.markdown("---")
     st.markdown("### gestão de usuários e licenças")
+    # ORDENA AS COLUNAS PARA DEIXAR O STATUS LOGO AO LADO DO ID E NOME
     df_users = pd.read_sql(
-        "SELECT id, nome_completo, cpf, email, celular_seguranca,"
-        " status_assinatura, plano_atual FROM usuarios_sistema",
+        "SELECT id, status_assinatura, nome_completo, email, cpf, celular_seguranca, plano_atual FROM usuarios_sistema",
         conn,
     )
     if not df_users.empty:
