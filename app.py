@@ -419,20 +419,35 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome_completo TEXT, cpf TEXT, email TEXT UNIQUE, senha TEXT,
             celular_seguranca TEXT, status_assinatura TEXT, plano_atual TEXT,
-            data_cadastro TEXT, pin_rapido TEXT
+            data_cadastro TEXT, pin_rapido TEXT, apelido TEXT, cargo_setor TEXT
         )
     """)
-  for col_pin in ["ALTER TABLE usuarios_sistema ADD COLUMN pin_rapido TEXT"]:
+  for col_user in [
+      "ALTER TABLE usuarios_sistema ADD COLUMN apelido TEXT",
+      "ALTER TABLE usuarios_sistema ADD COLUMN cargo_setor TEXT",
+  ]:
     try:
-      cursor.execute(col_pin)
+      cursor.execute(col_user)
     except Exception:
       pass
 
-  # Tabela para salvar a ordem das colunas definida pelo Administrador
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS config_colunas (
             tabela TEXT PRIMARY KEY,
             ordem_colunas TEXT
+        )
+    """)
+
+  # Tabela para o Chat Corporativo Interno com suporte a arquivos/documentos
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chat_interno (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            remetente TEXT,
+            cargo TEXT,
+            mensagem TEXT,
+            arquivo_path TEXT,
+            arquivo_nome TEXT,
+            data_envio TEXT
         )
     """)
   conn.commit()
@@ -537,6 +552,8 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 "cpf": user_data[2],
                 "email": user_data[3],
                 "status": user_data[6],
+                "apelido": user_data[9] if len(user_data) > 9 and user_data[9] else user_data[1].split()[0],
+                "cargo": user_data[10] if len(user_data) > 10 and user_data[10] else "Colaborador",
             }
             st.success("✅ login realizado com sucesso!")
             st.rerun()
@@ -550,7 +567,9 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           unsafe_allow_html=True,
       )
       with st.form("form_novo_cadastro"):
-        c_nome = st.text_input("nome completo / gestor")
+        c_nome = st.text_input("nome completo")
+        c_apelido = st.text_input("primeiro nome ou como é conhecido (apelido)")
+        c_cargo = st.text_input("posição hierárquica / setor (opcional)")
         c_cpf = st.text_input("cpf")
         c_email = st.text_input("e-mail de login")
         c_senha = st.text_input("criar senha", type="password")
@@ -559,12 +578,14 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
 
         if btn_cadastrar:
           if c_nome and c_email and c_senha:
+            apelido_final = c_apelido.strip() if c_apelido and c_apelido.strip() else c_nome.split()[0]
+            cargo_final = c_cargo.strip() if c_cargo and c_cargo.strip() else "Colaborador"
             try:
               cursor.execute(
                   "INSERT INTO usuarios_sistema (nome_completo, cpf, email,"
                   " senha, celular_seguranca, status_assinatura, plano_atual,"
-                  " data_cadastro) VALUES (?, ?, ?, ?, ?, 'Ativo', 'Enterprise',"
-                  " ?)",
+                  " data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', 'Enterprise',"
+                  " ?, ?, ?)",
                   (
                       c_nome,
                       c_cpf,
@@ -572,6 +593,8 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                       c_senha,
                       c_cel,
                       datetime.now().strftime("%Y-%m-%d %H:%M"),
+                      apelido_final,
+                      cargo_final,
                   ),
               )
               conn.commit()
@@ -632,6 +655,8 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 "cpf": user_pin[2],
                 "email": user_pin[3],
                 "status": user_pin[6],
+                "apelido": user_pin[9] if len(user_pin) > 9 and user_pin[9] else user_pin[1].split()[0],
+                "cargo": user_pin[10] if len(user_pin) > 10 and user_pin[10] else "Colaborador",
             }
             st.success("✅ login por pin validado!")
             st.rerun()
@@ -651,13 +676,18 @@ status_usuario_ativo = (
     )
 )
 
+# Garante que apelido e cargo estejam definidos na sessão se logado
+if usuario_atual and "apelido" not in usuario_atual:
+  usuario_atual["apelido"] = usuario_atual["nome"].split()[0]
+if usuario_atual and "cargo" not in usuario_atual:
+  usuario_atual["cargo"] = "Colaborador"
+
 # Função auxiliar para exibir dataframe travado na ordem salva pelo Admin
 def exibir_tabela_padronizada(df, nome_tabela):
   if df.empty:
     st.info("nenhum registro encontrado.")
     return
 
-  # Busca ordem salva no banco
   cursor.execute(
       "SELECT ordem_colunas FROM config_colunas WHERE tabela = ?",
       (nome_tabela,),
@@ -667,15 +697,12 @@ def exibir_tabela_padronizada(df, nome_tabela):
 
   if res_ordem and res_ordem[0]:
     cols_salvas = res_ordem[0].split(",")
-    # Filtra apenas colunas que realmente existem no dataframe atual
     cols_finais = [c for c in cols_salvas if c in cols_atuais]
-    # Adiciona eventuais colunas novas que não estavam na lista salva
     for c in cols_atuais:
       if c not in cols_finais:
         cols_finais.append(c)
     df = df[cols_finais]
 
-  # Exibe a tabela travada (sem reordenação interativa para colaboradores)
   st.dataframe(df, use_container_width=True, hide_index=True)
 
 
@@ -708,9 +735,15 @@ with st.sidebar:
   if modo_admin_liberado:
     st.success("🔓 **modo admin enterprise ativo**")
   elif usuario_atual:
-    st.info(
-        f"👤 **gestor:** {usuario_atual['nome']}\n\n⭐ **status:**"
-        f" {usuario_atual['status']}"
+    st.markdown(
+        f"""
+            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; margin-bottom: 10px;">
+                <p style="margin: 0; font-weight: bold; color: #0f172a;">👤 {usuario_atual['apelido']}</p>
+                <p style="margin: 2px 0 6px 0; font-size: 11px; color: #475569;">{usuario_atual['cargo']}</p>
+                <span style="color: #059669; font-weight: bold; font-size: 12px;">🟢 Online (Ativo)</span>
+            </div>
+        """,
+        unsafe_allow_html=True,
     )
     if not status_usuario_ativo:
       st.warning(
@@ -725,6 +758,7 @@ menu = st.sidebar.radio(
     "navegação",
     [
         "📊 visão geral",
+        "💬 chat corporativo interno",
         "🚜 cadastro de equipamentos",
         "⛽ abastecimentos & combustível",
         "🏗️ mobilização / desmobilização",
@@ -766,7 +800,6 @@ if menu == "📊 visão geral":
       else 0
   )
 
-  # Métricas Executivas Superiores
   col1, col2, col3, col4, col5 = st.columns(5)
   with col1:
     st.metric("total frota", total_frota)
@@ -781,7 +814,6 @@ if menu == "📊 visão geral":
 
   st.divider()
 
-  # Seção de Estatísticas Profissionais e Gráficos Rápidos
   st.subheader("📈 analytics avançado de desempenho")
   col_graf1, col_graf2 = st.columns(2)
 
@@ -818,7 +850,6 @@ if menu == "📊 visão geral":
       )
 
   if not df_veiculos.empty:
-    # Painel exclusivo do Admin para configurar a ordem das colunas desta tabela
     if modo_admin_liberado:
       with st.expander(
           "⚙️ [ADMIN] Configurar Posição e Ordem Padrão das Colunas (Frota)"
@@ -836,16 +867,11 @@ if menu == "📊 visão geral":
               (nova_ordem_str,),
           )
           conn.commit()
-          st.success(
-              "✅ Ordem salva com sucesso! Todos os colaboradores agora verão"
-              " esta sequência travada."
-          )
+          st.success("✅ Ordem salva com sucesso para todos os colaboradores!")
           st.rerun()
 
-    # Exibe a tabela padronizada travada na ordem oficial
     exibir_tabela_padronizada(df_veiculos, "veiculos")
 
-    # Botões de compartilhamento direto via WhatsApp e E-mail (Apenas para Ativos/Admin)
     if status_usuario_ativo or modo_admin_liberado:
       st.markdown("### 📲 compartilhar relatórios e dados")
       col_w, col_e = st.columns(2)
@@ -883,6 +909,109 @@ if menu == "📊 visão geral":
       )
   else:
     st.info("nenhum equipamento cadastrado na frota.")
+
+elif menu == "💬 chat corporativo interno":
+  st.title("💬 chat corporativo & central de documentos da equipe")
+  st.markdown(
+      "Comunique-se em tempo real com os colaboradores ativos da empresa e"
+      " compartilhe documentos de trabalho, PDFs e imagens."
+  )
+
+  if not status_usuario_ativo and not modo_admin_liberado:
+    st.warning(
+        "🔒 **Acesso restrito:** sua conta está inativa. Você pode visualizar"
+        " o histórico do chat, mas o envio de mensagens está bloqueado."
+    )
+
+  # Área de Envio de Mensagens e Documentos
+  with st.form("form_chat_envio", clear_on_submit=True):
+    msg_texto = st.text_area(
+        "Digite sua mensagem, dúvida ou observação de trabalho:"
+    )
+    doc_enviado = st.file_uploader(
+        "📎 Anexar documento / arquivo (opcional - PDF, Imagem, Word, etc.)",
+        type=["png", "jpg", "jpeg", "pdf", "docx", "xlsx", "txt"],
+    )
+    btn_enviar_msg = st.form_submit_button("📤 Enviar Mensagem no Chat")
+
+    if btn_enviar_msg:
+      if not status_usuario_ativo and not modo_admin_liberado:
+        st.error("⚠️ Conta inativa: você não pode enviar mensagens.")
+      elif not msg_texto.strip() and not doc_enviado:
+        st.error("⚠️ Digite uma mensagem ou anexe um documento.")
+      else:
+        path_arquivo = ""
+        nome_arquivo = ""
+        if doc_enviado is not None:
+          os.makedirs("chat_documentos", exist_ok=True)
+          nome_arquivo = doc_enviado.name
+          path_arquivo = (
+              "chat_documentos/"
+              f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nome_arquivo}"
+          )
+          with open(path_arquivo, "wb") as f_chat:
+            f_chat.write(doc_enviado.getbuffer())
+
+        remetente_nome = (
+            usuario_atual["apelido"]
+            if usuario_atual
+            else ("Administrador" if modo_admin_liberado else "Colaborador")
+        )
+        cargo_nome = (
+            usuario_atual["cargo"] if usuario_atual else "Gestão / Admin"
+        )
+        data_hora_envio = datetime.now().strftime("%d/%m/%Y às %H:%M")
+
+        cursor.execute(
+            "INSERT INTO chat_interno (remetente, cargo, mensagem,"
+            " arquivo_path, arquivo_nome, data_envio) VALUES (?, ?, ?, ?, ?, ?)",
+            (
+                remetente_nome,
+                cargo_nome,
+                msg_texto,
+                path_arquivo,
+                nome_arquivo,
+                data_hora_envio,
+            ),
+        )
+        conn.commit()
+        st.success("✅ Mensagem enviada com sucesso!")
+        st.rerun()
+
+  st.divider()
+  st.subheader("📜 mural de conversas e arquivos da equipe")
+
+  df_chat = pd.read_sql(
+      "SELECT * FROM chat_interno ORDER BY id DESC LIMIT 50", conn
+  )
+  if not df_chat.empty:
+    for idx, row in df_chat.iterrows():
+      with st.container():
+        st.markdown(
+            f"""
+                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-weight: 800; color: #059669; font-size: 15px;">💬 {row['remetente']} <span style="background: #e2e8f0; color: #475569; font-size: 11px; padding: 2px 8px; border-radius: 6px; font-weight: normal;">{row['cargo']}</span></span>
+                        <span style="font-size: 11px; color: #94a3b8;">{row['data_envio']}</span>
+                    </div>
+                    <p style="color: #1e293b; font-size: 14px; margin: 4px 0 8px 0; white-space: pre-wrap;">{row['mensagem']}</p>
+                </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if row["arquivo_path"] and os.path.exists(str(row["arquivo_path"])):
+          with open(row["arquivo_path"], "rb") as arq_b:
+            st.download_button(
+                label=f"📥 Baixar documento anexado: {row['arquivo_nome']}",
+                data=arq_b.read(),
+                file_name=row["arquivo_nome"],
+                key=f"dl_chat_{row['id']}",
+            )
+  else:
+    st.info(
+        "Nenhuma mensagem ou documento enviado no chat ainda. Seja o primeiro"
+        " a interagir!"
+    )
 
 elif menu == "🚜 cadastro de equipamentos":
   st.title("🚜 cadastro de equipamentos e frota")
