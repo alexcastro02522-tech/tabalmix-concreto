@@ -336,6 +336,80 @@ def gerar_pdf_os_tecnica(os_row):
   return buffer
 
 
+def gerar_pdf_mobilizacao(mob_row):
+  buffer = io.BytesIO()
+  c = canvas.Canvas(buffer, pagesize=letter)
+  largura, altura = letter
+  margem = 40
+
+  c.setFillColorRGB(0.04, 0.35, 0.22)
+  c.rect(0, altura - 70, largura, 70, fill=1, stroke=0)
+  c.setFillColorRGB(1, 1, 1)
+  c.setFont("Helvetica-Bold", 16)
+  c.drawString(
+      margem, altura - 30, "laudo de check-list de mobilização / desmobilização"
+  )
+  c.setFont("Helvetica", 10)
+  c.drawString(
+      margem,
+      altura - 50,
+      f"tabalmix concreto — registro #{mob_row.get('id', 1)}",
+  )
+
+  y = altura - 100
+  c.setFillColorRGB(0.1, 0.1, 0.1)
+  c.setFont("Helvetica-Bold", 11)
+  c.drawString(margem, y, "detalhes da movimentação:")
+  y = altura - 125
+  c.setFont("Helvetica", 10)
+
+  c.drawString(
+      margem, y, f"• equipamento (tag): {mob_row.get('equipamento', '-')}"
+  )
+  y -= 20
+  c.drawString(
+      margem, y, f"• tipo de movimento: {mob_row.get('tipo_movimento', '-')}"
+  )
+  y -= 20
+  c.drawString(
+      margem, y, f"• destino / origem: {mob_row.get('destino_origem', '-')}"
+  )
+  y -= 20
+  c.drawString(
+      margem, y, f"• responsável técnico: {mob_row.get('responsavel', '-')}"
+  )
+  y -= 20
+  c.drawString(margem, y, f"• data da vistoria: {mob_row.get('data', '-')}")
+  y -= 25
+  c.drawString(
+      margem, y, f"• observações: {mob_row.get('observacao', 'nenhuma')}"
+  )
+
+  y -= 50
+  c.setFont("Helvetica-Bold", 11)
+  c.drawString(
+      margem,
+      y,
+      "evidências fotográficas anexadas: verifique no sistema os arquivos"
+      " salvos.",
+  )
+
+  y -= 90
+  c.setStrokeColorRGB(0.5, 0.5, 0.5)
+  c.setLineWidth(1)
+  c.line(margem, y, largura / 2 - 20, y)
+  c.line(largura / 2 + 20, y, largura - margem, y)
+  y -= 15
+  c.setFont("Helvetica", 9)
+  c.setFillColorRGB(0.2, 0.2, 0.2)
+  c.drawString(margem, y, "assinatura do encarregado vistoriador")
+  c.drawString(largura / 2 + 20, y, "assinatura do operador / motorista")
+
+  c.save()
+  buffer.seek(0)
+  return buffer
+
+
 def init_db():
   conn = sqlite3.connect("frota_profissional.db", check_same_thread=False)
   cursor = conn.cursor()
@@ -461,6 +535,22 @@ def init_db():
 
 conn = init_db()
 cursor = conn.cursor()
+
+# LIMPEZA TOTAL DE TESTES (Banco de dados zerado e em branco para começar a trabalhar)
+for tab_limpar in [
+    "veiculos",
+    "manutencoes",
+    "pecas",
+    "clientes",
+    "mobilizacoes",
+    "combustivel",
+    "chat_interno",
+]:
+  try:
+    cursor.execute(f"DELETE FROM {tab_limpar}")
+    conn.commit()
+  except Exception:
+    pass
 
 modo_admin_liberado = False
 try:
@@ -815,26 +905,7 @@ if menu == "📊 visão geral":
 
   st.divider()
 
-  st.subheader("📈 analytics avançado de desempenho")
-  col_graf1, col_graf2 = st.columns(2)
-
-  with col_graf1:
-    st.markdown("**distribuição de status operacional**")
-    if not df_veiculos.empty and "status" in df_veiculos.columns:
-      status_counts = df_veiculos["status"].value_counts()
-      st.bar_chart(status_counts)
-    else:
-      st.info("sem dados suficientes de status para exibir.")
-
-  with col_graf2:
-    st.markdown("**tipos de equipamentos na frota**")
-    if not df_veiculos.empty and "tipo" in df_veiculos.columns:
-      tipo_counts = df_veiculos["tipo"].value_counts()
-      st.bar_chart(tipo_counts)
-    else:
-      st.info("sem dados suficientes de tipos para exibir.")
-
-  st.divider()
+  # 1. LISTAGEM DE EQUIPAMENTOS PRIMEIRO (EM CIMA)
   col_exp1, col_exp2 = st.columns([3, 1])
   with col_exp1:
     st.subheader("📋 listagem geral de equipamentos")
@@ -903,13 +974,30 @@ if menu == "📊 visão geral":
             " E-mail</button></a>",
             unsafe_allow_html=True,
         )
-    else:
-      st.info(
-          "🔒 *Recursos de exportação e compartilhamento disponíveis apenas para"
-          " contas ativas.*"
-      )
   else:
     st.info("nenhum equipamento cadastrado na frota.")
+
+  st.divider()
+
+  # 2. ANALYTICS E GRÁFICOS EMBAIXO
+  st.subheader("📈 analytics avançado de desempenho")
+  col_graf1, col_graf2 = st.columns(2)
+
+  with col_graf1:
+    st.markdown("**distribuição de status operacional**")
+    if not df_veiculos.empty and "status" in df_veiculos.columns:
+      status_counts = df_veiculos["status"].value_counts()
+      st.bar_chart(status_counts)
+    else:
+      st.info("sem dados suficientes de status para exibir.")
+
+  with col_graf2:
+    st.markdown("**tipos de equipamentos na frota**")
+    if not df_veiculos.empty and "tipo" in df_veiculos.columns:
+      tipo_counts = df_veiculos["tipo"].value_counts()
+      st.bar_chart(tipo_counts)
+    else:
+      st.info("sem dados suficientes de tipos para exibir.")
 
 elif menu == "🚜 cadastro de equipamentos":
   st.title("🚜 cadastro de equipamentos e frota")
@@ -1103,9 +1191,12 @@ elif menu == "🏗️ mobilização / desmobilização":
       dt_mob = st.date_input("data")
       obs = st.text_input("observação")
 
-    foto_subida = st.file_uploader(
-        "📷 anexar foto do check-list de recebimento / vistoria",
+    # Suporte a múltiplas fotos (até 15 imagens simultâneas para frentes, traseiras, painel, pneus)
+    fotos_subidas = st.file_uploader(
+        "📷 anexar fotos do check-list (selecione de 1 a 15 fotos: frente, trás,"
+        " laterais, painel, pneus)",
         type=["png", "jpg", "jpeg"],
+        accept_multiple_files=True,
     )
 
     btn_cad_mob = st.form_submit_button("registrar movimentação")
@@ -1116,15 +1207,19 @@ elif menu == "🏗️ mobilização / desmobilização":
             " movimentações."
         )
       else:
-        nome_foto = ""
-        if foto_subida is not None:
+        caminhos_fotos = []
+        if fotos_subidas:
           os.makedirs("uploads_checklists", exist_ok=True)
-          nome_foto = (
-              "uploads_checklists/"
-              f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{foto_subida.name}"
-          )
-          with open(nome_foto, "wb") as f:
-            f.write(foto_subida.getbuffer())
+          for f_item in fotos_subidas[:15]:
+            nome_f = (
+                "uploads_checklists/"
+                f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{f_item.name}"
+            )
+            with open(nome_f, "wb") as f_out:
+              f_out.write(f_item.getbuffer())
+            caminhos_fotos.append(nome_f)
+
+        paths_str = "|".join(caminhos_fotos)
 
         cursor.execute(
             "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
@@ -1137,12 +1232,13 @@ elif menu == "🏗️ mobilização / desmobilização":
                 resp,
                 str(dt_mob),
                 obs,
-                nome_foto,
+                paths_str,
             ),
         )
         conn.commit()
         st.success(
-            "✅ movimentação e check-list fotográfico registrados com sucesso!"
+            "✅ movimentação e check-list fotográfico múltiplo registrados com"
+            " sucesso!"
         )
         st.rerun()
 
@@ -1168,14 +1264,29 @@ elif menu == "🏗️ mobilização / desmobilização":
           st.success("✅ Ordem atualizada para todos os colaboradores!")
           st.rerun()
     exibir_tabela_padronizada(df_mobs, "mobilizacoes")
+
     for idx, row in df_mobs.iterrows():
-      if row.get("foto_checklist") and os.path.exists(
-          str(row["foto_checklist"])
-      ):
-        with st.expander(
-            f"ver foto check-list #{row['id']} - {row['equipamento']}"
-        ):
-          st.image(row["foto_checklist"], width=300)
+      col_m_view1, col_m_view2 = st.columns([2, 1])
+      with col_m_view1:
+        if row.get("foto_checklist"):
+          paths_lista = str(row["foto_checklist"]).split("|")
+          with st.expander(
+              f"📸 ver fotos do check-list #{row['id']} - {row['equipamento']} ("
+              f"{len(paths_lista)} fotos)"
+          ):
+            for p_img in paths_lista:
+              if p_img and os.path.exists(p_img):
+                st.image(p_img, width=300)
+      with col_m_view2:
+        if status_usuario_ativo or modo_admin_liberado:
+          pdf_mob_buf = gerar_pdf_mobilizacao(row)
+          st.download_button(
+              label=f"📄 baixar pdf check-list #{row['id']}",
+              data=pdf_mob_buf,
+              file_name=f"checklist_mobilizacao_{row['id']}.pdf",
+              mime="application/pdf",
+              key=f"dl_mob_pdf_{row['id']}",
+          )
 
 elif menu == "🛠️ ordens de serviço (os)":
   st.title("🛠️ gestão unificada de ordens de serviço (os)")
