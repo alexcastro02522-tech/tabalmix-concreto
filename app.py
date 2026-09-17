@@ -1393,38 +1393,40 @@ elif menu == "🛠️ ordens de serviço (os)":
 
   try:
     df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
+    tags_disponiveis = df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
   except Exception:
-    df_v = pd.DataFrame()
+    tags_disponiveis = []
 
-  if df_v.empty:
-    st.warning("cadastre equipamentos antes de abrir uma os.")
-  else:
-    if status_usuario_ativo or modo_admin_liberado:
-      st.markdown("### 🟢 abertura de nova os (etapa 1)")
-      with st.form("form_abertura_os", clear_on_submit=True):
-        c1, c2 = st.columns(2)
-        with c1:
-          tag_os = st.selectbox(
-              "tag / prefixo do equipamento", df_v["tag_prefixo"].tolist()
-          )
-          tipo_manut = st.selectbox(
-              "tipo de manutenção",
-              ["preventiva", "corretiva", "preditiva", "revisão geral"],
-          )
-          horimetro_ab = st.text_input("horímetro / km na abertura")
-          origem_f = st.selectbox(
-              "origem da falha", ["falha na operação", "falha no equipamento"]
-          )
-        with c2:
-          data_ab = st.date_input("data de abertura", value=datetime.now().date())
-          hora_ab = st.text_input(
-              "horário de abertura (ex: 08:30)", value=datetime.now().strftime("%H:%M")
-          )
-          desc_prob = st.text_area(
-              "descrição do problema apresentado pelo motorista"
-          )
+  if status_usuario_ativo or modo_admin_liberado:
+    st.markdown("### 🟢 abertura de nova os (etapa 1)")
+    with st.form("form_abertura_os", clear_on_submit=True):
+      c1, c2 = st.columns(2)
+      with c1:
+        if tags_disponiveis:
+          tag_os = st.selectbox("tag / prefixo do equipamento", tags_disponiveis)
+        else:
+          st.warning("⚠️ nenhum veículo cadastrado. digite a tag manualmente:")
+          tag_os = st.text_input("tag / prefixo do equipamento (ex: eq-001)")
 
-        if st.form_submit_button("abrir nova os"):
+        tipo_manut = st.selectbox(
+            "tipo de manutenção",
+            ["preventiva", "corretiva", "preditiva", "revisão geral"],
+        )
+        horimetro_ab = st.text_input("horímetro / km na abertura")
+        origem_f = st.selectbox(
+            "origem da falha", ["falha na operação", "falha no equipamento"]
+        )
+      with c2:
+        data_ab = st.date_input("data de abertura", value=datetime.now().date())
+        hora_ab = st.text_input(
+            "horário de abertura (ex: 08:30)", value=datetime.now().strftime("%H:%M")
+        )
+        desc_prob = st.text_area(
+            "descrição do problema apresentado pelo motorista"
+        )
+
+      if st.form_submit_button("abrir nova os"):
+        if tag_os:
           cursor.execute(
               "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao,"
               " horimetro_km_manut, origem_falha, descricao_problema,"
@@ -1432,7 +1434,7 @@ elif menu == "🛠️ ordens de serviço (os)":
               " mao_de_obra) VALUES (?, ?, ?, ?, ?, ?, ?, 'aberta', 0.0, 0.0,"
               " 0.0)",
               (
-                  tag_os,
+                  tag_os.upper(),
                   tipo_manutencao,
                   horimetro_ab,
                   origem_f,
@@ -1444,160 +1446,162 @@ elif menu == "🛠️ ordens de serviço (os)":
           conn.commit()
           st.success("✅ os aberta com sucesso!")
           st.rerun()
-    else:
-      verificar_licenca_para_acao()
+        else:
+          st.error("⚠️ informe a tag/prefixo do equipamento.")
+  else:
+    verificar_licenca_para_acao()
 
-    st.divider()
-    st.subheader("📋 fechamento e histórico de ordens de serviço")
-    df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
-    if not df_os.empty:
-      col_fos1, col_fos2 = st.columns(2)
-      with col_fos1:
-        dt_ini_os = st.date_input("data inicial os", value=datetime.now().date() - timedelta(days=30), key="ini_os")
-      with col_fos2:
-        dt_fim_os = st.date_input("data final os", value=datetime.now().date(), key="fim_os")
+  st.divider()
+  st.subheader("📋 fechamento e histórico de ordens de serviço")
+  df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
+  if not df_os.empty:
+    col_fos1, col_fos2 = st.columns(2)
+    with col_fos1:
+      dt_ini_os = st.date_input("data inicial os", value=datetime.now().date() - timedelta(days=30), key="ini_os")
+    with col_fos2:
+      dt_fim_os = st.date_input("data final os", value=datetime.now().date(), key="fim_os")
+    
+    try:
+      df_os["dt_ab_parsed"] = pd.to_datetime(df_os["data_abertura"], errors="coerce").dt.date
+      df_os_filtrado = df_os[
+          (df_os["dt_ab_parsed"] >= dt_ini_os) & (df_os["dt_ab_parsed"] <= dt_fim_os)
+      ].drop(columns=["dt_ab_parsed"])
+      st.dataframe(df_os_filtrado, use_container_width=True, hide_index=True)
+    except Exception:
+      st.dataframe(df_os, use_container_width=True, hide_index=True)
+
+    if status_usuario_ativo or modo_admin_liberado:
+      st.markdown(
+          "### ⚙️ fechamento / atualização ou exclusão de os (etapa 2)"
+      )
+      os_abertas_ids = df_os["id"].tolist()
       
-      try:
-        df_os["dt_ab_parsed"] = pd.to_datetime(df_os["data_abertura"], errors="coerce").dt.date
-        df_os_filtrado = df_os[
-            (df_os["dt_ab_parsed"] >= dt_ini_os) & (df_os["dt_ab_parsed"] <= dt_fim_os)
-        ].drop(columns=["dt_ab_parsed"])
-        st.dataframe(df_os_filtrado, use_container_width=True, hide_index=True)
-      except Exception:
-        st.dataframe(df_os, use_container_width=True, hide_index=True)
-
-      if status_usuario_ativo or modo_admin_liberado:
-        st.markdown(
-            "### ⚙️ fechamento / atualização ou exclusão de os (etapa 2)"
+      col_ed1, col_ed2 = st.columns([3, 1])
+      with col_ed1:
+        os_sel = st.selectbox(
+            "selecione o id da os para gerenciar", os_abertas_ids
         )
-        os_abertas_ids = df_os["id"].tolist()
-        
-        col_ed1, col_ed2 = st.columns([3, 1])
-        with col_ed1:
-          os_sel = st.selectbox(
-              "selecione o id da os para gerenciar", os_abertas_ids
+      with col_ed2:
+        st.write("")
+        st.write("")
+        if st.button("🗑️ excluir esta os"):
+          if os_sel:
+            cursor.execute("DELETE FROM manutencoes WHERE id = ?", (os_sel,))
+            conn.commit()
+            st.success(f"✅ os #{os_sel} excluída com sucesso!")
+            st.rerun()
+
+      if os_sel:
+        os_row_data = df_os[df_os["id"] == os_sel]
+        if not os_row_data.empty:
+          os_atual = os_row_data.iloc[0]
+          tag_eq_os = (
+              os_atual.get("tag_prefixo")
+              or os_atual.get("equipamento")
+              or "não informado"
           )
-        with col_ed2:
-          st.write("")
-          st.write("")
-          if st.button("🗑️ excluir esta os"):
-            if os_sel:
-              cursor.execute("DELETE FROM manutencoes WHERE id = ?", (os_sel,))
+          val_dt_ab = os_atual.get("data_abertura") or datetime.now().strftime("%Y-%m-%d")
+          val_hr_ab = os_atual.get("hora_abertura") or datetime.now().strftime("%H:%M")
+          val_tp_man = os_atual.get("tipo_manutencao") or "preventiva"
+          val_desc = os_atual.get("descricao_problema") or ""
+          val_st_os = os_atual.get("status_os") or "aberta"
+
+          with st.form("form_fechamento_os"):
+            st.info(
+                f"editando os #{os_atual['id']} | equipamento:"
+                f" {tag_eq_os} | aberta em:"
+                f" {val_dt_ab} às {val_hr_ab}"
+            )
+            fc1, fc2 = st.columns(2)
+            with fc1:
+              pecas_util = st.text_input(
+                  "peças utilizadas",
+                  value=str(os_atual.get("pecas_utilizadas") or ""),
+              )
+              v_pecas = st.number_input(
+                  "valor total das peças (r$)",
+                  min_value=0.0,
+                  value=float(os_atual.get("custo_pecas") or 0.0),
+                  format="%.2f",
+              )
+              v_mo = st.number_input(
+                  "valor da mão de obra (r$)",
+                  min_value=0.0,
+                  value=float(os_atual.get("mao_de_obra") or 0.0),
+                  format="%.2f",
+              )
+              oficina_resp = st.text_input(
+                  "oficina responsável",
+                  value=str(os_atual.get("oficina") or ""),
+              )
+            with fc2:
+              tec_resp = st.text_input(
+                  "técnico / mecânico responsável",
+                  value=str(os_atual.get("tecnico_mecanico") or ""),
+              )
+              dt_fech = st.date_input("data de fechamento", value=datetime.now().date())
+              hr_fech = st.text_input(
+                  "horário de fechamento (ex: 17:00)", value=datetime.now().strftime("%H:%M")
+              )
+              status_final = st.selectbox(
+                  "status da os", ["aberta", "em manutenção", "fechada"]
+              )
+
+            if st.form_submit_button("salvar e fechar os"):
+              custo_total = v_pecas + v_mo
+              cursor.execute(
+                  "UPDATE manutencoes SET pecas_utilizadas = ?, custo_pecas ="
+                  " ?, mao_de_obra = ?, custo = ?, oficina = ?,"
+                  " tecnico_mecanico = ?, data_fechamento = ?, hora_fechamento"
+                  " = ?, status_os = ? WHERE id = ?",
+                  (
+                      pecas_util,
+                      v_pecas,
+                      v_mo,
+                      custo_total,
+                      oficina_resp,
+                      tec_resp,
+                      str(dt_fech),
+                      hr_fech,
+                      status_final,
+                      os_sel,
+                  ),
+              )
               conn.commit()
-              st.success(f"✅ os #{os_sel} excluída com sucesso!")
+              st.success(f"✅ os #{os_sel} atualizada e fechada com sucesso!")
               st.rerun()
 
-        if os_sel:
-          os_row_data = df_os[df_os["id"] == os_sel]
-          if not os_row_data.empty:
-            os_atual = os_row_data.iloc[0]
-            tag_eq_os = (
-                os_atual.get("tag_prefixo")
-                or os_atual.get("equipamento")
-                or "não informado"
-            )
-            val_dt_ab = os_atual.get("data_abertura") or datetime.now().strftime("%Y-%m-%d")
-            val_hr_ab = os_atual.get("hora_abertura") or datetime.now().strftime("%H:%M")
-            val_tp_man = os_atual.get("tipo_manutencao") or "preventiva"
-            val_desc = os_atual.get("descricao_problema") or ""
-            val_st_os = os_atual.get("status_os") or "aberta"
+          st.markdown("---")
+          st.markdown("### 🖨️ relatórios técnicos e envio")
+          
+          tag_eq_pdf = tag_eq_os
+          pdf_os_buffer = gerar_pdf_os_tecnica(os_atual)
+          st.download_button(
+              "📥 baixar pdf técnico oficial da os",
+              pdf_os_buffer,
+              file_name=f"os_tecnica_{os_atual['id']}_{tag_eq_pdf}.pdf",
+              mime="application/pdf",
+          )
 
-            with st.form("form_fechamento_os"):
-              st.info(
-                  f"editando os #{os_atual['id']} | equipamento:"
-                  f" {tag_eq_os} | aberta em:"
-                  f" {val_dt_ab} às {val_hr_ab}"
-              )
-              fc1, fc2 = st.columns(2)
-              with fc1:
-                pecas_util = st.text_input(
-                    "peças utilizadas",
-                    value=str(os_atual.get("pecas_utilizadas") or ""),
-                )
-                v_pecas = st.number_input(
-                    "valor total das peças (r$)",
-                    min_value=0.0,
-                    value=float(os_atual.get("custo_pecas") or 0.0),
-                    format="%.2f",
-                )
-                v_mo = st.number_input(
-                    "valor da mão de obra (r$)",
-                    min_value=0.0,
-                    value=float(os_atual.get("mao_de_obra") or 0.0),
-                    format="%.2f",
-                )
-                oficina_resp = st.text_input(
-                    "oficina responsável",
-                    value=str(os_atual.get("oficina") or ""),
-                )
-              with fc2:
-                tec_resp = st.text_input(
-                    "técnico / mecânico responsável",
-                    value=str(os_atual.get("tecnico_mecanico") or ""),
-                )
-                dt_fech = st.date_input("data de fechamento", value=datetime.now().date())
-                hr_fech = st.text_input(
-                    "horário de fechamento (ex: 17:00)", value=datetime.now().strftime("%H:%M")
-                )
-                status_final = st.selectbox(
-                    "status da os", ["aberta", "em manutenção", "fechada"]
-                )
-
-              if st.form_submit_button("salvar e fechar os"):
-                custo_total = v_pecas + v_mo
-                cursor.execute(
-                    "UPDATE manutencoes SET pecas_utilizadas = ?, custo_pecas ="
-                    " ?, mao_de_obra = ?, custo = ?, oficina = ?,"
-                    " tecnico_mecanico = ?, data_fechamento = ?, hora_fechamento"
-                    " = ?, status_os = ? WHERE id = ?",
-                    (
-                        pecas_util,
-                        v_pecas,
-                        v_mo,
-                        custo_total,
-                        oficina_resp,
-                        tec_resp,
-                        str(dt_fech),
-                        hr_fech,
-                        status_final,
-                        os_sel,
-                    ),
-                )
-                conn.commit()
-                st.success(f"✅ os #{os_sel} atualizada e fechada com sucesso!")
-                st.rerun()
-
-            st.markdown("---")
-            st.markdown("### 🖨️ relatórios técnicos e envio")
-            
-            tag_eq_pdf = tag_eq_os
-            pdf_os_buffer = gerar_pdf_os_tecnica(os_atual)
-            st.download_button(
-                "📥 baixar pdf técnico oficial da os",
-                pdf_os_buffer,
-                file_name=f"os_tecnica_{os_atual['id']}_{tag_eq_pdf}.pdf",
-                mime="application/pdf",
-            )
-
-            texto_msg = (
-                f"*tabalmix concreto - relatório de os #{os_atual['id']}*\n\n"
-                f"🚜 *equipamento:* {tag_eq_os}\n"
-                f"🔧 *tipo:* {val_tp_man}\n"
-                f"📋 *status:* {val_st_os}\n"
-                f"⚠️ *problema:* {val_desc}\n"
-                f"🔩 *peças:* {os_atual.get('pecas_utilizadas') or 'nenhuma'}\n"
-                f"💰 *custo total:* r$ {(os_atual.get('custo') or 0.0):,.2f}\n"
-                f"📅 *fechamento:* {os_atual.get('data_fechamento') or '-'} às"
-                f" {os_atual.get('hora_fechamento') or '-'}"
-            )
-            encoded_whatsapp = urllib.parse.quote(texto_msg)
-            url_whatsapp = f"https://api.whatsapp.com/send?text={encoded_whatsapp}"
-            st.markdown(
-                f"💬 **[👉 enviar relatório via whatsapp]({url_whatsapp})**",
-                unsafe_allow_html=True,
-            )
-    else:
-      st.info("nenhuma os registrada.")
+          texto_msg = (
+              f"*tabalmix concreto - relatório de os #{os_atual['id']}*\n\n"
+              f"🚜 *equipamento:* {tag_eq_os}\n"
+              f"🔧 *tipo:* {val_tp_man}\n"
+              f"📋 *status:* {val_st_os}\n"
+              f"⚠️ *problema:* {val_desc}\n"
+              f"🔩 *peças:* {os_atual.get('pecas_utilizadas') or 'nenhuma'}\n"
+              f"💰 *custo total:* r$ {(os_atual.get('custo') or 0.0):,.2f}\n"
+              f"📅 *fechamento:* {os_atual.get('data_fechamento') or '-'} às"
+              f" {os_atual.get('hora_fechamento') or '-'}"
+          )
+          encoded_whatsapp = urllib.parse.quote(texto_msg)
+          url_whatsapp = f"https://api.whatsapp.com/send?text={encoded_whatsapp}"
+          st.markdown(
+              f"💬 **[👉 enviar relatório via whatsapp]({url_whatsapp})**",
+              unsafe_allow_html=True,
+          )
+  else:
+    st.info("nenhuma os registrada.")
 
 elif menu == "🔩 peças e ferramentas":
   st.title("🔩 controle de peças e ferramentas")
@@ -1788,7 +1792,6 @@ elif menu == "⚙️ painel de licença (admin)":
 
     st.markdown("---")
     st.markdown("### gestão de usuários e licenças")
-    # SELECIONA E RENOMEIA A COLUNA PARA O STATUS FICAR IMEDIATAMENTE AO LADO DO ID
     df_users = pd.read_sql(
         "SELECT id, status_assinatura AS status, nome_completo, email, cpf, celular_seguranca, plano_atual FROM usuarios_sistema",
         conn,
