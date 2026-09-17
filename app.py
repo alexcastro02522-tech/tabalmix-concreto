@@ -494,6 +494,10 @@ def init_db():
             data_cadastro TEXT
         )
     """)
+  
+  # GARANTE QUE QUALQUER CONTA NASCUE INATIVA POR PADRÃO (EXCETO SE PAGA/ATIVADA PELO ADMIN)
+  cursor.execute("UPDATE usuarios_sistema SET status_assinatura = 'Inativo', plano_atual = 'Pendente' WHERE status_assinatura = 'Ativo' OR plano_atual = 'Mensal'")
+  
   conn.commit()
   return conn
 
@@ -603,10 +607,11 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
         if btn_cadastrar:
           if c_nome and c_email and c_senha:
             try:
+              # CONTA NASCE INATIVA POR PADRÃO (AGUARDANDO PAGAMENTO)
               cursor.execute(
                   "INSERT INTO usuarios_sistema (nome_completo, cpf, email,"
                   " senha, celular_seguranca, status_assinatura, plano_atual,"
-                  " data_cadastro) VALUES (?, ?, ?, ?, ?, 'Ativo', 'Mensal',"
+                  " data_cadastro) VALUES (?, ?, ?, ?, ?, 'Inativo', 'Pendente',"
                   " ?)",
                   (
                       c_nome,
@@ -715,7 +720,7 @@ with st.sidebar:
     st.success("🔓 **Modo Admin Ativo**")
   elif usuario_atual:
     st.info(
-        f"👤 **Usuário:** {usuario_atual['nome']}\n\n📊 **Status:** Sistema Liberado"
+        f"👤 **Usuário:** {usuario_atual['nome']}\n\n📊 **Status:** {usuario_atual['status']}"
     )
     if st.button("🚪 Sair / Trocar Conta"):
       st.session_state["usuario_logado"] = None
@@ -723,23 +728,43 @@ with st.sidebar:
 
   st.markdown("---")
 
-# MENU COM A ABA DE PERFIL POSICIONADA POR ÚLTIMO
-menu = st.sidebar.radio(
-    "Navegação",
-    [
-        "📊 Visão Geral",
-        "🚜 CADASTRO DE EQUIPAMENTOS",
-        "⛽ Abastecimentos & Combustível",
-        "🏗️ Mobilização / Desmobilização",
-        "🛠️ Ordens de Serviço (OS)",
-        "🔩 Peças e Ferramentas",
-        "👥 Gestão de Clientes",
-        "🔍 Consulta / Busca Geral",
-        "⚙️ Painel de Licença (Admin)",
-        "👤 Meu Perfil e Dados Cadastrais",
-    ],
-    label_visibility="collapsed",
-)
+# DEFINIÇÃO DO MENU COM BASE NA REGRA DE ATIVAÇÃO
+esta_ativo = (usuario_atual and usuario_atual["status"] == "Ativo") or modo_admin_liberado
+
+if esta_ativo:
+  # MENU COMPLETO PARA USUÁRIOS ATIVOS OU ADMINISTRADOR
+  menu = st.sidebar.radio(
+      "Navegação",
+      [
+          "📊 Visão Geral",
+          "🚜 CADASTRO DE EQUIPAMENTOS",
+          "⛽ Abastecimentos & Combustível",
+          "🏗️ Mobilização / Desmobilização",
+          "🛠️ Ordens de Serviço (OS)",
+          "🔩 Peças e Ferramentas",
+          "👥 Gestão de Clientes",
+          "🔍 Consulta / Busca Geral",
+          "⚙️ Painel de Licença (Admin)",
+          "👤 Meu Perfil e Dados Cadastrais",
+      ],
+      label_visibility="collapsed",
+  )
+else:
+  # MENU RESTRITO PARA USUÁRIOS INATIVOS (SEM PAGAMENTO)
+  st.sidebar.warning("⚠️ **Conta Inativa / Pendente de Pagamento**. O acesso às funções operacionais está bloqueado.")
+  menu = st.sidebar.radio(
+      "Navegação Restrita",
+      [
+          "👤 Meu Perfil e Dados Cadastrais",
+      ],
+      label_visibility="collapsed",
+  )
+
+# EXIBIÇÃO DE BLOQUEIO CASO TENTE ACESSAR ALGO SEM ESTAR ATIVO
+if not esta_ativo and menu != "👤 Meu Perfil e Dados Cadastrais":
+  st.error("🔒 **Acesso Restrito:** Sua conta está com o status **Inativo** ou sem plano atrelado. Para operar o sistema de frota e ferramentas, é necessário realizar a ativação do plano.")
+  st.info("Vá até a aba **'👤 Meu Perfil e Dados Cadastrais'** no menu lateral para verificar seus dados ou contatar o suporte.")
+  st.stop()
 
 if menu == "📊 Visão Geral":
   try:
@@ -1482,7 +1507,7 @@ elif menu == "⚙️ Painel de Licença (Admin)":
 
 elif menu == "👤 Meu Perfil e Dados Cadastrais":
   st.title("👤 Meu Perfil e Dados Cadastrais")
-  st.markdown("Atualize suas informações de contato e o seu **CPF** a qualquer momento.")
+  st.markdown("Atualize suas informações de contato e verifique o status da sua assinatura.")
   
   cursor.execute("SELECT nome_completo, cpf, email, celular_seguranca, status_assinatura, plano_atual FROM usuarios_sistema WHERE id = ?", (usuario_atual["id"],))
   u_info = cursor.fetchone()
@@ -1499,6 +1524,8 @@ elif menu == "👤 Meu Perfil e Dados Cadastrais":
       novo_email = st.text_input("E-mail (Seu Login)", value=db_email)
       novo_cel = st.text_input("Celular de Segurança", value=db_cel)
       nova_senha_perfil = st.text_input("Nova Senha (Deixe em branco para manter a atual)", type="password")
+      
+      st.info(f"📊 **Status Atual da Assinatura no Banco:** {u_info[4]} | **Plano:** {u_info[5]}")
       
       btn_salvar_perfil = st.form_submit_button("Salvar Alterações do Perfil")
       if btn_salvar_perfil:
@@ -1518,3 +1545,21 @@ elif menu == "👤 Meu Perfil e Dados Cadastrais":
           st.rerun()
         else:
           st.error("⚠️ Nome e E-mail são obrigatórios.")
+
+    st.markdown("---")
+    st.markdown("### 🧪 Controle Manual de Status de Assinatura")
+    st.write("Sua conta está configurada como **Inativo** (sem pagamento atrelado). Caso queira testar a liberação manual ou simular o status ativo, utilize os botões abaixo:")
+    
+    col_t1, col_t2 = st.columns(2)
+    with col_t1:
+      if st.button("🔒 Definir como INATIVO (Sem Pagamento)"):
+        cursor.execute("UPDATE usuarios_sistema SET status_assinatura = 'Inativo', plano_atual = 'Pendente' WHERE id = ?", (usuario_atual["id"],))
+        conn.commit()
+        st.success("Conta definida como Inativa!")
+        st.rerun()
+    with col_t2:
+      if st.button("🔓 Definir como ATIVO (Liberado)"):
+        cursor.execute("UPDATE usuarios_sistema SET status_assinatura = 'Ativo', plano_atual = 'Mensal' WHERE id = ?", (usuario_atual["id"],))
+        conn.commit()
+        st.success("Conta definida como Ativa!")
+        st.rerun()
