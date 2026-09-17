@@ -11,6 +11,13 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import streamlit as st
 
+# CONFIGURAÇÃO DE TEMA NATIVO PARA FORÇAR MODO CLARO
+st.set_option("theme.base", "light")
+st.set_option("theme.primaryColor", "#1b7a3e")
+st.set_option("theme.backgroundColor", "#f4f6f9")
+st.set_option("theme.secondaryBackgroundColor", "#ffffff")
+st.set_option("theme.textColor", "#1e293b")
+
 # CONFIGURAÇÃO DO MERCADO PAGO (Token Oficial de Produção Integrado)
 MERCADO_PAGO_ACCESS_TOKEN = (
     "APP_USR-7480302560366070-091611-1118388bbc787e8f88ea1da583096dbc-2919829212"
@@ -24,7 +31,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Corporativa Blindada (Forçando Fundo 100% Claro e Legível no Celular e PC)
+# Estilização Visual Corporativa Avançada (Fundo Claro Fixo, Campos Brancos e Menu Escuro)
 st.markdown(
     """
     <style>
@@ -100,20 +107,17 @@ st.markdown(
         font-size: 20px !important;
         font-weight: 800 !important;
     }
-    /* FORÇAR CAMPOS E SELECTBOXES COM FUNDO CLARO E TEXTO PRETO */
     div.stTextInput > div > div > input, 
     div.stNumberInput > div > div > input, 
     div.stSelectbox > div > div > div,
     div.stTextArea > div > div > textarea,
-    div[data-baseweb="select"] > div,
-    span[data-baseweb="tag"] {
+    div[data-baseweb="select"] > div {
         background-color: #ffffff !important;
         color: #0f172a !important;
         border: 1px solid #cbd5e1 !important;
         border-radius: 8px !important;
         min-height: 40px !important;
     }
-    /* CORREÇÃO DOS MENUS SUSPENSOS E LISTAS DO SELECTBOX */
     div[data-baseweb="menu"], ul[data-baseweb="menu"], li[data-baseweb="option"] {
         background-color: #ffffff !important;
         color: #0f172a !important;
@@ -121,17 +125,12 @@ st.markdown(
     div[data-baseweb="menu"] div, span, option {
         color: #0f172a !important;
     }
-    /* CORREÇÃO DE DATAFRAMES / TABELAS */
-    div[data-testid="stDataFrame"], .stDataFrame {
+    div[data-testid="stDataFrame"] {
         background-color: #ffffff !important;
         border-radius: 12px;
         padding: 10px;
         border: 1px solid #cbd5e1;
         box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-    }
-    div[data-testid="stDataFrame"] table, div[data-testid="stDataFrame"] tr, div[data-testid="stDataFrame"] th, div[data-testid="stDataFrame"] td {
-        background-color: #ffffff !important;
-        color: #0f172a !important;
     }
     .stButton button {
         background: linear-gradient(135deg, #1b7a3e 0%, #12542a 100%) !important;
