@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Corporativa em Tema Claro (Central e Lateral Claros com Selo Destacado)
+# Estilização Visual Corporativa em Tema Claro (Com assinatura refinada e cards limpos)
 st.markdown(
     """
     <style>
@@ -35,7 +35,6 @@ st.markdown(
         padding-top: 1.2rem !important;
         padding-bottom: 1.2rem !important;
     }
-    /* BARRA LATERAL COM O MESMO FUNDO CLARO DO SISTEMA */
     [data-testid="stSidebar"] {
         min-width: 300px !important;
         width: 300px !important;
@@ -62,7 +61,6 @@ st.markdown(
         font-size: 14px;
         font-weight: 500;
     }
-    /* TEXTOS E ITENS DO MENU LATERAL EM TONS ESCUROS PARA CONTRASTE NO CLARO */
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label {
         color: #1e293b !important;
     }
@@ -370,6 +368,16 @@ def init_db():
             chave_pix TEXT
         )
     """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS usuarios_seguranca (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome_completo TEXT,
+            cpf TEXT,
+            email_recuperacao TEXT,
+            celular_seguranca TEXT,
+            data_cadastro TEXT
+        )
+    """)
   cursor.execute("SELECT COUNT(*) FROM licenca")
   if cursor.fetchone()[0] == 0:
     vencimento_padrao = (datetime.now() + timedelta(days=30)).strftime(
@@ -426,14 +434,14 @@ try:
 except Exception:
   pass
 
-# Menu Lateral Sofisticado com Selo Oficial Claro e Destacado
+# Menu Lateral Sofisticado com Selo Oficial e Assinatura Profissional
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
       encoded_logo = base64.b64encode(image_file.read()).decode()
     st.markdown(
         f"""
-            <div style="text-align: center; padding: 10px 0 15px 0; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.04);">
+            <div style="text-align: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.04);">
                 <div style="border-radius: 8px; overflow: hidden; max-height: 90px; border: 2px solid #1b7a3e; margin-bottom: 8px;">
                     <img src="data:image/jpeg;base64,{encoded_logo}" style="width: 100%; height: 80px; object-fit: cover; display: block;">
                 </div>
@@ -441,7 +449,8 @@ with st.sidebar:
                     <span style="color: #1b7a3e; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">🛡️ SELO OFICIAL</span>
                 </div>
                 <h3 style="color: #1b7a3e !important; margin: 0; font-size: 15px; font-weight: 800;">TABALMIX CONCRETO</h3>
-                <p style="color: #475569; font-size: 9px; margin: 2px 0 4px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
+                <p style="color: #475569; font-size: 9px; margin: 2px 0 2px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
+                <p style="color: #94a3b8; font-size: 8px; margin: 0; font-style: italic;">Powered by Castro Tech</p>
             </div>
         """,
         unsafe_allow_html=True,
@@ -449,9 +458,10 @@ with st.sidebar:
   except Exception:
     st.markdown(
         """
-            <div style="text-align: center; padding: 10px 0 15px 0; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px;">
+            <div style="text-align: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px;">
                 <h3 style="color: #1b7a3e !important; margin: 0; font-size: 15px; font-weight: 800;">TABALMIX CONCRETO</h3>
-                <p style="color: #475569; font-size: 9px; margin: 2px 0 4px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
+                <p style="color: #475569; font-size: 9px; margin: 2px 0 2px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
+                <p style="color: #94a3b8; font-size: 8px; margin: 0; font-style: italic;">Powered by Castro Tech</p>
             </div>
         """,
         unsafe_allow_html=True,
@@ -553,6 +563,7 @@ menu = st.sidebar.radio(
         "🔩 Peças e Ferramentas",
         "👥 Gestão de Clientes",
         "🔍 Consulta / Busca Geral",
+        "🔐 Cadastro de Segurança",
         "⚙️ Painel de Licença (Admin)",
     ],
     label_visibility="collapsed",
@@ -1089,6 +1100,49 @@ elif menu == "🔍 Consulta / Busca Geral":
       st.dataframe(df_bv, use_container_width=True, hide_index=True)
     else:
       st.info("Nenhum resultado.")
+
+elif menu == "🔐 Cadastro de Segurança":
+  st.title("🔐 Cadastro e Recuperação de Segurança")
+  st.markdown(
+      "Cadastre seus dados para garantir a recuperação de acesso ao sistema"
+      " caso troque ou perca o dispositivo."
+  )
+
+  with st.form("form_seguranca"):
+    c1, c2 = st.columns(2)
+    with c1:
+      nome_user = st.text_input("Nome Completo")
+      cpf_user = st.text_input("CPF")
+    with c2:
+      email_rec = st.text_input("E-mail de Recuperação")
+      cel_seg = st.text_input("Celular / Contato de Segurança")
+
+    if st.form_submit_button("Salvar Dados de Segurança"):
+      if nome_user and cpf_user and email_rec:
+        cursor.execute(
+            "INSERT INTO usuarios_seguranca (nome_completo, cpf,"
+            " email_recuperacao, celular_seguranca, data_cadastro) VALUES (?, ?,"
+            " ?, ?, ?)",
+            (
+                nome_user,
+                cpf_user,
+                email_rec,
+                cel_seg,
+                datetime.now().strftime("%Y-%m-%d %H:%M"),
+            ),
+        )
+        conn.conform = conn.commit()
+        st.success("✅ Dados de segurança salvos com sucesso!")
+      else:
+        st.error("⚠️ Preencha Nome, CPF e E-mail de Recuperação.")
+
+  st.divider()
+  st.subheader("Usuários Cadastrados no Sistema")
+  df_seg = pd.read_sql("SELECT * FROM usuarios_seguranca", conn)
+  if not df_seg.empty:
+    st.dataframe(df_seg, use_container_width=True, hide_index=True)
+  else:
+    st.info("Nenhum usuário de segurança cadastrado ainda.")
 
 elif menu == "⚙️ Painel de Licença (Admin)":
   if modo_admin_liberado:
