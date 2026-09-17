@@ -594,19 +594,20 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
       )
       with st.form("form_novo_cadastro"):
         c_nome = st.text_input("Nome Completo / Responsável")
-        c_cpf = st.text_input("CPF (Necessário para emissão de Pix/Pagamento)")
+        c_cpf = st.text_input("CPF (Necessário para Pix)")
         c_email = st.text_input("E-mail (Seu Login)")
         c_senha = st.text_input("Criar Senha", type="password")
         c_cel = st.text_input("Celular / Contato de Segurança")
         btn_cadastrar = st.form_submit_button("Finalizar Cadastro")
 
         if btn_cadastrar:
-          if c_nome and c_cpf and c_email and c_senha:
+          if c_nome and c_email and c_senha:
             try:
+              # NOVO CADASTRO NASCE SEMPRE COMO INATIVO E PENDENTE
               cursor.execute(
                   "INSERT INTO usuarios_sistema (nome_completo, cpf, email,"
                   " senha, celular_seguranca, status_assinatura, plano_atual,"
-                  " data_cadastro) VALUES (?, ?, ?, ?, ?, 'Inativo', 'Nenhum',"
+                  " data_cadastro) VALUES (?, ?, ?, ?, ?, 'Inativo', 'Pendente',"
                   " ?)",
                   (
                       c_nome,
@@ -619,8 +620,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
               )
               conn.commit()
               st.success(
-                  "✅ Conta criada com sucesso! Vá na aba 'Entrar' para fazer"
-                  " seu login."
+                  "✅ Conta criada com sucesso! Faça login na aba 'Entrar'."
               )
             except Exception as e:
               st.error(
@@ -628,7 +628,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                   f" {str(e)}"
               )
           else:
-            st.error("⚠️ Preencha todos os campos obrigatórios.")
+            st.error("⚠️ Preencha Nome, E-mail e Senha.")
 
     with tab_recuperar:
       st.markdown(
@@ -665,6 +665,18 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             st.error("⚠️ Preencha todos os campos para recuperar a senha.")
 
   st.stop()
+
+# ATUALIZAR DADOS DO USUÁRIO LOGADO DIRETO DO BANCO
+cursor.execute("SELECT * FROM usuarios_sistema WHERE id = ?", (st.session_state["usuario_logado"]["id"],))
+u_db = cursor.fetchone()
+if u_db:
+  st.session_state["usuario_logado"] = {
+      "id": u_db[0],
+      "nome": u_db[1],
+      "cpf": u_db[2],
+      "email": u_db[3],
+      "status": u_db[6],
+  }
 
 usuario_atual = st.session_state["usuario_logado"]
 status_usuario_ativo = (
@@ -740,14 +752,13 @@ def verificar_licenca_para_acao():
       label_visibility="collapsed",
   )
 
-  # Dados do usuário logado (incluindo CPF obrigatório para liberar o Pix no Mercado Pago)
   email_cli = usuario_atual['email'] if usuario_atual else "cliente@tabalmix.com"
   nome_cli = usuario_atual.get('nome', 'Cliente') if usuario_atual else "Cliente"
   cpf_cli = usuario_atual.get('cpf', '').strip() if usuario_atual else ""
 
   if "Mercado Pago" in escolha_metodo:
     if not cpf_cli:
-      st.error("⚠️ O seu cadastro está sem o CPF preenchido. O Mercado Pago exige o CPF para gerar o Pix e o pagamento automático. Atualize seu cadastro ou entre com um CPF válido.")
+      st.error("⚠️ O seu cadastro está sem CPF preenchido. Vá na aba '👤 Meu Perfil e Cadastro' para atualizar seu CPF antes de gerar o Pix/Cartão.")
 
     col_p1, col_p2 = st.columns(2)
     with col_p1:
@@ -781,16 +792,9 @@ def verificar_licenca_para_acao():
               res["response"].get("init_point") if "response" in res else ""
           )
           if url:
-            if usuario_atual:
-              cursor.execute(
-                  "UPDATE usuarios_sistema SET status_assinatura = 'Ativo',"
-                  " plano_atual = 'Mensal' WHERE id = ?",
-                  (usuario_atual["id"],),
-              )
-              conn.commit()
             st.markdown(
                 f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**\n\n*(Após o"
-                " pagamento, atualize a página)*"
+                " pagamento aprovado, sua conta será ativada automaticamente)*"
             )
         except Exception as e:
           st.error(f"Erro: {e}")
@@ -825,23 +829,16 @@ def verificar_licenca_para_acao():
               res["response"].get("init_point") if "response" in res else ""
           )
           if url:
-            if usuario_atual:
-              cursor.execute(
-                  "UPDATE usuarios_sistema SET status_assinatura = 'Ativo',"
-                  " plano_atual = 'Anual' WHERE id = ?",
-                  (usuario_atual["id"],),
-              )
-              conn.commit()
             st.markdown(
                 f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**\n\n*(Após o"
-                " pagamento, atualize a página)*"
+                " pagamento aprovado, sua conta será ativada automaticamente)*"
             )
         except Exception as e:
           st.error(f"Erro: {e}")
   else:
     st.info(
         "🔑 **Chave Pix para Depósito:** `sua-chave-pix@dominio.com`\nEnvie o"
-        " comprovante para liberar o seu acesso instantâneo."
+        " comprovante no WhatsApp para liberação."
     )
   return False
 
@@ -857,6 +854,7 @@ menu = st.sidebar.radio(
         "🔩 Peças e Ferramentas",
         "👥 Gestão de Clientes",
         "🔍 Consulta / Busca Geral",
+        "👤 Meu Perfil e Cadastro",
         "⚙️ Painel de Licença (Admin)",
     ],
     label_visibility="collapsed",
@@ -1579,6 +1577,42 @@ elif menu == "🔍 Consulta / Busca Geral":
       st.dataframe(df_bv, use_container_width=True, hide_index=True)
     else:
       st.info("Nenhum resultado.")
+
+elif menu == "👤 Meu Perfil e Cadastro":
+  st.title("👤 Meu Perfil e Dados Cadastrais")
+  st.markdown("Atualize suas informações de contato e o seu **CPF** (obrigatório para gerar pagamentos via Pix e cartão).")
+  
+  cursor.execute("SELECT nome_completo, cpf, email, celular_seguranca, status_assinatura, plano_atual FROM usuarios_sistema WHERE id = ?", (usuario_atual["id"],))
+  u_info = cursor.fetchone()
+  
+  if u_info:
+    with st.form("form_atualizar_perfil"):
+      novo_nome = st.text_input("Nome Completo / Responsável", value=u_info[0] or "")
+      novo_cpf = st.text_input("CPF (Necessário para Pix)", value=u_info[1] or "")
+      novo_email = st.text_input("E-mail (Seu Login)", value=u_info[2] or "")
+      novo_cel = st.text_input("Celular de Segurança", value=u_info[3] or "")
+      nova_senha_perfil = st.text_input("Nova Senha (Deixe em branco para manter a atual)", type="password")
+      
+      st.info(f"📊 **Status Atual da Assinatura:** {u_info[4]} | **Plano:** {u_info[5]}")
+      
+      btn_salvar_perfil = st.form_submit_button("Salvar Alterações do Perfil")
+      if btn_salvar_perfil:
+        if novo_nome and novo_email:
+          if nova_senha_perfil:
+            cursor.execute(
+                "UPDATE usuarios_sistema SET nome_completo = ?, cpf = ?, email = ?, celular_seguranca = ?, senha = ? WHERE id = ?",
+                (novo_nome, novo_cpf, novo_email, novo_cel, nova_senha_perfil, usuario_atual["id"])
+            )
+          else:
+            cursor.execute(
+                "UPDATE usuarios_sistema SET nome_completo = ?, cpf = ?, email = ?, celular_seguranca = ? WHERE id = ?",
+                (novo_nome, novo_cpf, novo_email, novo_cel, usuario_atual["id"])
+            )
+          conn.commit()
+          st.success("✅ Perfil atualizado com sucesso! Atualize a página se necessário.")
+          st.rerun()
+        else:
+          st.error("⚠️ Nome e E-mail são obrigatórios.")
 
 elif menu == "⚙️ Painel de Licença (Admin)":
   if modo_admin_liberado:
