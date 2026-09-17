@@ -36,14 +36,14 @@ st.markdown(
         padding-bottom: 1.2rem !important;
     }
     [data-testid="stSidebar"] {
-        min-width: 310px !important;
-        width: 310px !important;
+        min-width: 290px !important;
+        width: 290px !important;
         background: linear-gradient(180deg, rgba(15, 45, 25, 0.98) 0%, rgba(5, 15, 10, 1) 100%) !important;
         border-right: 1px solid rgba(46, 204, 113, 0.3);
         padding-top: 10px;
     }
     [data-testid="stSidebar"] > div:first-child {
-        width: 310px !important;
+        width: 290px !important;
     }
     .stApp {
         background: #f4f6f9 !important;
@@ -64,10 +64,10 @@ st.markdown(
         color: #e2e8f0 !important;
         font-weight: 600;
         font-size: 14px;
-        padding: 10px 12px;
+        padding: 9px 12px;
         border-radius: 8px;
         background: rgba(20, 60, 30, 0.7);
-        margin-bottom: 5px;
+        margin-bottom: 4px;
         border: 1px solid rgba(46, 204, 113, 0.2);
         transition: all 0.3s ease;
     }
@@ -80,9 +80,9 @@ st.markdown(
         background: #ffffff !important;
         border: 1px solid #cbd5e1 !important;
         border-left: 4px solid #1b7a3e !important;
-        padding: 14px !important;
+        padding: 12px !important;
         border-radius: 12px !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
     }
     div[data-testid="stMetric"] label {
         color: #475569 !important;
@@ -93,7 +93,7 @@ st.markdown(
     }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
         color: #0f172a !important;
-        font-size: 22px !important;
+        font-size: 20px !important;
         font-weight: 800 !important;
     }
     div.stTextInput > div > div > input, 
@@ -407,17 +407,14 @@ with st.sidebar:
     st.markdown(
         f"""
             <div style="text-align: center; padding: 10px 0 15px 0;">
-                <div style="border-radius: 10px; overflow: hidden; max-height: 95px; border: 2px solid #1b7a3e; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(27, 122, 62, 0.2);">
-                    <img src="data:image/jpeg;base64,{encoded_logo}" style="width: 100%; height: 85px; object-fit: cover; display: block;">
+                <div style="border-radius: 10px; overflow: hidden; max-height: 90px; border: 2px solid #1b7a3e; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(27, 122, 62, 0.2);">
+                    <img src="data:image/jpeg;base64,{encoded_logo}" style="width: 100%; height: 80px; object-fit: cover; display: block;">
                 </div>
                 <div style="display: inline-block; background: rgba(27, 122, 62, 0.15); border: 1px solid #1b7a3e; border-radius: 20px; padding: 2px 10px; margin-bottom: 4px;">
                     <span style="color: #1b7a3e; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">🛡️ SELO OFICIAL</span>
                 </div>
-                <h3 style="color: #ffffff !important; margin: 0; font-size: 16px; font-weight: 800;">TABALMIX CONCRETO</h3>
+                <h3 style="color: #ffffff !important; margin: 0; font-size: 15px; font-weight: 800;">TABALMIX CONCRETO</h3>
                 <p style="color: #cbd5e1; font-size: 9px; margin: 2px 0 4px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
-                <p style="color: #e2e8f0; font-size: 10px; font-style: italic; font-weight: 500; line-height: 1.2; margin-bottom: 10px;">
-                    "Tecnologia e robustez por Castro Tech."
-                </p>
             </div>
         """,
         unsafe_allow_html=True,
@@ -426,7 +423,7 @@ with st.sidebar:
     st.markdown(
         """
             <div style="text-align: center; padding: 10px 0 15px 0;">
-                <h3 style="color: #ffffff !important; margin: 0; font-size: 16px; font-weight: 800;">TABALMIX CONCRETO</h3>
+                <h3 style="color: #ffffff !important; margin: 0; font-size: 15px; font-weight: 800;">TABALMIX CONCRETO</h3>
                 <p style="color: #cbd5e1; font-size: 9px; margin: 2px 0 4px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
             </div>
         """,
@@ -541,8 +538,8 @@ if menu == "📊 Visão Geral":
     st.markdown(
         f"""
             <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.04);">
-                <div style="border-radius: 8px; overflow: hidden; max-height: 160px; border: 1px solid #e2e8f0; margin-bottom: 8px;">
-                    <img src="data:image/jpeg;base64,{encoded_string}" style="width: 100%; height: 140px; object-fit: cover; display: block;">
+                <div style="border-radius: 8px; overflow: hidden; max-height: 150px; border: 1px solid #e2e8f0; margin-bottom: 8px;">
+                    <img src="data:image/jpeg;base64,{encoded_string}" style="width: 100%; height: 135px; object-fit: cover; display: block;">
                 </div>
                 <h2 style="color: #1b7a3e !important; margin: 0 0 2px 0; font-size: 16px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
                 <p style="color: #475569 !important; font-size: 12px; margin: 0; font-weight: 500;">Controle avançado de caminhões betoneira, maquinário e manutenções | Powered by Castro Tech.</p>
@@ -582,7 +579,7 @@ if menu == "📊 Visão Geral":
     )
     ativos_parados = total_frota - ativos_trabalhando
 
-  # Organizando os cards lado a lado perfeitamente (Grid 2 colunas para celular/desktop)
+  # Grid perfeito em 2 colunas para todos os 5 indicadores (sem sobrar nenhum sozinho)
   r1_c1, r1_c2 = st.columns(2)
   with r1_c1:
     st.metric("Total Frota", total_frota)
@@ -595,7 +592,11 @@ if menu == "📊 Visão Geral":
   with r2_c2:
     st.metric("Custo Manut.", f"R$ {total_custo:,.2f}")
 
-  st.metric("Gasto Total Combustível", f"R$ {total_combustivel:,.2f}")
+  r3_c1, r3_c2 = st.columns(2)
+  with r3_c1:
+    st.metric("Gasto Combustível", f"R$ {total_combustivel:,.2f}")
+  with r3_c2:
+    st.metric("Total Insumos", len(df_pecas))
 
   st.divider()
   st.subheader("📋 Status da Frota e Equipamentos")
