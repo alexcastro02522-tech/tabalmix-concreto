@@ -19,13 +19,13 @@ MERCADO_PAGO_ACCESS_TOKEN = (
 
 # Configuração da Página com Menu Fixo Expandido
 st.set_page_config(
-    page_title="Tabalmix Concreto - Gestão de Frota e Oficina Pro",
-    page_icon="🚛",
+    page_title="Tabalmix Concreto - Enterprise Fleet & Operations Pro X",
+    page_icon="🚀",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Corporativa Refinada em Tema Claro
+# Estilização Visual Enterprise Ultra-Moderna (Glassmorphism Executivo)
 st.markdown(
     """
     <style>
@@ -33,73 +33,65 @@ st.markdown(
         background: transparent !important;
     }
     .block-container {
-        padding-top: 1.2rem !important;
-        padding-bottom: 1.2rem !important;
+        padding-top: 1.5rem !important;
+        padding-bottom: 2rem !important;
     }
     [data-testid="stSidebar"] {
-        min-width: 300px !important;
-        width: 300px !important;
-        background: #f4f6f9 !important;
-        border-right: 1px solid #cbd5e1;
-        padding-top: 10px;
-    }
-    [data-testid="stSidebar"] > div:first-child {
-        width: 300px !important;
-        background: transparent !important;
-    }
-    .stApp {
-        background: #f4f6f9 !important;
-        color: #1e293b !important;
-    }
-    h1, h2, h3 {
-        color: #1b7a3e !important;
-        font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-        font-weight: 700;
-        letter-spacing: -0.5px;
-    }
-    p, label, span, .stMarkdown {
-        color: #1e293b !important;
-        font-size: 14px;
-        font-weight: 500;
+        min-width: 310px !important;
+        width: 310px !important;
+        background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%) !important;
+        border-right: 1px solid #334155;
+        padding-top: 15px;
     }
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label {
-        color: #1e293b !important;
+        color: #f8fafc !important;
+    }
+    .stApp {
+        background: #f8fafc !important;
+        color: #0f172a !important;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+    h1, h2, h3 {
+        color: #0f172a !important;
+        font-weight: 800;
+        letter-spacing: -0.8px;
     }
     [data-testid="stSidebar"] .stRadio label {
-        color: #1e293b !important;
+        color: #cbd5e1 !important;
         font-weight: 600;
         font-size: 13.5px;
-        padding: 10px 12px;
-        border-radius: 8px;
-        background: #ffffff !important;
+        padding: 10px 14px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05) !important;
         margin-bottom: 6px;
-        border: 1px solid #cbd5e1;
-        transition: all 0.3s ease;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     [data-testid="stSidebar"] .stRadio label:hover {
-        background: #e2e8f0 !important;
-        border-color: #1b7a3e;
-        color: #1b7a3e !important;
+        background: rgba(27, 122, 62, 0.25) !important;
+        border-color: #10b981;
+        color: #ffffff !important;
+        transform: translateX(4px);
     }
     div[data-testid="stMetric"] {
         background: #ffffff !important;
-        border: 1px solid #cbd5e1 !important;
-        border-left: 4px solid #1b7a3e !important;
-        padding: 14px !important;
-        border-radius: 12px !important;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+        border: 1px solid #e2e8f0 !important;
+        border-left: 5px solid #10b981 !important;
+        padding: 16px !important;
+        border-radius: 14px !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
     }
     div[data-testid="stMetric"] label {
-        color: #475569 !important;
-        font-weight: 600 !important;
+        color: #64748b !important;
+        font-weight: 700 !important;
         font-size: 11px !important;
         text-transform: uppercase;
-        letter-spacing: 0.8px;
+        letter-spacing: 1px;
     }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
         color: #0f172a !important;
-        font-size: 22px !important;
-        font-weight: 800 !important;
+        font-size: 24px !important;
+        font-weight: 900 !important;
     }
     div.stTextInput > div > div > input, 
     div.stNumberInput > div > div > input, 
@@ -109,38 +101,34 @@ st.markdown(
         background-color: #ffffff !important;
         color: #0f172a !important;
         border: 1px solid #cbd5e1 !important;
-        border-radius: 8px !important;
-        min-height: 40px !important;
+        border-radius: 10px !important;
+        min-height: 42px !important;
     }
-    div[data-baseweb="menu"], ul[data-baseweb="menu"], li[data-baseweb="option"], div[id*="popover"] {
+    div[data-baseweb="menu"], ul[data-baseweb="menu"], li[data-baseweb="option"] {
         background-color: #ffffff !important;
         color: #0f172a !important;
     }
     div[data-testid="stDataFrame"], .stDataFrame {
         background-color: #ffffff !important;
-        border-radius: 12px;
-        padding: 10px;
-        border: 1px solid #cbd5e1;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-    }
-    div[data-testid="stDataFrame"] table, div[data-testid="stDataFrame"] tr, div[data-testid="stDataFrame"] th, div[data-testid="stDataFrame"] td {
-        background-color: #ffffff !important;
-        color: #0f172a !important;
+        border-radius: 14px;
+        padding: 12px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
     }
     .stButton button {
-        background: linear-gradient(135deg, #1b7a3e 0%, #12542a 100%) !important;
+        background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
         color: white !important;
-        font-weight: 600;
-        border-radius: 8px;
-        border: 1px solid #1b7a3e;
-        padding: 0.55rem 1.6rem;
-        box-shadow: 0 4px 15px rgba(27, 122, 62, 0.25);
+        font-weight: 700;
+        border-radius: 10px;
+        border: none;
+        padding: 0.6rem 1.8rem;
+        box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
         transition: all 0.25s ease-in-out;
     }
     .stButton button:hover {
-        background: linear-gradient(135deg, #12542a 0%, #0a381c 100%) !important;
-        box-shadow: 0 6px 20px rgba(27, 122, 62, 0.4);
-        transform: translateY(-1px);
+        background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
+        box-shadow: 0 6px 20px rgba(5, 150, 105, 0.5);
+        transform: translateY(-2px);
     }
     </style>
 """,
@@ -155,50 +143,50 @@ def gerar_pdf_relatorio(titulo, dataframe):
   margem_esq = 30
   largura_util = largura - 60
 
-  c.setFillColorRGB(0.08, 0.32, 0.16)
-  c.rect(0, altura - 60, largura, 60, fill=1, stroke=0)
+  c.setFillColorRGB(0.04, 0.35, 0.22)
+  c.rect(0, altura - 70, largura, 70, fill=1, stroke=0)
   c.setFillColorRGB(1, 1, 1)
-  c.setFont("Helvetica-Bold", 14)
-  c.drawString(margem_esq, altura - 25, "tabalmix concreto")
+  c.setFont("Helvetica-Bold", 16)
+  c.drawString(margem_esq, altura - 30, "tabalmix concreto — enterprise management")
   c.setFont("Helvetica", 9)
   c.drawString(
       margem_esq,
-      altura - 42,
-      "sistema de gestão de frota e operações | powered by castro tech",
+      altura - 48,
+      "relatório executivo certificado | powered by castro tech",
   )
 
-  c.setFillColorRGB(0.15, 0.15, 0.15)
-  c.setFont("Helvetica-Bold", 13)
-  c.drawString(margem_esq, altura - 85, titulo)
-  c.setFont("Helvetica", 8.5)
+  c.setFillColorRGB(0.1, 0.1, 0.1)
+  c.setFont("Helvetica-Bold", 14)
+  c.drawString(margem_esq, altura - 95, titulo)
+  c.setFont("Helvetica", 9)
   c.setFillColorRGB(0.4, 0.4, 0.4)
   c.drawString(
       margem_esq,
-      altura - 100,
-      f"emitido em: {datetime.now().strftime('%d/%m/%Y às %H:%M')}",
+      altura - 112,
+      f"gerado em: {datetime.now().strftime('%d/%m/%Y às %H:%M')}",
   )
 
   c.setStrokeColorRGB(0.8, 0.8, 0.8)
-  c.setLineWidth(0.75)
-  c.line(margem_esq, altura - 108, largura - margem_esq, altura - 108)
+  c.setLineWidth(1)
+  c.line(margem_esq, altura - 120, largura - margem_esq, altura - 120)
 
-  y = altura - 135
-  altura_linha = 20
+  y = altura - 145
+  altura_linha = 22
   colunas = list(dataframe.columns)
   colunas_amigables = [
-      str(col).replace("_", " ").lower() for col in colunas[:6]
+      str(col).replace("_", " ").upper() for col in colunas[:6]
   ]
 
-  c.setFillColorRGB(0.08, 0.25, 0.13)
+  c.setFillColorRGB(0.05, 0.25, 0.15)
   c.rect(margem_esq, y - 4, largura_util, altura_linha, fill=1, stroke=0)
   c.setFillColorRGB(1, 1, 1)
-  c.setFont("Helvetica-Bold", 8)
+  c.setFont("Helvetica-Bold", 8.5)
   largura_coluna = largura_util / max(len(colunas_amigables), 1)
 
   for i, col_nome in enumerate(colunas_amigables):
-    c.drawString(margem_esq + (i * largura_coluna) + 4, y + 3, col_nome[:14])
+    c.drawString(margem_esq + (i * largura_coluna) + 4, y + 4, col_nome[:14])
 
-  y -= altura_linha + 2
+  y -= altura_linha + 4
   c.setFont("Helvetica", 8)
 
   for index, row in dataframe.iterrows():
@@ -206,9 +194,9 @@ def gerar_pdf_relatorio(titulo, dataframe):
       c.showPage()
       y = altura - 40
     if index % 2 == 0:
-      c.setFillColorRGB(0.94, 0.96, 0.94)
+      c.setFillColorRGB(0.95, 0.97, 0.95)
       c.rect(margem_esq, y - 3, largura_util, altura_linha - 2, fill=1, stroke=0)
-    c.setFillColorRGB(0.1, 0.1, 0.1)
+    c.setFillColorRGB(0.15, 0.15, 0.15)
     for i, col in enumerate(colunas[:6]):
       valor_celula = str(row[col])
       if valor_celula == "None" or valor_celula == "nan":
@@ -216,7 +204,7 @@ def gerar_pdf_relatorio(titulo, dataframe):
       c.drawString(
           margem_esq + (i * largura_coluna) + 4, y + 3, valor_celula[:16]
       )
-    c.setStrokeColorRGB(0.85, 0.88, 0.85)
+    c.setStrokeColorRGB(0.88, 0.9, 0.88)
     c.line(margem_esq, y - 4, largura - margem_esq, y - 4)
     y -= altura_linha
 
@@ -231,16 +219,16 @@ def gerar_pdf_os_tecnica(os_row):
   largura, altura = letter
   margem = 40
 
-  c.setFillColorRGB(0.08, 0.32, 0.16)
+  c.setFillColorRGB(0.04, 0.35, 0.22)
   c.rect(0, altura - 70, largura, 70, fill=1, stroke=0)
   c.setFillColorRGB(1, 1, 1)
   c.setFont("Helvetica-Bold", 16)
-  c.drawString(margem, altura - 30, "ordem de serviço técnica (os)")
+  c.drawString(margem, altura - 30, "ordem de serviço técnica oficial (os)")
   c.setFont("Helvetica", 10)
   c.drawString(
       margem,
       altura - 50,
-      f"tabalmix concreto - sistema de gestão | os #{os_row.get('id', 1)}",
+      f"tabalmix concreto — alta performance | os #{os_row.get('id', 1)}",
   )
 
   y = altura - 100
@@ -282,15 +270,15 @@ def gerar_pdf_os_tecnica(os_row):
 
   y -= 30
   c.setFont("Helvetica-Bold", 11)
-  c.drawString(margem, y, "descrição do problema:")
+  c.drawString(margem, y, "descrição do problema relatado:")
   y = y - 18
   c.setFont("Helvetica", 10)
   desc_txt = str(os_row.get("descricao_problema", "sem descrição."))
-  c.drawString(margem, y, desc_txt[:90])
+  c.drawString(margem, y, desc_txt[:95])
 
   y -= 40
   c.setFont("Helvetica-Bold", 11)
-  c.drawString(margem, y, "dados de encerramento e custos:")
+  c.drawString(margem, y, "dados de encerramento e faturamento:")
   y -= 20
   c.setFont("Helvetica", 10)
   c.drawString(
@@ -324,12 +312,12 @@ def gerar_pdf_os_tecnica(os_row):
   )
   y -= 22
   c.setFont("Helvetica-Bold", 11)
-  c.setFillColorRGB(0.08, 0.32, 0.16)
+  c.setFillColorRGB(0.04, 0.35, 0.22)
   c.drawString(
       margem,
       y,
       f"• custo total da os: r$ {(os_row.get('custo') or 0.0):,.2f} | status:"
-      f" {os_row.get('status_os', 'aberta')}",
+      f" {os_row.get('status_os', 'aberta').upper()}",
   )
 
   y -= 90
@@ -340,7 +328,7 @@ def gerar_pdf_os_tecnica(os_row):
   y -= 15
   c.setFont("Helvetica", 9)
   c.setFillColorRGB(0.2, 0.2, 0.2)
-  c.drawString(margem, y, "assinatura do encarregado")
+  c.drawString(margem, y, "assinatura do encarregado responsável")
   c.drawString(largura / 2 + 20, y, "assinatura do técnico / oficina")
 
   c.save()
@@ -462,23 +450,23 @@ if "usuario_logado" not in st.session_state:
   st.session_state["usuario_logado"] = None
 
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
-  col_l1, col_l2, col_l3 = st.columns([1, 2.2, 1])
+  col_l1, col_l2, col_l3 = st.columns([1, 2.4, 1])
   with col_l2:
     try:
       with open("caminhoes.jpg", "rb") as image_file:
         encoded_logo_login = base64.b64encode(image_file.read()).decode()
       st.markdown(
           f"""
-                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 20px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-top: 15px; margin-bottom: 15px;">
-                    <div style="border-radius: 10px; overflow: hidden; max-height: 110px; border: 2px solid #1b7a3e; margin-bottom: 12px;">
-                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 100px; object-fit: cover; display: block;">
+                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.08); margin-top: 15px; margin-bottom: 15px;">
+                    <div style="border-radius: 12px; overflow: hidden; max-height: 110px; border: 2px solid #059669; margin-bottom: 14px;">
+                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 105px; object-fit: cover; display: block;">
                     </div>
-                    <div style="display: inline-block; background: rgba(27, 122, 62, 0.15); border: 1px solid #1b7a3e; border-radius: 20px; padding: 2px 12px; margin-bottom: 6px;">
-                        <span style="color: #1b7a3e; font-size: 10px; font-weight: 700; letter-spacing: 0.8px;">🛡️ selo oficial</span>
+                    <div style="display: inline-block; background: rgba(5, 150, 105, 0.15); border: 1px solid #059669; border-radius: 20px; padding: 3px 14px; margin-bottom: 8px;">
+                        <span style="color: #059669; font-size: 11px; font-weight: 800; letter-spacing: 1px;">🛡️ licença corporativa enterprise</span>
                     </div>
-                    <h2 style="color: #1b7a3e !important; margin: 0; font-size: 18px; font-weight: 800;">tabalmix concreto</h2>
-                    <p style="color: #475569; font-size: 11px; margin: 3px 0 2px 0; text-transform: uppercase; letter-spacing: 1px;">gestão de frota & operações</p>
-                    <p style="color: #94a3b8; font-size: 9px; margin: 0; font-style: italic;">powered by castro tech</p>
+                    <h2 style="color: #0f172a !important; margin: 0; font-size: 20px; font-weight: 900;">tabalmix concreto</h2>
+                    <p style="color: #475569; font-size: 11px; margin: 4px 0 2px 0; text-transform: uppercase; letter-spacing: 1.2px;">gestão inteligente de frota e oficina pro</p>
+                    <p style="color: #94a3b8; font-size: 9.5px; margin: 0; font-style: italic;">powered by castro tech</p>
                 </div>
             """,
           unsafe_allow_html=True,
@@ -486,10 +474,10 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     except Exception:
       st.markdown(
           """
-                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 20px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-top: 15px; margin-bottom: 15px;">
-                    <h2 style="color: #1b7a3e !important; margin: 0; font-size: 18px; font-weight: 800;">tabalmix concreto</h2>
-                    <p style="color: #475569; font-size: 11px; margin: 3px 0 2px 0; text-transform: uppercase; letter-spacing: 1px;">gestão de frota & operações</p>
-                    <p style="color: #94a3b8; font-size: 9px; margin: 0; font-style: italic;">powered by castro tech</p>
+                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.08); margin-top: 15px; margin-bottom: 15px;">
+                    <h2 style="color: #0f172a !important; margin: 0; font-size: 20px; font-weight: 900;">tabalmix concreto</h2>
+                    <p style="color: #475569; font-size: 11px; margin: 4px 0 2px 0; text-transform: uppercase; letter-spacing: 1.2px;">gestão inteligente de frota e oficina pro</p>
+                    <p style="color: #94a3b8; font-size: 9.5px; margin: 0; font-style: italic;">powered by castro tech</p>
                 </div>
             """,
           unsafe_allow_html=True,
@@ -499,7 +487,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
         "🔑 entrar",
         "📝 criar conta",
         "🔄 recuperar",
-        "🔐 acesso por pin",
+        "🔐 pin rápido",
     ])
 
     with tab_login:
@@ -509,10 +497,10 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           unsafe_allow_html=True,
       )
       with st.form("form_login"):
-        email_login = st.text_input("e-mail cadastrado")
-        senha_login = st.text_input("senha", type="password")
+        email_login = st.text_input("e-mail corporativo")
+        senha_login = st.text_input("senha de acesso", type="password")
         cadastrar_pin = st.text_input(
-            "criar pin rápido (4 números para acesso futuro - opcional)",
+            "cadastrar pin rápido (4 dígitos - opcional)",
             max_chars=4,
             type="password",
         )
@@ -546,17 +534,17 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
 
     with tab_cadastro:
       st.markdown(
-          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>cadastre"
-          " novo usuário:</p>",
+          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>cadastro"
+          " de novo usuário na plataforma:</p>",
           unsafe_allow_html=True,
       )
       with st.form("form_novo_cadastro"):
-        c_nome = st.text_input("nome completo / responsável")
+        c_nome = st.text_input("nome completo / gestor")
         c_cpf = st.text_input("cpf")
-        c_email = st.text_input("e-mail corporativo (seu login)")
-        c_senha = st.text_input("criar senha segura", type="password")
-        c_cel = st.text_input("celular / contato de segurança")
-        btn_cadastrar = st.form_submit_button("finalizar e ativar cadastro")
+        c_email = st.text_input("e-mail de login")
+        c_senha = st.text_input("criar senha", type="password")
+        c_cel = st.text_input("celular / whatsapp")
+        btn_cadastrar = st.form_submit_button("finalizar cadastro")
 
         if btn_cadastrar:
           if c_nome and c_email and c_senha:
@@ -564,7 +552,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
               cursor.execute(
                   "INSERT INTO usuarios_sistema (nome_completo, cpf, email,"
                   " senha, celular_seguranca, status_assinatura, plano_atual,"
-                  " data_cadastro) VALUES (?, ?, ?, ?, ?, 'Ativo', 'Mensal',"
+                  " data_cadastro) VALUES (?, ?, ?, ?, ?, 'Ativo', 'Enterprise',"
                   " ?)",
                   (
                       c_nome,
@@ -577,21 +565,21 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
               )
               conn.commit()
               st.success(
-                  "✅ conta criada e ativada com sucesso! abra a aba 'entrar'."
+                  "✅ conta ativada com sucesso! abra a aba 'entrar'."
               )
             except Exception as e:
-              st.error(f"⚠️ erro ao cadastrar (e-mail já existe?): {e}")
+              st.error(f"⚠️ erro ao cadastrar (e-mail já cadastrado?): {e}")
           else:
             st.error("⚠️ preencha os campos obrigatórios.")
 
     with tab_recuperar:
       st.markdown(
-          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>recupere"
-          " sua senha cadastrada:</p>",
+          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>recuperação"
+          " rápida de credenciais:</p>",
           unsafe_allow_html=True,
       )
       with st.form("form_recuperar"):
-        rec_email = st.text_input("informe seu e-mail cadastrado")
+        rec_email = st.text_input("digite seu e-mail cadastrado")
         btn_rec = st.form_submit_button("consultar senha")
         if btn_rec:
           cursor.execute(
@@ -605,17 +593,19 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 f"👤 olá, {res_rec[1]}. sua senha cadastrada é: **{res_rec[0]}**"
             )
           else:
-            st.error("⚠️ e-mail não encontrado no sistema.")
+            st.error("⚠️ e-mail não encontrado.")
 
     with tab_pin:
       st.markdown(
           "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>acesso"
-          " rápido por pin (4 dígitos):</p>",
+          " instantâneo via pin (4 dígitos):</p>",
           unsafe_allow_html=True,
       )
       with st.form("form_pin"):
-        email_pin = st.text_input("e-mail da conta")
-        pin_dig = st.text_input("pin de 4 dígitos", max_chars=4, type="password")
+        email_pin = st.text_input("e-mail da conta corporativa")
+        pin_dig = st.text_input(
+            "pin numérico (4 dígitos)", max_chars=4, type="password"
+        )
         btn_pin_sub = st.form_submit_button("entrar com pin")
         if btn_pin_sub:
           cursor.execute(
@@ -632,10 +622,10 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 "email": user_pin[3],
                 "status": user_pin[6],
             }
-            st.success("✅ login por pin realizado com sucesso!")
+            st.success("✅ login por pin validado!")
             st.rerun()
           else:
-            st.error("⚠️ e-mail ou pin incorretos.")
+            st.error("⚠️ e-mail ou pin inválidos.")
 
   st.stop()
 
@@ -657,8 +647,8 @@ with st.sidebar:
       encoded_logo_side = base64.b64encode(image_file.read()).decode()
     st.markdown(
         f"""
-            <div style="text-align: center; margin-bottom: 10px;">
-                <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 75px; object-fit: cover; border-radius: 8px; border: 1px solid #1b7a3e;">
+            <div style="text-align: center; margin-bottom: 12px;">
+                <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 85px; object-fit: cover; border-radius: 10px; border: 1px solid #10b981;">
             </div>
         """,
         unsafe_allow_html=True,
@@ -667,10 +657,10 @@ with st.sidebar:
     pass
 
   if modo_admin_liberado:
-    st.success("🔓 **modo admin ativo**")
+    st.success("🔓 **modo admin enterprise ativo**")
   elif usuario_atual:
     st.info(
-        f"👤 **usuário:** {usuario_atual['nome']}\n\n📊 **status:**"
+        f"👤 **gestor:** {usuario_atual['nome']}\n\n⭐ **plano:**"
         f" {usuario_atual['status']}"
     )
     if st.button("🚪 encerrar sessão"):
@@ -696,7 +686,7 @@ menu = st.sidebar.radio(
 )
 
 if menu == "📊 visão geral":
-  st.title("🏗️ painel executivo e operacional da frota")
+  st.title("🏗️ painel executivo e indicadores de frota")
   df_veiculos = pd.read_sql("SELECT * FROM veiculos", conn)
   if not df_veiculos.empty and "tag_prefixo" in df_veiculos.columns:
     df_veiculos["tag_prefixo"] = df_veiculos["tag_prefixo"].fillna(
@@ -739,11 +729,11 @@ if menu == "📊 visão geral":
   st.divider()
 
   # Seção de Estatísticas Profissionais e Gráficos Rápidos
-  st.subheader("📈 indicadores estatísticos de desempenho")
+  st.subheader("📈 analytics avançado de desempenho")
   col_graf1, col_graf2 = st.columns(2)
 
   with col_graf1:
-    st.markdown("**distribuição de status da frota**")
+    st.markdown("**distribuição de status operacional**")
     if not df_veiculos.empty and "status" in df_veiculos.columns:
       status_counts = df_veiculos["status"].value_counts()
       st.bar_chart(status_counts)
@@ -751,7 +741,7 @@ if menu == "📊 visão geral":
       st.info("sem dados suficientes de status para exibir.")
 
   with col_graf2:
-    st.markdown("**tipos de equipamentos cadastrados**")
+    st.markdown("**tipos de equipamentos na frota**")
     if not df_veiculos.empty and "tipo" in df_veiculos.columns:
       tipo_counts = df_veiculos["tipo"].value_counts()
       st.bar_chart(tipo_counts)
@@ -759,9 +749,54 @@ if menu == "📊 visão geral":
       st.info("sem dados suficientes de tipos para exibir.")
 
   st.divider()
-  st.subheader("📋 listagem geral de equipamentos")
+  col_exp1, col_exp2 = st.columns([3, 1])
+  with col_exp1:
+    st.subheader("📋 listagem geral de equipamentos")
+  with col_exp2:
+    if not df_veiculos.empty:
+      pdf_buf = gerar_pdf_relatorio(
+          "Relatório Consolidado da Frota - Tabalmix", df_veiculos
+      )
+      st.download_button(
+          "📥 exportar relatório pdf",
+          pdf_buf,
+          file_name="relatorio_frota.pdf",
+          mime="application/pdf",
+      )
+
   if not df_veiculos.empty:
     st.dataframe(df_veiculos, use_container_width=True, hide_index=True)
+
+    # Botões de compartilhamento direto via WhatsApp e E-mail
+    st.markdown("### 📲 compartilhar relatórios e dados")
+    col_w, col_e = st.columns(2)
+    with col_w:
+      msg_whatsapp = urllib.parse.quote(
+          "Olá! Segue o resumo executivo da frota da Tabalmix Concreto gerado"
+          " via sistema Enterprise."
+      )
+      st.markdown(
+          f'<a href="https://wa.me/?text={msg_whatsapp}" target="_blank"><button'
+          ' style="background-color: #25D366; color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: bold; cursor: pointer; width: 100%;">💬 Enviar Relatório via WhatsApp</button></a>',
+          unsafe_allow_html=True,
+      )
+    with col_e:
+      assunto_email = urllib.parse.quote(
+          "Relatório Executivo de Frota - Tabalmix Concreto"
+      )
+      corpo_email = urllib.parse.quote(
+          "Prezado(a),\n\nSegue em anexo/resumo o relatório operacional da frota"
+          " gerado pelo sistema Tabalmix Concreto Enterprise.\n\nAtenciosamente,"
+          " Gestão de Frota."
+      )
+      st.markdown(
+          f'<a href="mailto:?subject={assunto_email}&body={corpo_email}"'
+          ' target="_blank"><button style="background-color: #0284c7; color:'
+          " white; border: none; border-radius: 8px; padding: 10px 20px; font-"
+          'weight: bold; cursor: pointer; width: 100%;">✉️ Enviar Relatório via'
+          " E-mail</button></a>",
+          unsafe_allow_html=True,
+      )
   else:
     st.info("nenhum equipamento cadastrado na frota.")
 
