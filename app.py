@@ -73,18 +73,11 @@ def gerar_pdf_relatorio(titulo, dataframe):
   c = canvas.Canvas(buffer, pagesize=letter)
   largura, altura = letter
   margem_esq = 30
-  largura_util = largura - 60
   c.setFillColorRGB(0.08, 0.32, 0.16)
   c.rect(0, altura - 60, largura, 60, fill=1, stroke=0)
   c.setFillColorRGB(1, 1, 1)
   c.setFont("Helvetica-Bold", 14)
   c.drawString(margem_esq, altura - 25, "tabalmix concreto")
-  c.setFont("Helvetica", 9)
-  c.drawString(
-      margem_esq,
-      altura - 42,
-      "sistema de gestão de frota e operações | powered by castro tech",
-  )
   c.save()
   buffer.seek(0)
   return buffer
@@ -337,6 +330,11 @@ menu = st.sidebar.radio(
 if menu == "📊 visão geral":
   st.title("🏗️ painel operacional da frota")
   df_veiculos = pd.read_sql("SELECT * FROM veiculos", conn)
+  if not df_veiculos.empty and "tag_prefixo" in df_veiculos.columns:
+    df_veiculos["tag_prefixo"] = df_veiculos["tag_prefixo"].fillna(
+        "NÃO INFORMADO"
+    )
+
   df_manut = pd.read_sql("SELECT * FROM manutencoes", conn)
   df_comb = pd.read_sql("SELECT * FROM combustivel", conn)
 
@@ -391,12 +389,17 @@ elif menu == "🚜 cadastro de equipamentos":
           "situação", ["Ativo", "Em Manutenção", "Parado", "Mobilizado"]
       )
     if st.form_submit_button("cadastrar equipamento"):
-      if tag_prefixo and modelo:
+      if modelo:
+        tag_final = (
+            tag_prefixo.upper()
+            if tag_prefixo and tag_prefixo.strip()
+            else "EQ-00" + str(datetime.now().microsecond)[:3]
+        )
         cursor.execute(
             "INSERT INTO veiculos (tag_prefixo, tipo, marca, modelo, ano,"
             " placa, horimetro_km, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (
-                tag_prefixo.upper(),
+                tag_final,
                 tipo,
                 marca,
                 modelo,
@@ -407,10 +410,10 @@ elif menu == "🚜 cadastro de equipamentos":
             ),
         )
         conn.commit()
-        st.success(f"✅ equipamento '{tag_prefixo.upper()}' cadastrado!")
+        st.success(f"✅ equipamento '{tag_final}' cadastrado!")
         st.rerun()
       else:
-        st.error("⚠️ preencha a tag e o modelo.")
+        st.error("⚠️ preencha ao menos o modelo.")
 
   df_f = pd.read_sql("SELECT * FROM veiculos", conn)
   if not df_f.empty:
@@ -553,28 +556,30 @@ elif menu == "🛠️ ordens de serviço (os)":
       )
 
     if st.form_submit_button("abrir nova os"):
-      if tag_os:
-        cursor.execute(
-            "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao,"
-            " horimetro_km_manut, origem_falha, descricao_problema,"
-            " data_abertura, hora_abertura, status_os, custo, custo_pecas,"
-            " mao_de_obra) VALUES (?, ?, ?, ?, ?, ?, ?, 'aberta', 0.0, 0.0,"
-            " 0.0)",
-            (
-                str(tag_os).upper(),
-                tipo_manut,
-                horimetro_ab,
-                origem_f,
-                desc_prob,
-                str(data_ab),
-                hora_ab,
-            ),
-        )
-        conn.commit()
-        st.success("✅ os aberta com sucesso!")
-        st.rerun()
-      else:
-        st.error("⚠️ informe a tag/prefixo do equipamento.")
+      tag_final_os = (
+          str(tag_os).upper()
+          if tag_os and str(tag_os).strip()
+          else "EQ-GERAL"
+      )
+      cursor.execute(
+          "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao,"
+          " horimetro_km_manut, origem_falha, descricao_problema,"
+          " data_abertura, hora_abertura, status_os, custo, custo_pecas,"
+          " mao_de_obra) VALUES (?, ?, ?, ?, ?, ?, ?, 'aberta', 0.0, 0.0,"
+          " 0.0)",
+          (
+              tag_final_os,
+              tipo_manut,
+              horimetro_ab,
+              origem_f,
+              desc_prob,
+              str(data_ab),
+              hora_ab,
+          ),
+      )
+      conn.commit()
+      st.success("✅ os aberta com sucesso!")
+      st.rerun()
 
   st.divider()
   st.subheader("📋 ordens de serviço cadastradas")
