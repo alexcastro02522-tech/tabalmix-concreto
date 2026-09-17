@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Corporativa em Tema Claro
+# Estilização Visual Corporativa Refinada em Tema Claro
 st.markdown(
     """
     <style>
@@ -359,7 +359,6 @@ def init_db():
             data TEXT
         )
     """)
-  # Tabela de Usuários com Vinculação de Licença Individual por E-mail/CPF
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS usuarios_sistema (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -397,87 +396,156 @@ except Exception:
 if "usuario_logado" not in st.session_state:
   st.session_state["usuario_logado"] = None
 
-# TELA DE AUTENTICAÇÃO / CADASTRO SE O USUÁRIO NÃO ESTIVER LOGADO (A não ser que seja Admin global)
+# TELA DE AUTENTICAÇÃO REFINADA COM CARTÃO DE BOAS-VINDAS E LOGO
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
-  st.markdown(
-      """
-        <div style="text-align: center; padding: 20px;">
-            <h1 style="color: #1b7a3e; margin-bottom: 5px;">🚛 TABALMIX CONCRETO</h1>
-            <p style="color: #475569; font-size: 15px;">Sistema Profissional de Gestão de Frota e Operações</p>
-        </div>
-    """,
-      unsafe_allow_html=True,
-  )
+  col_l1, col_l2, col_l3 = st.columns([1, 2.2, 1])
+  with col_l2:
+    try:
+      with open("caminhoes.jpg", "rb") as image_file:
+        encoded_logo_login = base64.b64encode(image_file.read()).decode()
+      st.markdown(
+          f"""
+                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 20px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-top: 15px; margin-bottom: 15px;">
+                    <div style="border-radius: 10px; overflow: hidden; max-height: 110px; border: 2px solid #1b7a3e; margin-bottom: 12px;">
+                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 100px; object-fit: cover; display: block;">
+                    </div>
+                    <div style="display: inline-block; background: rgba(27, 122, 62, 0.15); border: 1px solid #1b7a3e; border-radius: 20px; padding: 2px 12px; margin-bottom: 6px;">
+                        <span style="color: #1b7a3e; font-size: 10px; font-weight: 700; letter-spacing: 0.8px;">🛡️ SELO OFICIAL</span>
+                    </div>
+                    <h2 style="color: #1b7a3e !important; margin: 0; font-size: 18px; font-weight: 800;">TABALMIX CONCRETO</h2>
+                    <p style="color: #475569; font-size: 11px; margin: 3px 0 2px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
+                    <p style="color: #94a3b8; font-size: 9px; margin: 0; font-style: italic;">Powered by Castro Tech</p>
+                </div>
+            """,
+          unsafe_allow_html=True,
+      )
+    except Exception:
+      st.markdown(
+          """
+                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 20px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-top: 15px; margin-bottom: 15px;">
+                    <h2 style="color: #1b7a3e !important; margin: 0; font-size: 18px; font-weight: 800;">TABALMIX CONCRETO</h2>
+                    <p style="color: #475569; font-size: 11px; margin: 3px 0 2px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
+                    <p style="color: #94a3b8; font-size: 9px; margin: 0; font-style: italic;">Powered by Castro Tech</p>
+                </div>
+            """,
+          unsafe_allow_html=True,
+      )
 
-  tab_login, tab_cadastro = st.tabs(["🔑 Entrar no Sistema", "📝 Criar Conta"])
+    tab_login, tab_cadastro, tab_recuperar = st.tabs([
+        "🔑 Entrar",
+        "📝 Criar Conta",
+        "🔄 Recuperar Senha",
+    ])
 
-  with tab_login:
-    st.subheader("Acessar sua Conta")
-    with st.form("form_login"):
-      email_login = st.text_input("E-mail Cadastrado")
-      senha_login = st.text_input("Senha", type="password")
-      btn_entrar = st.form_submit_button("Entrar no Sistema")
+    with tab_login:
+      st.markdown(
+          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>Acesse"
+          " sua conta corporativa:</p>",
+          unsafe_allow_html=True,
+      )
+      with st.form("form_login"):
+        email_login = st.text_input("E-mail Cadastrado")
+        senha_login = st.text_input("Senha", type="password")
+        btn_entrar = st.form_submit_button("Entrar no Sistema")
 
-      if btn_entrar:
-        cursor.execute(
-            "SELECT * FROM usuarios_sistema WHERE email = ? AND senha = ?",
-            (email_login, senha_login),
-        )
-        user_data = cursor.fetchone()
-        if user_data:
-          st.session_state["usuario_logado"] = {
-              "id": user_data[0],
-              "nome": user_data[1],
-              "cpf": user_data[2],
-              "email": user_data[3],
-              "status": user_data[6],
-          }
-          st.success("✅ Login realizado com sucesso!")
-          st.rerun()
-        else:
-          st.error("⚠️ E-mail ou senha incorretos.")
+        if btn_entrar:
+          cursor.execute(
+              "SELECT * FROM usuarios_sistema WHERE email = ? AND senha = ?",
+              (email_login, senha_login),
+          )
+          user_data = cursor.fetchone()
+          if user_data:
+            st.session_state["usuario_logado"] = {
+                "id": user_data[0],
+                "nome": user_data[1],
+                "cpf": user_data[2],
+                "email": user_data[3],
+                "status": user_data[6],
+            }
+            st.success("✅ Login realizado com sucesso!")
+            st.rerun()
+          else:
+            st.error("⚠️ E-mail ou senha incorretos.")
 
-  with tab_cadastro:
-    st.subheader("Cadastre-se para Começar")
-    with st.form("form_novo_cadastro"):
-      c_nome = st.text_input("Nome Completo")
-      c_cpf = st.text_input("CPF")
-      c_email = st.text_input("E-mail (Será seu login)")
-      c_senha = st.text_input("Criar Senha", type="password")
-      c_cel = st.text_input("Celular / Contato de Segurança")
-      btn_cadastrar = st.form_submit_button("Finalizar Cadastro")
+    with tab_cadastro:
+      st.markdown(
+          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>Cadastre"
+          " sua empresa para começar:</p>",
+          unsafe_allow_html=True,
+      )
+      with st.form("form_novo_cadastro"):
+        c_nome = st.text_input("Nome Completo / Responsável")
+        c_cpf = st.text_input("CPF")
+        c_email = st.text_input("E-mail (Seu Login)")
+        c_senha = st.text_input("Criar Senha", type="password")
+        c_cel = st.text_input("Celular / Contato de Segurança")
+        btn_cadastrar = st.form_submit_button("Finalizar Cadastro")
 
-      if btn_cadastrar:
-        if c_nome and c_cpf and c_email and c_senha:
-          try:
+        if btn_cadastrar:
+          if c_nome and c_cpf and c_email and c_senha:
+            try:
+              cursor.execute(
+                  "INSERT INTO usuarios_sistema (nome_completo, cpf, email,"
+                  " senha, celular_seguranca, status_assinatura, plano_atual,"
+                  " data_cadastro) VALUES (?, ?, ?, ?, ?, 'Inativo', 'Nenhum',"
+                  " ?)",
+                  (
+                      c_nome,
+                      c_cpf,
+                      c_email,
+                      c_senha,
+                      c_cel,
+                      datetime.now().strftime("%Y-%m-%d %H:%M"),
+                  ),
+              )
+              conn.commit()
+              st.success(
+                  "✅ Conta criada com sucesso! Vá na aba 'Entrar' para fazer"
+                  " seu login."
+              )
+            except Exception as e:
+              st.error(
+                  "⚠️ Este e-mail já está cadastrado ou ocorreu um erro:"
+                  f" {str(e)}"
+              )
+          else:
+            st.error("⚠️ Preencha todos os campos obrigatórios.")
+
+    with tab_recuperar:
+      st.markdown(
+          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>Redefina"
+          " sua senha de segurança:</p>",
+          unsafe_allow_html=True,
+      )
+      with st.form("form_recuperar_senha"):
+        rec_email = st.text_input("E-mail Cadastrado na Conta")
+        rec_cpf = st.text_input("CPF do Titular")
+        nova_senha = st.text_input("Nova Senha", type="password")
+        btn_resetar = st.form_submit_button("Redefinir Senha")
+
+        if btn_resetar:
+          if rec_email and rec_cpf and nova_senha:
             cursor.execute(
-                "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha,"
-                " celular_seguranca, status_assinatura, plano_atual,"
-                " data_cadastro) VALUES (?, ?, ?, ?, ?, 'Inativo', 'Nenhum',"
-                " ?)",
-                (
-                    c_nome,
-                    c_cpf,
-                    c_email,
-                    c_senha,
-                    c_cel,
-                    datetime.now().strftime("%Y-%m-%d %H:%M"),
-                ),
+                "SELECT id FROM usuarios_sistema WHERE email = ? AND cpf = ?",
+                (rec_email, rec_cpf),
             )
-            conn.commit()
-            st.success(
-                "✅ Conta criada com sucesso! Vá na aba 'Entrar no Sistema' para"
-                " fazer seu login."
-            )
-          except Exception as e:
-            st.error(
-                "⚠️ Este e-mail já está cadastrado ou ocorreu um erro:"
-                f" {str(e)}"
-            )
-        else:
-          st.error("⚠️ Preencha todos os campos obrigatórios.")
+            user_match = cursor.fetchone()
+            if user_match:
+              cursor.execute(
+                  "UPDATE usuarios_sistema SET senha = ? WHERE email = ?",
+                  (nova_senha, rec_email),
+              )
+              conn.commit()
+              st.success(
+                  "✅ Senha redefinida com sucesso! Vá na aba 'Entrar' e acesse"
+                  " com sua nova senha."
+              )
+            else:
+              st.error("⚠️ E-mail ou CPF não encontrados no sistema.")
+          else:
+            st.error("⚠️ Preencha todos os campos para recuperar a senha.")
 
-  st.stop()  # Para a execução aqui até o usuário fazer login ou cadastro
+  st.stop()
 
 # RECUPERA DADOS DO USUÁRIO LOGADO
 usuario_atual = st.session_state["usuario_logado"]
@@ -582,7 +650,6 @@ def verificar_licenca_para_acao():
               res["response"].get("init_point") if "response" in res else ""
           )
           if url:
-            # Ativação automática imediata para testes práticos do usuário
             if usuario_atual:
               cursor.execute(
                   "UPDATE usuarios_sistema SET status_assinatura = 'Ativo',"
@@ -1193,16 +1260,25 @@ elif menu == "🔍 Consulta / Busca Geral":
 elif menu == "⚙️ Painel de Licença (Admin)":
   if modo_admin_liberado:
     st.title("⚙️ Painel de Administração de Usuários")
-    df_users = pd.read_sql("SELECT id, nome_completo, cpf, email, celular_seguranca, status_assinatura, plano_atual FROM usuarios_sistema", conn)
+    df_users = pd.read_sql(
+        "SELECT id, nome_completo, cpf, email, celular_seguranca,"
+        " status_assinatura, plano_atual FROM usuarios_sistema",
+        conn,
+    )
     if not df_users.empty:
       st.dataframe(df_users, use_container_width=True, hide_index=True)
-      
+
       st.markdown("### Ativar / Inativar Usuário Cadastrado")
       with st.form("form_admin_user"):
-        id_sel = st.selectbox("Selecione o ID do Usuário", df_users["id"].tolist())
+        id_sel = st.selectbox(
+            "Selecione o ID do Usuário", df_users["id"].tolist()
+        )
         novo_status_u = st.selectbox("Novo Status", ["Ativo", "Inativo"])
         if st.form_submit_button("Atualizar Assinatura do Usuário"):
-          cursor.execute("UPDATE usuarios_sistema SET status_assinatura = ? WHERE id = ?", (novo_status_u, id_sel))
+          cursor.execute(
+              "UPDATE usuarios_sistema SET status_assinatura = ? WHERE id = ?",
+              (novo_status_u, id_sel),
+          )
           conn.commit()
           st.success("✅ Status do usuário atualizado com sucesso!")
           st.rerun()
