@@ -958,7 +958,6 @@ elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
   if not df_f.empty:
     st.dataframe(df_f, use_container_width=True, hide_index=True)
 
-    # NOVIDADE: Linha do Tempo / Histórico Individual por Equipamento
     st.markdown("---")
     st.subheader("🔎 Ficha Histórica Individual do Equipamento")
     eq_selecionado_historico = st.selectbox(
@@ -1199,93 +1198,95 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
         )
 
         if os_sel:
-          os_atual = df_os[df_os["id"] == os_sel].iloc[0]
-          with st.form("form_fechamento_os"):
-            st.info(
-                f"Editando OS #{os_atual['id']} | Equipamento:"
-                f" {os_atual['tag_prefixo']} | Aberta em:"
-                f" {os_atual['data_abertura']} às {os_atual['hora_abertura']}"
+          os_row_data = df_os[df_os["id"] == os_sel]
+          if not os_row_data.empty:
+            os_atual = os_row_data.iloc[0]
+            tag_eq_os = os_atual.get("tag_prefixo") or os_atual.get("equipamento") or "N/D"
+            with st.form("form_fechamento_os"):
+              st.info(
+                  f"Editando OS #{os_atual['id']} | Equipamento:"
+                  f" {tag_eq_os} | Aberta em:"
+                  f" {os_atual['data_abertura']} às {os_atual['hora_abertura']}"
+              )
+              fc1, fc2 = st.columns(2)
+              with fc1:
+                pecas_util = st.text_input(
+                    "Peças Utilizadas",
+                    value=str(os_atual["pecas_utilizadas"] or ""),
+                )
+                v_pecas = st.number_input(
+                    "Valor Total das Peças (R$)",
+                    min_value=0.0,
+                    value=float(os_atual["custo_pecas"] or 0.0),
+                    format="%.2f",
+                )
+                v_mo = st.number_input(
+                    "Valor da Mão de Obra (R$)",
+                    min_value=0.0,
+                    value=float(os_atual["mao_de_obra"] or 0.0),
+                    format="%.2f",
+                )
+                oficina_resp = st.text_input(
+                    "Oficina Responsável",
+                    value=str(os_atual["oficina"] or ""),
+                )
+              with fc2:
+                tec_resp = st.text_input(
+                    "Técnico / Mecânico Responsável",
+                    value=str(os_atual["tecnico_mecanico"] or ""),
+                )
+                dt_fech = st.date_input("Data de Fechamento")
+                hr_fech = st.text_input(
+                    "Horário de Fechamento (Ex: 17:00)", value="17:00"
+                )
+                status_final = st.selectbox(
+                    "Status da OS", ["Aberta", "Em manutenção", "Fechada"]
+                )
+
+              if st.form_submit_button("Salvar e Fechar OS"):
+                custo_total = v_pecas + v_mo
+                cursor.execute(
+                    "UPDATE manutencoes SET pecas_utilizadas = ?, custo_pecas ="
+                    " ?, mao_de_obra = ?, custo = ?, oficina = ?,"
+                    " tecnico_mecanico = ?, data_fechamento = ?, hora_fechamento"
+                    " = ?, status_os = ? WHERE id = ?",
+                    (
+                        pecas_util,
+                        v_pecas,
+                        v_mo,
+                        custo_total,
+                        oficina_resp,
+                        tec_resp,
+                        str(dt_fech),
+                        hr_fech,
+                        status_final,
+                        os_sel,
+                    ),
+                )
+                conn.commit()
+                st.success(f"✅ OS #{os_sel} atualizada e fechada com sucesso!")
+                st.rerun()
+
+            st.markdown("---")
+            st.markdown("### 📲 Enviar Relatório da OS via WhatsApp")
+            texto_msg = (
+                f"*TABALMIX CONCRETO - RELATÓRIO DE OS #{os_atual['id']}*\n\n"
+                f"🚜 *Equipamento:* {tag_eq_os}\n"
+                f"🔧 *Tipo:* {os_atual['tipo_manutencao']}\n"
+                f"📋 *Status:* {os_atual['status_os']}\n"
+                f"⚠️ *Problema:* {os_atual['descricao_problema']}\n"
+                f"🔩 *Peças:* {os_atual['pecas_utilizadas'] or 'Nenhuma'}\n"
+                f"💰 *Custo Total:* R$ {(os_atual['custo'] or 0.0):,.2f}\n"
+                f"📅 *Fechamento:* {os_atual['data_fechamento']} às"
+                f" {os_atual['hora_fechamento']}"
             )
-            fc1, fc2 = st.columns(2)
-            with fc1:
-              pecas_util = st.text_input(
-                  "Peças Utilizadas",
-                  value=str(os_atual["pecas_utilizadas"] or ""),
-              )
-              v_pecas = st.number_input(
-                  "Valor Total das Peças (R$)",
-                  min_value=0.0,
-                  value=float(os_atual["custo_pecas"] or 0.0),
-                  format="%.2f",
-              )
-              v_mo = st.number_input(
-                  "Valor da Mão de Obra (R$)",
-                  min_value=0.0,
-                  value=float(os_atual["mao_de_obra"] or 0.0),
-                  format="%.2f",
-              )
-              oficina_resp = st.text_input(
-                  "Oficina Responsável",
-                  value=str(os_atual["oficina"] or ""),
-              )
-            with fc2:
-              tec_resp = st.text_input(
-                  "Técnico / Mecânico Responsável",
-                  value=str(os_atual["tecnico_mecanico"] or ""),
-              )
-              dt_fech = st.date_input("Data de Fechamento")
-              hr_fech = st.text_input(
-                  "Horário de Fechamento (Ex: 17:00)", value="17:00"
-              )
-              status_final = st.selectbox(
-                  "Status da OS", ["Aberta", "Em manutenção", "Fechada"]
-              )
-
-            if st.form_submit_button("Salvar e Fechar OS"):
-              custo_total = v_pecas + v_mo
-              cursor.execute(
-                  "UPDATE manutencoes SET pecas_utilizadas = ?, custo_pecas ="
-                  " ?, mao_de_obra = ?, custo = ?, oficina = ?,"
-                  " tecnico_mecanico = ?, data_fechamento = ?, hora_fechamento"
-                  " = ?, status_os = ? WHERE id = ?",
-                  (
-                      pecas_util,
-                      v_pecas,
-                      v_mo,
-                      custo_total,
-                      oficina_resp,
-                      tec_resp,
-                      str(dt_fech),
-                      hr_fech,
-                      status_final,
-                      os_sel,
-                  ),
-              )
-              conn.commit()
-              st.success(f"✅ OS #{os_sel} atualizada e fechada com sucesso!")
-              st.rerun()
-
-          # NOVIDADE: Botão de Envio de OS Pronta via WhatsApp
-          st.markdown("---")
-          st.markdown("### 📲 Enviar Relatório da OS via WhatsApp")
-          texto_msg = (
-              f"*TABALMIX CONCRETO - RELATÓRIO DE OS #{os_atual['id']}*\n\n"
-              f"🚜 *Equipamento:* {os_atual['tag_prefixo']}\n"
-              f"🔧 *Tipo:* {os_atual['tipo_manutencao']}\n"
-              f"📋 *Status:* {os_atual['status_os']}\n"
-              f"⚠️ *Problema:* {os_atual['descricao_problema']}\n"
-              f"🔩 *Peças:* {os_atual['pecas_utilizadas'] or 'Nenhuma'}\n"
-              f"💰 *Custo Total:* R$ {(os_atual['custo'] or 0.0):,.2f}\n"
-              f"📅 *Fechamento:* {os_atual['data_fechamento']} às"
-              f" {os_atual['hora_fechamento']}"
-          )
-          encoded_whatsapp = urllib.parse.quote(texto_msg)
-          url_whatsapp = f"https://api.whatsapp.com/send?text={encoded_whatsapp}"
-          st.markdown(
-              f"💬 **[👉 CLIQUE AQUI PARA ENVIAR OS VIA"
-              f" WHATSAPP]({url_whatsapp})**",
-              unsafe_allow_html=True,
-          )
+            encoded_whatsapp = urllib.parse.quote(texto_msg)
+            url_whatsapp = f"https://api.whatsapp.com/send?text={encoded_whatsapp}"
+            st.markdown(
+                f"💬 **[👉 CLIQUE AQUI PARA ENVIAR OS VIA"
+                f" WHATSAPP]({url_whatsapp})**",
+                unsafe_allow_html=True,
+            )
     else:
       st.info("Nenhuma OS registrada.")
 
@@ -1368,7 +1369,6 @@ elif menu == "⚙️ Painel de Licença (Admin)":
   if modo_admin_liberado:
     st.title("⚙️ Painel de Administração de Usuários e Segurança")
     
-    # NOVIDADE: Botão de Download de Backup do Banco de Dados (.db)
     st.markdown("### 📥 Backup do Banco de Dados (Segurança)")
     try:
       with open("frota_profissional.db", "rb") as f_db:
