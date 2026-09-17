@@ -915,6 +915,7 @@ menu = st.sidebar.radio(
         "🔩 Peças e Ferramentas",
         "👥 Gestão de Clientes",
         "🔍 Consulta / Busca Geral",
+        "⚙️ Meu Perfil / Dados",
         "⚙️ Painel de Licença (Admin)",
     ],
     label_visibility="collapsed",
@@ -1638,6 +1639,73 @@ elif menu == "🔍 Consulta / Busca Geral":
     else:
       st.info("Nenhum resultado.")
 
+elif menu == "⚙️ Meu Perfil / Dados":
+  st.title("⚙️ Atualização de Perfil e PIN de Acesso")
+  if usuario_atual:
+    cursor.execute(
+        "SELECT nome_completo, cpf, email, celular_seguranca, pin_rapido FROM"
+        " usuarios_sistema WHERE id = ?",
+        (usuario_atual["id"],),
+    )
+    dados_atuais = cursor.fetchone()
+    if dados_atuais:
+      with st.form("form_atualizar_perfil"):
+        novo_nome = st.text_input("Nome Completo", value=dados_atuais[0])
+        novo_email = st.text_input("E-mail (Login)", value=dados_atuais[2])
+        novo_celular = st.text_input(
+            "Celular / Contato de Segurança", value=dados_atuais[3] or ""
+        )
+        novo_pin = st.text_input(
+            "Definir / Alterar PIN Rápido (4 Dígitos)",
+            value=dados_atuais[4] or "",
+            max_chars=4,
+            type="password",
+        )
+        nova_senha_Alt = st.text_input(
+            "Nova Senha (Opcional - deixe em branco para manter a atual)",
+            type="password",
+        )
+
+        if st.form_submit_button("💾 Salvar Alterações"):
+          if novo_email and novo_nome:
+            if nova_senha_Alt:
+              cursor.execute(
+                  "UPDATE usuarios_sistema SET nome_completo = ?, email = ?,"
+                  " celular_seguranca = ?, pin_rapido = ?, senha = ? WHERE id ="
+                  " ?",
+                  (
+                      novo_nome,
+                      novo_email,
+                      novo_celular,
+                      novo_pin,
+                      nova_senha_Alt,
+                      usuario_atual["id"],
+                  ),
+              )
+            else:
+              cursor.execute(
+                  "UPDATE usuarios_sistema SET nome_completo = ?, email = ?,"
+                  " celular_seguranca = ?, pin_rapido = ? WHERE id = ?",
+                  (
+                      novo_nome,
+                      novo_email,
+                      novo_celular,
+                      novo_pin,
+                      usuario_atual["id"],
+                  ),
+              )
+            conn.commit()
+            st.success(
+                "✅ Perfil e PIN atualizados com sucesso! Suas informações"
+                " foram salvas."
+            )
+          else:
+            st.error("⚠️ O e-mail e o nome não podem ficar em branco.")
+  else:
+    st.info(
+        "Faça login para gerenciar seu perfil (ou acesse via modo administrador)."
+    )
+
 elif menu == "⚙️ Painel de Licença (Admin)":
   if modo_admin_liberado:
     st.title("⚙️ Painel de Administração de Usuários e Segurança")
@@ -1683,10 +1751,14 @@ elif menu == "⚙️ Painel de Licença (Admin)":
       with col_adm2:
         with st.form("form_admin_del_user"):
           id_del = st.selectbox(
-              "Selecione o ID para Excluir Conta", df_users["id"].tolist(), key="del_user_id"
+              "Selecione o ID para Excluir Conta",
+              df_users["id"].tolist(),
+              key="del_user_id",
           )
           if st.form_submit_button("🗑️ Excluir Usuário do Sistema"):
-            cursor.execute("DELETE FROM usuarios_sistema WHERE id = ?", (id_del,))
+            cursor.execute(
+                "DELETE FROM usuarios_sistema WHERE id = ?", (id_del,)
+            )
             conn.commit()
             st.success("✅ Conta de usuário excluída com sucesso!")
             st.rerun()
