@@ -495,8 +495,8 @@ def init_db():
         )
     """)
   
-  # GARANTE QUE QUALQUER CONTA NASCUE INATIVA POR PADRÃO (EXCETO SE PAGA/ATIVADA PELO ADMIN)
-  cursor.execute("UPDATE usuarios_sistema SET status_assinatura = 'Inativo', plano_atual = 'Pendente' WHERE status_assinatura = 'Ativo' OR plano_atual = 'Mensal'")
+  # GARANTE QUE QUALQUER CONTA NOVA NASÇA INATIVA POR PADRÃO
+  cursor.execute("UPDATE usuarios_sistema SET status_assinatura = 'Inativo', plano_atual = 'Pendente' WHERE status_assinatura = 'Ativo' AND email != 'admin@tabalmix.com'")
   
   conn.commit()
   return conn
@@ -607,7 +607,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
         if btn_cadastrar:
           if c_nome and c_email and c_senha:
             try:
-              # CONTA NASCE INATIVA POR PADRÃO (AGUARDANDO PAGAMENTO)
               cursor.execute(
                   "INSERT INTO usuarios_sistema (nome_completo, cpf, email,"
                   " senha, celular_seguranca, status_assinatura, plano_atual,"
@@ -728,42 +727,117 @@ with st.sidebar:
 
   st.markdown("---")
 
-# DEFINIÇÃO DO MENU COM BASE NA REGRA DE ATIVAÇÃO
+# MENU COMPLETO PARA VISUALIZAR TODA A EXTENSÃO DO LAYOUT
+menu = st.sidebar.radio(
+    "Navegação",
+    [
+        "📊 Visão Geral",
+        "🚜 CADASTRO DE EQUIPAMENTOS",
+        "⛽ Abastecimentos & Combustível",
+        "🏗️ Mobilização / Desmobilização",
+        "🛠️ Ordens de Serviço (OS)",
+        "🔩 Peças e Ferramentas",
+        "👥 Gestão de Clientes",
+        "🔍 Consulta / Busca Geral",
+        "⚙️ Painel de Licença (Admin)",
+        "👤 Meu Perfil e Dados Cadastrais",
+    ],
+    label_visibility="collapsed",
+)
+
+# VERIFICAÇÃO SE O USUÁRIO ESTÁ ATIVO OU É ADMIN PARA OPERAR
 esta_ativo = (usuario_atual and usuario_atual["status"] == "Ativo") or modo_admin_liberado
 
-if esta_ativo:
-  # MENU COMPLETO PARA USUÁRIOS ATIVOS OU ADMINISTRADOR
-  menu = st.sidebar.radio(
-      "Navegação",
-      [
-          "📊 Visão Geral",
-          "🚜 CADASTRO DE EQUIPAMENTOS",
-          "⛽ Abastecimentos & Combustível",
-          "🏗️ Mobilização / Desmobilização",
-          "🛠️ Ordens de Serviço (OS)",
-          "🔩 Peças e Ferramentas",
-          "👥 Gestão de Clientes",
-          "🔍 Consulta / Busca Geral",
-          "⚙️ Painel de Licença (Admin)",
-          "👤 Meu Perfil e Dados Cadastrais",
-      ],
-      label_visibility="collapsed",
-  )
-else:
-  # MENU RESTRITO PARA USUÁRIOS INATIVOS (SEM PAGAMENTO)
-  st.sidebar.warning("⚠️ **Conta Inativa / Pendente de Pagamento**. O acesso às funções operacionais está bloqueado.")
-  menu = st.sidebar.radio(
-      "Navegação Restrita",
-      [
-          "👤 Meu Perfil e Dados Cadastrais",
-      ],
-      label_visibility="collapsed",
-  )
-
-# EXIBIÇÃO DE BLOQUEIO CASO TENTE ACESSAR ALGO SEM ESTAR ATIVO
 if not esta_ativo and menu != "👤 Meu Perfil e Dados Cadastrais":
-  st.error("🔒 **Acesso Restrito:** Sua conta está com o status **Inativo** ou sem plano atrelado. Para operar o sistema de frota e ferramentas, é necessário realizar a ativação do plano.")
-  st.info("Vá até a aba **'👤 Meu Perfil e Dados Cadastrais'** no menu lateral para verificar seus dados ou contatar o suporte.")
+  st.warning("⚠️ **Conta Inativa / Pendente de Pagamento**")
+  st.markdown(
+      """
+        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-top: 20px;">
+            <h3 style="color: #1b7a3e !important; margin-bottom: 10px;">🔒 Acesso Restrito a Recursos Operacionais</h3>
+            <p style="color: #475569; font-size: 14px; line-height: 1.5; margin-bottom: 20px;">
+                Você pode visualizar o layout completo do sistema pelo menu, mas para utilizar as funções operacionais, cadastrar frota, emitir ordens de serviço ou registrar abastecimentos, é necessário efetuar a ativação do seu plano.
+            </p>
+        </div>
+      """,
+      unsafe_allow_html=True,
+  )
+  
+  st.markdown("---")
+  st.subheader("💳 Escolha seu Plano para Ativação Imediata")
+  
+  col_plano1, col_plano2 = st.columns(2)
+  with col_plano1:
+    st.markdown("""
+        <div style="background: #ffffff; border: 2px solid #1b7a3e; border-radius: 12px; padding: 20px; text-align: center;">
+            <h4 style="color: #1b7a3e; margin: 0;">Plano Mensal Pro</h4>
+            <p style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 10px 0;">R$ 97,00 <span style="font-size: 12px; font-weight: 400;">/ mês</span></p>
+            <p style="font-size: 12px; color: #475569;">Acesso completo a todas as ferramentas de gestão de frota, relatórios em PDF e WhatsApp.</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button("Assinar Plano Mensal (Pix / Mercado Pago)"):
+      try:
+        sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+        preference_data = {
+            "items": [{
+                "title": "Tabalmix Concreto - Plano Mensal Pro",
+                "quantity": 1,
+                "unit_price": 97.00,
+                "currency_id": "BRL"
+            }],
+            "payer": {
+                "email": usuario_atual["email"],
+                "name": usuario_atual["nome"]
+            },
+            "back_urls": {
+                "success": "https://streamlit.io",
+                "failure": "https://streamlit.io",
+                "pending": "https://streamlit.io"
+            },
+            "auto_return": "approved"
+        }
+        preference_response = sdk.preference().create(preference_data)
+        init_point = preference_response["response"]["init_point"]
+        st.markdown(f"### 👉 **[CLIQUE AQUI PARA PAGAR COM MERCADO PAGO]({init_point})**")
+      except Exception as e:
+        st.error(f"Erro ao gerar pagamento: {str(e)}")
+
+  with col_plano2:
+    st.markdown("""
+        <div style="background: #ffffff; border: 2px solid #cbd5e1; border-radius: 12px; padding: 20px; text-align: center;">
+            <h4 style="color: #1b7a3e; margin: 0;">Plano Anual VIP</h4>
+            <p style="font-size: 22px; font-weight: 800; color: #0f172a; margin: 10px 0;">R$ 890,00 <span style="font-size: 12px; font-weight: 400;">/ ano</span></p>
+            <p style="font-size: 12px; color: #475569;">Economia de mais de 23% com suporte prioritário e liberação imediata em todas as estações.</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    if st.button("Assinar Plano Anual (Pix / Cartão)"):
+      try:
+        sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+        preference_data = {
+            "items": [{
+                "title": "Tabalmix Concreto - Plano Anual VIP",
+                "quantity": 1,
+                "unit_price": 890.00,
+                "currency_id": "BRL"
+            }],
+            "payer": {
+                "email": usuario_atual["email"],
+                "name": usuario_atual["nome"]
+            },
+            "back_urls": {
+                "success": "https://streamlit.io",
+                "failure": "https://streamlit.io",
+                "pending": "https://streamlit.io"
+            },
+            "auto_return": "approved"
+        }
+        preference_response = sdk.preference().create(preference_data)
+        init_point = preference_response["response"]["init_point"]
+        st.markdown(f"### 👉 **[CLIQUE AQUI PARA PAGAR COM MERCADO PAGO]({init_point})**")
+      except Exception as e:
+        st.error(f"Erro ao gerar pagamento: {str(e)}")
+
   st.stop()
 
 if menu == "📊 Visão Geral":
@@ -1548,11 +1622,11 @@ elif menu == "👤 Meu Perfil e Dados Cadastrais":
 
     st.markdown("---")
     st.markdown("### 🧪 Controle Manual de Status de Assinatura")
-    st.write("Sua conta está configurada como **Inativo** (sem pagamento atrelado). Caso queira testar a liberação manual ou simular o status ativo, utilize os botões abaixo:")
+    st.write("Sua conta está configurada como **Inativo**. Caso queira simular a liberação completa para testes, utilize o botão abaixo:")
     
     col_t1, col_t2 = st.columns(2)
     with col_t1:
-      if st.button("🔒 Definir como INATIVO (Sem Pagamento)"):
+      if st.button("🔒 Definir como INATIVO"):
         cursor.execute("UPDATE usuarios_sistema SET status_assinatura = 'Inativo', plano_atual = 'Pendente' WHERE id = ?", (usuario_atual["id"],))
         conn.commit()
         st.success("Conta definida como Inativa!")
