@@ -427,6 +427,14 @@ def init_db():
       cursor.execute(col_pin)
     except Exception:
       pass
+
+  # Tabela para salvar a ordem das colunas definida pelo Administrador
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS config_colunas (
+            tabela TEXT PRIMARY KEY,
+            ordem_colunas TEXT
+        )
+    """)
   conn.commit()
   return conn
 
@@ -643,6 +651,34 @@ status_usuario_ativo = (
     )
 )
 
+# Função auxiliar para exibir dataframe travado na ordem salva pelo Admin
+def exibir_tabela_padronizada(df, nome_tabela):
+  if df.empty:
+    st.info("nenhum registro encontrado.")
+    return
+
+  # Busca ordem salva no banco
+  cursor.execute(
+      "SELECT ordem_colunas FROM config_colunas WHERE tabela = ?",
+      (nome_tabela,),
+  )
+  res_ordem = cursor.fetchone()
+  cols_atuais = list(df.columns)
+
+  if res_ordem and res_ordem[0]:
+    cols_salvas = res_ordem[0].split(",")
+    # Filtra apenas colunas que realmente existem no dataframe atual
+    cols_finais = [c for c in cols_salvas if c in cols_atuais]
+    # Adiciona eventuais colunas novas que não estavam na lista salva
+    for c in cols_atuais:
+      if c not in cols_finais:
+        cols_finais.append(c)
+    df = df[cols_finais]
+
+  # Exibe a tabela travada (sem reordenação interativa para colaboradores)
+  st.dataframe(df, use_container_width=True, hide_index=True)
+
+
 # Sidebar em tema claro com o Selo Oficial de Garantia no topo
 with st.sidebar:
   try:
@@ -782,7 +818,32 @@ if menu == "📊 visão geral":
       )
 
   if not df_veiculos.empty:
-    st.dataframe(df_veiculos, use_container_width=True, hide_index=True)
+    # Painel exclusivo do Admin para configurar a ordem das colunas desta tabela
+    if modo_admin_liberado:
+      with st.expander(
+          "⚙️ [ADMIN] Configurar Posição e Ordem Padrão das Colunas (Frota)"
+      ):
+        cols_disp = list(df_veiculos.columns)
+        nova_ordem_str = st.text_input(
+            "Digite a ordem exata das colunas separadas por vírgula:",
+            value=",".join(cols_disp),
+            key="cfg_col_veiculos",
+        )
+        if st.button("💾 Salvar e Atualizar Ordem para Todos"):
+          cursor.execute(
+              "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
+              " VALUES ('veiculos', ?)",
+              (nova_ordem_str,),
+          )
+          conn.commit()
+          st.success(
+              "✅ Ordem salva com sucesso! Todos os colaboradores agora verão"
+              " esta sequência travada."
+          )
+          st.rerun()
+
+    # Exibe a tabela padronizada travada na ordem oficial
+    exibir_tabela_padronizada(df_veiculos, "veiculos")
 
     # Botões de compartilhamento direto via WhatsApp e E-mail (Apenas para Ativos/Admin)
     if status_usuario_ativo or modo_admin_liberado:
@@ -892,7 +953,26 @@ elif menu == "🚜 cadastro de equipamentos":
 
   df_f = pd.read_sql("SELECT * FROM veiculos", conn)
   if not df_f.empty:
-    st.dataframe(df_f, use_container_width=True, hide_index=True)
+    if modo_admin_liberado:
+      with st.expander(
+          "⚙️ [ADMIN] Configurar Ordem Padrão das Colunas (Cadastro Frota)"
+      ):
+        cols_disp_f = list(df_f.columns)
+        nova_ordem_f = st.text_input(
+            "Ordem das colunas:",
+            value=",".join(cols_disp_f),
+            key="cfg_col_f",
+        )
+        if st.button("💾 Salvar Ordem", key="btn_sav_f"):
+          cursor.execute(
+              "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
+              " VALUES ('cad_veiculos', ?)",
+              (nova_ordem_f,),
+          )
+          conn.commit()
+          st.success("✅ Ordem atualizada para todos os colaboradores!")
+          st.rerun()
+    exibir_tabela_padronizada(df_f, "cad_veiculos")
 
 elif menu == "⛽ abastecimentos & combustível":
   st.title("⛽ controle de abastecimento e combustível")
@@ -947,7 +1027,26 @@ elif menu == "⛽ abastecimentos & combustível":
 
   df_c = pd.read_sql("SELECT * FROM combustivel", conn)
   if not df_c.empty:
-    st.dataframe(df_c, use_container_width=True, hide_index=True)
+    if modo_admin_liberado:
+      with st.expander(
+          "⚙️ [ADMIN] Configurar Ordem Padrão das Colunas (Abastecimento)"
+      ):
+        cols_disp_c = list(df_c.columns)
+        nova_ordem_c = st.text_input(
+            "Ordem das colunas:",
+            value=",".join(cols_disp_c),
+            key="cfg_col_c",
+        )
+        if st.button("💾 Salvar Ordem", key="btn_sav_c"):
+          cursor.execute(
+              "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
+              " VALUES ('combustivel', ?)",
+              (nova_ordem_c,),
+          )
+          conn.commit()
+          st.success("✅ Ordem atualizada para todos os colaboradores!")
+          st.rerun()
+    exibir_tabela_padronizada(df_c, "combustivel")
 
 elif menu == "🏗️ mobilização / desmobilização":
   st.title("🏗️ mobilização e desmobilização de obras")
@@ -1022,7 +1121,26 @@ elif menu == "🏗️ mobilização / desmobilização":
 
   df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
   if not df_mobs.empty:
-    st.dataframe(df_mobs, use_container_width=True, hide_index=True)
+    if modo_admin_liberado:
+      with st.expander(
+          "⚙️ [ADMIN] Configurar Ordem Padrão das Colunas (Mobilizações)"
+      ):
+        cols_disp_m = list(df_mobs.columns)
+        nova_ordem_m = st.text_input(
+            "Ordem das colunas:",
+            value=",".join(cols_disp_m),
+            key="cfg_col_m",
+        )
+        if st.button("💾 Salvar Ordem", key="btn_sav_m"):
+          cursor.execute(
+              "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
+              " VALUES ('mobilizacoes', ?)",
+              (nova_ordem_m,),
+          )
+          conn.commit()
+          st.success("✅ Ordem atualizada para todos os colaboradores!")
+          st.rerun()
+    exibir_tabela_padronizada(df_mobs, "mobilizacoes")
     for idx, row in df_mobs.iterrows():
       if row.get("foto_checklist") and os.path.exists(
           str(row["foto_checklist"])
@@ -1061,7 +1179,7 @@ elif menu == "🛠️ ordens de serviço (os)":
       )
       horimetro_ab = st.text_input("horímetro / km na abertura")
       origem_f = st.selectbox(
-          "origem da falha", ["falha na operação", "falha na equipamento"]
+          "origem da falha", ["falha na operação", "falha no equipamento"]
       )
     with c2:
       data_ab = st.date_input("data de abertura", value=datetime.now().date())
@@ -1108,7 +1226,26 @@ elif menu == "🛠️ ordens de serviço (os)":
   st.subheader("📋 ordens de serviço cadastradas")
   df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
   if not df_os.empty:
-    st.dataframe(df_os, use_container_width=True, hide_index=True)
+    if modo_admin_liberado:
+      with st.expander(
+          "⚙️ [ADMIN] Configurar Ordem Padrão das Colunas (Ordens de Serviço)"
+      ):
+        cols_disp_os = list(df_os.columns)
+        nova_ordem_os = st.text_input(
+            "Ordem das colunas:",
+            value=",".join(cols_disp_os),
+            key="cfg_col_os",
+        )
+        if st.button("💾 Salvar Ordem", key="btn_sav_os"):
+          cursor.execute(
+              "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
+              " VALUES ('manutencoes', ?)",
+              (nova_ordem_os,),
+          )
+          conn.commit()
+          st.success("✅ Ordem atualizada para todos os colaboradores!")
+          st.rerun()
+    exibir_tabela_padronizada(df_os, "manutencoes")
 
     st.markdown("### 🔴 encerramento e faturamento de os (etapa 2)")
     with st.form("form_fechamento_os"):
@@ -1219,7 +1356,26 @@ elif menu == "🔩 peças e ferramentas":
 
   df_p = pd.read_sql("SELECT * FROM pecas", conn)
   if not df_p.empty:
-    st.dataframe(df_p, use_container_width=True, hide_index=True)
+    if modo_admin_liberado:
+      with st.expander(
+          "⚙️ [ADMIN] Configurar Ordem Padrão das Colunas (Peças)"
+      ):
+        cols_disp_p = list(df_p.columns)
+        nova_ordem_p = st.text_input(
+            "Ordem das colunas:",
+            value=",".join(cols_disp_p),
+            key="cfg_col_p",
+        )
+        if st.button("💾 Salvar Ordem", key="btn_sav_p"):
+          cursor.execute(
+              "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
+              " VALUES ('pecas', ?)",
+              (nova_ordem_p,),
+          )
+          conn.commit()
+          st.success("✅ Ordem atualizada para todos os colaboradores!")
+          st.rerun()
+    exibir_tabela_padronizada(df_p, "pecas")
 
 elif menu == "👥 gestão de clientes":
   st.title("👥 gestão de clientes")
@@ -1256,7 +1412,26 @@ elif menu == "👥 gestão de clientes":
 
   df_cli = pd.read_sql("SELECT * FROM clientes", conn)
   if not df_cli.empty:
-    st.dataframe(df_cli, use_container_width=True, hide_index=True)
+    if modo_admin_liberado:
+      with st.expander(
+          "⚙️ [ADMIN] Configurar Ordem Padrão das Colunas (Clientes)"
+      ):
+        cols_disp_cl = list(df_cli.columns)
+        nova_ordem_cl = st.text_input(
+            "Ordem das colunas:",
+            value=",".join(cols_disp_cl),
+            key="cfg_col_cl",
+        )
+        if st.button("💾 Salvar Ordem", key="btn_sav_cl"):
+          cursor.execute(
+              "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
+              " VALUES ('clientes', ?)",
+              (nova_ordem_cl,),
+          )
+          conn.commit()
+          st.success("✅ Ordem atualizada para todos os colaboradores!")
+          st.rerun()
+    exibir_tabela_padronizada(df_cli, "clientes")
 
 elif menu == "🔍 consulta / busca geral":
   st.title("🔍 consulta e histórico completo do equipamento")
@@ -1281,7 +1456,7 @@ elif menu == "🔍 consulta / busca geral":
         st.markdown(
             f"### dados do equipamento: **{eq_selecionado_historico}**"
         )
-        st.dataframe(df_eq_info, use_container_width=True, hide_index=True)
+        exibir_tabela_padronizada(df_eq_info, "busca_eq_info")
 
         st.markdown("#### 🛠️ histórico de ordens de serviço")
         df_os_eq = pd.read_sql(
@@ -1290,7 +1465,7 @@ elif menu == "🔍 consulta / busca geral":
             params=(eq_selecionado_historico,),
         )
         if not df_os_eq.empty:
-          st.dataframe(df_os_eq, use_container_width=True, hide_index=True)
+          exibir_tabela_padronizada(df_os_eq, "busca_os_eq")
         else:
           st.info("nenhuma os registrada para este equipamento.")
 
@@ -1301,7 +1476,7 @@ elif menu == "🔍 consulta / busca geral":
             params=(eq_selecionado_historico,),
         )
         if not df_comb_eq.empty:
-          st.dataframe(df_comb_eq, use_container_width=True, hide_index=True)
+          exibir_tabela_padronizada(df_comb_eq, "busca_comb_eq")
         else:
           st.info("nenhum abastecimento registrado para este equipamento.")
   else:
@@ -1316,6 +1491,6 @@ elif menu == "⚙️ painel de licença (admin)":
   st.title("⚙️ painel administrativo")
   df_users = pd.read_sql("SELECT * FROM usuarios_sistema", conn)
   if not df_users.empty:
-    st.dataframe(df_users, use_container_width=True, hide_index=True)
+    exibir_tabela_padronizada(df_users, "usuarios_sistema")
   else:
     st.info("nenhum usuário cadastrado.")
