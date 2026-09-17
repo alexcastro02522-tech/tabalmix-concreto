@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Corporativa Blindada (Forçando Fundo Claro em Selectboxes, Tabelas e Inputs)
+# Estilização Visual Corporativa Blindada
 st.markdown(
     """
     <style>
@@ -100,7 +100,6 @@ st.markdown(
         font-size: 20px !important;
         font-weight: 800 !important;
     }
-    /* CAMPOS E SELECTBOXES COM FUNDO BRANCO E TEXTO ESCURO */
     div.stTextInput > div > div > input, 
     div.stNumberInput > div > div > input, 
     div.stSelectbox > div > div > div,
@@ -112,7 +111,6 @@ st.markdown(
         border-radius: 8px !important;
         min-height: 40px !important;
     }
-    /* FORÇAR LISTAS SUSPENSAS E ITENS DO SELECTBOX COM FUNDO CLARO */
     div[data-baseweb="menu"], ul[data-baseweb="menu"], li[data-baseweb="option"], div[id*="popover"] {
         background-color: #ffffff !important;
         color: #0f172a !important;
@@ -120,7 +118,6 @@ st.markdown(
     div[data-baseweb="menu"] div, span, option, div[id*="popover"] * {
         color: #0f172a !important;
     }
-    /* DATAFRAMES E TABELAS COM FUNDO CLARO */
     div[data-testid="stDataFrame"], .stDataFrame {
         background-color: #ffffff !important;
         border-radius: 12px;
