@@ -1405,7 +1405,6 @@ elif menu == "🛠️ ordens de serviço (os)":
         if tags_disponiveis:
           tag_os = st.selectbox("tag / prefixo do equipamento", tags_disponiveis)
         else:
-          st.warning("⚠️ nenhum veículo cadastrado. digite a tag manualmente:")
           tag_os = st.text_input("tag / prefixo do equipamento (ex: eq-001)")
 
         tipo_manut = st.selectbox(
