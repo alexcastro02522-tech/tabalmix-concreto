@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Corporativa Refinada em Tema Claro
+# Estilização Visual Corporativa Refinada em Tema Claro (Padronização e minúsculos amigáveis)
 st.markdown(
     """
     <style>
@@ -173,12 +173,12 @@ def gerar_pdf_relatorio(titulo, dataframe):
   c.rect(0, altura - 60, largura, 60, fill=1, stroke=0)
   c.setFillColorRGB(1, 1, 1)
   c.setFont("Helvetica-Bold", 14)
-  c.drawString(margem_esq, altura - 25, "TABALMIX CONCRETO")
+  c.drawString(margem_esq, altura - 25, "tabalmix concreto")
   c.setFont("Helvetica", 9)
   c.drawString(
       margem_esq,
       altura - 42,
-      "Sistema de Gestão de Frota e Operações | Powered by Castro Tech",
+      "sistema de gestão de frota e operações | powered by castro tech",
   )
 
   c.setFillColorRGB(0.15, 0.15, 0.15)
@@ -189,7 +189,7 @@ def gerar_pdf_relatorio(titulo, dataframe):
   c.drawString(
       margem_esq,
       altura - 100,
-      f"Emitido em: {datetime.now().strftime('%d/%m/%Y às %H:%M')}",
+      f"emitido em: {datetime.now().strftime('%d/%m/%Y às %H:%M')}",
   )
 
   c.setStrokeColorRGB(0.8, 0.8, 0.8)
@@ -200,7 +200,7 @@ def gerar_pdf_relatorio(titulo, dataframe):
   altura_linha = 20
   colunas = list(dataframe.columns)
   colunas_amigables = [
-      str(col).replace("_", " ").upper() for col in colunas[:6]
+      str(col).replace("_", " ").lower() for col in colunas[:6]
   ]
 
   c.setFillColorRGB(0.08, 0.25, 0.13)
@@ -249,90 +249,90 @@ def gerar_pdf_os_tecnica(os_row):
   c.rect(0, altura - 70, largura, 70, fill=1, stroke=0)
   c.setFillColorRGB(1, 1, 1)
   c.setFont("Helvetica-Bold", 16)
-  c.drawString(margem, altura - 30, "ORDEM DE SERVIÇO TÉCNICA (OS)")
+  c.drawString(margem, altura - 30, "ordem de serviço técnica (os)")
   c.setFont("Helvetica", 10)
   c.drawString(
       margem,
       altura - 50,
-      f"Tabalmix Concreto - Sistema de Gestão | OS #{os_row.get('id', 1)}",
+      f"tabalmix concreto - sistema de gestão | os #{os_row.get('id', 1)}",
   )
 
   y = altura - 100
   c.setFillColorRGB(0.1, 0.1, 0.1)
   c.setFont("Helvetica-Bold", 11)
-  c.drawString(margem, y, "DADOS DO EQUIPAMENTO E ABERTURA:")
+  c.drawString(margem, y, "dados do equipamento e abertura:")
   y = altura - 120
   c.setFont("Helvetica", 10)
 
-  tag_eq = os_row.get("tag_prefixo") or os_row.get("equipamento") or "N/D"
-  c.drawString(margem, y, f"• Equipamento (TAG): {tag_eq}")
+  tag_eq = os_row.get("tag_prefixo") or os_row.get("equipamento") or "não informado"
+  c.drawString(margem, y, f"• equipamento (tag): {tag_eq}")
   y -= 18
   c.drawString(
       margem,
       y,
-      f"• Tipo de Manutenção: {os_row.get('tipo_manutencao', 'Preventiva')}",
+      f"• tipo de manutenção: {os_row.get('tipo_manutencao', 'preventiva')}",
   )
   y -= 18
   c.drawString(
       margem,
       y,
-      f"• Horímetro / KM: {os_row.get('horimetro_km_manut', 'N/D')}",
+      f"• horímetro / km: {os_row.get('horimetro_km_manut', 'não informado')}",
   )
   y -= 18
   c.drawString(
       margem,
       y,
-      f"• Origem da Falha: {os_row.get('origem_falha', 'Operação')}",
+      f"• origem da falha: {os_row.get('origem_falha', 'operação')}",
   )
   y -= 18
   c.drawString(
       margem,
       y,
-      f"• Abertura: {os_row.get('data_abertura', '-')} às"
-      f" {os_row.get('hora_abertura', '-')}",
+      f"• abertura: {os_row.get('data_abertura', datetime.now().strftime('%Y-%m-%d'))} às"
+      f" {os_row.get('hora_abertura', datetime.now().strftime('%H:%M'))}",
   )
 
   y -= 30
   c.setFont("Helvetica-Bold", 11)
-  c.drawString(margem, y, "DESCRIÇÃO DO PROBLEMA:")
+  c.drawString(margem, y, "descrição do problema:")
   y = y - 18
   c.setFont("Helvetica", 10)
-  desc_txt = str(os_row.get("descricao_problema", "Sem descrição."))
+  desc_txt = str(os_row.get("descricao_problema", "sem descrição."))
   c.drawString(margem, y, desc_txt[:90])
 
   y -= 40
   c.setFont("Helvetica-Bold", 11)
-  c.drawString(margem, y, "DADOS DE ENCERRAMENTO E CUSTOS:")
+  c.drawString(margem, y, "dados de encerramento e custos:")
   y -= 20
   c.setFont("Helvetica", 10)
   c.drawString(
       margem,
       y,
-      f"• Oficina Responsável: {os_row.get('oficina', 'Não informada')}",
+      f"• oficina responsável: {os_row.get('oficina', 'não informada')}",
   )
   y -= 18
   c.drawString(
       margem,
       y,
-      f"• Técnico / Mecânico: {os_row.get('tecnico_mecanico', 'Não informado')}",
+      f"• técnico / mecânico: {os_row.get('tecnico_mecanico', 'não informado')}",
   )
   y -= 18
   c.drawString(
       margem,
       y,
-      f"• Peças Utilizadas: {os_row.get('pecas_utilizadas', 'Nenhuma')}",
+      f"• peças utilizadas: {os_row.get('pecas_utilizadas', 'nenhuma')}",
   )
   y -= 18
   c.drawString(
       margem,
       y,
-      f"• Custo de Peças: R$ {(os_row.get('custo_pecas') or 0.0):,.2f}",
+      f"• custo de peças: r$ {(os_row.get('custo_pecas') or 0.0):,.2f}",
   )
   y -= 18
   c.drawString(
       margem,
       y,
-      f"• Custo Mão de Obra: R$ {(os_row.get('mao_de_obra') or 0.0):,.2f}",
+      f"• custo mão de obra: r$ {(os_row.get('mao_de_obra') or 0.0):,.2f}",
   )
   y -= 22
   c.setFont("Helvetica-Bold", 11)
@@ -340,8 +340,8 @@ def gerar_pdf_os_tecnica(os_row):
   c.drawString(
       margem,
       y,
-      f"• CUSTO TOTAL DA OS: R$ {(os_row.get('custo') or 0.0):,.2f} | Status:"
-      f" {os_row.get('status_os', 'Aberta')}",
+      f"• custo total da os: r$ {(os_row.get('custo') or 0.0):,.2f} | status:"
+      f" {os_row.get('status_os', 'aberta')}",
   )
 
   y -= 90
@@ -352,8 +352,8 @@ def gerar_pdf_os_tecnica(os_row):
   y -= 15
   c.setFont("Helvetica", 9)
   c.setFillColorRGB(0.2, 0.2, 0.2)
-  c.drawString(margem, y, "Assinatura do Responsável / Gestor")
-  c.drawString(largura / 2 + 20, y, "Assinatura do Técnico / Oficina")
+  c.drawString(margem, y, "assinatura do encarregado")
+  c.drawString(largura / 2 + 20, y, "assinatura do técnico / oficina")
 
   c.save()
   buffer.seek(0)
@@ -364,7 +364,7 @@ def gerar_csv_relatorio(dataframe):
   output = io.StringIO()
   df_export = dataframe.copy()
   df_export.columns = [
-      str(col).replace("_", " ").upper() for col in df_export.columns
+      str(col).replace("_", " ").lower() for col in df_export.columns
   ]
   df_export.to_csv(output, index=False, sep=";", encoding="utf-8-sig")
   return output.getvalue().encode("utf-8-sig")
@@ -466,9 +466,16 @@ def init_db():
             data TEXT,
             horimetro_km_mov TEXT,
             motivo_condicao TEXT,
-            observacao TEXT
+            observacao TEXT,
+            foto_checklist TEXT
         )
     """)
+  for col_mob in ["ALTER TABLE mobilizacoes ADD COLUMN foto_checklist TEXT"]:
+    try:
+      cursor.execute(col_mob)
+    except Exception:
+      pass
+
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS combustivel (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -535,11 +542,11 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                         <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 100px; object-fit: cover; display: block;">
                     </div>
                     <div style="display: inline-block; background: rgba(27, 122, 62, 0.15); border: 1px solid #1b7a3e; border-radius: 20px; padding: 2px 12px; margin-bottom: 6px;">
-                        <span style="color: #1b7a3e; font-size: 10px; font-weight: 700; letter-spacing: 0.8px;">🛡️ SELO OFICIAL</span>
+                        <span style="color: #1b7a3e; font-size: 10px; font-weight: 700; letter-spacing: 0.8px;">🛡️ selo oficial</span>
                     </div>
-                    <h2 style="color: #1b7a3e !important; margin: 0; font-size: 18px; font-weight: 800;">TABALMIX CONCRETO</h2>
-                    <p style="color: #475569; font-size: 11px; margin: 3px 0 2px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
-                    <p style="color: #94a3b8; font-size: 9px; margin: 0; font-style: italic;">Powered by Castro Tech</p>
+                    <h2 style="color: #1b7a3e !important; margin: 0; font-size: 18px; font-weight: 800;">tabalmix concreto</h2>
+                    <p style="color: #475569; font-size: 11px; margin: 3px 0 2px 0; text-transform: uppercase; letter-spacing: 1px;">gestão de frota & operações</p>
+                    <p style="color: #94a3b8; font-size: 9px; margin: 0; font-style: italic;">powered by castro tech</p>
                 </div>
             """,
           unsafe_allow_html=True,
@@ -548,36 +555,36 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
       st.markdown(
           """
                 <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 20px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.06); margin-top: 15px; margin-bottom: 15px;">
-                    <h2 style="color: #1b7a3e !important; margin: 0; font-size: 18px; font-weight: 800;">TABALMIX CONCRETO</h2>
-                    <p style="color: #475569; font-size: 11px; margin: 3px 0 2px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
-                    <p style="color: #94a3b8; font-size: 9px; margin: 0; font-style: italic;">Powered by Castro Tech</p>
+                    <h2 style="color: #1b7a3e !important; margin: 0; font-size: 18px; font-weight: 800;">tabalmix concreto</h2>
+                    <p style="color: #475569; font-size: 11px; margin: 3px 0 2px 0; text-transform: uppercase; letter-spacing: 1px;">gestão de frota & operações</p>
+                    <p style="color: #94a3b8; font-size: 9px; margin: 0; font-style: italic;">powered by castro tech</p>
                 </div>
             """,
           unsafe_allow_html=True,
       )
 
     tab_login, tab_cadastro, tab_recuperar, tab_pin = st.tabs([
-        "🔑 Entrar",
-        "📝 Criar Conta",
-        "🔄 Recuperar",
-        "🔐 Acesso por PIN",
+        "🔑 entrar",
+        "📝 criar conta",
+        "🔄 recuperar",
+        "🔐 acesso por pin",
     ])
 
     with tab_login:
       st.markdown(
-          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>Acesse"
+          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>acesse"
           " sua conta corporativa:</p>",
           unsafe_allow_html=True,
       )
       with st.form("form_login"):
-        email_login = st.text_input("E-mail Cadastrado")
-        senha_login = st.text_input("Senha", type="password")
+        email_login = st.text_input("e-mail cadastrado")
+        senha_login = st.text_input("senha", type="password")
         cadastrar_pin = st.text_input(
-            "Criar PIN rápido (4 números para acesso futuro - Opcional)",
+            "criar pin rápido (4 números para acesso futuro - opcional)",
             max_chars=4,
             type="password",
         )
-        btn_entrar = st.form_submit_button("Entrar no Sistema")
+        btn_entrar = st.form_submit_button("entrar no sistema")
 
         if btn_entrar:
           cursor.execute(
@@ -600,24 +607,24 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 "email": user_data[3],
                 "status": user_data[6],
             }
-            st.success("✅ Login realizado com sucesso!")
+            st.success("✅ login realizado com sucesso!")
             st.rerun()
           else:
-            st.error("⚠️ E-mail ou senha incorretos.")
+            st.error("⚠️ e-mail ou senha incorretos.")
 
     with tab_cadastro:
       st.markdown(
-          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>Cadastre"
+          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>cadastre"
           " sua empresa para começar:</p>",
           unsafe_allow_html=True,
       )
       with st.form("form_novo_cadastro"):
-        c_nome = st.text_input("Nome Completo / Responsável")
-        c_cpf = st.text_input("CPF")
-        c_email = st.text_input("E-mail (Seu Login)")
-        c_senha = st.text_input("Criar Senha", type="password")
-        c_cel = st.text_input("Celular / Contato de Segurança")
-        btn_cadastrar = st.form_submit_button("Finalizar Cadastro")
+        c_nome = st.text_input("nome completo / responsável")
+        c_cpf = st.text_input("cpf")
+        c_email = st.text_input("e-mail (seu login)")
+        c_senha = st.text_input("criar senha", type="password")
+        c_cel = st.text_input("celular / contato de segurança")
+        btn_cadastrar = st.form_submit_button("finalizar cadastro")
 
         if btn_cadastrar:
           if c_nome and c_cpf and c_email and c_senha:
@@ -638,28 +645,28 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
               )
               conn.commit()
               st.success(
-                  "✅ Conta criada com sucesso! Vá na aba 'Entrar' para fazer"
+                  "✅ conta criada com sucesso! vá na aba 'entrar' para fazer"
                   " seu login."
               )
             except Exception as e:
               st.error(
-                  "⚠️ Este e-mail já está cadastrado ou ocorreu um erro:"
+                  "⚠️ este e-mail já está cadastrado ou ocorreu um erro:"
                   f" {str(e)}"
               )
           else:
-            st.error("⚠️ Preencha todos os campos obrigatórios.")
+            st.error("⚠️ preencha todos os campos obrigatórios.")
 
     with tab_recuperar:
       st.markdown(
-          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>Redefina"
+          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>redefina"
           " sua senha de segurança:</p>",
           unsafe_allow_html=True,
       )
       with st.form("form_recuperar_senha"):
-        rec_email = st.text_input("E-mail Cadastrado na Conta")
-        rec_cpf = st.text_input("CPF do Titular")
-        nova_senha = st.text_input("Nova Senha", type="password")
-        btn_resetar = st.form_submit_button("Redefinir Senha")
+        rec_email = st.text_input("e-mail cadastrado na conta")
+        rec_cpf = st.text_input("cpf do titular")
+        nova_senha = st.text_input("nova senha", type="password")
+        btn_resetar = st.form_submit_button("redefinir senha")
 
         if btn_resetar:
           if rec_email and rec_cpf and nova_senha:
@@ -675,26 +682,26 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
               )
               conn.commit()
               st.success(
-                  "✅ Senha redefinida com sucesso! Vá na aba 'Entrar' e acesse"
+                  "✅ senha redefinida com sucesso! vá na aba 'entrar' e acesse"
                   " com sua nova senha."
               )
             else:
-              st.error("⚠️ E-mail ou CPF não encontrados no sistema.")
+              st.error("⚠️ e-mail ou cpf não encontrados no sistema.")
           else:
-            st.error("⚠️ Preencha todos os campos para recuperar a senha.")
+            st.error("⚠️ preencha todos os campos para recuperar a senha.")
 
     with tab_pin:
       st.markdown(
-          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>Entre"
-          " rapidamente usando seu PIN de 4 dígitos:</p>",
+          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>entre"
+          " rapidamente usando seu pin de 4 dígitos:</p>",
           unsafe_allow_html=True,
       )
       with st.form("form_login_pin"):
-        email_pin_user = st.text_input("Seu E-mail Cadastrado")
+        email_pin_user = st.text_input("seu e-mail cadastrado")
         pin_input = st.text_input(
-            "PIN de 4 Dígitos", max_chars=4, type="password"
+            "pin de 4 dígitos", max_chars=4, type="password"
         )
-        btn_entrar_pin = st.form_submit_button("Entrar com PIN")
+        btn_entrar_pin = st.form_submit_button("entrar com pin")
 
         if btn_entrar_pin:
           cursor.execute(
@@ -710,10 +717,10 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 "email": user_pin_data[3],
                 "status": user_pin_data[6],
             }
-            st.success("✅ Acesso liberado via PIN!")
+            st.success("✅ acesso liberado via pin!")
             st.rerun()
           else:
-            st.error("⚠️ E-mail ou PIN incorretos.")
+            st.error("⚠️ e-mail ou pin incorretos.")
 
   st.stop()
 
@@ -739,11 +746,11 @@ with st.sidebar:
                     <img src="data:image/jpeg;base64,{encoded_logo}" style="width: 100%; height: 80px; object-fit: cover; display: block;">
                 </div>
                 <div style="display: inline-block; background: rgba(27, 122, 62, 0.15); border: 1px solid #1b7a3e; border-radius: 20px; padding: 2px 10px; margin-bottom: 4px;">
-                    <span style="color: #1b7a3e; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">🛡️ SELO OFICIAL</span>
+                    <span style="color: #1b7a3e; font-size: 10px; font-weight: 700; letter-spacing: 0.5px;">🛡️ selo oficial</span>
                 </div>
-                <h3 style="color: #1b7a3e !important; margin: 0; font-size: 15px; font-weight: 800;">TABALMIX CONCRETO</h3>
-                <p style="color: #475569; font-size: 9px; margin: 2px 0 2px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
-                <p style="color: #94a3b8; font-size: 8px; margin: 0; font-style: italic;">Powered by Castro Tech</p>
+                <h3 style="color: #1b7a3e !important; margin: 0; font-size: 15px; font-weight: 800;">tabalmix concreto</h3>
+                <p style="color: #475569; font-size: 9px; margin: 2px 0 2px 0; text-transform: uppercase; letter-spacing: 1px;">gestão de frota & operações</p>
+                <p style="color: #94a3b8; font-size: 8px; margin: 0; font-style: italic;">powered by castro tech</p>
             </div>
         """,
         unsafe_allow_html=True,
@@ -752,22 +759,22 @@ with st.sidebar:
     st.markdown(
         """
             <div style="text-align: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px;">
-                <h3 style="color: #1b7a3e !important; margin: 0; font-size: 15px; font-weight: 800;">TABALMIX CONCRETO</h3>
-                <p style="color: #475569; font-size: 9px; margin: 2px 0 2px 0; text-transform: uppercase; letter-spacing: 1px;">Gestão de Frota & Operações</p>
-                <p style="color: #94a3b8; font-size: 8px; margin: 0; font-style: italic;">Powered by Castro Tech</p>
+                <h3 style="color: #1b7a3e !important; margin: 0; font-size: 15px; font-weight: 800;">tabalmix concreto</h3>
+                <p style="color: #475569; font-size: 9px; margin: 2px 0 2px 0; text-transform: uppercase; letter-spacing: 1px;">gestão de frota & operações</p>
+                <p style="color: #94a3b8; font-size: 8px; margin: 0; font-style: italic;">powered by castro tech</p>
             </div>
         """,
         unsafe_allow_html=True,
     )
 
   if modo_admin_liberado:
-    st.success("🔓 **Modo Admin Ativo**")
+    st.success("🔓 **modo admin ativo**")
   elif usuario_atual:
     st.info(
-        f"👤 **Usuário:** {usuario_atual['nome']}\n\n📊 **Status:**"
+        f"👤 **usuário:** {usuario_atual['nome']}\n\n📊 **status:**"
         f" {usuario_atual['status']}"
     )
-    if st.button("🚪 Sair / Trocar Conta"):
+    if st.button("🚪 sair / trocar conta"):
       st.session_state["usuario_logado"] = None
       st.rerun()
 
@@ -779,14 +786,14 @@ def verificar_licenca_para_acao():
     return True
 
   st.warning(
-      "🔒 **Acesso Restrito ao Sistema de Testes / Assinatura:**\n\nEscolha uma"
+      "🔒 **acesso restrito ao sistema de testes / assinatura:**\n\nescolha uma"
       " das opções abaixo para continuar:"
   )
   escolha_metodo = st.radio(
-      "Forma de Pagamento:",
+      "forma de pagamento:",
       [
-          "💳 Pagamento Automático (Mercado Pago)",
-          "🔑 Transferência Direta (Chave Pix)",
+          "💳 pagamento automático (mercado pago)",
+          "🔑 transferência direta (chave pix)",
       ],
       label_visibility="collapsed",
       key="radio_metodo_geral",
@@ -794,12 +801,12 @@ def verificar_licenca_para_acao():
 
   col_p1, col_p2 = st.columns(2)
   with col_p1:
-    if st.button("💳 Mensal (R$ 250,00)", key="btn_mensal_fixo"):
+    if st.button("💳 mensal (r$ 250,00)", key="btn_mensal_fixo"):
       try:
         sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
         payment_data = {
             "transaction_amount": 250.0,
-            "description": f"Tabalmix - Plano Mensal ({usuario_atual['email'] if usuario_atual else 'Cliente'})",
+            "description": f"tabalmix - plano mensal ({usuario_atual['email'] if usuario_atual else 'cliente'})",
             "payment_method_id": "pix",
             "payer": {
                 "email": usuario_atual["email"] if usuario_atual else "cliente@tabalmix.com"
@@ -812,23 +819,23 @@ def verificar_licenca_para_acao():
           qr_code_text = poi.get("qr_code")
           ticket_url = poi.get("ticket_url")
 
-          st.success("✅ Pix Gerado com Sucesso!")
+          st.success("✅ pix gerado com sucesso!")
           if qr_code_base64:
             img_bytes = base64.b64decode(qr_code_base64)
-            st.image(img_bytes, caption="Escaneie o QR Code com seu Banco", width=250)
+            st.image(img_bytes, caption="escaneie o qr code com seu banco", width=250)
           
           if qr_code_text:
-            st.text_area("Pix Copia e Cola (Copie abaixo):", value=qr_code_text, height=100)
+            st.text_area("pix copia e cola (copie abaixo):", value=qr_code_text, height=100)
 
           if ticket_url:
-            st.markdown(f"🔗 **[👉 Abrir Página de Pagamento do Mercado Pago]({ticket_url})**")
+            st.markdown(f"🔗 **[👉 abrir página de pagamento do mercado pago]({ticket_url})**")
         else:
           pref_data = {
               "items": [{
-                  "title": "Tabalmix - Mensal",
+                  "title": "tabalmix - mensal",
                   "quantity": 1,
                   "unit_price": 250.0,
-                  "currency_id": "BRL",
+                  "currency_id": "brl",
               }],
               "back_urls": {
                   "success": "https://tabalmix-concreto.streamlit.app",
@@ -840,17 +847,17 @@ def verificar_licenca_para_acao():
           pref_res = sdk.preference().create(pref_data)
           url = pref_res["response"].get("init_point") if "response" in pref_res else ""
           if url:
-            st.markdown(f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**")
+            st.markdown(f"🔗 **[👉 abrir checkout de pagamento]({url})**")
       except Exception as e:
-        st.error(f"Erro ao gerar pagamento Pix: {e}")
+        st.error(f"erro ao gerar pagamento pix: {e}")
 
   with col_p2:
-    if st.button("🌟 Anual (R$ 2.400,00)", key="btn_anual_fixo"):
+    if st.button("🌟 anual (r$ 2.400,00)", key="btn_anual_fixo"):
       try:
         sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
         payment_data = {
             "transaction_amount": 2400.0,
-            "description": f"Tabalmix - Plano Anual ({usuario_atual['email'] if usuario_atual else 'Cliente'})",
+            "description": f"tabalmix - plano anual ({usuario_atual['email'] if usuario_atual else 'cliente'})",
             "payment_method_id": "pix",
             "payer": {
                 "email": usuario_atual["email"] if usuario_atual else "cliente@tabalmix.com"
@@ -863,23 +870,23 @@ def verificar_licenca_para_acao():
           qr_code_text = poi.get("qr_code")
           ticket_url = poi.get("ticket_url")
 
-          st.success("✅ Pix Gerado com Sucesso!")
+          st.success("✅ pix gerado com sucesso!")
           if qr_code_base64:
             img_bytes = base64.b64decode(qr_code_base64)
-            st.image(img_bytes, caption="Escaneie o QR Code com seu Banco", width=250)
+            st.image(img_bytes, caption="escaneie o qr code com seu banco", width=250)
           
           if qr_code_text:
-            st.text_area("Pix Copia e Cola (Copie abaixo):", value=qr_code_text, height=100)
+            st.text_area("pix copia e cola (copie abaixo):", value=qr_code_text, height=100)
 
           if ticket_url:
-            st.markdown(f"🔗 **[👉 Abrir Página de Pagamento do Mercado Pago]({ticket_url})**")
+            st.markdown(f"🔗 **[👉 abrir página de pagamento do mercado pago]({ticket_url})**")
         else:
           pref_data = {
               "items": [{
-                  "title": "Tabalmix - Anual",
+                  "title": "tabalmix - anual",
                   "quantity": 1,
                   "unit_price": 2400.0,
-                  "currency_id": "BRL",
+                  "currency_id": "brl",
               }],
               "back_urls": {
                   "success": "https://tabalmix-concreto.streamlit.app",
@@ -891,13 +898,13 @@ def verificar_licenca_para_acao():
           pref_res = sdk.preference().create(pref_data)
           url = pref_res["response"].get("init_point") if "response" in pref_res else ""
           if url:
-            st.markdown(f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**")
+            st.markdown(f"🔗 **[👉 abrir checkout de pagamento]({url})**")
       except Exception as e:
-        st.error(f"Erro ao gerar pagamento Pix: {e}")
+        st.error(f"erro ao gerar pagamento pix: {e}")
 
-  if "Transferência Direta" in escolha_metodo:
+  if "transferência direta" in escolha_metodo:
     st.info(
-        "🔑 **Chave Pix para Depósito:** `sua-chave-pix@dominio.com`\nEnvie o"
+        "🔑 **chave pix para depósito:** `sua-chave-pix@dominio.com`\nenvie o"
         " comprovante para liberar o seu acesso instantâneo."
     )
 
@@ -905,23 +912,23 @@ def verificar_licenca_para_acao():
 
 
 menu = st.sidebar.radio(
-    "Navegação",
+    "navegação",
     [
-        "📊 Visão Geral",
-        "🚜 CADASTRO DE EQUIPAMENTOS",
-        "⛽ Abastecimentos & Combustível",
-        "🏗️ Mobilização / Desmobilização",
-        "🛠️ Ordens de Serviço (OS)",
-        "🔩 Peças e Ferramentas",
-        "👥 Gestão de Clientes",
-        "🔍 Consulta / Busca Geral",
-        "⚙️ Meu Perfil / Dados",
-        "⚙️ Painel de Licença (Admin)",
+        "📊 visão geral",
+        "🚜 cadastro de equipamentos",
+        "⛽ abastecimentos & combustível",
+        "🏗️ mobilização / desmobilização",
+        "🛠️ ordens de serviço (os)",
+        "🔩 peças e ferramentas",
+        "👥 gestão de clientes",
+        "🔍 consulta / busca geral",
+        "⚙️ meu perfil / dados",
+        "⚙️ painel de licença (admin)",
     ],
     label_visibility="collapsed",
 )
 
-if menu == "📊 Visão Geral":
+if menu == "📊 visão geral":
   try:
     with open("caminhoes.jpg", "rb") as image_file:
       encoded_string = base64.b64encode(image_file.read()).decode()
@@ -931,8 +938,8 @@ if menu == "📊 Visão Geral":
                 <div style="border-radius: 8px; overflow: hidden; max-height: 120px; border: 1px solid #e2e8f0; margin-bottom: 8px;">
                     <img src="data:image/jpeg;base64,{encoded_string}" style="width: 100%; height: 110px; object-fit: cover; display: block;">
                 </div>
-                <h2 style="color: #1b7a3e !important; margin: 0 0 2px 0; font-size: 15px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
-                <p style="color: #475569 !important; font-size: 11px; margin: 0; font-weight: 500;">Controle avançado de caminhões betoneira, maquinário e manutenções | Powered by Castro Tech.</p>
+                <h2 style="color: #1b7a3e !important; margin: 0 0 2px 0; font-size: 15px;">🏗️ tabalmix - painel operacional da frota</h2>
+                <p style="color: #475569 !important; font-size: 11px; margin: 0; font-weight: 500;">controle avançado de caminhões betoneira, maquinário e manutenções | powered by castro tech.</p>
             </div>
         """,
         unsafe_allow_html=True,
@@ -941,8 +948,8 @@ if menu == "📊 Visão Geral":
     st.markdown(
         """
             <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px; margin-bottom: 15px;">
-                <h2 style="color: #1b7a3e !important; margin: 0 0 2px 0; font-size: 15px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
-                <p style="color: #475569 !important; font-size: 11px; margin: 0; font-weight: 500;">Controle avançado de caminhões betoneira, maquinário e manutenções | Powered by Castro Tech.</p>
+                <h2 style="color: #1b7a3e !important; margin: 0 0 2px 0; font-size: 15px;">🏗️ tabalmix - painel operacional da frota</h2>
+                <p style="color: #475569 !important; font-size: 11px; margin: 0; font-weight: 500;">controle avançado de caminhões betoneira, maquinário e manutenções | powered by castro tech.</p>
             </div>
         """,
         unsafe_allow_html=True,
@@ -985,44 +992,44 @@ if menu == "📊 Visão Geral":
 
   r1_c1, r1_c2, r1_c3 = st.columns(3)
   with r1_c1:
-    st.metric("Total Frota", total_frota)
+    st.metric("total frota", total_frota)
   with r1_c2:
-    st.metric("🟢 Trabalhando", ativos_trabalhando)
+    st.metric("🟢 trabalhando", ativos_trabalhando)
   with r1_c3:
-    st.metric("🔴 Parados", ativos_parados)
+    st.metric("🔴 parados", ativos_parados)
 
   r2_c1, r2_c2, r2_c3 = st.columns(3)
   with r2_c1:
-    st.metric("Custo Manut.", f"R$ {total_custo:,.2f}")
+    st.metric("custo manut.", f"r$ {total_custo:,.2f}")
   with r2_c2:
-    st.metric("Gasto Combustível", f"R$ {total_combustivel:,.2f}")
+    st.metric("gasto combustível", f"r$ {total_combustivel:,.2f}")
   with r2_c3:
-    st.metric("Total Insumos", len(df_pecas))
+    st.metric("total insumos", len(df_pecas))
 
   if not df_manut.empty or not df_comb.empty:
     st.divider()
-    st.subheader("📊 Indicadores e Comparativo de Custos")
+    st.subheader("📊 indicadores e comparativo de custos")
     gc1, gc2 = st.columns(2)
     with gc1:
-      st.markdown("**Despesas de Manutenção (Peças vs Mão de Obra)**")
+      st.markdown("**despesas de manutenção (peças vs mão de obra)**")
       df_custos_chart = pd.DataFrame({
-          "Categoria": ["Peças Utilizadas", "Mão de Obra"],
-          "Valor (R$)": [liberado_pecas, liberado_mo],
+          "categoria": ["peças utilizadas", "mão de obra"],
+          "valor (r$)": [liberado_pecas, liberado_mo],
       })
-      st.bar_chart(df_custos_chart, x="Categoria", y="Valor (R$)")
+      st.bar_chart(df_custos_chart, x="categoria", y="valor (r$)")
     with gc2:
-      st.markdown("**Consumo de Combustível por Equipamento**")
+      st.markdown("**consumo de combustível por equipamento**")
       if not df_comb.empty:
         df_comb_chart = (
             df_comb.groupby("equipamento")["valor_total"].sum().reset_index()
         )
         st.bar_chart(df_comb_chart, x="equipamento", y="valor_total")
       else:
-        st.info("Nenhum abastecimento registrado para gerar gráfico.")
+        st.info("nenhum abastecimento registrado para gerar gráfico.")
 
     if "data_abertura" in df_manut.columns and not df_manut.empty:
       st.markdown("---")
-      st.markdown("**📈 Evolução Mensal dos Custos de Manutenção (R$)**")
+      st.markdown("**📈 evolução mensal dos custos de manutenção (r$)**")
       try:
         df_manut_evol = df_manut.copy()
         df_manut_evol["mes"] = pd.to_datetime(
@@ -1034,47 +1041,47 @@ if menu == "📊 Visão Geral":
         if not df_mensal.empty and df_mensal["mes"].notna().any():
           st.line_chart(df_mensal.set_index("mes")["custo"])
         else:
-          st.info("Insira datas válidas nas OS para ver o gráfico mensal.")
+          st.info("insira datas válidas nas os para ver o gráfico mensal.")
       except Exception:
         pass
 
   if not df_veiculos.empty:
     st.divider()
-    st.subheader("⚠️ Alertas de Manutenção Preventiva")
+    st.subheader("⚠️ alertas de manutenção preventiva")
     alerta_gerado = False
     for idx, row in df_veiculos.iterrows():
       h_km = row["horimetro_km"] if row["horimetro_km"] is not None else 0
       if h_km >= 15000:
         st.warning(
-            f"🔔 **Atenção Preventiva:** O equipamento **{row['tag_prefixo']}**"
-            f" ({row['modelo']}) atingiu **{h_km:,} KM/Horímetro**. Recomenda-se"
+            f"🔔 **atenção preventiva:** o equipamento **{row['tag_prefixo']}**"
+            f" ({row['modelo']}) atingiu **{h_km:,} km/horímetro**. recomenda-se"
             " agendar revisão geral."
         )
         alerta_gerado = True
     if not alerta_gerado:
       st.success(
-          "✅ Todos os equipamentos estão com horímetro/KM dentro do período"
+          "✅ todos os equipamentos estão com horímetro/km dentro do período"
           " ideal de operação."
       )
 
   st.divider()
-  st.subheader("📋 Status da Frota e Equipamentos")
+  st.subheader("📋 status da frota e equipamentos")
 
   if not df_veiculos.empty:
     filtro_status = st.selectbox(
-        "🔍 Filtrar Status",
+        "🔍 filtrar status",
         [
-            "Todos os Status",
-            "Ativo",
-            "Mobilizado",
-            "Em manutenção",
-            "Parado",
-            "Desmobilizado",
-            "Inativo",
+            "todos os status",
+            "ativo",
+            "mobilizado",
+            "em manutenção",
+            "parado",
+            "desmobilizado",
+            "inativo",
         ],
     )
     df_filtrado = df_veiculos.copy()
-    if filtro_status != "Todos os Status":
+    if filtro_status != "todos os status":
       df_filtrado = df_veiculos[df_veiculos["status"] == filtro_status]
 
     st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
@@ -1083,70 +1090,70 @@ if menu == "📊 Visão Geral":
       c_d1, c_d2 = st.columns(2)
       with c_d1:
         st.download_button(
-            "📥 Baixar PDF",
-            gerar_pdf_relatorio("RELATÓRIO DE FROTA", df_filtrado),
+            "📥 baixar pdf",
+            gerar_pdf_relatorio("relatório de frota", df_filtrado),
             "frota.pdf",
             "application/pdf",
         )
       with c_d2:
         st.download_button(
-            "📊 Baixar Planilha (.csv)",
+            "📊 baixar planilha (.csv)",
             gerar_csv_relatorio(df_filtrado),
             "frota.csv",
             "text/csv",
         )
   else:
-    st.info("Nenhum equipamento cadastrado.")
+    st.info("nenhum equipamento cadastrado.")
 
-elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
-  st.title("🚜 CADASTRO DE EQUIPAMENTOS")
+elif menu == "🚜 cadastro de equipamentos":
+  st.title("🚜 cadastro de equipamentos")
 
   if status_usuario_ativo or modo_admin_liberado:
     with st.form("form_frota", clear_on_submit=False):
       col1, col2 = st.columns(2)
       with col1:
-        tag_prefixo = st.text_input("TAG/PREFIXO (Ex: EQ-001)")
+        tag_prefixo = st.text_input("tag/prefixo (ex: eq-001)")
         tipo = st.selectbox(
-            "Tipo de Equipamento",
+            "tipo de equipamento",
             [
-                "Caminhão Betoneira",
-                "Caminhão Basculante",
-                "Escavadeira",
-                "Utilitário",
-                "Trator",
+                "caminhão betoneira",
+                "caminhão basculante",
+                "escavadeira",
+                "utilitário",
+                "trator",
             ],
         )
-        marca = st.text_input("Marca")
-        modelo = st.text_input("Modelo")
+        marca = st.text_input("marca")
+        modelo = st.text_input("modelo")
         ano = st.number_input(
-            "Ano de Fabricação", min_value=1950, value=2024, step=1
+            "ano de fabricação", min_value=1950, value=2024, step=1
         )
-        chassi = st.text_input("Número de Série / Chassi (Opcional)")
-        placa = st.text_input("Placa")
+        chassi = st.text_input("número de série / chassi (opcional)")
+        placa = st.text_input("placa")
       with col2:
         horimetro_km = st.number_input(
-            "Horímetro ou Quilometragem Atual", min_value=0, value=15000, step=100
+            "horímetro ou quilometragem atual", min_value=0, value=15000, step=100
         )
         combustivel = st.selectbox(
-            "Combustível", ["Diesel S10", "Diesel S500", "Gasolina", "Flex"]
+            "combustível", ["diesel s10", "diesel s500", "gasolina", "flex"]
         )
-        local_atual = st.text_input("Local Atual / Obra")
-        operador_condutor = st.text_input("Operador/Condutor")
+        local_atual = st.text_input("local atual / obra")
+        operador_condutor = st.text_input("operador/condutor")
         status = st.selectbox(
-            "Situação / Status",
+            "situação / status",
             [
-                "Ativo",
-                "Em manutenção",
-                "Parado",
-                "Mobilizado",
-                "Desmobilizado",
-                "Inativo",
+                "ativo",
+                "em manutenção",
+                "parado",
+                "mobilizado",
+                "desmobilizado",
+                "inativo",
             ],
         )
-        data_entrada = st.date_input("Data de Entrada na Empresa")
-        observacoes = st.text_input("Observações")
+        data_entrada = st.date_input("data de entrada na empresa")
+        observacoes = st.text_input("observações")
 
-      if st.form_submit_button("Cadastrar Equipamento"):
+      if st.form_submit_button("cadastrar equipamento"):
         if modelo and tag_prefixo:
           cursor.execute(
               "INSERT INTO veiculos (tag_prefixo, tipo, marca, modelo, ano,"
@@ -1171,37 +1178,37 @@ elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
               ),
           )
           conn.commit()
-          st.success(f"✅ Equipamento '{tag_prefixo.upper()}' cadastrado!")
+          st.success(f"✅ equipamento '{tag_prefixo.upper()}' cadastrado!")
           st.rerun()
         else:
-          st.error("⚠️ Preencha TAG/PREFIXO e Modelo.")
+          st.error("⚠️ preencha tag/prefixo e modelo.")
   else:
     verificar_licenca_para_acao()
 
   st.divider()
-  st.subheader("Equipamentos Cadastrados")
+  st.subheader("equipamentos cadastrados")
   df_f = pd.read_sql("SELECT * FROM veiculos", conn)
   if not df_f.empty:
     st.dataframe(df_f, use_container_width=True, hide_index=True)
 
     st.markdown("---")
-    st.subheader("🔎 Ficha Histórica Individual do Equipamento")
+    st.subheader("🔎 ficha histórica individual do equipamento")
     eq_selecionado_historico = st.selectbox(
-        "Selecione a TAG/Prefixo para ver o Histórico Completo",
+        "selecione a tag/prefixo para ver o histórico completo",
         df_f["tag_prefixo"].tolist(),
         key="sel_hist_eq",
     )
     if eq_selecionado_historico:
       dados_eq = df_f[df_f["tag_prefixo"] == eq_selecionado_historico].iloc[0]
       st.info(
-          f"📌 **Ativo:** {dados_eq['tag_prefixo']} | **Modelo:**"
-          f" {dados_eq['modelo']} | **Status Atual:** {dados_eq['status']} |"
-          f" **Horímetro/KM:** {dados_eq['horimetro_km']:,}"
+          f"📌 **ativo:** {dados_eq['tag_prefixo']} | **modelo:**"
+          f" {dados_eq['modelo']} | **status atual:** {dados_eq['status']} |"
+          f" **horímetro/km:** {dados_eq['horimetro_km']:,}"
       )
 
       col_h1, col_h2 = st.columns(2)
       with col_h1:
-        st.markdown("**🛠️ Histórico de Manutenções (OS):**")
+        st.markdown("**🛠️ histórico de manutenções (os):**")
         df_hist_os = pd.read_sql(
             "SELECT id, tipo_manutencao, data_abertura, status_os, custo FROM"
             " manutencoes WHERE tag_prefixo = ?",
@@ -1211,9 +1218,9 @@ elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
         if not df_hist_os.empty:
           st.dataframe(df_hist_os, use_container_width=True, hide_index=True)
         else:
-          st.write("Nenhuma OS registrada para este equipamento.")
+          st.write("nenhuma os registrada para este equipamento.")
       with col_h2:
-        st.markdown("**⛽ Histórico de Abastecimentos:**")
+        st.markdown("**⛽ histórico de abastecimentos:**")
         df_hist_comb = pd.read_sql(
             "SELECT data, litros, valor_total, motorista FROM combustivel WHERE"
             " equipamento = ?",
@@ -1223,50 +1230,50 @@ elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
         if not df_hist_comb.empty:
           st.dataframe(df_hist_comb, use_container_width=True, hide_index=True)
         else:
-          st.write("Nenhum abastecimento registrado.")
+          st.write("nenhum abastecimento registrado.")
 
     if status_usuario_ativo or modo_admin_liberado:
       c_del1, c_del2 = st.columns([2, 1])
       with c_del1:
         eq_exc = st.selectbox(
-            "Selecione o ID para Excluir da Frota", df_f["id"].tolist()
+            "selecione o id para excluir da frota", df_f["id"].tolist()
         )
       with c_del2:
         st.write("")
         st.write("")
-        if st.button("🗑️ Excluir"):
+        if st.button("🗑️ excluir"):
           cursor.execute("DELETE FROM veiculos WHERE id = ?", (eq_exc,))
           conn.commit()
-          st.success("Removido!")
+          st.success("removido!")
           st.rerun()
   else:
-    st.info("Nenhum equipamento cadastrado.")
+    st.info("nenhum equipamento cadastrado.")
 
-elif menu == "⛽ Abastecimentos & Combustível":
-  st.title("⛽ Controle de Abastecimento e Combustível")
+elif menu == "⛽ abastecimentos & combustível":
+  st.title("⛽ controle de abastecimento e combustível")
   try:
     df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
   except Exception:
     df_v = pd.DataFrame()
 
   if df_v.empty:
-    st.warning("Cadastre equipamentos primeiro na aba 'CADASTRO DE EQUIPAMENTOS'.")
+    st.warning("cadastre equipamentos primeiro na aba 'cadastro de equipamentos'.")
   else:
     if status_usuario_ativo or modo_admin_liberado:
       with st.form("form_comb"):
         c1, c2 = st.columns(2)
         with c1:
           eq_comb = st.selectbox(
-              "Equipamento / TAG", df_v["tag_prefixo"].tolist()
+              "equipamento / tag", df_v["tag_prefixo"].tolist()
           )
-          litros = st.number_input("Litros", min_value=0.1, value=100.0)
-          val_tot = st.number_input("Valor Total (R$)", min_value=0.0, value=600.0)
+          litros = st.number_input("litros", min_value=0.1, value=100.0)
+          val_tot = st.number_input("valor total (r$)", min_value=0.0, value=600.0)
         with c2:
-          km_h = st.text_input("KM ou Horímetro")
-          posto = st.text_input("Posto / Fornecedor")
-          motorista = st.text_input("Motorista / Responsável")
-          dt_ab = st.date_input("Data")
-        if st.form_submit_button("Registrar Abastecimento"):
+          km_h = st.text_input("km ou horímetro")
+          posto = st.text_input("posto / fornecedor")
+          motorista = st.text_input("motorista / responsável")
+          dt_ab = st.date_input("data")
+        if st.form_submit_button("registrar abastecimento"):
           cursor.execute(
               "INSERT INTO combustivel (equipamento, litros, valor_total,"
               " km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?,"
@@ -1282,19 +1289,19 @@ elif menu == "⛽ Abastecimentos & Combustível":
               ),
           )
           conn.commit()
-          st.success("✅ Abastecimento registrado!")
+          st.success("✅ abastecimento registrado!")
     else:
       verificar_licenca_para_acao()
 
     st.divider()
-    st.subheader("📋 Histórico de Abastecimentos")
+    st.subheader("📋 histórico de abastecimentos")
     df_c = pd.read_sql("SELECT * FROM combustivel", conn)
     if not df_c.empty:
       col_f1, col_f2 = st.columns(2)
       with col_f1:
-        dt_ini_c = st.date_input("Data Inicial", value=datetime.now().date() - timedelta(days=30))
+        dt_ini_c = st.date_input("data inicial", value=datetime.now().date() - timedelta(days=30))
       with col_f2:
-        dt_fim_c = st.date_input("Data Final", value=datetime.now().date())
+        dt_fim_c = st.date_input("data final", value=datetime.now().date())
       
       try:
         df_c["data_dt"] = pd.to_datetime(df_c["data"], errors="coerce").dt.date
@@ -1305,45 +1312,55 @@ elif menu == "⛽ Abastecimentos & Combustível":
       except Exception:
         st.dataframe(df_c, use_container_width=True, hide_index=True)
     else:
-      st.info("Nenhum abastecimento registrado.")
+      st.info("nenhum abastecimento registrado.")
 
-elif menu == "🏗️ Mobilização / Desmobilização":
-  st.title("🏗️ Mobilização e Desmobilização de Obras")
+elif menu == "🏗️ mobilização / desmobilização":
+  st.title("🏗️ mobilização e desmobilização de obras")
   try:
     df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
   except Exception:
     df_v = pd.DataFrame()
 
   if df_v.empty:
-    st.warning("Cadastre equipamentos primeiro na aba 'CADASTRO DE EQUIPAMENTOS'.")
+    st.warning("cadastre equipamentos primeiro na aba 'cadastro de equipamentos'.")
   else:
     if status_usuario_ativo or modo_admin_liberado:
       with st.form("form_mob"):
         c1, c2 = st.columns(2)
         with c1:
           eq_mob = st.selectbox(
-              "Equipamento / TAG", df_v["tag_prefixo"].tolist()
+              "equipamento / tag", df_v["tag_prefixo"].tolist()
           )
           tipo_mov = st.selectbox(
-              "Movimentação",
+              "movimentação",
               [
-                  "Mobilização (Envio)",
-                  "Desmobilização (Retorno)",
-                  "Remanejamento",
+                  "mobilização (envio)",
+                  "desmobilização (retorno)",
+                  "remanejamento",
               ],
           )
-          destino = st.text_input("Obra / Destino-Origem")
-          km_mov = st.text_input("Horímetro / KM")
+          destino = st.text_input("obra / destino-origem")
+          km_mov = st.text_input("horímetro / km")
         with c2:
-          resp = st.text_input("Responsável")
-          dt_mob = st.date_input("Data")
-          motivo = st.text_input("Motivo / Condição")
-          obs = st.text_input("Observação")
-        if st.form_submit_button("Registrar Movimentação"):
+          resp = st.text_input("responsável")
+          dt_mob = st.date_input("data")
+          motivo = st.text_input("motivo / condição do check-list")
+          obs = st.text_input("observação")
+        
+        foto_subida = st.file_uploader("📷 anexar foto do check-list de recebimento / vistoria", type=["png", "jpg", "jpeg"])
+
+        if st.form_submit_button("registrar movimentação"):
+          nome_foto = ""
+          if foto_subida is not None:
+            os.makedirs("uploads_checklists", exist_ok=True)
+            nome_foto = f"uploads_checklists/{datetime.now().strftime('%Y%m%d%H%M%S')}_{foto_subida.name}"
+            with open(nome_foto, "wb") as f:
+              f.write(foto_subida.getbuffer())
+
           cursor.execute(
               "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
               " destino_origem, responsavel, data, horimetro_km_mov,"
-              " motivo_condicao, observacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+              " motivo_condicao, observacao, foto_checklist) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
               (
                   eq_mob,
                   tipo_mov,
@@ -1353,10 +1370,11 @@ elif menu == "🏗️ Mobilização / Desmobilização":
                   str(km_mov),
                   motivo,
                   obs,
+                  nome_foto,
               ),
           )
           conn.commit()
-          st.success("✅ Registrado com sucesso!")
+          st.success("✅ movimentação e check-list fotográfico registrados com sucesso!")
     else:
       verificar_licenca_para_acao()
 
@@ -1364,9 +1382,15 @@ elif menu == "🏗️ Mobilização / Desmobilização":
     df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
     if not df_mobs.empty:
       st.dataframe(df_mobs, use_container_width=True, hide_index=True)
+      
+      # Exibir fotos anexadas se houver
+      for idx, row in df_mobs.iterrows():
+        if row.get("foto_checklist") and os.path.exists(str(row["foto_checklist"])):
+          with st.expander(f"Ver Foto Check-list #{row['id']} - {row['equipamento']}"):
+            st.image(row["foto_checklist"], width=300)
 
-elif menu == "🛠️ Ordens de Serviço (OS)":
-  st.title("🛠️ Gestão Unificada de Ordens de Serviço (OS)")
+elif menu == "🛠️ ordens de serviço (os)":
+  st.title("🛠️ gestão unificada de ordens de serviço (os)")
 
   try:
     df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
@@ -1374,39 +1398,39 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
     df_v = pd.DataFrame()
 
   if df_v.empty:
-    st.warning("Cadastre equipamentos antes de abrir uma OS.")
+    st.warning("cadastre equipamentos antes de abrir uma os.")
   else:
     if status_usuario_ativo or modo_admin_liberado:
-      st.markdown("### 🟢 Abertura de Nova OS (Etapa 1)")
+      st.markdown("### 🟢 abertura de nova os (etapa 1)")
       with st.form("form_abertura_os", clear_on_submit=True):
         c1, c2 = st.columns(2)
         with c1:
           tag_os = st.selectbox(
-              "Tag / Prefixo do Equipamento", df_v["tag_prefixo"].tolist()
+              "tag / prefixo do equipamento", df_v["tag_prefixo"].tolist()
           )
           tipo_manut = st.selectbox(
-              "Tipo de Manutenção",
-              ["Preventiva", "Corretiva", "Preditiva", "Revisão Geral"],
+              "tipo de manutenção",
+              ["preventiva", "corretiva", "preditiva", "revisão geral"],
           )
-          horimetro_ab = st.text_input("Horímetro / KM na Abertura")
+          horimetro_ab = st.text_input("horímetro / km na abertura")
           origem_f = st.selectbox(
-              "Origem da Falha", ["Falha na Operação", "Falha no Equipamento"]
+              "origem da falha", ["falha na operação", "falha no equipamento"]
           )
         with c2:
-          data_ab = st.date_input("Data de Abertura")
+          data_ab = st.date_input("data de abertura", value=datetime.now().date())
           hora_ab = st.text_input(
-              "Horário de Abertura (Ex: 08:30)", value="08:00"
+              "horário de abertura (ex: 08:30)", value=datetime.now().strftime("%H:%M")
           )
           desc_prob = st.text_area(
-              "Descrição do Problema Apresentado pelo Motorista"
+              "descrição do problema apresentado pelo motorista"
           )
 
-        if st.form_submit_button("Abrir Nova OS"):
+        if st.form_submit_button("abrir nova os"):
           cursor.execute(
               "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao,"
               " horimetro_km_manut, origem_falha, descricao_problema,"
               " data_abertura, hora_abertura, status_os, custo, custo_pecas,"
-              " mao_de_obra) VALUES (?, ?, ?, ?, ?, ?, ?, 'Aberta', 0.0, 0.0,"
+              " mao_de_obra) VALUES (?, ?, ?, ?, ?, ?, ?, 'aberta', 0.0, 0.0,"
               " 0.0)",
               (
                   tag_os,
@@ -1419,20 +1443,20 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
               ),
           )
           conn.commit()
-          st.success("✅ OS aberta com sucesso!")
+          st.success("✅ os aberta com sucesso!")
           st.rerun()
     else:
       verificar_licenca_para_acao()
 
     st.divider()
-    st.subheader("📋 Fechamento e Histórico de Ordens de Serviço")
+    st.subheader("📋 fechamento e histórico de ordens de serviço")
     df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
     if not df_os.empty:
       col_fos1, col_fos2 = st.columns(2)
       with col_fos1:
-        dt_ini_os = st.date_input("Data Inicial OS", value=datetime.now().date() - timedelta(days=30), key="ini_os")
+        dt_ini_os = st.date_input("data inicial os", value=datetime.now().date() - timedelta(days=30), key="ini_os")
       with col_fos2:
-        dt_fim_os = st.date_input("Data Final OS", value=datetime.now().date(), key="fim_os")
+        dt_fim_os = st.date_input("data final os", value=datetime.now().date(), key="fim_os")
       
       try:
         df_os["dt_ab_parsed"] = pd.to_datetime(df_os["data_abertura"], errors="coerce").dt.date
@@ -1445,12 +1469,24 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
 
       if status_usuario_ativo or modo_admin_liberado:
         st.markdown(
-            "### ⚙️ Fechamento / Atualização de OS Existente (Etapa 2)"
+            "### ⚙️ fechamento / atualização ou exclusão de os (etapa 2)"
         )
         os_abertas_ids = df_os["id"].tolist()
-        os_sel = st.selectbox(
-            "Selecione o ID da OS para Preencher e Fechar", os_abertas_ids
-        )
+        
+        col_ed1, col_ed2 = st.columns([3, 1])
+        with col_ed1:
+          os_sel = st.selectbox(
+              "selecione o id da os para gerenciar", os_abertas_ids
+          )
+        with col_ed2:
+          st.write("")
+          st.write("")
+          if st.button("🗑️ excluir esta os"):
+            if os_sel:
+              cursor.execute("DELETE FROM manutencoes WHERE id = ?", (os_sel,))
+              conn.commit()
+              st.success(f"✅ os #{os_sel} excluída com sucesso!")
+              st.rerun()
 
         if os_sel:
           os_row_data = df_os[df_os["id"] == os_sel]
@@ -1459,56 +1495,56 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
             tag_eq_os = (
                 os_atual.get("tag_prefixo")
                 or os_atual.get("equipamento")
-                or "N/D"
+                or "não informado"
             )
-            val_dt_ab = os_atual.get("data_abertura") or "N/D"
-            val_hr_ab = os_atual.get("hora_abertura") or "N/D"
-            val_tp_man = os_atual.get("tipo_manutencao") or "Preventiva"
+            val_dt_ab = os_atual.get("data_abertura") or datetime.now().strftime("%Y-%m-%d")
+            val_hr_ab = os_atual.get("hora_abertura") or datetime.now().strftime("%H:%M")
+            val_tp_man = os_atual.get("tipo_manutencao") or "preventiva"
             val_desc = os_atual.get("descricao_problema") or ""
-            val_st_os = os_atual.get("status_os") or "Aberta"
+            val_st_os = os_atual.get("status_os") or "aberta"
 
             with st.form("form_fechamento_os"):
               st.info(
-                  f"Editando OS #{os_atual['id']} | Equipamento:"
-                  f" {tag_eq_os} | Aberta em:"
+                  f"editando os #{os_atual['id']} | equipamento:"
+                  f" {tag_eq_os} | aberta em:"
                   f" {val_dt_ab} às {val_hr_ab}"
               )
               fc1, fc2 = st.columns(2)
               with fc1:
                 pecas_util = st.text_input(
-                    "Peças Utilizadas",
+                    "peças utilizadas",
                     value=str(os_atual.get("pecas_utilizadas") or ""),
                 )
                 v_pecas = st.number_input(
-                    "Valor Total das Peças (R$)",
+                    "valor total das peças (r$)",
                     min_value=0.0,
                     value=float(os_atual.get("custo_pecas") or 0.0),
                     format="%.2f",
                 )
                 v_mo = st.number_input(
-                    "Valor da Mão de Obra (R$)",
+                    "valor da mão de obra (r$)",
                     min_value=0.0,
                     value=float(os_atual.get("mao_de_obra") or 0.0),
                     format="%.2f",
                 )
                 oficina_resp = st.text_input(
-                    "Oficina Responsável",
+                    "oficina responsável",
                     value=str(os_atual.get("oficina") or ""),
                 )
               with fc2:
                 tec_resp = st.text_input(
-                    "Técnico / Mecânico Responsável",
+                    "técnico / mecânico responsável",
                     value=str(os_atual.get("tecnico_mecanico") or ""),
                 )
-                dt_fech = st.date_input("Data de Fechamento")
+                dt_fech = st.date_input("data de fechamento", value=datetime.now().date())
                 hr_fech = st.text_input(
-                    "Horário de Fechamento (Ex: 17:00)", value="17:00"
+                    "horário de fechamento (ex: 17:00)", value=datetime.now().strftime("%H:%M")
                 )
                 status_final = st.selectbox(
-                    "Status da OS", ["Aberta", "Em manutenção", "Fechada"]
+                    "status da os", ["aberta", "em manutenção", "fechada"]
                 )
 
-              if st.form_submit_button("Salvar e Fechar OS"):
+              if st.form_submit_button("salvar e fechar os"):
                 custo_total = v_pecas + v_mo
                 cursor.execute(
                     "UPDATE manutencoes SET pecas_utilizadas = ?, custo_pecas ="
@@ -1529,65 +1565,65 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
                     ),
                 )
                 conn.commit()
-                st.success(f"✅ OS #{os_sel} atualizada e fechada com sucesso!")
+                st.success(f"✅ os #{os_sel} atualizada e fechada com sucesso!")
                 st.rerun()
 
             st.markdown("---")
-            st.markdown("### 🖨️ Relatórios Técnicos e Envio")
+            st.markdown("### 🖨️ relatórios técnicos e envio")
             
             tag_eq_pdf = tag_eq_os
             pdf_os_buffer = gerar_pdf_os_tecnica(os_atual)
             st.download_button(
-                "📥 Baixar PDF Técnico Oficial da OS",
+                "📥 baixar pdf técnico oficial da os",
                 pdf_os_buffer,
-                file_name=f"OS_Tecnica_{os_atual['id']}_{tag_eq_pdf}.pdf",
+                file_name=f"os_tecnica_{os_atual['id']}_{tag_eq_pdf}.pdf",
                 mime="application/pdf",
             )
 
             texto_msg = (
-                f"*TABALMIX CONCRETO - RELATÓRIO DE OS #{os_atual['id']}*\n\n"
-                f"🚜 *Equipamento:* {tag_eq_os}\n"
-                f"🔧 *Tipo:* {val_tp_man}\n"
-                f"📋 *Status:* {val_st_os}\n"
-                f"⚠️ *Problema:* {val_desc}\n"
-                f"🔩 *Peças:* {os_atual.get('pecas_utilizadas') or 'Nenhuma'}\n"
-                f"💰 *Custo Total:* R$ {(os_atual.get('custo') or 0.0):,.2f}\n"
-                f"📅 *Fechamento:* {os_atual.get('data_fechamento') or '-'} às"
+                f"*tabalmix concreto - relatório de os #{os_atual['id']}*\n\n"
+                f"🚜 *equipamento:* {tag_eq_os}\n"
+                f"🔧 *tipo:* {val_tp_man}\n"
+                f"📋 *status:* {val_st_os}\n"
+                f"⚠️ *problema:* {val_desc}\n"
+                f"🔩 *peças:* {os_atual.get('pecas_utilizadas') or 'nenhuma'}\n"
+                f"💰 *custo total:* r$ {(os_atual.get('custo') or 0.0):,.2f}\n"
+                f"📅 *fechamento:* {os_atual.get('data_fechamento') or '-'} às"
                 f" {os_atual.get('hora_fechamento') or '-'}"
             )
             encoded_whatsapp = urllib.parse.quote(texto_msg)
             url_whatsapp = f"https://api.whatsapp.com/send?text={encoded_whatsapp}"
             st.markdown(
-                f"💬 **[👉 ENVIAR RELATÓRIO VIA WHATSAPP]({url_whatsapp})**",
+                f"💬 **[👉 enviar relatório via whatsapp]({url_whatsapp})**",
                 unsafe_allow_html=True,
             )
     else:
-      st.info("Nenhuma OS registrada.")
+      st.info("nenhuma os registrada.")
 
-elif menu == "🔩 Peças e Ferramentas":
-  st.title("🔩 Controle de Peças e Ferramentas")
-  t1, t2 = st.tabs(["Cadastrar", "Inventário"])
+elif menu == "🔩 peças e ferramentas":
+  st.title("🔩 controle de peças e ferramentas")
+  t1, t2 = st.tabs(["cadastrar", "inventário"])
   with t1:
     if status_usuario_ativo or modo_admin_liberado:
       with st.form("form_pecas"):
         c1, c2 = st.columns(2)
         with c1:
-          nome_i = st.text_input("Nome da Peça ou Ferramenta")
+          nome_i = st.text_input("nome da peça ou ferramenta")
           cat = st.selectbox(
-              "Categoria",
-              ["Reposição", "Filtro/Óleo", "Ferramenta", "Insumo"],
+              "categoria",
+              ["reposição", "filtro/óleo", "ferramenta", "insumo"],
           )
         with c2:
-          qtd = st.number_input("Quantidade", min_value=1, value=1)
-          v_unit = st.number_input("Valor Unitário (R$)", min_value=0.0)
-        if st.form_submit_button("Adicionar"):
+          qtd = st.number_input("quantidade", min_value=1, value=1)
+          v_unit = st.number_input("valor unitário (r$)", min_value=0.0)
+        if st.form_submit_button("adicionar"):
           cursor.execute(
               "INSERT INTO pecas (nome_item, categoria, quantidade,"
               " valor_unitario) VALUES (?, ?, ?, ?)",
               (nome_i, cat, qtd, v_unit),
           )
           conn.commit()
-          st.success("Cadastrado!")
+          st.success("cadastrado!")
     else:
       verificar_licenca_para_acao()
   with t2:
@@ -1595,27 +1631,27 @@ elif menu == "🔩 Peças e Ferramentas":
     if not df_p.empty:
       st.dataframe(df_p, use_container_width=True, hide_index=True)
 
-elif menu == "👥 Gestão de Clientes":
-  st.title("👥 Gestão de Clientes")
+elif menu == "👥 gestão de clientes":
+  st.title("👥 gestão de clientes")
   if status_usuario_ativo or modo_admin_liberado:
     with st.form("form_cli"):
       c1, c2 = st.columns(2)
       with c1:
-        nome_c = st.text_input("Nome / Razão Social")
-        emp = st.text_input("Empresa")
-        tel = st.text_input("Telefone")
+        nome_c = st.text_input("nome / razão social")
+        emp = st.text_input("empresa")
+        tel = st.text_input("telefone")
       with c2:
-        doc = st.text_input("CPF / CNPJ")
-        em = st.text_input("E-mail")
-        end = st.text_input("Endereço")
-      if st.form_submit_button("Salvar Cliente"):
+        doc = st.text_input("cpf / cnpj")
+        em = st.text_input("e-mail")
+        end = st.text_input("endereço")
+      if st.form_submit_button("salvar cliente"):
         cursor.execute(
             "INSERT INTO clientes (nome, empresa, telefone, documento, email,"
             " endereco) VALUES (?, ?, ?, ?, ?, ?)",
             (nome_c, emp, tel, doc, em, end),
         )
         conn.commit()
-        st.success("Salvo!")
+        st.success("salvo!")
   else:
     verificar_licenca_para_acao()
 
@@ -1623,24 +1659,53 @@ elif menu == "👥 Gestão de Clientes":
   if not df_cli.empty:
     st.dataframe(df_cli, use_container_width=True, hide_index=True)
 
-elif menu == "🔍 Consulta / Busca Geral":
-  st.title("🔍 Consulta Geral")
-  termo = st.text_input("Digite o termo de busca (TAG, Placa, Cliente...)")
+elif menu == "🔍 consulta / busca geral":
+  st.title("🔍 consulta e histórico completo do equipamento")
+  termo = st.text_input("digite a tag, placa ou marca para buscar todo o histórico")
   if termo:
     t_like = f"%{termo}%"
     df_bv = pd.read_sql(
-        "SELECT * FROM veiculos WHERE tag_prefixo LIKE ? OR placa LIKE ? OR"
-        " modelo LIKE ?",
+        "SELECT * FROM veiculos WHERE tag_prefixo LIKE ? OR placa LIKE ? OR marca LIKE ? OR modelo LIKE ?",
         conn,
-        params=(t_like, t_like, t_like),
+        params=(t_like, t_like, t_like, t_like),
     )
     if not df_bv.empty:
+      st.subheader("1. 🚜 dados cadastrais do equipamento:")
       st.dataframe(df_bv, use_container_width=True, hide_index=True)
-    else:
-      st.info("Nenhum resultado.")
 
-elif menu == "⚙️ Meu Perfil / Dados":
-  st.title("⚙️ Atualização de Perfil e PIN de Acesso")
+      for idx, eq_row in df_bv.iterrows():
+        tag_buscada = eq_row["tag_prefixo"]
+        st.markdown(f"---")
+        st.markdown(f"### 📋 histórico unificado para o ativo: **{tag_buscada}**")
+
+        c_q1, c_q2 = st.columns(2)
+        with c_q1:
+          st.markdown("**🏗️ histórico de mobilizações:**")
+          df_m_hist = pd.read_sql("SELECT data, tipo_movimento, destino_origem, responsavel FROM mobilizacoes WHERE equipamento = ?", conn, params=(tag_buscada,))
+          if not df_m_hist.empty:
+            st.dataframe(df_m_hist, use_container_width=True, hide_index=True)
+          else:
+            st.write("nenhuma mobilização registrada.")
+
+        with c_q2:
+          st.markdown("**🛠️ histórico de manutenções (os):**")
+          df_o_hist = pd.read_sql("SELECT id, tipo_manutencao, data_abertura, status_os, custo FROM manutencoes WHERE tag_prefixo = ?", conn, params=(tag_buscada,))
+          if not df_o_hist.empty:
+            st.dataframe(df_o_hist, use_container_width=True, hide_index=True)
+          else:
+            st.write("nenhuma os registrada.")
+
+        st.markdown("**⛽ histórico de abastecimentos:**")
+        df_c_hist = pd.read_sql("SELECT data, litros, valor_total, motorista FROM combustivel WHERE equipamento = ?", conn, params=(tag_buscada,))
+        if not df_c_hist.empty:
+          st.dataframe(df_c_hist, use_container_width=True, hide_index=True)
+        else:
+          st.write("nenhum abastecimento registrado.")
+    else:
+      st.info("nenhum equipamento encontrado com este termo.")
+
+elif menu == "⚙️ meu perfil / dados":
+  st.title("⚙️ atualização de perfil e pin de acesso")
   if usuario_atual:
     cursor.execute(
         "SELECT nome_completo, cpf, email, celular_seguranca, pin_rapido FROM"
@@ -1650,23 +1715,23 @@ elif menu == "⚙️ Meu Perfil / Dados":
     dados_atuais = cursor.fetchone()
     if dados_atuais:
       with st.form("form_atualizar_perfil"):
-        novo_nome = st.text_input("Nome Completo", value=dados_atuais[0])
-        novo_email = st.text_input("E-mail (Login)", value=dados_atuais[2])
+        novo_nome = st.text_input("nome completo", value=dados_atuais[0])
+        novo_email = st.text_input("e-mail (login)", value=dados_atuais[2])
         novo_celular = st.text_input(
-            "Celular / Contato de Segurança", value=dados_atuais[3] or ""
+            "celular / contato de segurança", value=dados_atuais[3] or ""
         )
         novo_pin = st.text_input(
-            "Definir / Alterar PIN Rápido (4 Dígitos)",
+            "definir / alterar pin rápido (4 dígitos)",
             value=dados_atuais[4] or "",
             max_chars=4,
             type="password",
         )
         nova_senha_Alt = st.text_input(
-            "Nova Senha (Opcional - deixe em branco para manter a atual)",
+            "nova senha (opcional - deixe em branco para manter a atual)",
             type="password",
         )
 
-        if st.form_submit_button("💾 Salvar Alterações"):
+        if st.form_submit_button("💾 salvar alterações"):
           if novo_email and novo_nome:
             if nova_senha_Alt:
               cursor.execute(
@@ -1696,34 +1761,34 @@ elif menu == "⚙️ Meu Perfil / Dados":
               )
             conn.commit()
             st.success(
-                "✅ Perfil e PIN atualizados com sucesso! Suas informações"
+                "✅ perfil e pin atualizados com sucesso! suas informações"
                 " foram salvas."
             )
           else:
-            st.error("⚠️ O e-mail e o nome não podem ficar em branco.")
+            st.error("⚠️ o e-mail e o nome não podem ficar em branco.")
   else:
     st.info(
-        "Faça login para gerenciar seu perfil (ou acesse via modo administrador)."
+        "faça login para gerenciar seu perfil (ou acesse via modo administrador)."
     )
 
-elif menu == "⚙️ Painel de Licença (Admin)":
+elif menu == "⚙️ painel de licença (admin)":
   if modo_admin_liberado:
-    st.title("⚙️ Painel de Administração de Usuários e Segurança")
+    st.title("⚙️ painel de administração de usuários e segurança")
 
-    st.markdown("### 📥 Backup do Banco de Dados (Segurança)")
+    st.markdown("### 📥 backup do banco de dados (segurança)")
     try:
       with open("frota_profissional.db", "rb") as f_db:
         st.download_button(
-            "💾 Baixar Cópia de Segurança (.db)",
+            "💾 baixar cópia de segurança (.db)",
             f_db,
             file_name=f"backup_tabalmix_{datetime.now().strftime('%Y%m%d_%H%M')}.db",
             mime="application/octet-stream",
         )
     except Exception as e:
-      st.info("Arquivo de banco de dados gerado após o primeiro uso.")
+      st.info("arquivo de banco de dados gerado após o primeiro uso.")
 
     st.markdown("---")
-    st.markdown("### Gestão de Usuários e Licenças")
+    st.markdown("### gestão de usuários e licenças")
     df_users = pd.read_sql(
         "SELECT id, nome_completo, cpf, email, celular_seguranca,"
         " status_assinatura, plano_atual FROM usuarios_sistema",
@@ -1736,33 +1801,33 @@ elif menu == "⚙️ Painel de Licença (Admin)":
       with col_adm1:
         with st.form("form_admin_user"):
           id_sel = st.selectbox(
-              "Selecione o ID do Usuário", df_users["id"].tolist()
+              "selecione o id do usuário", df_users["id"].tolist()
           )
-          novo_status_u = st.selectbox("Novo Status", ["Ativo", "Inativo"])
-          if st.form_submit_button("Atualizar Assinatura"):
+          novo_status_u = st.selectbox("novo status", ["Ativo", "Inativo"])
+          if st.form_submit_button("atualizar assinatura"):
             cursor.execute(
                 "UPDATE usuarios_sistema SET status_assinatura = ? WHERE id = ?",
                 (novo_status_u, id_sel),
             )
             conn.commit()
-            st.success("✅ Status do usuário atualizado com sucesso!")
+            st.success("✅ status do usuário atualizado com sucesso!")
             st.rerun()
 
       with col_adm2:
         with st.form("form_admin_del_user"):
           id_del = st.selectbox(
-              "Selecione o ID para Excluir Conta",
+              "selecione o id para excluir conta",
               df_users["id"].tolist(),
               key="del_user_id",
           )
-          if st.form_submit_button("🗑️ Excluir Usuário do Sistema"):
+          if st.form_submit_button("🗑️ excluir usuário do sistema"):
             cursor.execute(
                 "DELETE FROM usuarios_sistema WHERE id = ?", (id_del,)
             )
             conn.commit()
-            st.success("✅ Conta de usuário excluída com sucesso!")
+            st.success("✅ conta de usuário excluída com sucesso!")
             st.rerun()
     else:
-      st.info("Nenhum usuário cadastrado no sistema ainda.")
+      st.info("nenhum usuário cadastrado no sistema ainda.")
   else:
-    st.error("Acesso restrito.")
+    st.error("acesso restrito.")
