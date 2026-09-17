@@ -869,10 +869,16 @@ if menu == "👤 Meu Perfil e Cadastro":
   
   if u_info:
     with st.form("form_atualizar_perfil"):
-      novo_nome = st.text_input("Nome Completo / Responsável", value=u_info[0] or "")
-      novo_cpf = st.text_input("CPF (Necessário para Pix)", value=u_info[1] or "")
-      novo_email = st.text_input("E-mail (Seu Login)", value=u_info[2] or "")
-      novo_cel = st.text_input("Celular de Segurança", value=u_info[3] or "")
+      # Garante leitura correta dos campos do banco
+      db_nome = u_info[0] if u_info[0] and "@" not in u_info[0] else ""
+      db_cpf = u_info[1] or ""
+      db_email = u_info[2] if u_info[2] and "@" in u_info[2] else usuario_atual["email"]
+      db_cel = u_info[3] or ""
+
+      novo_nome = st.text_input("Nome Completo / Responsável", value=db_nome)
+      novo_cpf = st.text_input("CPF (Necessário para Pix)", value=db_cpf)
+      novo_email = st.text_input("E-mail (Seu Login)", value=db_email)
+      novo_cel = st.text_input("Celular de Segurança", value=db_cel)
       nova_senha_perfil = st.text_input("Nova Senha (Deixe em branco para manter a atual)", type="password")
       
       st.info(f"📊 **Status Atual da Assinatura:** {u_info[4]} | **Plano:** {u_info[5]}")
@@ -891,12 +897,10 @@ if menu == "👤 Meu Perfil e Cadastro":
                 (novo_nome, novo_cpf, novo_email, novo_cel, usuario_atual["id"])
             )
           conn.commit()
-          st.success("✅ Perfil atualizado com sucesso!")
+          st.success("✅ Perfil atualizado com sucesso! Atualizando...")
+          st.rerun()
         else:
           st.error("⚠️ Nome e E-mail são obrigatórios.")
-          
-    if st.button("🔄 Recarregar / Atualizar Página"):
-      st.rerun()
 
 elif menu == "📊 Visão Geral":
   if not verificar_licenca_para_acao():
