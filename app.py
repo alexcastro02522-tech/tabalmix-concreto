@@ -204,14 +204,7 @@ def gerar_pdf_relatorio(titulo, dataframe):
   ]
 
   c.setFillColorRGB(0.08, 0.25, 0.13)
-  c.rect(
-      margem_esq,
-      y - 4,
-      largura_util,
-      altura_linha,
-      fill=1,
-      stroke=0,
-  )
+  c.rect(margem_esq, y - 4, largura_util, altura_linha, fill=1, stroke=0)
   c.setFillColorRGB(1, 1, 1)
   c.setFont("Helvetica-Bold", 8)
   largura_coluna = largura_util / len(colunas_amigables)
@@ -228,14 +221,7 @@ def gerar_pdf_relatorio(titulo, dataframe):
       y = altura - 40
     if index % 2 == 0:
       c.setFillColorRGB(0.94, 0.96, 0.94)
-      c.rect(
-          margem_esq,
-          y - 3,
-          largura_util,
-          altura_linha - 2,
-          fill=1,
-          stroke=0,
-      )
+      c.rect(margem_esq, y - 3, largura_util, altura_linha - 2, fill=1, stroke=0)
     c.setFillColorRGB(0.1, 0.1, 0.1)
     for i, col in enumerate(colunas[:6]):
       valor_celula = str(row[col])
@@ -247,6 +233,135 @@ def gerar_pdf_relatorio(titulo, dataframe):
     c.setStrokeColorRGB(0.85, 0.88, 0.85)
     c.line(margem_esq, y - 4, largura - margem_esq, y - 4)
     y -= altura_linha
+
+  c.save()
+  buffer.seek(0)
+  return buffer
+
+
+# NOVIDADE: Gerador de PDF Técnico Individual da Ordem de Serviço (OS)
+def gerar_pdf_os_tecnica(os_row):
+  buffer = io.BytesIO()
+  c = canvas.Canvas(buffer, pagesize=letter)
+  largura, altura = letter
+  margem = 40
+
+  # Cabeçalho da OS
+  c.setFillColorRGB(0.08, 0.32, 0.16)
+  c.rect(0, altura - 70, largura, 70, fill=1, stroke=0)
+  c.setFillColorRGB(1, 1, 1)
+  c.setFont("Helvetica-Bold", 16)
+  c.drawString(margem, altura - 30, "ORDEM DE SERVIÇO TÉCNICA (OS)")
+  c.setFont("Helvetica", 10)
+  c.drawString(
+      margem,
+      altura - 50,
+      f"Tabalmix Concreto - Sistema de Gestão | OS #{os_row.get('id', 1)}",
+  )
+
+  # Dados Principais
+  y = altura - 100
+  c.setFillColorRGB(0.1, 0.1, 0.1)
+  c.setFont("Helvetica-Bold", 11)
+  c.drawString(margem, y, "DADOS DO EQUIPAMENTO E ABERTURA:")
+  y = altura - 120
+  c.setFont("Helvetica", 10)
+
+  tag_eq = os_row.get("tag_prefixo") or os_row.get("equipamento") or "N/D"
+  c.drawString(
+      margem, y, f"• Equipamento (TAG): {tag_eq}"
+  )
+  y -= 18
+  c.drawString(
+      margem,
+      y,
+      f"• Tipo de Manutenção: {os_row.get('tipo_manutencao', 'Preventiva')}",
+  )
+  y -= 18
+  c.drawString(
+      margem,
+      y,
+      f"• Horímetro / KM: {os_row.get('horimetro_km_manut', 'N/D')}",
+  )
+  y -= 18
+  c.drawString(
+      margem,
+      y,
+      f"• Origem da Falha: {os_row.get('origem_falha', 'Operação')}",
+  )
+  y -= 18
+  c.drawString(
+      margem,
+      y,
+      f"• Abertura: {os_row.get('data_abertura', '-')} às"
+      f" {os_row.get('hora_abertura', '-')}",
+  )
+
+  # Descrição do Problema
+  y -= 30
+  c.setFont("Helvetica-Bold", 11)
+  c.drawString(margem, y, "DESCRIÇÃO DO PROBLEMA:")
+  y = y - 18
+  c.setFont("Helvetica", 10)
+  desc_txt = str(os_row.get("descricao_problema", "Sem descrição."))
+  c.drawString(margem, y, desc_txt[:90])
+
+  # Conclusão e Oficina
+  y -= 40
+  c.setFont("Helvetica-Bold", 11)
+  c.drawString(margem, y, "DADOS DE ENCERRAMENTO E CUSTOS:")
+  y -= 20
+  c.setFont("Helvetica", 10)
+  c.drawString(
+      margem,
+      y,
+      f"• Oficina Responsável: {os_row.get('oficina', 'Não informada')}",
+  )
+  y -= 18
+  c.drawString(
+      margem,
+      y,
+      f"• Técnico / Mecânico: {os_row.get('tecnico_mecanico', 'Não informado')}",
+  )
+  y -= 18
+  c.drawString(
+      margem,
+      y,
+      f"• Peças Utilizadas: {os_row.get('pecas_utilizadas', 'Nenhuma')}",
+  )
+  y -= 18
+  c.drawString(
+      margem,
+      y,
+      f"• Custo de Peças: R$ {(os_row.get('custo_pecas') or 0.0):,.2f}",
+  )
+  y -= 18
+  c.drawString(
+      margem,
+      y,
+      f"• Custo Mão de Obra: R$ {(os_row.get('mao_de_obra') or 0.0):,.2f}",
+  )
+  y -= 22
+  c.setFont("Helvetica-Bold", 11)
+  c.setFillColorRGB(0.08, 0.32, 0.16)
+  c.drawString(
+      margem,
+      y,
+      f"• CUSTO TOTAL DA OS: R$ {(os_row.get('custo') or 0.0):,.2f} | Status:"
+      f" {os_row.get('status_os', 'Aberta')}",
+  )
+
+  # Linhas de Assinatura
+  y -= 90
+  c.setStrokeColorRGB(0.5, 0.5, 0.5)
+  c.setLineWidth(1)
+  c.line(margem, y, largura / 2 - 20, y)
+  c.line(largura / 2 + 20, y, largura - margem, y)
+  y -= 15
+  c.setFont("Helvetica", 9)
+  c.setFillColorRGB(0.2, 0.2, 0.2)
+  c.drawString(margem, y, "Assinatura do Responsável / Gestor")
+  c.drawString(largura / 2 + 20, y, "Assinatura do Técnico / Oficina")
 
   c.save()
   buffer.seek(0)
@@ -285,7 +400,6 @@ def init_db():
             observacoes TEXT
         )
     """)
-  
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS manutencoes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -307,8 +421,6 @@ def init_db():
             status_os TEXT
         )
     """)
-  
-  # Garantir compatibilidade de colunas caso a tabela já exista sem elas
   for col_sql in [
       "ALTER TABLE manutencoes ADD COLUMN tag_prefixo TEXT",
       "ALTER TABLE manutencoes ADD COLUMN tipo_manutencao TEXT",
@@ -325,7 +437,7 @@ def init_db():
       "ALTER TABLE manutencoes ADD COLUMN tecnico_mecanico TEXT",
       "ALTER TABLE manutencoes ADD COLUMN data_fechamento TEXT",
       "ALTER TABLE manutencoes ADD COLUMN hora_fechamento TEXT",
-      "ALTER TABLE manutencoes ADD COLUMN status_os TEXT"
+      "ALTER TABLE manutencoes ADD COLUMN status_os TEXT",
   ]:
     try:
       cursor.execute(col_sql)
@@ -776,11 +888,21 @@ if menu == "📊 Visão Geral":
   df_comb = pd.read_sql("SELECT * FROM combustivel", conn)
 
   total_frota = len(df_veiculos)
-  total_custo = df_manut["custo"].sum() if not df_manut.empty and "custo" in df_manut.columns else 0.0
-  liberado_pecas = (
-      df_manut["custo_pecas"].sum() if not df_manut.empty and "custo_pecas" in df_manut.columns else 0.0
+  total_custo = (
+      df_manut["custo"].sum()
+      if not df_manut.empty and "custo" in df_manut.columns
+      else 0.0
   )
-  liberado_mo = df_manut["mao_de_obra"].sum() if not df_manut.empty and "mao_de_obra" in df_manut.columns else 0.0
+  liberado_pecas = (
+      df_manut["custo_pecas"].sum()
+      if not df_manut.empty and "custo_pecas" in df_manut.columns
+      else 0.0
+  )
+  liberado_mo = (
+      df_manut["mao_de_obra"].sum()
+      if not df_manut.empty and "mao_de_obra" in df_manut.columns
+      else 0.0
+  )
   total_combustivel = (
       df_comb["valor_total"].sum() if not df_comb.empty else 0.0
   )
@@ -817,17 +939,39 @@ if menu == "📊 Visão Geral":
     gc1, gc2 = st.columns(2)
     with gc1:
       st.markdown("**Despesas de Manutenção (Peças vs Mão de Obra)**")
-      df_custos_chart = pd.DataFrame(
-          {"Categoria": ["Peças Utilizadas", "Mão de Obra"], "Valor (R$)": [liberado_pecas, liberado_mo]}
-      )
+      df_custos_chart = pd.DataFrame({
+          "Categoria": ["Peças Utilizadas", "Mão de Obra"],
+          "Valor (R$)": [liberado_pecas, liberado_mo],
+      })
       st.bar_chart(df_custos_chart, x="Categoria", y="Valor (R$)")
     with gc2:
       st.markdown("**Consumo de Combustível por Equipamento**")
       if not df_comb.empty:
-        df_comb_chart = df_comb.groupby("equipamento")["valor_total"].sum().reset_index()
+        df_comb_chart = (
+            df_comb.groupby("equipamento")["valor_total"].sum().reset_index()
+        )
         st.bar_chart(df_comb_chart, x="equipamento", y="valor_total")
       else:
         st.info("Nenhum abastecimento registrado para gerar gráfico.")
+
+    # NOVIDADE: Gráfico de Evolução Mensal dos Custos de Manutenção
+    if "data_abertura" in df_manut.columns and not df_manut.empty:
+      st.markdown("---")
+      st.markdown("**📈 Evolução Mensal dos Custos de Manutenção (R$)**")
+      try:
+        df_manut_evol = df_manut.copy()
+        df_manut_evol["mes"] = pd.to_datetime(
+            df_manut_evol["data_abertura"], errors="coerce"
+        ).dt.strftime("%Y-%m")
+        df_mensal = (
+            df_manut_evol.groupby("mes")["custo"].sum().reset_index()
+        )
+        if not df_mensal.empty and df_mensal["mes"].notna().any():
+          st.line_chart(df_mensal.set_index("mes")["custo"])
+        else:
+          st.info("Insira datas válidas nas OS para ver o gráfico mensal.")
+      except Exception:
+        pass
 
   if not df_veiculos.empty:
     st.divider()
@@ -1078,9 +1222,26 @@ elif menu == "⛽ Abastecimentos & Combustível":
       verificar_licenca_para_acao()
 
     st.divider()
+    st.subheader("📋 Histórico de Abastecimentos")
     df_c = pd.read_sql("SELECT * FROM combustivel", conn)
     if not df_c.empty:
-      st.dataframe(df_c, use_container_width=True, hide_index=True)
+      # NOVIDADE: Filtro por Período de Datas em Abastecimentos
+      col_f1, col_f2 = st.columns(2)
+      with col_f1:
+        dt_ini_c = st.date_input("Data Inicial", value=datetime.now().date() - timedelta(days=30))
+      with col_f2:
+        dt_fim_c = st.date_input("Data Final", value=datetime.now().date())
+      
+      try:
+        df_c["data_dt"] = pd.to_datetime(df_c["data"], errors="coerce").dt.date
+        df_c_filtrado = df_c[
+            (df_c["data_dt"] >= dt_ini_c) & (df_c["data_dt"] <= dt_fim_c)
+        ].drop(columns=["data_dt"])
+        st.dataframe(df_c_filtrado, use_container_width=True, hide_index=True)
+      except Exception:
+        st.dataframe(df_c, use_container_width=True, hide_index=True)
+    else:
+      st.info("Nenhum abastecimento registrado.")
 
 elif menu == "🏗️ Mobilização / Desmobilização":
   st.title("🏗️ Mobilização e Desmobilização de Obras")
@@ -1203,7 +1364,21 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
     st.subheader("📋 Fechamento e Histórico de Ordens de Serviço")
     df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
     if not df_os.empty:
-      st.dataframe(df_os, use_container_width=True, hide_index=True)
+      # NOVIDADE: Filtro por Período de Datas em Ordens de Serviço
+      col_fos1, col_fos2 = st.columns(2)
+      with col_fos1:
+        dt_ini_os = st.date_input("Data Inicial OS", value=datetime.now().date() - timedelta(days=30), key="ini_os")
+      with col_fos2:
+        dt_fim_os = st.date_input("Data Final OS", value=datetime.now().date(), key="fim_os")
+      
+      try:
+        df_os["dt_ab_parsed"] = pd.to_datetime(df_os["data_abertura"], errors="coerce").dt.date
+        df_os_filtrado = df_os[
+            (df_os["dt_ab_parsed"] >= dt_ini_os) & (df_os["dt_ab_parsed"] <= dt_fim_os)
+        ].drop(columns=["dt_ab_parsed"])
+        st.dataframe(df_os_filtrado, use_container_width=True, hide_index=True)
+      except Exception:
+        st.dataframe(df_os, use_container_width=True, hide_index=True)
 
       if status_usuario_ativo or modo_admin_liberado:
         st.markdown(
@@ -1218,7 +1393,11 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
           os_row_data = df_os[df_os["id"] == os_sel]
           if not os_row_data.empty:
             os_atual = os_row_data.iloc[0]
-            tag_eq_os = os_atual.get("tag_prefixo") or os_atual.get("equipamento") or "N/D"
+            tag_eq_os = (
+                os_atual.get("tag_prefixo")
+                or os_atual.get("equipamento")
+                or "N/D"
+            )
             val_dt_ab = os_atual.get("data_abertura") or "N/D"
             val_hr_ab = os_atual.get("hora_abertura") or "N/D"
             val_tp_man = os_atual.get("tipo_manutencao") or "Preventiva"
@@ -1291,10 +1470,21 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
                 st.rerun()
 
             st.markdown("---")
-            st.markdown("### 📲 Enviar Relatório da OS via WhatsApp")
+            st.markdown("### 🖨️ Relatórios Técnicos e Envio")
+            
+            # NOVIDADE: Botão de Download do PDF Técnico Oficial da OS
+            pdf_os_buffer = gerar_pdf_os_tecnica(os_atual)
+            st.download_button(
+                "📥 Baixar PDF Técnico Oficial da OS",
+                pdf_os_buffer,
+                file_name=f"OS_Tecnica_{os_atual['id']}_{tag_eq}.pdf",
+                mime="application/pdf",
+            )
+
+            # Envio via WhatsApp
             texto_msg = (
                 f"*TABALMIX CONCRETO - RELATÓRIO DE OS #{os_atual['id']}*\n\n"
-                f"🚜 *Equipamento:* {tag_eq_os}\n"
+                f"🚜 *Equipamento:* {tag_eq}\n"
                 f"🔧 *Tipo:* {val_tp_man}\n"
                 f"📋 *Status:* {val_st_os}\n"
                 f"⚠️ *Problema:* {val_desc}\n"
@@ -1306,8 +1496,7 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
             encoded_whatsapp = urllib.parse.quote(texto_msg)
             url_whatsapp = f"https://api.whatsapp.com/send?text={encoded_whatsapp}"
             st.markdown(
-                f"💬 **[👉 CLIQUE AQUI PARA ENVIAR OS VIA"
-                f" WHATSAPP]({url_whatsapp})**",
+                f"💬 **[👉 ENVIAR RELATÓRIO VIA WHATSAPP]({url_whatsapp})**",
                 unsafe_allow_html=True,
             )
     else:
@@ -1391,7 +1580,7 @@ elif menu == "🔍 Consulta / Busca Geral":
 elif menu == "⚙️ Painel de Licença (Admin)":
   if modo_admin_liberado:
     st.title("⚙️ Painel de Administração de Usuários e Segurança")
-    
+
     st.markdown("### 📥 Backup do Banco de Dados (Segurança)")
     try:
       with open("frota_profissional.db", "rb") as f_db:
@@ -1399,7 +1588,7 @@ elif menu == "⚙️ Painel de Licença (Admin)":
             "💾 Baixar Cópia de Segurança (.db)",
             f_db,
             file_name=f"backup_tabalmix_{datetime.now().strftime('%Y%m%d_%H%M')}.db",
-            mime="application/octet-stream"
+            mime="application/octet-stream",
         )
     except Exception as e:
       st.info("Arquivo de banco de dados gerado após o primeiro uso.")
