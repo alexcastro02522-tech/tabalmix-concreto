@@ -732,11 +732,11 @@ if menu == "📊 Visão Geral":
     st.markdown(
         f"""
             <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.04);">
-                <div style="border-radius: 8px; overflow: hidden; max-height: 150px; border: 1px solid #e2e8f0; margin-bottom: 8px;">
-                    <img src="data:image/jpeg;base64,{encoded_string}" style="width: 100%; height: 135px; object-fit: cover; display: block;">
+                <div style="border-radius: 8px; overflow: hidden; max-height: 120px; border: 1px solid #e2e8f0; margin-bottom: 8px;">
+                    <img src="data:image/jpeg;base64,{encoded_string}" style="width: 100%; height: 110px; object-fit: cover; display: block;">
                 </div>
-                <h2 style="color: #1b7a3e !important; margin: 0 0 2px 0; font-size: 16px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
-                <p style="color: #475569 !important; font-size: 12px; margin: 0; font-weight: 500;">Controle avançado de caminhões betoneira, maquinário e manutenções | Powered by Castro Tech.</p>
+                <h2 style="color: #1b7a3e !important; margin: 0 0 2px 0; font-size: 15px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
+                <p style="color: #475569 !important; font-size: 11px; margin: 0; font-weight: 500;">Controle avançado de caminhões betoneira, maquinário e manutenções | Powered by Castro Tech.</p>
             </div>
         """,
         unsafe_allow_html=True,
@@ -744,9 +744,9 @@ if menu == "📊 Visão Geral":
   except Exception:
     st.markdown(
         """
-            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 15px; margin-bottom: 15px;">
-                <h2 style="color: #1b7a3e !important; margin: 0 0 2px 0; font-size: 16px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
-                <p style="color: #475569 !important; font-size: 12px; margin: 0; font-weight: 500;">Controle avançado de caminhões betoneira, maquinário e manutenções | Powered by Castro Tech.</p>
+            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px; padding: 12px; margin-bottom: 15px;">
+                <h2 style="color: #1b7a3e !important; margin: 0 0 2px 0; font-size: 15px;">🏗️ Tabalmix - Painel Operacional da Frota</h2>
+                <p style="color: #475569 !important; font-size: 11px; margin: 0; font-weight: 500;">Controle avançado de caminhões betoneira, maquinário e manutenções | Powered by Castro Tech.</p>
             </div>
         """,
         unsafe_allow_html=True,
@@ -759,6 +759,10 @@ if menu == "📊 Visão Geral":
 
   total_frota = len(df_veiculos)
   total_custo = df_manut["custo"].sum() if not df_manut.empty else 0.0
+  liberado_pecas = (
+      df_manut["custo_pecas"].sum() if not df_manut.empty else 0.0
+  )
+  liberado_mo = df_manut["mao_de_obra"].sum() if not df_manut.empty else 0.0
   total_combustivel = (
       df_comb["valor_total"].sum() if not df_comb.empty else 0.0
   )
@@ -773,23 +777,62 @@ if menu == "📊 Visão Geral":
     )
     ativos_parados = total_frota - ativos_trabalhando
 
-  r1_c1, r1_c2 = st.columns(2)
+  # Métricas Compactas Refinadas
+  r1_c1, r1_c2, r1_c3 = st.columns(3)
   with r1_c1:
     st.metric("Total Frota", total_frota)
   with r1_c2:
     st.metric("🟢 Trabalhando", ativos_trabalhando)
-
-  r2_c1, r2_c2 = st.columns(2)
-  with r2_c1:
+  with r1_c3:
     st.metric("🔴 Parados", ativos_parados)
-  with r2_c2:
-    st.metric("Custo Manut.", f"R$ {total_custo:,.2f}")
 
-  r3_c1, r3_c2 = st.columns(2)
-  with r3_c1:
+  r2_c1, r2_c2, r2_c3 = st.columns(3)
+  with r2_c1:
+    st.metric("Custo Manut.", f"R$ {total_custo:,.2f}")
+  with r2_c2:
     st.metric("Gasto Combustível", f"R$ {total_combustivel:,.2f}")
-  with r3_c2:
+  with r2_c3:
     st.metric("Total Insumos", len(df_pecas))
+
+  # NOVIDADE: Gráficos Gerenciais Dinâmicos na Visão Geral
+  if not df_manut.empty or not df_comb.empty:
+    st.divider()
+    st.subheader("📊 Indicadores e Comparativo de Custos")
+    gc1, gc2 = st.columns(2)
+    with gc1:
+      st.markdown("**Despesas de Manutenção (Peças vs Mão de Obra)**")
+      df_custos_chart = pd.DataFrame(
+          {"Categoria": ["Peças Utilizadas", "Mão de Obra"], "Valor (R$)": [liberado_pecas, liberado_mo]}
+      )
+      st.bar_chart(df_custos_chart, x="Categoria", y="Valor (R$)")
+    with gc2:
+      st.markdown("**Consumo de Combustível por Equipamento**")
+      if not df_comb.empty:
+        df_comb_chart = df_comb.groupby("equipamento")["valor_total"].sum().reset_index()
+        st.bar_chart(df_comb_chart, x="equipamento", y="valor_total")
+      else:
+        st.info("Nenhum abastecimento registrado para gerar gráfico.")
+
+  # NOVIDADE: Alerta de Manutenção Preventiva por Horímetro/KM
+  if not df_veiculos.empty:
+    st.divider()
+    st.subheader("⚠️ Alertas de Manutenção Preventiva")
+    alerta_gerado = False
+    for idx, row in df_veiculos.iterrows():
+      h_km = row["horimetro_km"] if row["horimetro_km"] is not None else 0
+      # Exemplo de regra preventiva: Alerta se horímetro/KM passar de 15.000 ou múltiplos
+      if h_km >= 15000:
+        st.warning(
+            f"🔔 **Atenção Preventiva:** O equipamento **{row['tag_prefixo']}**"
+            f" ({row['modelo']}) atingiu **{h_km:,} KM/Horímetro**. Recomenda-se"
+            " agendar revisão geral."
+        )
+        alerta_gerado = True
+    if not alerta_gerado:
+      st.success(
+          "✅ Todos os equipamentos estão com horímetro/KM dentro do período"
+          " ideal de operação."
+      )
 
   st.divider()
   st.subheader("📋 Status da Frota e Equipamentos")
@@ -861,7 +904,9 @@ elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
         horimetro_km = st.number_input(
             "Horímetro ou Quilometragem Atual", min_value=0, value=15000, step=100
         )
-        combustivel = st.selectbox("Combustível", ["Diesel S10", "Diesel S500", "Gasolina", "Flex"])
+        combustivel = st.selectbox(
+            "Combustível", ["Diesel S10", "Diesel S500", "Gasolina", "Flex"]
+        )
         local_atual = st.text_input("Local Atual / Obra")
         operador_condutor = st.text_input("Operador/Condutor")
         status = st.selectbox(
