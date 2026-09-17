@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Corporativa Blindada Contra Dark Mode do Celular (Fundo Claro Fixo, Campos Brancos e Menu Escuro) + Blindagem Anti-F12
+# Estilização Visual Corporativa Blindada (Forçando Fundo 100% Claro e Legível no Celular e PC)
 st.markdown(
     """
     <style>
@@ -100,31 +100,38 @@ st.markdown(
         font-size: 20px !important;
         font-weight: 800 !important;
     }
+    /* FORÇAR CAMPOS E SELECTBOXES COM FUNDO CLARO E TEXTO PRETO */
     div.stTextInput > div > div > input, 
     div.stNumberInput > div > div > input, 
     div.stSelectbox > div > div > div,
     div.stTextArea > div > div > textarea,
-    div[data-baseweb="select"] > div {
+    div[data-baseweb="select"] > div,
+    span[data-baseweb="tag"] {
         background-color: #ffffff !important;
         color: #0f172a !important;
         border: 1px solid #cbd5e1 !important;
         border-radius: 8px !important;
         min-height: 40px !important;
     }
-    /* Forçar itens de dropdown e dataframes com fundo claro legível */
-    div[data-baseweb="menu"] {
+    /* CORREÇÃO DOS MENUS SUSPENSOS E LISTAS DO SELECTBOX */
+    div[data-baseweb="menu"], ul[data-baseweb="menu"], li[data-baseweb="option"] {
         background-color: #ffffff !important;
         color: #0f172a !important;
     }
-    div[data-baseweb="menu"] div {
+    div[data-baseweb="menu"] div, span, option {
         color: #0f172a !important;
     }
-    div[data-testid="stDataFrame"] {
+    /* CORREÇÃO DE DATAFRAMES / TABELAS */
+    div[data-testid="stDataFrame"], .stDataFrame {
         background-color: #ffffff !important;
         border-radius: 12px;
         padding: 10px;
         border: 1px solid #cbd5e1;
         box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+    div[data-testid="stDataFrame"] table, div[data-testid="stDataFrame"] tr, div[data-testid="stDataFrame"] th, div[data-testid="stDataFrame"] td {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
     }
     .stButton button {
         background: linear-gradient(135deg, #1b7a3e 0%, #12542a 100%) !important;
