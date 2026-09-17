@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Corporativa em Tema Claro (Com assinatura refinada e cards limpos)
+# Estilização Visual Corporativa em Tema Claro
 st.markdown(
     """
     <style>
@@ -359,67 +359,26 @@ def init_db():
             data TEXT
         )
     """)
+  # Tabela de Usuários com Vinculação de Licença Individual por E-mail/CPF
   cursor.execute("""
-        CREATE TABLE IF NOT EXISTS licenca (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            status_assinatura TEXT,
-            plano_atual TEXT,
-            data_vencimento TEXT,
-            chave_pix TEXT
-        )
-    """)
-  cursor.execute("""
-        CREATE TABLE IF NOT EXISTS usuarios_seguranca (
+        CREATE TABLE IF NOT EXISTS usuarios_sistema (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome_completo TEXT,
             cpf TEXT,
-            email_recuperacao TEXT,
+            email TEXT UNIQUE,
+            senha TEXT,
             celular_seguranca TEXT,
+            status_assinatura TEXT,
+            plano_atual TEXT,
             data_cadastro TEXT
         )
     """)
-  cursor.execute("SELECT COUNT(*) FROM licenca")
-  if cursor.fetchone()[0] == 0:
-    vencimento_padrao = (datetime.now() + timedelta(days=30)).strftime(
-        "%Y-%m-%d"
-    )
-    cursor.execute(
-        "INSERT INTO licenca (status_assinatura, plano_atual, data_vencimento,"
-        " chave_pix) VALUES (?, ?, ?, ?)",
-        (
-            "Inativo",
-            "Mensal (R$ 250,00)",
-            vencimento_padrao,
-            "seu-email-pix@dominio.com",
-        ),
-    )
-    conn.commit()
-  else:
-    cursor.execute(
-        "UPDATE licenca SET status_assinatura = 'Inativo' WHERE id = 1"
-    )
-    conn.commit()
   conn.commit()
   return conn
 
 
 conn = init_db()
 cursor = conn.cursor()
-
-df_licenca = pd.read_sql("SELECT * FROM licenca", conn)
-status_atual = (
-    df_licenca.iloc[0]["status_assinatura"] if not df_licenca.empty else "Inativo"
-)
-plano_atual = (
-    df_licenca.iloc[0]["plano_atual"]
-    if not df_licenca.empty and "plano_atual" in df_licenca.columns
-    else "Mensal"
-)
-chave_pix_recebimento = (
-    df_licenca.iloc[0]["chave_pix"]
-    if not df_licenca.empty
-    else "seu-pix@email.com"
-)
 
 # Verificação blindada de Administrador via URL param (?admin=1)
 modo_admin_liberado = False
@@ -434,7 +393,105 @@ try:
 except Exception:
   pass
 
-# Menu Lateral Sofisticado com Selo Oficial e Assinatura Profissional
+# Gerenciamento de Sessão de Login
+if "usuario_logado" not in st.session_state:
+  st.session_state["usuario_logado"] = None
+
+# TELA DE AUTENTICAÇÃO / CADASTRO SE O USUÁRIO NÃO ESTIVER LOGADO (A não ser que seja Admin global)
+if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
+  st.markdown(
+      """
+        <div style="text-align: center; padding: 20px;">
+            <h1 style="color: #1b7a3e; margin-bottom: 5px;">🚛 TABALMIX CONCRETO</h1>
+            <p style="color: #475569; font-size: 15px;">Sistema Profissional de Gestão de Frota e Operações</p>
+        </div>
+    """,
+      unsafe_allow_html=True,
+  )
+
+  tab_login, tab_cadastro = st.tabs(["🔑 Entrar no Sistema", "📝 Criar Conta"])
+
+  with tab_login:
+    st.subheader("Acessar sua Conta")
+    with st.form("form_login"):
+      email_login = st.text_input("E-mail Cadastrado")
+      senha_login = st.text_input("Senha", type="password")
+      btn_entrar = st.form_submit_button("Entrar no Sistema")
+
+      if btn_entrar:
+        cursor.execute(
+            "SELECT * FROM usuarios_sistema WHERE email = ? AND senha = ?",
+            (email_login, senha_login),
+        )
+        user_data = cursor.fetchone()
+        if user_data:
+          st.session_state["usuario_logado"] = {
+              "id": user_data[0],
+              "nome": user_data[1],
+              "cpf": user_data[2],
+              "email": user_data[3],
+              "status": user_data[6],
+          }
+          st.success("✅ Login realizado com sucesso!")
+          st.rerun()
+        else:
+          st.error("⚠️ E-mail ou senha incorretos.")
+
+  with tab_cadastro:
+    st.subheader("Cadastre-se para Começar")
+    with st.form("form_novo_cadastro"):
+      c_nome = st.text_input("Nome Completo")
+      c_cpf = st.text_input("CPF")
+      c_email = st.text_input("E-mail (Será seu login)")
+      c_senha = st.text_input("Criar Senha", type="password")
+      c_cel = st.text_input("Celular / Contato de Segurança")
+      btn_cadastrar = st.form_submit_button("Finalizar Cadastro")
+
+      if btn_cadastrar:
+        if c_nome and c_cpf and c_email and c_senha:
+          try:
+            cursor.execute(
+                "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha,"
+                " celular_seguranca, status_assinatura, plano_atual,"
+                " data_cadastro) VALUES (?, ?, ?, ?, ?, 'Inativo', 'Nenhum',"
+                " ?)",
+                (
+                    c_nome,
+                    c_cpf,
+                    c_email,
+                    c_senha,
+                    c_cel,
+                    datetime.now().strftime("%Y-%m-%d %H:%M"),
+                ),
+            )
+            conn.commit()
+            st.success(
+                "✅ Conta criada com sucesso! Vá na aba 'Entrar no Sistema' para"
+                " fazer seu login."
+            )
+          except Exception as e:
+            st.error(
+                "⚠️ Este e-mail já está cadastrado ou ocorreu um erro:"
+                f" {str(e)}"
+            )
+        else:
+          st.error("⚠️ Preencha todos os campos obrigatórios.")
+
+  st.stop()  # Para a execução aqui até o usuário fazer login ou cadastro
+
+# RECUPERA DADOS DO USUÁRIO LOGADO
+usuario_atual = st.session_state["usuario_logado"]
+status_usuario_ativo = (
+    True
+    if modo_admin_liberado
+    else (
+        usuario_atual["status"] == "Ativo"
+        if usuario_atual
+        else False
+    )
+)
+
+# Menu Lateral Sofisticado com Selo Oficial e Identificação do Usuário
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
@@ -469,17 +526,25 @@ with st.sidebar:
 
   if modo_admin_liberado:
     st.success("🔓 **Modo Admin Ativo**")
+  elif usuario_atual:
+    st.info(
+        f"👤 **Usuário:** {usuario_atual['nome']}\n\n📊 **Status:**"
+        f" {usuario_atual['status']}"
+    )
+    if st.button("🚪 Sair / Trocar Conta"):
+      st.session_state["usuario_logado"] = None
+      st.rerun()
 
   st.markdown("---")
 
 
 def verificar_licenca_para_acao():
-  if modo_admin_liberado:
+  if status_usuario_ativo or modo_admin_liberado:
     return True
 
   st.warning(
-      "🔒 **Acesso Restrito ao Sistema de Testes / Assinatura:**\n\nEscolha"
-      " uma das opções abaixo para continuar:"
+      "🔒 **Sua assinatura está Inativa ou Pendente:**\n\nEscolha um plano"
+      " abaixo para ativar o seu acesso de qualquer dispositivo:"
   )
   escolha_metodo = st.radio(
       "Forma de Pagamento:",
@@ -498,7 +563,9 @@ def verificar_licenca_para_acao():
           sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
           pref_data = {
               "items": [{
-                  "title": "Tabalmix - Mensal",
+                  "title": (
+                      f"Tabalmix - Mensal ({usuario_atual['email'] if usuario_atual else 'Cliente'})"
+                  ),
                   "quantity": 1,
                   "unit_price": 250.0,
                   "currency_id": "BRL",
@@ -515,7 +582,18 @@ def verificar_licenca_para_acao():
               res["response"].get("init_point") if "response" in res else ""
           )
           if url:
-            st.markdown(f"🔗 **[👉 ABRIR CHECKOUT]({url})**")
+            # Ativação automática imediata para testes práticos do usuário
+            if usuario_atual:
+              cursor.execute(
+                  "UPDATE usuarios_sistema SET status_assinatura = 'Ativo',"
+                  " plano_atual = 'Mensal' WHERE id = ?",
+                  (usuario_atual["id"],),
+              )
+              conn.commit()
+            st.markdown(
+                f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**\n\n*(Após o"
+                " pagamento, atualize a página)*"
+            )
         except Exception as e:
           st.error(f"Erro: {e}")
     with col_p2:
@@ -524,7 +602,9 @@ def verificar_licenca_para_acao():
           sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
           pref_data = {
               "items": [{
-                  "title": "Tabalmix - Anual",
+                  "title": (
+                      f"Tabalmix - Anual ({usuario_atual['email'] if usuario_atual else 'Cliente'})"
+                  ),
                   "quantity": 1,
                   "unit_price": 2400.0,
                   "currency_id": "BRL",
@@ -541,13 +621,23 @@ def verificar_licenca_para_acao():
               res["response"].get("init_point") if "response" in res else ""
           )
           if url:
-            st.markdown(f"🔗 **[👉 ABRIR CHECKOUT]({url})**")
+            if usuario_atual:
+              cursor.execute(
+                  "UPDATE usuarios_sistema SET status_assinatura = 'Ativo',"
+                  " plano_atual = 'Anual' WHERE id = ?",
+                  (usuario_atual["id"],),
+              )
+              conn.commit()
+            st.markdown(
+                f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**\n\n*(Após o"
+                " pagamento, atualize a página)*"
+            )
         except Exception as e:
           st.error(f"Erro: {e}")
   else:
     st.info(
-        f"🔑 **Chave Pix:** `{chave_pix_recebimento}`\nFaça o Pix e envie o"
-        " comprovante."
+        "🔑 **Chave Pix para Depósito:** `sua-chave-pix@dominio.com`\nEnvie o"
+        " comprovante para liberar o seu acesso instantâneo."
     )
   return False
 
@@ -563,7 +653,6 @@ menu = st.sidebar.radio(
         "🔩 Peças e Ferramentas",
         "👥 Gestão de Clientes",
         "🔍 Consulta / Busca Geral",
-        "🔐 Cadastro de Segurança",
         "⚙️ Painel de Licença (Admin)",
     ],
     label_visibility="collapsed",
@@ -657,7 +746,7 @@ if menu == "📊 Visão Geral":
 
     st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
 
-    if modo_admin_liberado:
+    if status_usuario_ativo or modo_admin_liberado:
       c_d1, c_d2 = st.columns(2)
       with c_d1:
         st.download_button(
@@ -679,7 +768,7 @@ if menu == "📊 Visão Geral":
 elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
   st.title("🚜 CADASTRO DE EQUIPAMENTOS")
 
-  if modo_admin_liberado:
+  if status_usuario_ativo or modo_admin_liberado:
     with st.form("form_frota", clear_on_submit=False):
       col1, col2 = st.columns(2)
       with col1:
@@ -759,7 +848,7 @@ elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
   df_f = pd.read_sql("SELECT * FROM veiculos", conn)
   if not df_f.empty:
     st.dataframe(df_f, use_container_width=True, hide_index=True)
-    if modo_admin_liberado:
+    if status_usuario_ativo or modo_admin_liberado:
       c_del1, c_del2 = st.columns([2, 1])
       with c_del1:
         eq_exc = st.selectbox(
@@ -786,7 +875,7 @@ elif menu == "⛽ Abastecimentos & Combustível":
   if df_v.empty:
     st.warning("Cadastre equipamentos primeiro na aba 'CADASTRO DE EQUIPAMENTOS'.")
   else:
-    if modo_admin_liberado:
+    if status_usuario_ativo or modo_admin_liberado:
       with st.form("form_comb"):
         c1, c2 = st.columns(2)
         with c1:
@@ -835,7 +924,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
   if df_v.empty:
     st.warning("Cadastre equipamentos primeiro na aba 'CADASTRO DE EQUIPAMENTOS'.")
   else:
-    if modo_admin_liberado:
+    if status_usuario_ativo or modo_admin_liberado:
       with st.form("form_mob"):
         c1, c2 = st.columns(2)
         with c1:
@@ -894,7 +983,7 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
   if df_v.empty:
     st.warning("Cadastre equipamentos antes de abrir uma OS.")
   else:
-    if modo_admin_liberado:
+    if status_usuario_ativo or modo_admin_liberado:
       st.markdown("### 🟢 Abertura de Nova OS (Etapa 1)")
       with st.form("form_abertura_os", clear_on_submit=True):
         c1, c2 = st.columns(2)
@@ -948,7 +1037,7 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
     if not df_os.empty:
       st.dataframe(df_os, use_container_width=True, hide_index=True)
 
-      if modo_admin_liberado:
+      if status_usuario_ativo or modo_admin_liberado:
         st.markdown(
             "### ⚙️ Fechamento / Atualização de OS Existente (Etapa 2)"
         )
@@ -1030,7 +1119,7 @@ elif menu == "🔩 Peças e Ferramentas":
   st.title("🔩 Controle de Peças e Ferramentas")
   t1, t2 = st.tabs(["Cadastrar", "Inventário"])
   with t1:
-    if modo_admin_liberado:
+    if status_usuario_ativo or modo_admin_liberado:
       with st.form("form_pecas"):
         c1, c2 = st.columns(2)
         with c1:
@@ -1059,7 +1148,7 @@ elif menu == "🔩 Peças e Ferramentas":
 
 elif menu == "👥 Gestão de Clientes":
   st.title("👥 Gestão de Clientes")
-  if modo_admin_liberado:
+  if status_usuario_ativo or modo_admin_liberado:
     with st.form("form_cli"):
       c1, c2 = st.columns(2)
       with c1:
@@ -1101,66 +1190,23 @@ elif menu == "🔍 Consulta / Busca Geral":
     else:
       st.info("Nenhum resultado.")
 
-elif menu == "🔐 Cadastro de Segurança":
-  st.title("🔐 Cadastro e Recuperação de Segurança")
-  st.markdown(
-      "Cadastre seus dados para garantir a recuperação de acesso ao sistema"
-      " caso troque ou perca o dispositivo."
-  )
-
-  with st.form("form_seguranca"):
-    c1, c2 = st.columns(2)
-    with c1:
-      nome_user = st.text_input("Nome Completo")
-      cpf_user = st.text_input("CPF")
-    with c2:
-      email_rec = st.text_input("E-mail de Recuperação")
-      cel_seg = st.text_input("Celular / Contato de Segurança")
-
-    if st.form_submit_button("Salvar Dados de Segurança"):
-      if nome_user and cpf_user and email_rec:
-        cursor.execute(
-            "INSERT INTO usuarios_seguranca (nome_completo, cpf,"
-            " email_recuperacao, celular_seguranca, data_cadastro) VALUES (?, ?,"
-            " ?, ?, ?)",
-            (
-                nome_user,
-                cpf_user,
-                email_rec,
-                cel_seg,
-                datetime.now().strftime("%Y-%m-%d %H:%M"),
-            ),
-        )
-        conn.conform = conn.commit()
-        st.success("✅ Dados de segurança salvos com sucesso!")
-      else:
-        st.error("⚠️ Preencha Nome, CPF e E-mail de Recuperação.")
-
-  st.divider()
-  st.subheader("Usuários Cadastrados no Sistema")
-  df_seg = pd.read_sql("SELECT * FROM usuarios_seguranca", conn)
-  if not df_seg.empty:
-    st.dataframe(df_seg, use_container_width=True, hide_index=True)
-  else:
-    st.info("Nenhum usuário de segurança cadastrado ainda.")
-
 elif menu == "⚙️ Painel de Licença (Admin)":
   if modo_admin_liberado:
-    st.title("⚙️ Painel de Administração")
-    with st.form("form_lic"):
-      st_novo = st.selectbox("Status Padrão", ["Inativo", "Ativo"])
-      plano_novo = st.selectbox(
-          "Plano", ["Mensal (R$ 250,00)", "Anual (R$ 2.400,00)"]
-      )
-      pix_novo = st.text_input("Chave Pix", value=chave_pix_recebimento)
-      if st.form_submit_button("Atualizar"):
-        cursor.execute(
-            "UPDATE licenca SET status_assinatura = ?, plano_atual = ?, chave_pix"
-            " = ? WHERE id = 1",
-            (st_novo, plano_novo, pix_novo),
-        )
-        conn.commit()
-        st.success("Atualizado!")
-        st.rerun()
+    st.title("⚙️ Painel de Administração de Usuários")
+    df_users = pd.read_sql("SELECT id, nome_completo, cpf, email, celular_seguranca, status_assinatura, plano_atual FROM usuarios_sistema", conn)
+    if not df_users.empty:
+      st.dataframe(df_users, use_container_width=True, hide_index=True)
+      
+      st.markdown("### Ativar / Inativar Usuário Cadastrado")
+      with st.form("form_admin_user"):
+        id_sel = st.selectbox("Selecione o ID do Usuário", df_users["id"].tolist())
+        novo_status_u = st.selectbox("Novo Status", ["Ativo", "Inativo"])
+        if st.form_submit_button("Atualizar Assinatura do Usuário"):
+          cursor.execute("UPDATE usuarios_sistema SET status_assinatura = ? WHERE id = ?", (novo_status_u, id_sel))
+          conn.commit()
+          st.success("✅ Status do usuário atualizado com sucesso!")
+          st.rerun()
+    else:
+      st.info("Nenhum usuário cadastrado no sistema ainda.")
   else:
     st.error("Acesso restrito.")
