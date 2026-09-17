@@ -491,9 +491,15 @@ def init_db():
             celular_seguranca TEXT,
             status_assinatura TEXT,
             plano_atual TEXT,
-            data_cadastro TEXT
+            data_cadastro TEXT,
+            pin_rapido TEXT
         )
     """)
+  for col_pin in ["ALTER TABLE usuarios_sistema ADD COLUMN pin_rapido TEXT"]:
+    try:
+      cursor.execute(col_pin)
+    except Exception:
+      pass
   conn.commit()
   return conn
 
@@ -550,10 +556,11 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           unsafe_allow_html=True,
       )
 
-    tab_login, tab_cadastro, tab_recuperar = st.tabs([
+    tab_login, tab_cadastro, tab_recuperar, tab_pin = st.tabs([
         "🔑 Entrar",
         "📝 Criar Conta",
-        "🔄 Recuperar Senha",
+        "🔄 Recuperar",
+        "🔐 Acesso por PIN",
     ])
 
     with tab_login:
@@ -565,6 +572,11 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
       with st.form("form_login"):
         email_login = st.text_input("E-mail Cadastrado")
         senha_login = st.text_input("Senha", type="password")
+        cadastrar_pin = st.text_input(
+            "Criar PIN rápido (4 números para acesso futuro - Opcional)",
+            max_chars=4,
+            type="password",
+        )
         btn_entrar = st.form_submit_button("Entrar no Sistema")
 
         if btn_entrar:
@@ -574,6 +586,13 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           )
           user_data = cursor.fetchone()
           if user_data:
+            if cadastrar_pin and len(cadastrar_pin) == 4:
+              cursor.execute(
+                  "UPDATE usuarios_sistema SET pin_rapido = ? WHERE id = ?",
+                  (cadastrar_pin, user_data[0]),
+              )
+              conn.commit()
+
             st.session_state["usuario_logado"] = {
                 "id": user_data[0],
                 "nome": user_data[1],
@@ -664,6 +683,38 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           else:
             st.error("⚠️ Preencha todos os campos para recuperar a senha.")
 
+    with tab_pin:
+      st.markdown(
+          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>Entre"
+          " rapidamente usando seu PIN de 4 dígitos:</p>",
+          unsafe_allow_html=True,
+      )
+      with st.form("form_login_pin"):
+        email_pin_user = st.text_input("Seu E-mail Cadastrado")
+        pin_input = st.text_input(
+            "PIN de 4 Dígitos", max_chars=4, type="password"
+        )
+        btn_entrar_pin = st.form_submit_button("Entrar com PIN")
+
+        if btn_entrar_pin:
+          cursor.execute(
+              "SELECT * FROM usuarios_sistema WHERE email = ? AND pin_rapido = ?",
+              (email_pin_user, pin_input),
+          )
+          user_pin_data = cursor.fetchone()
+          if user_pin_data:
+            st.session_state["usuario_logado"] = {
+                "id": user_pin_data[0],
+                "nome": user_pin_data[1],
+                "cpf": user_pin_data[2],
+                "email": user_pin_data[3],
+                "status": user_pin_data[6],
+            }
+            st.success("✅ Acesso liberado via PIN!")
+            st.rerun()
+          else:
+            st.error("⚠️ E-mail ou PIN incorretos.")
+
   st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
@@ -746,75 +797,103 @@ def verificar_licenca_para_acao():
     if st.button("💳 Mensal (R$ 250,00)", key="btn_mensal_fixo"):
       try:
         sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
-        pref_data = {
-            "items": [{
-                "title": (
-                    f"Tabalmix - Mensal ({usuario_atual['email'] if usuario_atual else 'Cliente'})"
-                ),
-                "quantity": 1,
-                "unit_price": 250.0,
-                "currency_id": "BRL",
-            }],
-            "back_urls": {
-                "success": "https://tabalmix-concreto.streamlit.app",
-                "failure": "https://tabalmix-concreto.streamlit.app",
-                "pending": "https://tabalmix-concreto.streamlit.app",
-            },
-            "auto_return": "approved",
+        payment_data = {
+            "transaction_amount": 250.0,
+            "description": f"Tabalmix - Plano Mensal ({usuario_atual['email'] if usuario_atual else 'Cliente'})",
+            "payment_method_id": "pix",
+            "payer": {
+                "email": usuario_atual["email"] if usuario_atual else "cliente@tabalmix.com"
+            }
         }
-        res = sdk.preference().create(pref_data)
-        url = res["response"].get("init_point") if "response" in res else ""
-        if url:
-          if usuario_atual:
-            cursor.execute(
-                "UPDATE usuarios_sistema SET status_assinatura = 'Ativo',"
-                " plano_atual = 'Mensal' WHERE id = ?",
-                (usuario_atual["id"],),
-            )
-            conn.commit()
-          st.markdown(
-              f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**\n\n*(Após o"
-              " pagamento, atualize a página)*"
-          )
+        res = sdk.payment().create(payment_data)
+        if "response" in res and "point_of_interaction" in res["response"]:
+          poi = res["response"]["point_of_interaction"]["transaction_data"]
+          qr_code_base64 = poi.get("qr_code_base64")
+          qr_code_text = poi.get("qr_code")
+          ticket_url = poi.get("ticket_url")
+
+          st.success("✅ Pix Gerado com Sucesso!")
+          if qr_code_base64:
+            img_bytes = base64.b64decode(qr_code_base64)
+            st.image(img_bytes, caption="Escaneie o QR Code com seu Banco", width=250)
+          
+          if qr_code_text:
+            st.text_area("Pix Copia e Cola (Copie abaixo):", value=qr_code_text, height=100)
+
+          if ticket_url:
+            st.markdown(f"🔗 **[👉 Abrir Página de Pagamento do Mercado Pago]({ticket_url})**")
+        else:
+          pref_data = {
+              "items": [{
+                  "title": "Tabalmix - Mensal",
+                  "quantity": 1,
+                  "unit_price": 250.0,
+                  "currency_id": "BRL",
+              }],
+              "back_urls": {
+                  "success": "https://tabalmix-concreto.streamlit.app",
+                  "failure": "https://tabalmix-concreto.streamlit.app",
+                  "pending": "https://tabalmix-concreto.streamlit.app",
+              },
+              "auto_return": "approved",
+          }
+          pref_res = sdk.preference().create(pref_data)
+          url = pref_res["response"].get("init_point") if "response" in pref_res else ""
+          if url:
+            st.markdown(f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**")
       except Exception as e:
-        st.error(f"Erro: {e}")
+        st.error(f"Erro ao gerar pagamento Pix: {e}")
 
   with col_p2:
     if st.button("🌟 Anual (R$ 2.400,00)", key="btn_anual_fixo"):
       try:
         sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
-        pref_data = {
-            "items": [{
-                "title": (
-                    f"Tabalmix - Anual ({usuario_atual['email'] if usuario_atual else 'Cliente'})"
-                ),
-                "quantity": 1,
-                "unit_price": 2400.0,
-                "currency_id": "BRL",
-            }],
-            "back_urls": {
-                "success": "https://tabalmix-concreto.streamlit.app",
-                "failure": "https://tabalmix-concreto.streamlit.app",
-                "pending": "https://tabalmix-concreto.streamlit.app",
-            },
-            "auto_return": "approved",
+        payment_data = {
+            "transaction_amount": 2400.0,
+            "description": f"Tabalmix - Plano Anual ({usuario_atual['email'] if usuario_atual else 'Cliente'})",
+            "payment_method_id": "pix",
+            "payer": {
+                "email": usuario_atual["email"] if usuario_atual else "cliente@tabalmix.com"
+            }
         }
-        res = sdk.preference().create(pref_data)
-        url = res["response"].get("init_point") if "response" in res else ""
-        if url:
-          if usuario_atual:
-            cursor.execute(
-                "UPDATE usuarios_sistema SET status_assinatura = 'Ativo',"
-                " plano_atual = 'Anual' WHERE id = ?",
-                (usuario_atual["id"],),
-            )
-            conn.commit()
-          st.markdown(
-              f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**\n\n*(Após o"
-              " pagamento, atualize a página)*"
-          )
+        res = sdk.payment().create(payment_data)
+        if "response" in res and "point_of_interaction" in res["response"]:
+          poi = res["response"]["point_of_interaction"]["transaction_data"]
+          qr_code_base64 = poi.get("qr_code_base64")
+          qr_code_text = poi.get("qr_code")
+          ticket_url = poi.get("ticket_url")
+
+          st.success("✅ Pix Gerado com Sucesso!")
+          if qr_code_base64:
+            img_bytes = base64.b64decode(qr_code_base64)
+            st.image(img_bytes, caption="Escaneie o QR Code com seu Banco", width=250)
+          
+          if qr_code_text:
+            st.text_area("Pix Copia e Cola (Copie abaixo):", value=qr_code_text, height=100)
+
+          if ticket_url:
+            st.markdown(f"🔗 **[👉 Abrir Página de Pagamento do Mercado Pago]({ticket_url})**")
+        else:
+          pref_data = {
+              "items": [{
+                  "title": "Tabalmix - Anual",
+                  "quantity": 1,
+                  "unit_price": 2400.0,
+                  "currency_id": "BRL",
+              }],
+              "back_urls": {
+                  "success": "https://tabalmix-concreto.streamlit.app",
+                  "failure": "https://tabalmix-concreto.streamlit.app",
+                  "pending": "https://tabalmix-concreto.streamlit.app",
+              },
+              "auto_return": "approved",
+          }
+          pref_res = sdk.preference().create(pref_data)
+          url = pref_res["response"].get("init_point") if "response" in pref_res else ""
+          if url:
+            st.markdown(f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**")
       except Exception as e:
-        st.error(f"Erro: {e}")
+        st.error(f"Erro ao gerar pagamento Pix: {e}")
 
   if "Transferência Direta" in escolha_metodo:
     st.info(
