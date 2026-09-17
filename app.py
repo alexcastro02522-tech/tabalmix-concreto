@@ -606,7 +606,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
               cursor.execute(
                   "INSERT INTO usuarios_sistema (nome_completo, cpf, email,"
                   " senha, celular_seguranca, status_assinatura, plano_atual,"
-                  " data_cadastro) VALUES (?, ?, ?, ?, ?, 'Inativo', 'Pendente',"
+                  " data_cadastro) VALUES (?, ?, ?, ?, ?, 'Ativo', 'Mensal',"
                   " ?)",
                   (
                       c_nome,
@@ -678,15 +678,6 @@ if u_db:
   }
 
 usuario_atual = st.session_state["usuario_logado"]
-status_usuario_ativo = (
-    True
-    if modo_admin_liberado
-    else (
-        usuario_atual["status"] == "Ativo"
-        if usuario_atual
-        else False
-    )
-)
 
 with st.sidebar:
   try:
@@ -724,8 +715,7 @@ with st.sidebar:
     st.success("🔓 **Modo Admin Ativo**")
   elif usuario_atual:
     st.info(
-        f"👤 **Usuário:** {usuario_atual['nome']}\n\n📊 **Status:**"
-        f" {usuario_atual['status']}"
+        f"👤 **Usuário:** {usuario_atual['nome']}\n\n📊 **Status:** Sistema Liberado"
     )
     if st.button("🚪 Sair / Trocar Conta"):
       st.session_state["usuario_logado"] = None
@@ -733,120 +723,10 @@ with st.sidebar:
 
   st.markdown("---")
 
-
-def verificar_licenca_para_acao():
-  if status_usuario_ativo or modo_admin_liberado:
-    return True
-
-  st.warning(
-      "🔒 **Sua assinatura está Inativa ou Pendente:**\n\nEscolha um plano"
-      " abaixo para ativar o seu acesso de qualquer dispositivo:"
-  )
-  escolha_metodo = st.radio(
-      "Forma de Pagamento:",
-      [
-          "💳 Pagamento Automático (Mercado Pago)",
-          "🔑 Transferência Direta (Chave Pix)",
-      ],
-      label_visibility="collapsed",
-  )
-
-  email_cli = usuario_atual['email'] if usuario_atual else "cliente@tabalmix.com"
-  nome_cli = usuario_atual.get('nome', 'Cliente') if usuario_atual else "Cliente"
-  cpf_cli = usuario_atual.get('cpf', '').strip() if usuario_atual else ""
-
-  if "Mercado Pago" in escolha_metodo:
-    if not cpf_cli:
-      st.error("⚠️ O seu cadastro está sem CPF preenchido. Vá na aba '👤 Meu Perfil e Cadastro' para atualizar seu CPF antes de gerar o Pix/Cartão.")
-
-    col_p1, col_p2 = st.columns(2)
-    with col_p1:
-      if st.button("💳 Mensal (R$ 250,00)", key="btn_mensal_esc"):
-        try:
-          sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
-          pref_data = {
-              "items": [{
-                  "title": f"Tabalmix - Mensal ({email_cli})",
-                  "quantity": 1,
-                  "unit_price": 250.0,
-                  "currency_id": "BRL",
-              }],
-              "payer": {
-                  "email": email_cli,
-                  "name": nome_cli,
-                  "identification": {
-                      "type": "CPF",
-                      "number": cpf_cli if cpf_cli else "00000000000"
-                  }
-              },
-              "back_urls": {
-                  "success": "https://tabalmix-concreto.streamlit.app",
-                  "failure": "https://tabalmix-concreto.streamlit.app",
-                  "pending": "https://tabalmix-concreto.streamlit.app",
-              },
-              "auto_return": "approved",
-          }
-          res = sdk.preference().create(pref_data)
-          url = (
-              res["response"].get("init_point") if "response" in res else ""
-          )
-          if url:
-            st.markdown(
-                f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**\n\n*(Após o"
-                " pagamento aprovado, sua conta será ativada automaticamente)*"
-            )
-        except Exception as e:
-          st.error(f"Erro: {e}")
-    with col_p2:
-      if st.button("🌟 Anual (R$ 2.400,00)", key="btn_anual_esc"):
-        try:
-          sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
-          pref_data = {
-              "items": [{
-                  "title": f"Tabalmix - Anual ({email_cli})",
-                  "quantity": 1,
-                  "unit_price": 2400.0,
-                  "currency_id": "BRL",
-              }],
-              "payer": {
-                  "email": email_cli,
-                  "name": nome_cli,
-                  "identification": {
-                      "type": "CPF",
-                      "number": cpf_cli if cpf_cli else "00000000000"
-                  }
-              },
-              "back_urls": {
-                  "success": "https://tabalmix-concreto.streamlit.app",
-                  "failure": "https://tabalmix-concreto.streamlit.app",
-                  "pending": "https://tabalmix-concreto.streamlit.app",
-              },
-              "auto_return": "approved",
-          }
-          res = sdk.preference().create(pref_data)
-          url = (
-              res["response"].get("init_point") if "response" in res else ""
-          )
-          if url:
-            st.markdown(
-                f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**\n\n*(Após o"
-                " pagamento aprovado, sua conta será ativada automaticamente)*"
-            )
-        except Exception as e:
-          st.error(f"Erro: {e}")
-  else:
-    st.info(
-        "🔑 **Chave Pix para Depósito:** `sua-chave-pix@dominio.com`\nEnvie o"
-        " comprovante no WhatsApp para liberação."
-    )
-  return False
-
-
-# MENU COM A ABA DE PERFIL LOGO NO INÍCIO
+# MENU COM A ABA DE PERFIL POSICIONADA POR ÚLTIMO
 menu = st.sidebar.radio(
     "Navegação",
     [
-        "👤 Meu Perfil e Cadastro",
         "📊 Visão Geral",
         "🚜 CADASTRO DE EQUIPAMENTOS",
         "⛽ Abastecimentos & Combustível",
@@ -856,72 +736,12 @@ menu = st.sidebar.radio(
         "👥 Gestão de Clientes",
         "🔍 Consulta / Busca Geral",
         "⚙️ Painel de Licença (Admin)",
+        "👤 Meu Perfil e Dados Cadastrais",
     ],
     label_visibility="collapsed",
 )
 
-if menu == "👤 Meu Perfil e Cadastro":
-  st.title("👤 Meu Perfil e Dados Cadastrais")
-  st.markdown("Atualize suas informações de contato e o seu **CPF** (obrigatório para gerar pagamentos via Pix e cartão no Mercado Pago).")
-  
-  cursor.execute("SELECT nome_completo, cpf, email, celular_seguranca, status_assinatura, plano_atual FROM usuarios_sistema WHERE id = ?", (usuario_atual["id"],))
-  u_info = cursor.fetchone()
-  
-  if u_info:
-    with st.form("form_atualizar_perfil"):
-      db_nome = u_info[0] if u_info[0] and "@" not in u_info[0] else ""
-      db_cpf = u_info[1] or ""
-      db_email = u_info[2] if u_info[2] and "@" in u_info[2] else usuario_atual["email"]
-      db_cel = u_info[3] or ""
-
-      novo_nome = st.text_input("Nome Completo / Responsável", value=db_nome)
-      novo_cpf = st.text_input("CPF (Necessário para Pix)", value=db_cpf)
-      novo_email = st.text_input("E-mail (Seu Login)", value=db_email)
-      novo_cel = st.text_input("Celular de Segurança", value=db_cel)
-      nova_senha_perfil = st.text_input("Nova Senha (Deixe em branco para manter a atual)", type="password")
-      
-      st.info(f"📊 **Status Atual da Assinatura:** {u_info[4]} | **Plano:** {u_info[5]}")
-      
-      btn_salvar_perfil = st.form_submit_button("Salvar Alterações do Perfil")
-      if btn_salvar_perfil:
-        if novo_nome and novo_email:
-          if nova_senha_perfil:
-            cursor.execute(
-                "UPDATE usuarios_sistema SET nome_completo = ?, cpf = ?, email = ?, celular_seguranca = ?, senha = ? WHERE id = ?",
-                (novo_nome, novo_cpf, novo_email, novo_cel, nova_senha_perfil, usuario_atual["id"])
-            )
-          else:
-            cursor.execute(
-                "UPDATE usuarios_sistema SET nome_completo = ?, cpf = ?, email = ?, celular_seguranca = ? WHERE id = ?",
-                (novo_nome, novo_cpf, novo_email, novo_cel, usuario_atual["id"])
-            )
-          conn.commit()
-          st.success("✅ Perfil atualizado com sucesso!")
-          st.rerun()
-        else:
-          st.error("⚠️ Nome e E-mail são obrigatórios.")
-
-    st.markdown("---")
-    st.markdown("### 🧪 Painel de Testes Rápidos de Licença")
-    st.write("Para testar o bloqueio e a tela de pagamento do Mercado Pago, altere seu status abaixo:")
-    col_t1, col_t2 = st.columns(2)
-    with col_t1:
-      if st.button("🔒 Forçar Status para INATIVO (Testar Bloqueio)"):
-        cursor.execute("UPDATE usuarios_sistema SET status_assinatura = 'Inativo' WHERE id = ?", (usuario_atual["id"],))
-        conn.commit()
-        st.success("Conta alterada para Inativa!")
-        st.rerun()
-    with col_t2:
-      if st.button("🔓 Forçar Status para ATIVO (Liberar Sistema)"):
-        cursor.execute("UPDATE usuarios_sistema SET status_assinatura = 'Ativo' WHERE id = ?", (usuario_atual["id"],))
-        conn.commit()
-        st.success("Conta alterada para Ativa!")
-        st.rerun()
-
-elif menu == "📊 Visão Geral":
-  if not verificar_licenca_para_acao():
-    st.stop()
-
+if menu == "📊 Visão Geral":
   try:
     with open("caminhoes.jpg", "rb") as image_file:
       encoded_string = base64.b64encode(image_file.read()).decode()
@@ -1079,28 +899,25 @@ elif menu == "📊 Visão Geral":
 
     st.dataframe(df_filtrado, use_container_width=True, hide_index=True)
 
-    if status_usuario_ativo or modo_admin_liberado:
-      c_d1, c_d2 = st.columns(2)
-      with c_d1:
-        st.download_button(
-            "📥 Baixar PDF",
-            gerar_pdf_relatorio("RELATÓRIO DE FROTA", df_filtrado),
-            "frota.pdf",
-            "application/pdf",
-        )
-      with c_d2:
-        st.download_button(
-            "📊 Baixar Planilha (.csv)",
-            gerar_csv_relatorio(df_filtrado),
-            "frota.csv",
-            "text/csv",
-        )
+    c_d1, c_d2 = st.columns(2)
+    with c_d1:
+      st.download_button(
+          "📥 Baixar PDF",
+          gerar_pdf_relatorio("RELATÓRIO DE FROTA", df_filtrado),
+          "frota.pdf",
+          "application/pdf",
+      )
+    with c_d2:
+      st.download_button(
+          "📊 Baixar Planilha (.csv)",
+          gerar_csv_relatorio(df_filtrado),
+          "frota.csv",
+          "text/csv",
+      )
   else:
     st.info("Nenhum equipamento cadastrado.")
 
 elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
-  if not verificar_licenca_para_acao():
-    st.stop()
   st.title("🚜 CADASTRO DE EQUIPAMENTOS")
 
   with st.form("form_frota", clear_on_submit=False):
@@ -1241,8 +1058,6 @@ elif menu == "🚜 CADASTRO DE EQUIPAMENTOS":
     st.info("Nenhum equipamento cadastrado.")
 
 elif menu == "⛽ Abastecimentos & Combustível":
-  if not verificar_licenca_para_acao():
-    st.stop()
   st.title("⛽ Controle de Abastecimento e Combustível")
   try:
     df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
@@ -1305,8 +1120,6 @@ elif menu == "⛽ Abastecimentos & Combustível":
       st.info("Nenhum abastecimento registrado.")
 
 elif menu == "🏗️ Mobilização / Desmobilização":
-  if not verificar_licenca_para_acao():
-    st.stop()
   st.title("🏗️ Mobilização e Desmobilização de Obras")
   try:
     df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
@@ -1362,8 +1175,6 @@ elif menu == "🏗️ Mobilização / Desmobilização":
       st.dataframe(df_mobs, use_container_width=True, hide_index=True)
 
 elif menu == "🛠️ Ordens de Serviço (OS)":
-  if not verificar_licenca_para_acao():
-    st.stop()
   st.title("🛠️ Gestão Unificada de Ordens de Serviço (OS)")
 
   try:
@@ -1557,8 +1368,6 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
       st.info("Nenhuma OS registrada.")
 
 elif menu == "🔩 Peças e Ferramentas":
-  if not verificar_licenca_para_acao():
-    st.stop()
   st.title("🔩 Controle de Peças e Ferramentas")
   t1, t2 = st.tabs(["Cadastrar", "Inventário"])
   with t1:
@@ -1587,8 +1396,6 @@ elif menu == "🔩 Peças e Ferramentas":
       st.dataframe(df_p, use_container_width=True, hide_index=True)
 
 elif menu == "👥 Gestão de Clientes":
-  if not verificar_licenca_para_acao():
-    st.stop()
   st.title("👥 Gestão de Clientes")
   with st.form("form_cli"):
     c1, c2 = st.columns(2)
@@ -1614,8 +1421,6 @@ elif menu == "👥 Gestão de Clientes":
     st.dataframe(df_cli, use_container_width=True, hide_index=True)
 
 elif menu == "🔍 Consulta / Busca Geral":
-  if not verificar_licenca_para_acao():
-    st.stop()
   st.title("🔍 Consulta Geral")
   termo = st.text_input("Digite o termo de busca (TAG, Placa, Cliente...)")
   if termo:
@@ -1674,3 +1479,42 @@ elif menu == "⚙️ Painel de Licença (Admin)":
       st.info("Nenhum usuário cadastrado no sistema ainda.")
   else:
     st.error("Acesso restrito.")
+
+elif menu == "👤 Meu Perfil e Dados Cadastrais":
+  st.title("👤 Meu Perfil e Dados Cadastrais")
+  st.markdown("Atualize suas informações de contato e o seu **CPF** a qualquer momento.")
+  
+  cursor.execute("SELECT nome_completo, cpf, email, celular_seguranca, status_assinatura, plano_atual FROM usuarios_sistema WHERE id = ?", (usuario_atual["id"],))
+  u_info = cursor.fetchone()
+  
+  if u_info:
+    with st.form("form_atualizar_perfil"):
+      db_nome = u_info[0] if u_info[0] and "@" not in u_info[0] else ""
+      db_cpf = u_info[1] or ""
+      db_email = u_info[2] if u_info[2] and "@" in u_info[2] else usuario_atual["email"]
+      db_cel = u_info[3] or ""
+
+      novo_nome = st.text_input("Nome Completo / Responsável", value=db_nome)
+      novo_cpf = st.text_input("CPF (Necessário para Pix)", value=db_cpf)
+      novo_email = st.text_input("E-mail (Seu Login)", value=db_email)
+      novo_cel = st.text_input("Celular de Segurança", value=db_cel)
+      nova_senha_perfil = st.text_input("Nova Senha (Deixe em branco para manter a atual)", type="password")
+      
+      btn_salvar_perfil = st.form_submit_button("Salvar Alterações do Perfil")
+      if btn_salvar_perfil:
+        if novo_nome and novo_email:
+          if nova_senha_perfil:
+            cursor.execute(
+                "UPDATE usuarios_sistema SET nome_completo = ?, cpf = ?, email = ?, celular_seguranca = ?, senha = ? WHERE id = ?",
+                (novo_nome, novo_cpf, novo_email, novo_cel, nova_senha_perfil, usuario_atual["id"])
+            )
+          else:
+            cursor.execute(
+                "UPDATE usuarios_sistema SET nome_completo = ?, cpf = ?, email = ?, celular_seguranca = ? WHERE id = ?",
+                (novo_nome, novo_cpf, novo_email, novo_cel, usuario_atual["id"])
+            )
+          conn.commit()
+          st.success("✅ Perfil atualizado com sucesso!")
+          st.rerun()
+        else:
+          st.error("⚠️ Nome e E-mail são obrigatórios.")
