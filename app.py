@@ -594,7 +594,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
       )
       with st.form("form_novo_cadastro"):
         c_nome = st.text_input("Nome Completo / Responsável")
-        c_cpf = st.text_input("CPF")
+        c_cpf = st.text_input("CPF (Necessário para emissão de Pix/Pagamento)")
         c_email = st.text_input("E-mail (Seu Login)")
         c_senha = st.text_input("Criar Senha", type="password")
         c_cel = st.text_input("Celular / Contato de Segurança")
@@ -740,11 +740,15 @@ def verificar_licenca_para_acao():
       label_visibility="collapsed",
   )
 
-  # Dados do usuário logado para injetar no Mercado Pago sem travar o Pix
+  # Dados do usuário logado (incluindo CPF obrigatório para liberar o Pix no Mercado Pago)
   email_cli = usuario_atual['email'] if usuario_atual else "cliente@tabalmix.com"
   nome_cli = usuario_atual.get('nome', 'Cliente') if usuario_atual else "Cliente"
+  cpf_cli = usuario_atual.get('cpf', '').strip() if usuario_atual else ""
 
   if "Mercado Pago" in escolha_metodo:
+    if not cpf_cli:
+      st.error("⚠️ O seu cadastro está sem o CPF preenchido. O Mercado Pago exige o CPF para gerar o Pix e o pagamento automático. Atualize seu cadastro ou entre com um CPF válido.")
+
     col_p1, col_p2 = st.columns(2)
     with col_p1:
       if st.button("💳 Mensal (R$ 250,00)", key="btn_mensal_esc"):
@@ -759,7 +763,11 @@ def verificar_licenca_para_acao():
               }],
               "payer": {
                   "email": email_cli,
-                  "name": nome_cli
+                  "name": nome_cli,
+                  "identification": {
+                      "type": "CPF",
+                      "number": cpf_cli if cpf_cli else "00000000000"
+                  }
               },
               "back_urls": {
                   "success": "https://tabalmix-concreto.streamlit.app",
@@ -799,7 +807,11 @@ def verificar_licenca_para_acao():
               }],
               "payer": {
                   "email": email_cli,
-                  "name": nome_cli
+                  "name": nome_cli,
+                  "identification": {
+                      "type": "CPF",
+                      "number": cpf_cli if cpf_cli else "00000000000"
+                  }
               },
               "back_urls": {
                   "success": "https://tabalmix-concreto.streamlit.app",
