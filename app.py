@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Corporativa Refinada em Tema Claro (Padronização e minúsculos amigáveis)
+# Estilização Visual Corporativa Refinada em Tema Claro
 st.markdown(
     """
     <style>
@@ -1788,9 +1788,9 @@ elif menu == "⚙️ painel de licença (admin)":
 
     st.markdown("---")
     st.markdown("### gestão de usuários e licenças")
-    # ORDENA AS COLUNAS PARA DEIXAR O STATUS LOGO AO LADO DO ID E NOME
+    # SELECIONA E RENOMEIA A COLUNA PARA O STATUS FICAR IMEDIATAMENTE AO LADO DO ID
     df_users = pd.read_sql(
-        "SELECT id, status_assinatura, nome_completo, email, cpf, celular_seguranca, plano_atual FROM usuarios_sistema",
+        "SELECT id, status_assinatura AS status, nome_completo, email, cpf, celular_seguranca, plano_atual FROM usuarios_sistema",
         conn,
     )
     if not df_users.empty:
