@@ -728,8 +728,8 @@ def verificar_licenca_para_acao():
     return True
 
   st.warning(
-      "🔒 **Sua assinatura está Inativa ou Pendente:**\n\nEscolha um plano"
-      " abaixo para ativar o seu acesso de qualquer dispositivo:"
+      "🔒 **Acesso Restrito ao Sistema de Testes / Assinatura:**\n\nEscolha uma"
+      " das opções abaixo para continuar:"
   )
   escolha_metodo = st.radio(
       "Forma de Pagamento:",
@@ -738,91 +738,90 @@ def verificar_licenca_para_acao():
           "🔑 Transferência Direta (Chave Pix)",
       ],
       label_visibility="collapsed",
+      key="radio_metodo_geral",
   )
 
-  if "Mercado Pago" in escolha_metodo:
-    col_p1, col_p2 = st.columns(2)
-    with col_p1:
-      if st.button("💳 Mensal (R$ 250,00)", key="btn_mensal_esc"):
-        try:
-          sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
-          pref_data = {
-              "items": [{
-                  "title": (
-                      f"Tabalmix - Mensal ({usuario_atual['email'] if usuario_atual else 'Cliente'})"
-                  ),
-                  "quantity": 1,
-                  "unit_price": 250.0,
-                  "currency_id": "BRL",
-              }],
-              "back_urls": {
-                  "success": "https://tabalmix-concreto.streamlit.app",
-                  "failure": "https://tabalmix-concreto.streamlit.app",
-                  "pending": "https://tabalmix-concreto.streamlit.app",
-              },
-              "auto_return": "approved",
-          }
-          res = sdk.preference().create(pref_data)
-          url = (
-              res["response"].get("init_point") if "response" in res else ""
-          )
-          if url:
-            if usuario_atual:
-              cursor.execute(
-                  "UPDATE usuarios_sistema SET status_assinatura = 'Ativo',"
-                  " plano_atual = 'Mensal' WHERE id = ?",
-                  (usuario_atual["id"],),
-              )
-              conn.commit()
-            st.markdown(
-                f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**\n\n*(Após o"
-                " pagamento, atualize a página)*"
+  col_p1, col_p2 = st.columns(2)
+  with col_p1:
+    if st.button("💳 Mensal (R$ 250,00)", key="btn_mensal_fixo"):
+      try:
+        sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+        pref_data = {
+            "items": [{
+                "title": (
+                    f"Tabalmix - Mensal ({usuario_atual['email'] if usuario_atual else 'Cliente'})"
+                ),
+                "quantity": 1,
+                "unit_price": 250.0,
+                "currency_id": "BRL",
+            }],
+            "back_urls": {
+                "success": "https://tabalmix-concreto.streamlit.app",
+                "failure": "https://tabalmix-concreto.streamlit.app",
+                "pending": "https://tabalmix-concreto.streamlit.app",
+            },
+            "auto_return": "approved",
+        }
+        res = sdk.preference().create(pref_data)
+        url = res["response"].get("init_point") if "response" in res else ""
+        if url:
+          if usuario_atual:
+            cursor.execute(
+                "UPDATE usuarios_sistema SET status_assinatura = 'Ativo',"
+                " plano_atual = 'Mensal' WHERE id = ?",
+                (usuario_atual["id"],),
             )
-        except Exception as e:
-          st.error(f"Erro: {e}")
-    with col_p2:
-      if st.button("🌟 Anual (R$ 2.400,00)", key="btn_anual_esc"):
-        try:
-          sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
-          pref_data = {
-              "items": [{
-                  "title": (
-                      f"Tabalmix - Anual ({usuario_atual['email'] if usuario_atual else 'Cliente'})"
-                  ),
-                  "quantity": 1,
-                  "unit_price": 2400.0,
-                  "currency_id": "BRL",
-              }],
-              "back_urls": {
-                  "success": "https://tabalmix-concreto.streamlit.app",
-                  "failure": "https://tabalmix-concreto.streamlit.app",
-                  "pending": "https://tabalmix-concreto.streamlit.app",
-              },
-              "auto_return": "approved",
-          }
-          res = sdk.preference().create(pref_data)
-          url = (
-              res["response"].get("init_point") if "response" in res else ""
+            conn.commit()
+          st.markdown(
+              f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**\n\n*(Após o"
+              " pagamento, atualize a página)*"
           )
-          if url:
-            if usuario_atual:
-              cursor.execute(
-                  "UPDATE usuarios_sistema SET status_assinatura = 'Ativo',"
-                  " plano_atual = 'Anual' WHERE id = ?",
-                  (usuario_atual["id"],),
-              )
-              conn.commit()
-            st.markdown(
-                f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**\n\n*(Após o"
-                " pagamento, atualize a página)*"
+      except Exception as e:
+        st.error(f"Erro: {e}")
+
+  with col_p2:
+    if st.button("🌟 Anual (R$ 2.400,00)", key="btn_anual_fixo"):
+      try:
+        sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+        pref_data = {
+            "items": [{
+                "title": (
+                    f"Tabalmix - Anual ({usuario_atual['email'] if usuario_atual else 'Cliente'})"
+                ),
+                "quantity": 1,
+                "unit_price": 2400.0,
+                "currency_id": "BRL",
+            }],
+            "back_urls": {
+                "success": "https://tabalmix-concreto.streamlit.app",
+                "failure": "https://tabalmix-concreto.streamlit.app",
+                "pending": "https://tabalmix-concreto.streamlit.app",
+            },
+            "auto_return": "approved",
+        }
+        res = sdk.preference().create(pref_data)
+        url = res["response"].get("init_point") if "response" in res else ""
+        if url:
+          if usuario_atual:
+            cursor.execute(
+                "UPDATE usuarios_sistema SET status_assinatura = 'Ativo',"
+                " plano_atual = 'Anual' WHERE id = ?",
+                (usuario_atual["id"],),
             )
-        except Exception as e:
-          st.error(f"Erro: {e}")
-  else:
+            conn.commit()
+          st.markdown(
+              f"🔗 **[👉 ABRIR CHECKOUT DE PAGAMENTO]({url})**\n\n*(Após o"
+              " pagamento, atualize a página)*"
+          )
+      except Exception as e:
+        st.error(f"Erro: {e}")
+
+  if "Transferência Direta" in escolha_metodo:
     st.info(
         "🔑 **Chave Pix para Depósito:** `sua-chave-pix@dominio.com`\nEnvie o"
         " comprovante para liberar o seu acesso instantâneo."
     )
+
   return False
 
 
@@ -1456,7 +1455,6 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
             st.markdown("---")
             st.markdown("### 🖨️ Relatórios Técnicos e Envio")
             
-            # Correção aplicada com sucesso na variável de tag para o PDF
             tag_eq_pdf = tag_eq_os
             pdf_os_buffer = gerar_pdf_os_tecnica(os_atual)
             st.download_button(
@@ -1587,19 +1585,32 @@ elif menu == "⚙️ Painel de Licença (Admin)":
     if not df_users.empty:
       st.dataframe(df_users, use_container_width=True, hide_index=True)
 
-      with st.form("form_admin_user"):
-        id_sel = st.selectbox(
-            "Selecione o ID do Usuário", df_users["id"].tolist()
-        )
-        novo_status_u = st.selectbox("Novo Status", ["Ativo", "Inativo"])
-        if st.form_submit_button("Atualizar Assinatura do Usuário"):
-          cursor.execute(
-              "UPDATE usuarios_sistema SET status_assinatura = ? WHERE id = ?",
-              (novo_status_u, id_sel),
+      col_adm1, col_adm2 = st.columns(2)
+      with col_adm1:
+        with st.form("form_admin_user"):
+          id_sel = st.selectbox(
+              "Selecione o ID do Usuário", df_users["id"].tolist()
           )
-          conn.commit()
-          st.success("✅ Status do usuário atualizado com sucesso!")
-          st.rerun()
+          novo_status_u = st.selectbox("Novo Status", ["Ativo", "Inativo"])
+          if st.form_submit_button("Atualizar Assinatura"):
+            cursor.execute(
+                "UPDATE usuarios_sistema SET status_assinatura = ? WHERE id = ?",
+                (novo_status_u, id_sel),
+            )
+            conn.commit()
+            st.success("✅ Status do usuário atualizado com sucesso!")
+            st.rerun()
+
+      with col_adm2:
+        with st.form("form_admin_del_user"):
+          id_del = st.selectbox(
+              "Selecione o ID para Excluir Conta", df_users["id"].tolist(), key="del_user_id"
+          )
+          if st.form_submit_button("🗑️ Excluir Usuário do Sistema"):
+            cursor.execute("DELETE FROM usuarios_sistema WHERE id = ?", (id_del,))
+            conn.commit()
+            st.success("✅ Conta de usuário excluída com sucesso!")
+            st.rerun()
     else:
       st.info("Nenhum usuário cadastrado no sistema ainda.")
   else:
