@@ -26,13 +26,42 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    header[data-testid="stHeader"] { background: transparent !important; }
-    .block-container { padding-top: 1.2rem !important; padding-bottom: 1.2rem !important; }
-    [data-testid="stSidebar"] { min-width: 300px !important; width: 300px !important; background: #f4f6f9 !important; border-right: 1px solid #cbd5e1; padding-top: 10px; }
-    .stApp { background: #f4f6f9 !important; color: #1e293b !important; }
-    h1, h2, h3 { color: #1b7a3e !important; font-family: 'Segoe UI', system-ui, sans-serif; font-weight: 700; }
-    p, label, span, .stMarkdown { color: #1e293b !important; font-size: 14px; font-weight: 500; }
-    .stButton button { background: linear-gradient(135deg, #1b7a3e 0%, #12542a 100%) !important; color: white !important; font-weight: 600; border-radius: 8px; border: 1px solid #1b7a3e; padding: 0.55rem 1.6rem; }
+    header[data-testid="stHeader"] {
+        background: transparent !important;
+    }
+    .block-container {
+        padding-top: 1.2rem !important;
+        padding-bottom: 1.2rem !important;
+    }
+    [data-testid="stSidebar"] {
+        min-width: 300px !important;
+        width: 300px !important;
+        background: #f4f6f9 !important;
+        border-right: 1px solid #cbd5e1;
+        padding-top: 10px;
+    }
+    .stApp {
+        background: #f4f6f9 !important;
+        color: #1e293b !important;
+    }
+    h1, h2, h3 {
+        color: #1b7a3e !important;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+        font-weight: 700;
+    }
+    p, label, span, .stMarkdown {
+        color: #1e293b !important;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    .stButton button {
+        background: linear-gradient(135deg, #1b7a3e 0%, #12542a 100%) !important;
+        color: white !important;
+        font-weight: 600;
+        border-radius: 8px;
+        border: 1px solid #1b7a3e;
+        padding: 0.55rem 1.6rem;
+    }
     </style>
 """,
     unsafe_allow_html=True,
@@ -108,6 +137,29 @@ def init_db():
             data_fechamento TEXT, hora_fechamento TEXT, status_os TEXT
         )
     """)
+  for col_sql in [
+      "ALTER TABLE manutencoes ADD COLUMN tag_prefixo TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN tipo_manutencao TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN horimetro_km_manut TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN origem_falha TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN descricao_problema TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN data_abertura TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN hora_abertura TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN pecas_utilizadas TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN custo_pecas REAL",
+      "ALTER TABLE manutencoes ADD COLUMN mao_de_obra REAL",
+      "ALTER TABLE manutencoes ADD COLUMN custo REAL",
+      "ALTER TABLE manutencoes ADD COLUMN oficina TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN tecnico_mecanico TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN data_fechamento TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN hora_fechamento TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN status_os TEXT",
+  ]:
+    try:
+      cursor.execute(col_sql)
+    except Exception:
+      pass
+
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS pecas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -280,7 +332,24 @@ if menu == "📊 visão geral":
   st.title("🏗️ painel operacional da frota")
   df_veiculos = pd.read_sql("SELECT * FROM veiculos", conn)
   df_manut = pd.read_sql("SELECT * FROM manutencoes", conn)
-  st.metric("total frota", len(df_veiculos))
+  df_comb = pd.read_sql("SELECT * FROM combustivel", conn)
+
+  col1, col2, col3 = st.columns(3)
+  with col1:
+    st.metric("total frota", len(df_veiculos))
+  with col2:
+    st.metric(
+        "custo manut.",
+        f"r$ {df_manut['custo'].sum() if not df_manut.empty and 'custo' in df_manut.columns else 0.0:,.2f}",
+    )
+  with col3:
+    st.metric(
+        "gasto combustível",
+        f"r$ {df_comb['valor_total'].sum() if not df_comb.empty else 0.0:,.2f}",
+    )
+
+  st.divider()
+  st.subheader("📋 status da frota e equipamentos")
   if not df_veiculos.empty:
     st.dataframe(df_veiculos, use_container_width=True, hide_index=True)
   else:
@@ -294,13 +363,23 @@ elif menu == "🚜 cadastro de equipamentos":
       tag_prefixo = st.text_input("tag / prefixo (ex: EQ-001)")
       tipo = st.selectbox(
           "tipo de equipamento",
-          ["caminhão betoneira", "escavadeira", "utilitário"],
+          [
+              "caminhão betoneira",
+              "caminhão basculante",
+              "escavadeira",
+              "utilitário",
+              "trator",
+          ],
       )
+      marca = st.text_input("marca")
       modelo = st.text_input("modelo")
-      placa = st.text_input("placa")
     with col2:
+      ano = st.number_input(
+          "ano de fabricação", min_value=1950, value=2024, step=1
+      )
+      placa = st.text_input("placa")
       horimetro_km = st.number_input(
-          "horímetro ou km atual", min_value=0, value=15000
+          "horímetro ou km atual", min_value=0, value=15000, step=100
       )
       status = st.selectbox(
           "situação", ["Ativo", "Em Manutenção", "Parado", "Mobilizado"]
@@ -308,9 +387,18 @@ elif menu == "🚜 cadastro de equipamentos":
     if st.form_submit_button("cadastrar equipamento"):
       if tag_prefixo and modelo:
         cursor.execute(
-            "INSERT INTO veiculos (tag_prefixo, tipo, modelo, placa,"
-            " horimetro_km, status) VALUES (?, ?, ?, ?, ?, ?)",
-            (tag_prefixo.upper(), tipo, modelo, placa.upper(), horimetro_km, status),
+            "INSERT INTO veiculos (tag_prefixo, tipo, marca, modelo, ano,"
+            " placa, horimetro_km, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (
+                tag_prefixo.upper(),
+                tipo,
+                marca,
+                modelo,
+                int(ano),
+                placa.upper(),
+                int(horimetro_km),
+                status,
+            ),
         )
         conn.commit()
         st.success(f"✅ equipamento '{tag_prefixo.upper()}' cadastrado!")
@@ -322,15 +410,99 @@ elif menu == "🚜 cadastro de equipamentos":
   if not df_f.empty:
     st.dataframe(df_f, use_container_width=True, hide_index=True)
 
+elif menu == "⛽ abastecimentos & combustível":
+  st.title("⛽ controle de abastecimento e combustível")
+  df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
+  tags_comb = (
+      df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
+  )
+  with st.form("form_comb"):
+    c1, c2 = st.columns(2)
+    with c1:
+      if tags_comb:
+        eq_comb = st.selectbox("equipamento / tag", tags_comb)
+      else:
+        eq_comb = st.text_input("equipamento / tag (manual)")
+      litros = st.number_input("litros", min_value=0.1, value=100.0)
+      val_tot = st.number_input("valor total (r$)", min_value=0.0, value=600.0)
+    with c2:
+      km_h = st.text_input("km ou horímetro")
+      posto = st.text_input("posto / fornecedor")
+      motorista = st.text_input("motorista / responsável")
+      dt_ab = st.date_input("data")
+    if st.form_submit_button("registrar abastecimento"):
+      cursor.execute(
+          "INSERT INTO combustivel (equipamento, litros, valor_total,"
+          " km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?, ?, ?,"
+          " ?, ?)",
+          (
+              str(eq_comb).upper(),
+              float(litros),
+              float(val_tot),
+              str(km_h),
+              posto,
+              motorista,
+              str(dt_ab),
+          ),
+      )
+      conn.commit()
+      st.success("✅ abastecimento registrado com sucesso!")
+      st.rerun()
+
+  df_c = pd.read_sql("SELECT * FROM combustivel", conn)
+  if not df_c.empty:
+    st.dataframe(df_c, use_container_width=True, hide_index=True)
+
+elif menu == "🏗️ mobilização / desmobilização":
+  st.title("🏗️ mobilização e desmobilização de obras")
+  df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
+  tags_mob = (
+      df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
+  )
+  with st.form("form_mob"):
+    c1, c2 = st.columns(2)
+    with c1:
+      if tags_mob:
+        eq_mob = st.selectbox("equipamento / tag", tags_mob)
+      else:
+        eq_mob = st.text_input("equipamento / tag (manual)")
+      tipo_mov = st.selectbox(
+          "movimentação",
+          ["mobilização (envio)", "desmobilização (retorno)", "remanejamento"],
+      )
+      destino = st.text_input("obra / destino-origem")
+    with c2:
+      resp = st.text_input("responsável")
+      dt_mob = st.date_input("data")
+      obs = st.text_input("observação")
+    if st.form_submit_button("registrar movimentação"):
+      cursor.execute(
+          "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
+          " destino_origem, responsavel, data, observacao) VALUES (?, ?, ?, ?,"
+          " ?, ?)",
+          (
+              str(eq_mob).upper(),
+              tipo_mov,
+              destino,
+              resp,
+              str(dt_mob),
+              obs,
+          ),
+      )
+      conn.commit()
+      st.success("✅ movimentação registrada com sucesso!")
+      st.rerun()
+
+  df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
+  if not df_mobs.empty:
+    st.dataframe(df_mobs, use_container_width=True, hide_index=True)
+
 elif menu == "🛠️ ordens de serviço (os)":
   st.title("🛠️ gestão unificada de ordens de serviço (os)")
-  try:
-    df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
-    tags_disponiveis = (
-        df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
-    )
-  except Exception:
-    tags_disponiveis = []
+  df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
+  tags_disponiveis = (
+      df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
+  )
 
   st.markdown("### 🟢 abertura de nova os (etapa 1)")
   with st.form("form_abertura_os", clear_on_submit=True):
@@ -392,6 +564,75 @@ elif menu == "🛠️ ordens de serviço (os)":
   else:
     st.info("nenhuma os registrada.")
 
+elif menu == "🔩 peças e ferramentas":
+  st.title("🔩 controle de peças e ferramentas")
+  with st.form("form_pecas"):
+    c1, c2 = st.columns(2)
+    with c1:
+      nome_i = st.text_input("nome da peça ou ferramenta")
+      cat = st.selectbox(
+          "categoria", ["reposição", "filtro/óleo", "ferramenta", "insumo"]
+      )
+    with c2:
+      qtd = st.number_input("quantidade", min_value=1, value=1)
+      v_unit = st.number_input("valor unitário (r$)", min_value=0.0)
+    if st.form_submit_button("adicionar peça"):
+      cursor.execute(
+          "INSERT INTO pecas (nome_item, categoria, quantidade,"
+          " valor_unitario) VALUES (?, ?, ?, ?)",
+          (nome_i, cat, qtd, v_unit),
+      )
+      conn.commit()
+      st.success("✅ peça cadastrada com sucesso!")
+      st.rerun()
+
+  df_p = pd.read_sql("SELECT * FROM pecas", conn)
+  if not df_p.empty:
+    st.dataframe(df_p, use_container_width=True, hide_index=True)
+
+elif menu == "👥 gestão de clientes":
+  st.title("👥 gestão de clientes")
+  with st.form("form_cli"):
+    c1, c2 = st.columns(2)
+    with c1:
+      nome_c = st.text_input("nome / razão social")
+      emp = st.text_input("empresa")
+      tel = st.text_input("telefone")
+    with c2:
+      doc = st.text_input("cpf / cnpj")
+      em = st.text_input("e-mail")
+      end = st.text_input("endereço")
+    if st.form_submit_button("salvar cliente"):
+      cursor.execute(
+          "INSERT INTO clientes (nome, empresa, telefone, documento, email,"
+          " endereco) VALUES (?, ?, ?, ?, ?, ?)",
+          (nome_c, emp, tel, doc, em, end),
+      )
+      conn.commit()
+      st.success("✅ cliente salvo com sucesso!")
+      st.rerun()
+
+  df_cli = pd.read_sql("SELECT * FROM clientes", conn)
+  if not df_cli.empty:
+    st.dataframe(df_cli, use_container_width=True, hide_index=True)
+
+elif menu == "🔍 consulta / busca geral":
+  st.title("🔍 consulta e histórico completo do equipamento")
+  termo = st.text_input(
+      "digite a tag, placa ou modelo para buscar todo o histórico"
+  )
+  if termo:
+    t_like = f"%{termo}%"
+    df_bv = pd.read_sql(
+        "SELECT * FROM veiculos WHERE tag_prefixo LIKE ? OR placa LIKE ? OR modelo LIKE ?",
+        conn,
+        params=(t_like, t_like, t_like),
+    )
+    if not df_bv.empty:
+      st.dataframe(df_bv, use_container_width=True, hide_index=True)
+    else:
+      st.info("nenhum equipamento encontrado.")
+
 elif menu == "⚙️ meu perfil / dados":
   st.title("⚙️ atualização de perfil")
   if usuario_atual:
@@ -403,4 +644,4 @@ elif menu == "⚙️ painel de licença (admin)":
   if not df_users.empty:
     st.dataframe(df_users, use_container_width=True, hide_index=True)
   else:
-    st.info("nenhum usuário.")
+    st.info("nenhum usuário cadastrado.")
