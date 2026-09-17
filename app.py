@@ -637,7 +637,7 @@ status_usuario_ativo = (
     True
     if modo_admin_liberado
     else (
-        usuario_atual["status"] == "Ativo"
+        str(usuario_atual.get("status", "Ativo")).strip().lower() == "ativo"
         if usuario_atual
         else False
     )
@@ -673,9 +673,13 @@ with st.sidebar:
     st.success("🔓 **modo admin enterprise ativo**")
   elif usuario_atual:
     st.info(
-        f"👤 **gestor:** {usuario_atual['nome']}\n\n⭐ **plano:**"
+        f"👤 **gestor:** {usuario_atual['nome']}\n\n⭐ **status:**"
         f" {usuario_atual['status']}"
     )
+    if not status_usuario_ativo:
+      st.warning(
+          "⚠️ **conta inativa:** modo de prestígio (leitura) habilitado."
+      )
     if st.button("🚪 encerrar sessão"):
       st.session_state["usuario_logado"] = None
       st.rerun()
@@ -766,7 +770,7 @@ if menu == "📊 visão geral":
   with col_exp1:
     st.subheader("📋 listagem geral de equipamentos")
   with col_exp2:
-    if not df_veiculos.empty:
+    if not df_veiculos.empty and (status_usuario_ativo or modo_admin_liberado):
       pdf_buf = gerar_pdf_relatorio(
           "Relatório Consolidado da Frota - Tabalmix", df_veiculos
       )
@@ -780,41 +784,52 @@ if menu == "📊 visão geral":
   if not df_veiculos.empty:
     st.dataframe(df_veiculos, use_container_width=True, hide_index=True)
 
-    # Botões de compartilhamento direto via WhatsApp e E-mail
-    st.markdown("### 📲 compartilhar relatórios e dados")
-    col_w, col_e = st.columns(2)
-    with col_w:
-      msg_whatsapp = urllib.parse.quote(
-          "Olá! Segue o resumo executivo da frota da Tabalmix Concreto gerado"
-          " via sistema Enterprise."
-      )
-      st.markdown(
-          f'<a href="https://wa.me/?text={msg_whatsapp}" target="_blank"><button'
-          ' style="background-color: #25D366; color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: bold; cursor: pointer; width: 100%;">💬 Enviar Relatório via WhatsApp</button></a>',
-          unsafe_allow_html=True,
-      )
-    with col_e:
-      assunto_email = urllib.parse.quote(
-          "Relatório Executivo de Frota - Tabalmix Concreto"
-      )
-      corpo_email = urllib.parse.quote(
-          "Prezado(a),\n\nSegue em anexo/resumo o relatório operacional da frota"
-          " gerado pelo sistema Tabalmix Concreto Enterprise.\n\nAtenciosamente,"
-          " Gestão de Frota."
-      )
-      st.markdown(
-          f'<a href="mailto:?subject={assunto_email}&body={corpo_email}"'
-          ' target="_blank"><button style="background-color: #0284c7; color:'
-          " white; border: none; border-radius: 8px; padding: 10px 20px; font-"
-          'weight: bold; cursor: pointer; width: 100%;">✉️ Enviar Relatório via'
-          " E-mail</button></a>",
-          unsafe_allow_html=True,
+    # Botões de compartilhamento direto via WhatsApp e E-mail (Apenas para Ativos/Admin)
+    if status_usuario_ativo or modo_admin_liberado:
+      st.markdown("### 📲 compartilhar relatórios e dados")
+      col_w, col_e = st.columns(2)
+      with col_w:
+        msg_whatsapp = urllib.parse.quote(
+            "Olá! Segue o resumo executivo da frota da Tabalmix Concreto gerado"
+            " via sistema Enterprise."
+        )
+        st.markdown(
+            f'<a href="https://wa.me/?text={msg_whatsapp}" target="_blank"><button'
+            ' style="background-color: #25D366; color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: bold; cursor: pointer; width: 100%;">💬 Enviar Relatório via WhatsApp</button></a>',
+            unsafe_allow_html=True,
+        )
+      with col_e:
+        assunto_email = urllib.parse.quote(
+            "Relatório Executivo de Frota - Tabalmix Concreto"
+        )
+        corpo_email = urllib.parse.quote(
+            "Prezado(a),\n\nSegue em anexo/resumo o relatório operacional da"
+            " frota gerado pelo sistema Tabalmix Concreto"
+            " Enterprise.\n\nAtenciosamente, Gestão de Frota."
+        )
+        st.markdown(
+            f'<a href="mailto:?subject={assunto_email}&body={corpo_email}"'
+            ' target="_blank"><button style="background-color: #0284c7; color:'
+            " white; border: none; border-radius: 8px; padding: 10px 20px; font-"
+            'weight: bold; cursor: pointer; width: 100%;">✉️ Enviar Relatório via'
+            " E-mail</button></a>",
+            unsafe_allow_html=True,
+        )
+    else:
+      st.info(
+          "🔒 *Recursos de exportação e compartilhamento disponíveis apenas para"
+          " contas ativas.*"
       )
   else:
     st.info("nenhum equipamento cadastrado na frota.")
 
 elif menu == "🚜 cadastro de equipamentos":
   st.title("🚜 cadastro de equipamentos e frota")
+  if not status_usuario_ativo and not modo_admin_liberado:
+    st.warning(
+        "🔒 **Acesso restrito:** sua conta está inativa. Você pode visualizar"
+        " os dados abaixo, mas o cadastro de novos itens está desativado."
+    )
   with st.form("form_frota", clear_on_submit=False):
     col1, col2 = st.columns(2)
     with col1:
@@ -842,8 +857,14 @@ elif menu == "🚜 cadastro de equipamentos":
       status = st.selectbox(
           "situação", ["Ativo", "Em Manutenção", "Parado", "Mobilizado"]
       )
-    if st.form_submit_button("cadastrar equipamento"):
-      if modelo:
+    btn_cad_eq = st.form_submit_button("cadastrar equipamento")
+    if btn_cad_eq:
+      if not status_usuario_ativo and not modo_admin_liberado:
+        st.error(
+            "⚠️ Conta inativa: você não tem permissão para cadastrar novos"
+            " equipamentos."
+        )
+      elif modelo:
         tag_final = (
             tag_prefixo.upper()
             if tag_prefixo and tag_prefixo.strip()
@@ -875,6 +896,11 @@ elif menu == "🚜 cadastro de equipamentos":
 
 elif menu == "⛽ abastecimentos & combustível":
   st.title("⛽ controle de abastecimento e combustível")
+  if not status_usuario_ativo and not modo_admin_liberado:
+    st.warning(
+        "🔒 **Acesso restrito:** sua conta está inativa. Você pode visualizar"
+        " os registros, mas novos lançamentos estão desativados."
+    )
   df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
   tags_comb = (
       df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
@@ -893,24 +919,31 @@ elif menu == "⛽ abastecimentos & combustível":
       posto = st.text_input("posto / fornecedor")
       motorista = st.text_input("motorista / responsável")
       dt_ab = st.date_input("data")
-    if st.form_submit_button("registrar abastecimento"):
-      cursor.execute(
-          "INSERT INTO combustivel (equipamento, litros, valor_total,"
-          " km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?, ?, ?,"
-          " ?, ?)",
-          (
-              str(eq_comb).upper(),
-              float(litros),
-              float(val_tot),
-              str(km_h),
-              posto,
-              motorista,
-              str(dt_ab),
-          ),
-      )
-      conn.commit()
-      st.success("✅ abastecimento registrado com sucesso!")
-      st.rerun()
+    btn_cad_comb = st.form_submit_button("registrar abastecimento")
+    if btn_cad_comb:
+      if not status_usuario_ativo and not modo_admin_liberado:
+        st.error(
+            "⚠️ Conta inativa: você não tem permissão para registrar"
+            " abastecimentos."
+        )
+      else:
+        cursor.execute(
+            "INSERT INTO combustivel (equipamento, litros, valor_total,"
+            " km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?, ?, ?,"
+            " ?, ?)",
+            (
+                str(eq_comb).upper(),
+                float(litros),
+                float(val_tot),
+                str(km_h),
+                posto,
+                motorista,
+                str(dt_ab),
+            ),
+        )
+        conn.commit()
+        st.success("✅ abastecimento registrado com sucesso!")
+        st.rerun()
 
   df_c = pd.read_sql("SELECT * FROM combustivel", conn)
   if not df_c.empty:
@@ -918,6 +951,11 @@ elif menu == "⛽ abastecimentos & combustível":
 
 elif menu == "🏗️ mobilização / desmobilização":
   st.title("🏗️ mobilização e desmobilização de obras")
+  if not status_usuario_ativo and not modo_admin_liberado:
+    st.warning(
+        "🔒 **Acesso restrito:** sua conta está inativa. O modo de prestígio"
+        " permite apenas visualização."
+    )
   df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
   tags_mob = (
       df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
@@ -944,36 +982,43 @@ elif menu == "🏗️ mobilização / desmobilização":
         type=["png", "jpg", "jpeg"],
     )
 
-    if st.form_submit_button("registrar movimentação"):
-      nome_foto = ""
-      if foto_subida is not None:
-        os.makedirs("uploads_checklists", exist_ok=True)
-        nome_foto = (
-            "uploads_checklists/"
-            f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{foto_subida.name}"
+    btn_cad_mob = st.form_submit_button("registrar movimentação")
+    if btn_cad_mob:
+      if not status_usuario_ativo and not modo_admin_liberado:
+        st.error(
+            "⚠️ Conta inativa: você não tem permissão para registrar"
+            " movimentações."
         )
-        with open(nome_foto, "wb") as f:
-          f.write(foto_subida.getbuffer())
+      else:
+        nome_foto = ""
+        if foto_subida is not None:
+          os.makedirs("uploads_checklists", exist_ok=True)
+          nome_foto = (
+              "uploads_checklists/"
+              f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{foto_subida.name}"
+          )
+          with open(nome_foto, "wb") as f:
+            f.write(foto_subida.getbuffer())
 
-      cursor.execute(
-          "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
-          " destino_origem, responsavel, data, observacao, foto_checklist) VALUES"
-          " (?, ?, ?, ?, ?, ?, ?)",
-          (
-              str(eq_mob).upper(),
-              tipo_mov,
-              destino,
-              resp,
-              str(dt_mob),
-              obs,
-              nome_foto,
-          ),
-      )
-      conn.commit()
-      st.success(
-          "✅ movimentação e check-list fotográfico registrados com sucesso!"
-      )
-      st.rerun()
+        cursor.execute(
+            "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
+            " destino_origem, responsavel, data, observacao, foto_checklist)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                str(eq_mob).upper(),
+                tipo_mov,
+                destino,
+                resp,
+                str(dt_mob),
+                obs,
+                nome_foto,
+            ),
+        )
+        conn.commit()
+        st.success(
+            "✅ movimentação e check-list fotográfico registrados com sucesso!"
+        )
+        st.rerun()
 
   df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
   if not df_mobs.empty:
@@ -989,6 +1034,11 @@ elif menu == "🏗️ mobilização / desmobilização":
 
 elif menu == "🛠️ ordens de serviço (os)":
   st.title("🛠️ gestão unificada de ordens de serviço (os)")
+  if not status_usuario_ativo and not modo_admin_liberado:
+    st.warning(
+        "🔒 **Acesso restrito:** sua conta está inativa. Visualização de OS"
+        " liberada, edição bloqueada."
+    )
   df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
   tags_disponiveis = (
       df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
@@ -1011,7 +1061,7 @@ elif menu == "🛠️ ordens de serviço (os)":
       )
       horimetro_ab = st.text_input("horímetro / km na abertura")
       origem_f = st.selectbox(
-          "origem da falha", ["falha na operação", "falha no equipamento"]
+          "origem da falha", ["falha na operação", "falha na equipamento"]
       )
     with c2:
       data_ab = st.date_input("data de abertura", value=datetime.now().date())
@@ -1022,31 +1072,37 @@ elif menu == "🛠️ ordens de serviço (os)":
           "descrição do problema apresentado pelo motorista"
       )
 
-    if st.form_submit_button("abrir nova os"):
-      tag_final_os = (
-          str(tag_os).upper()
-          if tag_os and str(tag_os).strip()
-          else "EQ-GERAL"
-      )
-      cursor.execute(
-          "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao,"
-          " horimetro_km_manut, origem_falha, descricao_problema,"
-          " data_abertura, hora_abertura, status_os, custo, custo_pecas,"
-          " mao_de_obra) VALUES (?, ?, ?, ?, ?, ?, ?, 'aberta', 0.0, 0.0,"
-          " 0.0)",
-          (
-              tag_final_os,
-              tipo_manut,
-              horimetro_ab,
-              origem_f,
-              desc_prob,
-              str(data_ab),
-              hora_ab,
-          ),
-      )
-      conn.commit()
-      st.success("✅ os aberta com sucesso!")
-      st.rerun()
+    btn_abrir_os = st.form_submit_button("abrir nova os")
+    if btn_abrir_os:
+      if not status_usuario_ativo and not modo_admin_liberado:
+        st.error(
+            "⚠️ Conta inativa: você não tem permissão para abrir novas OS."
+        )
+      else:
+        tag_final_os = (
+            str(tag_os).upper()
+            if tag_os and str(tag_os).strip()
+            else "EQ-GERAL"
+        )
+        cursor.execute(
+            "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao,"
+            " horimetro_km_manut, origem_falha, descricao_problema,"
+            " data_abertura, hora_abertura, status_os, custo, custo_pecas,"
+            " mao_de_obra) VALUES (?, ?, ?, ?, ?, ?, ?, 'aberta', 0.0, 0.0,"
+            " 0.0)",
+            (
+                tag_final_os,
+                tipo_manut,
+                horimetro_ab,
+                origem_f,
+                desc_prob,
+                str(data_ab),
+                hora_ab,
+            ),
+        )
+        conn.commit()
+        st.success("✅ os aberta com sucesso!")
+        st.rerun()
 
   st.divider()
   st.subheader("📋 ordens de serviço cadastradas")
@@ -1083,48 +1139,58 @@ elif menu == "🛠️ ordens de serviço (os)":
 
         btn_fechar_os = st.form_submit_button("encerrar os e gerar custos")
         if btn_fechar_os:
-          custo_total = float(custo_pecas_f) + float(mao_obra_f)
-          cursor.execute(
-              "UPDATE manutencoes SET oficina = ?, tecnico_mecanico = ?,"
-              " pecas_utilizadas = ?, custo_pecas = ?, mao_de_obra = ?,"
-              " custo = ?, data_fechamento = ?, hora_fechamento = ?,"
-              " status_os = 'fechada' WHERE id = ?",
-              (
-                  oficina_f,
-                  tecnico_f,
-                  pecas_f,
-                  float(custo_pecas_f),
-                  float(mao_obra_f),
-                  custo_total,
-                  str(data_fec),
-                  hora_fec,
-                  os_selecionada,
-              ),
-          )
-          conn.commit()
-          st.success(
-              f"✅ os #{os_selecionada} fechada com sucesso! custo total:"
-              f" r$ {custo_total:,.2f}"
-          )
-          st.rerun()
+          if not status_usuario_ativo and not modo_admin_liberado:
+            st.error(
+                "⚠️ Conta inativa: você não tem permissão para encerrar OS."
+            )
+          else:
+            custo_total = float(custo_pecas_f) + float(mao_obra_f)
+            cursor.execute(
+                "UPDATE manutencoes SET oficina = ?, tecnico_mecanico = ?,"
+                " pecas_utilizadas = ?, custo_pecas = ?, mao_de_obra = ?,"
+                " custo = ?, data_fechamento = ?, hora_fechamento = ?,"
+                " status_os = 'fechada' WHERE id = ?",
+                (
+                    oficina_f,
+                    tecnico_f,
+                    pecas_f,
+                    float(custo_pecas_f),
+                    float(mao_obra_f),
+                    custo_total,
+                    str(data_fec),
+                    hora_fec,
+                    os_selecionada,
+                ),
+            )
+            conn.commit()
+            st.success(
+                f"✅ os #{os_selecionada} fechada com sucesso! custo total:"
+                f" r$ {custo_total:,.2f}"
+            )
+            st.rerun()
       else:
         st.info("não há ordens de serviço com status 'aberta' para encerrar.")
 
     for index, row in df_os.iterrows():
       if str(row.get("status_os")) == "fechada":
-        pdf_os_buffer = gerar_pdf_os_tecnica(row)
-        st.download_button(
-            label=f"📄 baixar pdf da os #{row['id']}",
-            data=pdf_os_buffer,
-            file_name=f"ordem_servico_{row['id']}.pdf",
-            mime="application/pdf",
-            key=f"dl_os_{row['id']}",
-        )
+        if status_usuario_ativo or modo_admin_liberado:
+          pdf_os_buffer = gerar_pdf_os_tecnica(row)
+          st.download_button(
+              label=f"📄 baixar pdf da os #{row['id']}",
+              data=pdf_os_buffer,
+              file_name=f"ordem_servico_{row['id']}.pdf",
+              mime="application/pdf",
+              key=f"dl_os_{row['id']}",
+          )
   else:
     st.info("nenhuma os registrada.")
 
 elif menu == "🔩 peças e ferramentas":
   st.title("🔩 controle de peças e ferramentas")
+  if not status_usuario_ativo and not modo_admin_liberado:
+    st.warning(
+        "🔒 **Acesso restrito:** conta inativa. Visualização permitida."
+    )
   with st.form("form_pecas"):
     c1, c2 = st.columns(2)
     with c1:
@@ -1135,15 +1201,21 @@ elif menu == "🔩 peças e ferramentas":
     with c2:
       qtd = st.number_input("quantidade", min_value=1, value=1)
       v_unit = st.number_input("valor unitário (r$)", min_value=0.0)
-    if st.form_submit_button("adicionar peça"):
-      cursor.execute(
-          "INSERT INTO pecas (nome_item, categoria, quantidade,"
-          " valor_unitario) VALUES (?, ?, ?, ?)",
-          (nome_i, cat, qtd, v_unit),
-      )
-      conn.commit()
-      st.success("✅ peça cadastrada com sucesso!")
-      st.rerun()
+    btn_cad_peca = st.form_submit_button("adicionar peça")
+    if btn_cad_peca:
+      if not status_usuario_ativo and not modo_admin_liberado:
+        st.error(
+            "⚠️ Conta inativa: você não tem permissão para cadastrar peças."
+        )
+      else:
+        cursor.execute(
+            "INSERT INTO pecas (nome_item, categoria, quantidade,"
+            " valor_unitario) VALUES (?, ?, ?, ?)",
+            (nome_i, cat, qtd, v_unit),
+        )
+        conn.commit()
+        st.success("✅ peça cadastrada com sucesso!")
+        st.rerun()
 
   df_p = pd.read_sql("SELECT * FROM pecas", conn)
   if not df_p.empty:
@@ -1151,6 +1223,11 @@ elif menu == "🔩 peças e ferramentas":
 
 elif menu == "👥 gestão de clientes":
   st.title("👥 gestão de clientes")
+  if not status_usuario_ativo and not modo_admin_liberado:
+    st.warning(
+        "🔒 **Acesso restrito:** conta inativa. Visualização de clientes"
+        " liberada."
+    )
   with st.form("form_cli"):
     c1, c2 = st.columns(2)
     with c1:
@@ -1161,15 +1238,21 @@ elif menu == "👥 gestão de clientes":
       doc = st.text_input("cpf / cnpj")
       em = st.text_input("e-mail")
       end = st.text_input("endereço")
-    if st.form_submit_button("salvar cliente"):
-      cursor.execute(
-          "INSERT INTO clientes (nome, empresa, telefone, documento, email,"
-          " endereco) VALUES (?, ?, ?, ?, ?, ?)",
-          (nome_c, emp, tel, doc, em, end),
-      )
-      conn.commit()
-      st.success("✅ cliente salvo com sucesso!")
-      st.rerun()
+    btn_cad_cli = st.form_submit_button("salvar cliente")
+    if btn_cad_cli:
+      if not status_usuario_ativo and not modo_admin_liberado:
+        st.error(
+            "⚠️ Conta inativa: você não tem permissão para cadastrar clientes."
+        )
+      else:
+        cursor.execute(
+            "INSERT INTO clientes (nome, empresa, telefone, documento, email,"
+            " endereco) VALUES (?, ?, ?, ?, ?, ?)",
+            (nome_c, emp, tel, doc, em, end),
+        )
+        conn.commit()
+        st.success("✅ cliente salvo com sucesso!")
+        st.rerun()
 
   df_cli = pd.read_sql("SELECT * FROM clientes", conn)
   if not df_cli.empty:
