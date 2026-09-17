@@ -24,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Corporativa Avançada (Menu Lateral Escuro Sofisticado + Painel Central Claro Profissional) + Blindagem Anti-F12
+# Estilização Visual Corporativa Blindada Contra Dark Mode do Celular (Fundo Claro Fixo, Campos Brancos e Menu Escuro) + Blindagem Anti-F12
 st.markdown(
     """
     <style>
@@ -103,12 +103,28 @@ st.markdown(
     div.stTextInput > div > div > input, 
     div.stNumberInput > div > div > input, 
     div.stSelectbox > div > div > div,
-    div.stTextArea > div > div > textarea {
+    div.stTextArea > div > div > textarea,
+    div[data-baseweb="select"] > div {
         background-color: #ffffff !important;
         color: #0f172a !important;
         border: 1px solid #cbd5e1 !important;
         border-radius: 8px !important;
         min-height: 40px !important;
+    }
+    /* Forçar itens de dropdown e dataframes com fundo claro legível */
+    div[data-baseweb="menu"] {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+    }
+    div[data-baseweb="menu"] div {
+        color: #0f172a !important;
+    }
+    div[data-testid="stDataFrame"] {
+        background-color: #ffffff !important;
+        border-radius: 12px;
+        padding: 10px;
+        border: 1px solid #cbd5e1;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
     }
     .stButton button {
         background: linear-gradient(135deg, #1b7a3e 0%, #12542a 100%) !important;
@@ -124,13 +140,6 @@ st.markdown(
         background: linear-gradient(135deg, #12542a 0%, #0a381c 100%) !important;
         box-shadow: 0 6px 20px rgba(27, 122, 62, 0.4);
         transform: translateY(-1px);
-    }
-    div[data-testid="stDataFrame"] {
-        background-color: #ffffff;
-        border-radius: 12px;
-        padding: 10px;
-        border: 1px solid #cbd5e1;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
     }
     </style>
     <script>
