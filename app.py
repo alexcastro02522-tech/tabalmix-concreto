@@ -285,15 +285,7 @@ def init_db():
             observacoes TEXT
         )
     """)
-  try:
-    cursor.execute("ALTER TABLE veiculos ADD COLUMN tag_prefixo TEXT")
-  except Exception:
-    pass
-  try:
-    cursor.execute("ALTER TABLE veiculos ADD COLUMN operador_condutor TEXT")
-  except Exception:
-    pass
-
+  
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS manutencoes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -315,6 +307,31 @@ def init_db():
             status_os TEXT
         )
     """)
+  
+  # Garantir compatibilidade de colunas caso a tabela já exista sem elas
+  for col_sql in [
+      "ALTER TABLE manutencoes ADD COLUMN tag_prefixo TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN tipo_manutencao TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN horimetro_km_manut TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN origem_falha TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN descricao_problema TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN data_abertura TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN hora_abertura TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN pecas_utilizadas TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN custo_pecas REAL",
+      "ALTER TABLE manutencoes ADD COLUMN mao_de_obra REAL",
+      "ALTER TABLE manutencoes ADD COLUMN custo REAL",
+      "ALTER TABLE manutencoes ADD COLUMN oficina TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN tecnico_mecanico TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN data_fechamento TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN hora_fechamento TEXT",
+      "ALTER TABLE manutencoes ADD COLUMN status_os TEXT"
+  ]:
+    try:
+      cursor.execute(col_sql)
+    except Exception:
+      pass
+
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS pecas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -759,11 +776,11 @@ if menu == "📊 Visão Geral":
   df_comb = pd.read_sql("SELECT * FROM combustivel", conn)
 
   total_frota = len(df_veiculos)
-  total_custo = df_manut["custo"].sum() if not df_manut.empty else 0.0
+  total_custo = df_manut["custo"].sum() if not df_manut.empty and "custo" in df_manut.columns else 0.0
   liberado_pecas = (
-      df_manut["custo_pecas"].sum() if not df_manut.empty else 0.0
+      df_manut["custo_pecas"].sum() if not df_manut.empty and "custo_pecas" in df_manut.columns else 0.0
   )
-  liberado_mo = df_manut["mao_de_obra"].sum() if not df_manut.empty else 0.0
+  liberado_mo = df_manut["mao_de_obra"].sum() if not df_manut.empty and "mao_de_obra" in df_manut.columns else 0.0
   total_combustivel = (
       df_comb["valor_total"].sum() if not df_comb.empty else 0.0
   )
@@ -1202,38 +1219,44 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
           if not os_row_data.empty:
             os_atual = os_row_data.iloc[0]
             tag_eq_os = os_atual.get("tag_prefixo") or os_atual.get("equipamento") or "N/D"
+            val_dt_ab = os_atual.get("data_abertura") or "N/D"
+            val_hr_ab = os_atual.get("hora_abertura") or "N/D"
+            val_tp_man = os_atual.get("tipo_manutencao") or "Preventiva"
+            val_desc = os_atual.get("descricao_problema") or ""
+            val_st_os = os_atual.get("status_os") or "Aberta"
+
             with st.form("form_fechamento_os"):
               st.info(
                   f"Editando OS #{os_atual['id']} | Equipamento:"
                   f" {tag_eq_os} | Aberta em:"
-                  f" {os_atual['data_abertura']} às {os_atual['hora_abertura']}"
+                  f" {val_dt_ab} às {val_hr_ab}"
               )
               fc1, fc2 = st.columns(2)
               with fc1:
                 pecas_util = st.text_input(
                     "Peças Utilizadas",
-                    value=str(os_atual["pecas_utilizadas"] or ""),
+                    value=str(os_atual.get("pecas_utilizadas") or ""),
                 )
                 v_pecas = st.number_input(
                     "Valor Total das Peças (R$)",
                     min_value=0.0,
-                    value=float(os_atual["custo_pecas"] or 0.0),
+                    value=float(os_atual.get("custo_pecas") or 0.0),
                     format="%.2f",
                 )
                 v_mo = st.number_input(
                     "Valor da Mão de Obra (R$)",
                     min_value=0.0,
-                    value=float(os_atual["mao_de_obra"] or 0.0),
+                    value=float(os_atual.get("mao_de_obra") or 0.0),
                     format="%.2f",
                 )
                 oficina_resp = st.text_input(
                     "Oficina Responsável",
-                    value=str(os_atual["oficina"] or ""),
+                    value=str(os_atual.get("oficina") or ""),
                 )
               with fc2:
                 tec_resp = st.text_input(
                     "Técnico / Mecânico Responsável",
-                    value=str(os_atual["tecnico_mecanico"] or ""),
+                    value=str(os_atual.get("tecnico_mecanico") or ""),
                 )
                 dt_fech = st.date_input("Data de Fechamento")
                 hr_fech = st.text_input(
@@ -1272,13 +1295,13 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
             texto_msg = (
                 f"*TABALMIX CONCRETO - RELATÓRIO DE OS #{os_atual['id']}*\n\n"
                 f"🚜 *Equipamento:* {tag_eq_os}\n"
-                f"🔧 *Tipo:* {os_atual['tipo_manutencao']}\n"
-                f"📋 *Status:* {os_atual['status_os']}\n"
-                f"⚠️ *Problema:* {os_atual['descricao_problema']}\n"
-                f"🔩 *Peças:* {os_atual['pecas_utilizadas'] or 'Nenhuma'}\n"
-                f"💰 *Custo Total:* R$ {(os_atual['custo'] or 0.0):,.2f}\n"
-                f"📅 *Fechamento:* {os_atual['data_fechamento']} às"
-                f" {os_atual['hora_fechamento']}"
+                f"🔧 *Tipo:* {val_tp_man}\n"
+                f"📋 *Status:* {val_st_os}\n"
+                f"⚠️ *Problema:* {val_desc}\n"
+                f"🔩 *Peças:* {os_atual.get('pecas_utilizadas') or 'Nenhuma'}\n"
+                f"💰 *Custo Total:* R$ {(os_atual.get('custo') or 0.0):,.2f}\n"
+                f"📅 *Fechamento:* {os_atual.get('data_fechamento') or '-'} às"
+                f" {os_atual.get('hora_fechamento') or '-'}"
             )
             encoded_whatsapp = urllib.parse.quote(texto_msg)
             url_whatsapp = f"https://api.whatsapp.com/send?text={encoded_whatsapp}"
