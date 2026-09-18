@@ -25,61 +25,73 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Enterprise Pro Style
+# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE (UX/UI World Class - Minimalista, Fluido e Sofisticado)
 st.markdown(
     """
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
     header[data-testid="stHeader"] {
         background: transparent !important;
     }
     .block-container {
-        padding-top: 1.5rem !important;
-        padding-bottom: 2rem !important;
+        padding-top: 2rem !important;
+        padding-bottom: 3rem !important;
+        max-width: 100% !important;
     }
     [data-testid="stSidebar"] {
-        min-width: 310px !important;
-        width: 310px !important;
-        background: #f1f5f9 !important;
-        border-right: 1px solid #cbd5e1;
-        padding-top: 15px;
+        min-width: 320px !important;
+        width: 320px !important;
+        background: #f8fafc !important;
+        border-right: 1px solid #e2e8f0;
+        padding-top: 20px;
     }
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label {
         color: #1e293b !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
     .stApp {
-        background: #f8fafc !important;
+        background: #f4f6f9 !important;
         color: #0f172a !important;
-        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
-    h1, h2, h3 {
+    h1, h2, h3, h4 {
         color: #0f172a !important;
         font-weight: 800;
         letter-spacing: -0.8px;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
     [data-testid="stSidebar"] .stRadio label {
-        color: #1e293b !important;
+        color: #334155 !important;
         font-weight: 600;
         font-size: 13.5px;
-        padding: 10px 14px;
-        border-radius: 10px;
+        padding: 11px 16px;
+        border-radius: 12px;
         background: #ffffff !important;
-        margin-bottom: 6px;
-        border: 1px solid #cbd5e1;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        margin-bottom: 8px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
     [data-testid="stSidebar"] .stRadio label:hover {
-        background: #e2e8f0 !important;
+        background: #ecfdf5 !important;
         border-color: #059669;
-        color: #059669 !important;
+        color: #047857 !important;
         transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(5,150,105,0.08);
     }
     div[data-testid="stMetric"] {
         background: #ffffff !important;
         border: 1px solid #e2e8f0 !important;
-        border-left: 5px solid #10b981 !important;
-        padding: 16px !important;
-        border-radius: 14px !important;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+        border-left: 5px solid #059669 !important;
+        padding: 18px !important;
+        border-radius: 16px !important;
+        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
+        transition: transform 0.2s ease;
+    }
+    div[data-testid="stMetric"]:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08);
     }
     div[data-testid="stMetric"] label {
         color: #64748b !important;
@@ -90,8 +102,8 @@ st.markdown(
     }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
         color: #0f172a !important;
-        font-size: 24px !important;
-        font-weight: 900 !important;
+        font-size: 26px !important;
+        font-weight: 800 !important;
     }
     div.stTextInput > div > div > input, 
     div.stNumberInput > div > div > input, 
@@ -101,8 +113,15 @@ st.markdown(
         background-color: #ffffff !important;
         color: #0f172a !important;
         border: 1px solid #cbd5e1 !important;
-        border-radius: 10px !important;
-        min-height: 42px !important;
+        border-radius: 12px !important;
+        min-height: 44px !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+    }
+    div.stTextInput > div > div > input:focus, 
+    div.stNumberInput > div > div > input:focus,
+    div.stTextArea > div > div > textarea:focus {
+        border-color: #059669 !important;
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15) !important;
     }
     div[data-baseweb="menu"], ul[data-baseweb="menu"], li[data-baseweb="option"] {
         background-color: #ffffff !important;
@@ -110,25 +129,45 @@ st.markdown(
     }
     div[data-testid="stDataFrame"], .stDataFrame {
         background-color: #ffffff !important;
-        border-radius: 14px;
-        padding: 12px;
+        border-radius: 16px;
+        padding: 16px;
         border: 1px solid #e2e8f0;
-        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+        box-shadow: 0 10px 30px -5px rgba(0,0,0,0.04);
     }
     .stButton button {
         background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
         color: white !important;
         font-weight: 700;
-        border-radius: 10px;
+        border-radius: 12px;
         border: none;
-        padding: 0.6rem 1.8rem;
-        box-shadow: 0 4px 14px rgba(5, 150, 105, 0.35);
+        padding: 0.65rem 1.8rem;
+        box-shadow: 0 6px 16px rgba(5, 150, 105, 0.3);
         transition: all 0.25s ease-in-out;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
     .stButton button:hover {
-        background: linear-gradient(135deg, #047857 100%, #065f46 100%) !important;
-        box-shadow: 0 6px 20px rgba(5, 150, 105, 0.5);
+        background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
+        box-shadow: 0 8px 22px rgba(5, 150, 105, 0.45);
         transform: translateY(-2px);
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: #e2e8f0;
+        padding: 6px;
+        border-radius: 14px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 40px;
+        border-radius: 10px;
+        color: #334155;
+        font-weight: 600;
+        font-size: 13px;
+        border: none !important;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #ffffff !important;
+        color: #047857 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
     </style>
 """,
@@ -613,22 +652,22 @@ except Exception:
   pass
 
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
-  col_l1, col_l2, col_l3 = st.columns([0.2, 3.6, 0.2])
+  col_l1, col_l2, col_l3 = st.columns([0.15, 3.7, 0.15])
   with col_l2:
     try:
       with open("caminhoes.jpg", "rb") as image_file:
         encoded_logo_login = base64.b64encode(image_file.read()).decode()
       st.markdown(
           f"""
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 20px; padding: 30px; text-align: center; box-shadow: 0 20px 40px rgba(5,150,105,0.2); margin-top: 10px; margin-bottom: 20px; color: white;">
-                    <div style="border-radius: 14px; overflow: hidden; max-height: 120px; border: 3px solid white; margin-bottom: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.15);">
-                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 115px; object-fit: cover; display: block;">
+                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 24px; padding: 35px; text-align: center; box-shadow: 0 25px 50px rgba(5,150,105,0.25); margin-top: 15px; margin-bottom: 25px; color: white;">
+                    <div style="border-radius: 16px; overflow: hidden; max-height: 130px; border: 3px solid rgba(255,255,255,0.8); margin-bottom: 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 125px; object-fit: cover; display: block;">
                     </div>
-                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; padding: 4px 16px; margin-bottom: 10px;">
-                        <span style="color: white; font-size: 11.5px; font-weight: 800; letter-spacing: 1.2px;">🛡️ PLATAFORMA ENTERPRISE CERTIFICADA</span>
+                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; padding: 4px 18px; margin-bottom: 12px;">
+                        <span style="color: white; font-size: 11px; font-weight: 800; letter-spacing: 1.5px;">🛡️ PLATAFORMA ENTERPRISE CERTIFICADA</span>
                     </div>
-                    <h1 style="color: white !important; margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.5px;">tabalmix concreto</h1>
-                    <p style="color: #e2e8f0; font-size: 12px; margin: 6px 0 2px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">sistema inteligente de frotas, obras e oficina pro</p>
+                    <h1 style="color: white !important; margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.8px;">tabalmix concreto</h1>
+                    <p style="color: #e2e8f0; font-size: 12.5px; margin: 6px 0 2px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">sistema inteligente de frotas, obras e oficina pro</p>
                     <p style="color: #cbd5e1; font-size: 10px; margin: 0; font-style: italic;">powered by castro tech</p>
                 </div>
             """,
@@ -637,24 +676,24 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     except Exception:
       st.markdown(
           """
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 20px; padding: 30px; text-align: center; box-shadow: 0 20px 40px rgba(5,150,105,0.2); margin-top: 10px; margin-bottom: 20px; color: white;">
-                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; padding: 4px 16px; margin-bottom: 10px;">
-                        <span style="color: white; font-size: 11.5px; font-weight: 800; letter-spacing: 1.2px;">🛡️ PLATAFORMA ENTERPRISE CERTIFICADA</span>
+                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 24px; padding: 35px; text-align: center; box-shadow: 0 25px 50px rgba(5,150,105,0.25); margin-top: 15px; margin-bottom: 25px; color: white;">
+                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; padding: 4px 18px; margin-bottom: 12px;">
+                        <span style="color: white; font-size: 11px; font-weight: 800; letter-spacing: 1.5px;">🛡️ PLATAFORMA ENTERPRISE CERTIFICADA</span>
                     </div>
-                    <h1 style="color: white !important; margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.5px;">tabalmix concreto</h1>
-                    <p style="color: #e2e8f0; font-size: 12px; margin: 6px 0 2px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">sistema inteligente de frotas, obras e oficina pro</p>
+                    <h1 style="color: white !important; margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.8px;">tabalmix concreto</h1>
+                    <p style="color: #e2e8f0; font-size: 12.5px; margin: 6px 0 2px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">sistema inteligente de frotas, obras e oficina pro</p>
                     <p style="color: #cbd5e1; font-size: 10px; margin: 0; font-style: italic;">powered by castro tech</p>
                 </div>
             """,
           unsafe_allow_html=True,
       )
 
-    # VITRINE DE VANTAGENS E PLANOS POR CARGO (COM COLUNAS NATIVAS DO STREAMLIT PARA PERFEITA RENDERIZAÇÃO)
+    # VITRINE DE VANTAGENS E PLANOS POR CARGO (DESIGN ULTRA SOFISTICADO)
     st.markdown(
         """
-        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center;">
-            <h3 style="color: #0f172a !important; font-size: 16px; margin-top: 0; font-weight: 800;">🌟 Vantagens e Recursos Exclusivos por Função na Obra</h3>
-            <p style="font-size: 12.5px; color: #475569; margin-bottom: 16px;">Conheça o superpoder de cada plano corporativo integrado para a sua equipe:</p>
+        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 24px; margin-bottom: 25px; box-shadow: 0 10px 35px rgba(0,0,0,0.04); text-align: center;">
+            <h3 style="color: #0f172a !important; font-size: 17px; margin-top: 0; font-weight: 800;">🌟 Vantagens e Recursos Exclusivos por Função na Obra</h3>
+            <p style="font-size: 13px; color: #475569; margin-bottom: 18px;">Conheça o superpoder de cada plano corporativo integrado para a sua equipe:</p>
         </div>
         """,
         unsafe_allow_html=True,
@@ -664,18 +703,18 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     with v1:
       st.markdown(
           """
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #059669; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-                <span style="color: #065f46; font-size: 14px; font-weight: bold;">👑 Alta Gestão & Diretoria</span>
-                <p style="font-size: 12px; color: #334155; margin: 6px 0 0 0;">Visão global da frota, relatórios executivos em PDF e recepção em tempo real dos <b>Alertas SOS</b> de pânico em campo.</p>
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #059669; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.03);">
+                <span style="color: #065f46; font-size: 14.5px; font-weight: 700;">👑 Alta Gestão & Diretoria</span>
+                <p style="font-size: 12px; color: #334155; margin: 6px 0 0 0; line-height: 1.5;">Visão global da frota, relatórios executivos em PDF e recepção em tempo real dos <b>Alertas SOS</b> de pânico em campo.</p>
             </div>
             """,
           unsafe_allow_html=True,
       )
       st.markdown(
           """
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #d97706; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-                <span style="color: #b45309; font-size: 14px; font-weight: bold;">🛠️ Oficina & Manutenção</span>
-                <p style="font-size: 12px; color: #334155; margin: 6px 0 0 0;">Gestão ágil de Ordens de Serviço (OS), controle detalhado de estoque de peças e laudos de custos mecânicos.</p>
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #d97706; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.03);">
+                <span style="color: #b45309; font-size: 14.5px; font-weight: 700;">🛠️ Oficina & Manutenção</span>
+                <p style="font-size: 12px; color: #334155; margin: 6px 0 0 0; line-height: 1.5;">Gestão ágil de Ordens de Serviço (OS), controle detalhado de estoque de peças e laudos de custos mecânicos.</p>
             </div>
             """,
           unsafe_allow_html=True,
@@ -684,18 +723,18 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     with v2:
       st.markdown(
           """
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #0284c7; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-                <span style="color: #0369a1; font-size: 14px; font-weight: bold;">👷 Segurança do Trabalho (SST)</span>
-                <p style="font-size: 12px; color: #334155; margin: 6px 0 0 0;">Conformidade regulamentada, vistorias fotográficas e emissão rápida de laudos de <b>Check-list de Mobilização</b>.</p>
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #0284c7; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.03);">
+                <span style="color: #0369a1; font-size: 14.5px; font-weight: 700;">👷 Segurança do Trabalho (SST)</span>
+                <p style="font-size: 12px; color: #334155; margin: 6px 0 0 0; line-height: 1.5;">Conformidade regulamentada, vistorias fotográficas e emissão rápida de laudos de <b>Check-list de Mobilização</b>.</p>
             </div>
             """,
           unsafe_allow_html=True,
       )
       st.markdown(
           """
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #7c3aed; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
-                <span style="color: #6d28d9; font-size: 14px; font-weight: bold;">🚜 Operacional de Campo</span>
-                <p style="font-size: 12px; color: #334155; margin: 6px 0 0 0;">Praticidade diária, registros rápidos de abastecimento, chat integrado e acionamento instantâneo do <b>Botão SOS</b>.</p>
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #7c3aed; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.03);">
+                <span style="color: #6d28d9; font-size: 14.5px; font-weight: 700;">🚜 Operacional de Campo</span>
+                <p style="font-size: 12px; color: #334155; margin: 6px 0 0 0; line-height: 1.5;">Praticidade diária, registros rápidos de abastecimento, chat integrado e acionamento instantâneo do <b>Botão SOS</b>.</p>
             </div>
             """,
           unsafe_allow_html=True,
@@ -710,8 +749,8 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
 
     with tab_login:
       st.markdown(
-          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>acesse"
-          " sua conta corporativa:</p>",
+          "<p style='font-size: 13.5px; color: #475569; margin-top: 12px; font-weight:"
+          " 600;'>acesse sua conta corporativa:</p>",
           unsafe_allow_html=True,
       )
       with st.form("form_login"):
@@ -768,8 +807,9 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
 
     with tab_cadastro:
       st.markdown(
-          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>cadastro"
-          " de novo usuário e atribuição de plano por cargo:</p>",
+          "<p style='font-size: 13.5px; color: #475569; margin-top: 12px; font-weight:"
+          " 600;'>cadastro de novo usuário e atribuição de plano por"
+          " cargo:</p>",
           unsafe_allow_html=True,
       )
       with st.form("form_novo_cadastro"):
@@ -828,8 +868,8 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
 
     with tab_recuperar:
       st.markdown(
-          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>recuperação"
-          " rápida de credenciais:</p>",
+          "<p style='font-size: 13.5px; color: #475569; margin-top: 12px; font-weight:"
+          " 600;'>recuperação rápida de credenciais:</p>",
           unsafe_allow_html=True,
       )
       with st.form("form_recuperar"):
@@ -851,8 +891,8 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
 
     with tab_pin:
       st.markdown(
-          "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>acesso"
-          " instantâneo via pin (4 dígitos) na obra:</p>",
+          "<p style='font-size: 13.5px; color: #475569; margin-top: 12px; font-weight:"
+          " 600;'>acesso instantâneo via pin (4 dígitos) na obra:</p>",
           unsafe_allow_html=True,
       )
       with st.form("form_pin"):
@@ -949,10 +989,10 @@ with st.sidebar:
       encoded_logo_side = base64.b64encode(image_file.read()).decode()
     st.markdown(
         f"""
-            <div style="text-align: center; margin-bottom: 12px;">
-                <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 85px; object-fit: cover; border-radius: 10px; border: 1px solid #059669; margin-bottom: 8px;">
-                <div style="background: #d1fae5; border: 1px solid #059669; border-radius: 8px; padding: 4px; text-align: center;">
-                    <span style="color: #065f46; font-size: 10.5px; font-weight: 800; letter-spacing: 0.5px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
+            <div style="text-align: center; margin-bottom: 15px;">
+                <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 90px; object-fit: cover; border-radius: 12px; border: 1.5px solid #059669; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.06);">
+                <div style="background: #d1fae5; border: 1px solid #059669; border-radius: 10px; padding: 6px; text-align: center;">
+                    <span style="color: #065f46; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
                 </div>
             </div>
         """,
@@ -961,8 +1001,8 @@ with st.sidebar:
   except Exception:
     st.markdown(
         """
-            <div style="background: #d1fae5; border: 1px solid #059669; border-radius: 8px; padding: 6px; text-align: center; margin-bottom: 12px;">
-                <span style="color: #065f46; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
+            <div style="background: #d1fae5; border: 1px solid #059669; border-radius: 10px; padding: 8px; text-align: center; margin-bottom: 15px;">
+                <span style="color: #065f46; font-size: 11.5px; font-weight: 800; letter-spacing: 0.5px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
             </div>
         """,
         unsafe_allow_html=True,
@@ -973,10 +1013,10 @@ with st.sidebar:
   elif usuario_atual:
     st.markdown(
         f"""
-            <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; margin-bottom: 10px;">
-                <p style="margin: 0; font-weight: bold; color: #0f172a;">👤 {usuario_atual['apelido']}</p>
-                <p style="margin: 2px 0 2px 0; font-size: 11px; color: #047857; font-weight: 700;">{usuario_atual['cargo']}</p>
-                <span style="color: #059669; font-weight: bold; font-size: 11.5px;">🟢 Sessão Fixa na Obra</span>
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                <p style="margin: 0; font-weight: bold; color: #0f172a; font-size: 14px;">👤 {usuario_atual['apelido']}</p>
+                <p style="margin: 3px 0 4px 0; font-size: 11.5px; color: #047857; font-weight: 700;">{usuario_atual['cargo']}</p>
+                <span style="color: #059669; font-weight: bold; font-size: 11px; background: #ecfdf5; padding: 2px 8px; border-radius: 6px; display: inline-block;">🟢 Sessão Fixa na Obra</span>
             </div>
         """,
         unsafe_allow_html=True,
@@ -1102,7 +1142,7 @@ if menu == "📊 visão geral":
         )
         st.markdown(
             f'<a href="https://wa.me/?text={msg_whatsapp}" target="_blank"><button'
-            ' style="background-color: #25D366; color: white; border: none; border-radius: 8px; padding: 10px 20px; font-weight: bold; cursor: pointer; width: 100%;">💬 Enviar Relatório via WhatsApp</button></a>',
+            ' style="background-color: #25D366; color: white; border: none; border-radius: 12px; padding: 12px 20px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 4px 12px rgba(37,211,102,0.3);">💬 Enviar Relatório via WhatsApp</button></a>',
             unsafe_allow_html=True,
         )
       with col_e:
@@ -1117,8 +1157,9 @@ if menu == "📊 visão geral":
         st.markdown(
             f'<a href="mailto:?subject={assunto_email}&body={corpo_email}"'
             ' target="_blank"><button style="background-color: #0284c7; color:'
-            " white; border: none; border-radius: 8px; padding: 10px 20px; font-"
-            'weight: bold; cursor: pointer; width: 100%;">✉️ Enviar Relatório via'
+            " white; border: none; border-radius: 12px; padding: 12px 20px; font-"
+            'weight: bold; cursor: pointer; width: 100%; box-shadow: 0 4px 12px'
+            ' rgba(2,132,199,0.3);">✉️ Enviar Relatório via'
             " E-mail</button></a>",
             unsafe_allow_html=True,
         )
@@ -1808,10 +1849,10 @@ elif menu == "💬 chat tabalmix pro & rede":
   # PAINEL DE ALERTA SOS EM CAMPO
   st.markdown(
       """
-        <div style="background: #fee2e2; border: 2px solid #ef4444; border-radius: 12px; padding: 12px 18px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="background: #fef2f2; border: 2px solid #ef4444; border-radius: 14px; padding: 14px 20px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(239,68,68,0.1);">
             <div>
-                <h4 style="margin: 0; color: #991b1b !important; font-size: 15px;">🚨 Botão de Pânico / Alerta SOS em Campo</h4>
-                <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #b91c1c;">Em caso de emergência ou pane grave, acione imediatamente para alertar a gerência e a oficina.</p>
+                <h4 style="margin: 0; color: #991b1b !important; font-size: 15.5px;">🚨 Botão de Pânico / Alerta SOS em Campo</h4>
+                <p style="margin: 3px 0 0 0; font-size: 12px; color: #b91c1c;">Em caso de emergência ou pane grave, acione imediatamente para alertar a gerência e a oficina.</p>
             </div>
         </div>
     """,
@@ -1890,9 +1931,9 @@ elif menu == "💬 chat tabalmix pro & rede":
       with col_sos_info:
         st.markdown(
             f"""
-                <div style="background: #fef2f2; border-left: 5px solid #dc2626; padding: 10px; border-radius: 8px; margin-bottom: 6px; font-size: 12.5px;">
+                <div style="background: #fef2f2; border-left: 5px solid #dc2626; padding: 12px; border-radius: 10px; margin-bottom: 8px; font-size: 13px; box-shadow: 0 3px 10px rgba(0,0,0,0.03);">
                     <b>🚨 Emergência #{sos_item[0]}</b> | Solicitante: <b>{sos_item[1]}</b> | Equipamento: <b>{sos_item[2]}</b><br>
-                    <b>Relato:</b> {sos_item[3]} <br> <span style="color: #6b7280; font-size: 11px;">Registrado em: {sos_item[4]}</span>
+                    <b>Relato:</b> {sos_item[3]} <br> <span style="color: #6b7280; font-size: 11.5px;">Registrado em: {sos_item[4]}</span>
                 </div>
             """,
             unsafe_allow_html=True,
@@ -1918,9 +1959,9 @@ elif menu == "💬 chat tabalmix pro & rede":
     for av in avisos_fix:
       st.markdown(
           f"""
-            <div style="background: #ecfdf5; border: 1px solid #10b981; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;">
-                <span style="font-size: 11px; font-weight: bold; color: #047857;">📌 Comunicado Oficial de {av[1]} ({av[3]})</span>
-                <div style="font-size: 13px; color: #0f172a; margin-top: 2px;">{av[2]}</div>
+            <div style="background: #ecfdf5; border: 1px solid #10b981; border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(16,185,129,0.05);">
+                <span style="font-size: 11.5px; font-weight: bold; color: #047857;">📌 Comunicado Oficial de {av[1]} ({av[3]})</span>
+                <div style="font-size: 13.5px; color: #0f172a; margin-top: 3px;">{av[2]}</div>
             </div>
         """,
           unsafe_allow_html=True,
@@ -1990,30 +2031,30 @@ elif menu == "💬 chat tabalmix pro & rede":
   with tab_conversa:
     st.markdown(f"#### 🗨️ Conversa: `{st.session_state['sala_chat_ativa']}`")
 
-    # CABEÇALHO DO CHAT COM BOTÕES DE ÁUDIO E VÍDEO
+    # CABEÇALHO DO CHAT ULTRA MODERNO
     st.markdown(
         f"""
-        <div style="background: #047857; padding: 12px 18px; border-radius: 12px 12px 0 0; display: flex; align-items: center; justify-content: space-between; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-            <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="background: #10b981; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; border: 2px solid white;">💬</div>
+        <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 14px 20px; border-radius: 14px 14px 0 0; display: flex; align-items: center; justify-content: space-between; color: white; box-shadow: 0 6px 18px rgba(5,150,105,0.2);">
+            <div style="display: flex; align-items: center; gap: 14px;">
+                <div style="background: rgba(255,255,255,0.2); width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: bold; border: 2px solid white;">💬</div>
                 <div>
-                    <h4 style="margin: 0; color: white !important; font-size: 15px;">{st.session_state['sala_chat_ativa']}</h4>
-                    <span style="font-size: 10.5px; opacity: 0.9;">status: {status_escolhido} • criptografado</span>
+                    <h4 style="margin: 0; color: white !important; font-size: 15.5px;">{st.session_state['sala_chat_ativa']}</h4>
+                    <span style="font-size: 11px; opacity: 0.9;">status: {status_escolhido} • criptografia enterprise</span>
                 </div>
             </div>
             <div style="display: flex; gap: 10px;">
-                <a href="{link_meet}" target="_blank" title="Chamada de Áudio" style="background: #065f46; padding: 6px 12px; border-radius: 50%; color: white; text-decoration: none; font-size: 15px;">📞</a>
-                <a href="{link_meet}" target="_blank" title="Chamada de Vídeo" style="background: #10b981; padding: 6px 12px; border-radius: 50%; color: white; text-decoration: none; font-size: 15px;">📹</a>
+                <a href="{link_meet}" target="_blank" title="Chamada de Áudio" style="background: rgba(255,255,255,0.25); padding: 8px 14px; border-radius: 50%; color: white; text-decoration: none; font-size: 15px; border: 1px solid rgba(255,255,255,0.4);">📞</a>
+                <a href="{link_meet}" target="_blank" title="Chamada de Vídeo" style="background: rgba(255,255,255,0.25); padding: 8px 14px; border-radius: 50%; color: white; text-decoration: none; font-size: 15px; border: 1px solid rgba(255,255,255,0.4);">📹</a>
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # ÁREA DE MENSAGENS
+    # ÁREA DE MENSAGENS COM ESTILO FLUIDO
     st.markdown(
         """
-        <div style="background: #f1f5f9; padding: 15px; border-radius: 0 0 12px 12px; border: 1px solid #cbd5e1; border-top: none; min-height: 250px; max-height: 350px; overflow-y: auto; margin-bottom: 12px;">
+        <div style="background: #ffffff; padding: 18px; border-radius: 0 0 14px 14px; border: 1px solid #e2e8f0; border-top: none; min-height: 280px; max-height: 380px; overflow-y: auto; margin-bottom: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.02);">
         """,
         unsafe_allow_html=True,
     )
@@ -2069,15 +2110,16 @@ elif menu == "💬 chat tabalmix pro & rede":
             if remetente_atual
             else False
         )
-        bg_balao = "#d1fae5" if is_me else "#ffffff"
+        bg_balao = "#ecfdf5" if is_me else "#f8fafc"
+        border_balao = "#10b981" if is_me else "#cbd5e1"
         align_balao = "margin-left: auto;" if is_me else "margin-right: auto;"
 
         st.markdown(
             f"""
-                <div style="background: {bg_balao}; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; max-width: 80%; {align_balao} box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
-                    <div style="font-size: 10px; color: #047857; font-weight: bold; margin-bottom: 2px;">{row_m['remetente']}</div>
-                    <div style="font-size: 13.5px; color: #0f172a; white-space: pre-wrap;">{row_m['mensagem']}</div>
-                    <div style="font-size: 9.5px; color: #64748b; text-align: right; margin-top: 2px;">{row_m['data_envio']}</div>
+                <div style="background: {bg_balao}; border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; max-width: 82%; {align_balao} box-shadow: 0 3px 10px rgba(0,0,0,0.03); border: 1px solid {border_balao};">
+                    <div style="font-size: 11px; color: #047857; font-weight: bold; margin-bottom: 3px;">{row_m['remetente']}</div>
+                    <div style="font-size: 14px; color: #0f172a; white-space: pre-wrap; line-height: 1.4;">{row_m['mensagem']}</div>
+                    <div style="font-size: 10px; color: #64748b; text-align: right; margin-top: 4px;">{row_m['data_envio']}</div>
                 </div>
             """,
             unsafe_allow_html=True,
@@ -2092,8 +2134,8 @@ elif menu == "💬 chat tabalmix pro & rede":
             )
     else:
       st.markdown(
-          "<p style='text-align: center; color: #64748b; font-size: 12px;"
-          " margin-top: 30px;'>Inicie a conversa enviando uma mensagem"
+          "<p style='text-align: center; color: #64748b; font-size: 13px;"
+          " margin-top: 40px;'>Inicie a conversa enviando uma mensagem"
           " abaixo!</p>",
           unsafe_allow_html=True,
       )
@@ -2180,7 +2222,7 @@ elif menu == "💬 chat tabalmix pro & rede":
           nome_privado = f"Privado: {nome_valido} ({cargo_valido})"
           st.markdown(
               f"""
-                    <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.03);">
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
                         <div>
                             <span style="font-size: 15px; font-weight: bold; color: #0f172a;">👤 {nome_valido}</span><br>
                             <span style="font-size: 12px; color: #64748b;">Setor: {cargo_valido} • 🟢 Online</span>
@@ -2298,7 +2340,7 @@ elif menu == "⚙️ painel de licença (admin)":
           )
           conn.commit()
           st.success(
-              f"✅ Status do usuário #{selected_user_id} updated para"
+              f"✅ Status do usuário #{selected_user_id} atualizado para"
               f" '{novo_status_adm}' com sucesso!"
           )
           st.rerun()
@@ -2342,9 +2384,9 @@ tem_msgs_pendentes = res_n[0] > 0 if res_n else False
 if st.session_state["widget_chat_aberto"]:
   st.markdown(
       """
-        <div style="position: fixed; bottom: 20px; right: 20px; width: 350px; background: #ffffff; border: 2px solid #047857; border-radius: 14px; box-shadow: 0 15px 35px rgba(0,0,0,0.25); z-index: 999999; padding: 14px; font-family: 'Inter', sans-serif;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 10px;">
-                <div style="font-weight: 800; font-size: 13.5px; color: #047857;">💬 Chat Tabalmix Rápido</div>
+        <div style="position: fixed; bottom: 20px; right: 20px; width: 360px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 18px; box-shadow: 0 20px 45px rgba(0,0,0,0.25); z-index: 999999; padding: 16px; font-family: 'Plus Jakarta Sans', sans-serif;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 12px;">
+                <div style="font-weight: 800; font-size: 14px; color: #047857;">💬 Chat Tabalmix Rápido</div>
     """,
       unsafe_allow_html=True,
   )
@@ -2358,9 +2400,9 @@ if st.session_state["widget_chat_aberto"]:
   st.markdown(
       '<a href="https://meet.jit.si/TabalmixConcretoEnterprisePro"'
       ' target="_blank"><button style="background: #059669; color: white; width:'
-      ' 100%; border: none; padding: 8px; border-radius: 6px; font-weight:'
-      ' bold; cursor: pointer; margin-bottom: 10px;">📹 Iniciar Vídeo Chamada'
-      " Rápida</button></a>",
+      ' 100%; border: none; padding: 9px; border-radius: 10px; font-weight:'
+      ' bold; cursor: pointer; margin-bottom: 12px; box-shadow: 0 4px 12px'
+      ' rgba(5,150,105,0.3);">📹 Iniciar Vídeo Chamada Rápida</button></a>',
       unsafe_allow_html=True,
   )
 
@@ -2403,7 +2445,7 @@ if st.session_state["widget_chat_aberto"]:
     for _, rw_w in df_widget_hist.iterrows():
       st.markdown(
           f"""
-                <div style="background: #f8fafc; border-radius: 6px; padding: 6px; margin-bottom: 4px; font-size: 11px;">
+                <div style="background: #f8fafc; border-radius: 10px; padding: 8px; margin-bottom: 6px; font-size: 11.5px; border: 1px solid #e2e8f0;">
                     <b>{rw_w['remetente']}</b><br>
                     <span style="color: #0f172a;">{rw_w['mensagem']}</span>
                 </div>
@@ -2425,12 +2467,12 @@ else:
             background: #059669;
             color: white;
             border-radius: 50px;
-            padding: 10px 18px;
-            box-shadow: 0 8px 25px rgba(5,150,105,0.4);
+            padding: 12px 20px;
+            box-shadow: 0 10px 30px rgba(5,150,105,0.4);
             cursor: pointer;
             z-index: 999999;
             font-weight: 800;
-            font-size: 13px;
+            font-size: 13.5px;
         }
         </style>
     """,
