@@ -2297,9 +2297,84 @@ elif menu == "🔍 consulta / busca geral":
     st.info("nenhum equipamento cadastrado para realizar consultas.")
 
 elif menu == "⚙️ meu perfil / dados":
-  st.title("⚙️ atualização de perfil")
+  st.title("⚙️ Meu Perfil & Credenciais Corporativas")
+  st.markdown("Gerencie suas informações de acesso, apelido na obra e cargo/setor integrado:")
+
   if usuario_atual:
-    st.info(f"logado como: {usuario_atual['nome']} ({usuario_atual['email']})")
+    user_id_ativo = usuario_atual.get("id")
+    
+    cursor.execute("SELECT nome_completo, cpf, email, celular_seguranca, apelido, cargo_setor, pin_rapido, plano_atual FROM usuarios_sistema WHERE id = ?", (user_id_ativo,))
+    dados_db = cursor.fetchone()
+    
+    if dados_db:
+      n_comp, n_cpf, n_email, n_cel, n_apelido, n_cargo, n_pin, n_plano = dados_db
+      
+      st.markdown(f"""
+        <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-radius: 20px; padding: 24px; color: white; margin-bottom: 22px; box-shadow: 0 10px 25px rgba(5,150,105,0.2);">
+            <div style="display: flex; align-items: center; gap: 16px;">
+                <div style="background: rgba(255,255,255,0.2); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: bold; border: 2px solid white;">👤</div>
+                <div>
+                    <h3 style="margin: 0; color: white !important; font-size: 20px;">{n_comp}</h3>
+                    <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">Apelido de Guerra: <b>{n_apelido or 'Não definido'}</b> • Cargo: <b>{n_cargo or 'Operacional'}</b></p>
+                    <span style="background: rgba(255,255,255,0.25); padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: bold; display: inline-block; margin-top: 8px;">Plano: {n_plano or 'Enterprise'}</span>
+                </div>
+            </div>
+        </div>
+      """, unsafe_allow_html=True)
+
+      st.markdown("### ✏️ Editar Informações Cadastrais")
+      with st.form("form_atualizar_meu_perfil"):
+        novo_nome = st.text_input("Nome Completo", value=n_comp or "")
+        novo_apelido = st.text_input("Apelido de Guerra / Primeiro Nome (exibido no chat)", value=n_apelido or "")
+        
+        cargos_disponiveis = [
+            "Diretoria / Gestão",
+            "Segurança do Trabalho (SST)",
+            "Engenheiro / Gestor de Obra",
+            "Mecânico / Oficina",
+            "Operador / Motorista",
+            "Servente / Pedreiro / Campo"
+        ]
+        cargo_atual_idx = cargos_disponiveis.index(n_cargo) if n_cargo in cargos_disponiveis else 0
+        novo_cargo = st.selectbox("Cargo / Setor na Empresa", cargos_disponiveis, index=cargo_atual_idx)
+        
+        novo_cel = st.text_input("Celular / WhatsApp", value=n_cel or "")
+        novo_pin = st.text_input("PIN Rápido de Acesso (4 dígitos)", value=n_pin or "", max_chars=4, type="password")
+        nova_senha = st.text_input("Nova Senha de Acesso (deixe em branco para manter a atual)", type="password")
+
+        btn_salvar_perfil = st.form_submit_button("💾 Salvar Alterações do Perfil")
+
+        if btn_salvar_perfil:
+          if novo_nome:
+            apelido_final = novo_apelido.strip() if novo_apelido and novo_apelido.strip() != "None" else novo_nome.split()[0]
+            
+            if nova_senha.strip():
+              cursor.execute("""
+                UPDATE usuarios_sistema 
+                SET nome_completo = ?, apelido = ?, cargo_setor = ?, celular_seguranca = ?, pin_rapido = ?, senha = ? 
+                WHERE id = ?
+              """, (novo_nome, apelido_final, novo_cargo, novo_cel, novo_pin, nova_senha, user_id_ativo))
+            else:
+              cursor.execute("""
+                UPDATE usuarios_sistema 
+                SET nome_completo = ?, apelido = ?, cargo_setor = ?, celular_seguranca = ?, pin_rapido = ? 
+                WHERE id = ?
+              """, (novo_nome, apelido_final, novo_cargo, novo_cel, novo_pin, user_id_ativo))
+            
+            conn.commit()
+            
+            st.session_state["usuario_logado"]["nome"] = novo_nome
+            st.session_state["usuario_logado"]["apelido"] = apelido_final
+            st.session_state["usuario_logado"]["cargo"] = novo_cargo
+            
+            st.success("✅ Perfil e cargo atualizados com sucesso! As alterações já estão integradas no chat e no sistema.")
+            st.rerun()
+          else:
+            st.error("⚠️ O campo Nome Completo não pode ficar em branco.")
+    else:
+      st.error("⚠️ Erro ao carregar dados do usuário na base de dados.")
+  else:
+    st.warning("⚠️ Nenhum usuário logado no momento.")
 
 elif menu == "⚙️ painel de licença (admin)":
   st.title("⚙️ painel administrativo de colaboradores")
