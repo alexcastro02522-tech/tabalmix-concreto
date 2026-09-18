@@ -44,7 +44,7 @@ st.markdown(
         width: 320px !important;
         background: #f8fafc !important;
         border-right: 1px solid #e2e8f0;
-        padding-top: 20px;
+        padding-top: 15px;
     }
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label {
         color: #1e293b !important;
@@ -984,15 +984,19 @@ def exibir_tabela_padronizada(df, nome_tabela):
 
 
 with st.sidebar:
+  # CABEÇALHO DA BARRA LATERAL CORRIGIDO (MARCA E FOTO EM DESTAQUE TOTAL)
   try:
     with open("caminhoes.jpg", "rb") as image_file:
       encoded_logo_side = base64.b64encode(image_file.read()).decode()
     st.markdown(
         f"""
-            <div style="text-align: center; margin-bottom: 15px;">
-                <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 90px; object-fit: cover; border-radius: 12px; border: 1.5px solid #059669; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.06);">
-                <div style="background: #d1fae5; border: 1px solid #059669; border-radius: 10px; padding: 6px; text-align: center;">
-                    <span style="color: #065f46; font-size: 11px; font-weight: 800; letter-spacing: 0.5px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
+            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 16px; text-align: center; margin-bottom: 15px; box-shadow: 0 10px 25px rgba(5,150,105,0.2); color: white;">
+                <div style="font-size: 16px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 10px; color: white;">🏗️ TABALMIX CONCRETO</div>
+                <div style="border-radius: 12px; overflow: hidden; max-height: 110px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 10px; box-shadow: 0 6px 15px rgba(0,0,0,0.15);">
+                    <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 105px; object-fit: cover; display: block;">
+                </div>
+                <div style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 10px; padding: 5px; text-align: center;">
+                    <span style="color: white; font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
                 </div>
             </div>
         """,
@@ -1001,8 +1005,11 @@ with st.sidebar:
   except Exception:
     st.markdown(
         """
-            <div style="background: #d1fae5; border: 1px solid #059669; border-radius: 10px; padding: 8px; text-align: center; margin-bottom: 15px;">
-                <span style="color: #065f46; font-size: 11.5px; font-weight: 800; letter-spacing: 0.5px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
+            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 16px; text-align: center; margin-bottom: 15px; box-shadow: 0 10px 25px rgba(5,150,105,0.2); color: white;">
+                <div style="font-size: 16px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 8px; color: white;">🏗️ TABALMIX CONCRETO</div>
+                <div style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 10px; padding: 6px; text-align: center;">
+                    <span style="color: white; font-size: 11px; font-weight: 800; letter-spacing: 0.8px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
+                </div>
             </div>
         """,
         unsafe_allow_html=True,
