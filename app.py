@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Enterprise com Sidebar em Tema Claro e Chat Flutuante Estilizado
+# Estilização Visual Enterprise com Correção Absoluta de Layout
 st.markdown(
     """
     <style>
@@ -639,8 +639,16 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 "cpf": user_data[2],
                 "email": user_data[3],
                 "status": user_data[6],
-                "apelido": user_data[9] if len(user_data) > 9 and user_data[9] else user_data[1].split()[0],
-                "cargo": user_data[10] if len(user_data) > 10 and user_data[10] else "Colaborador",
+                "apelido": (
+                    user_data[9]
+                    if len(user_data) > 9 and user_data[9]
+                    else user_data[1].split()[0]
+                ),
+                "cargo": (
+                    user_data[10]
+                    if len(user_data) > 10 and user_data[10]
+                    else "Colaborador"
+                ),
             }
             st.success("✅ login realizado com sucesso!")
             st.rerun()
@@ -665,14 +673,20 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
 
         if btn_cadastrar:
           if c_nome and c_email and c_senha:
-            apelido_final = c_apelido.strip() if c_apelido and c_apelido.strip() else c_nome.split()[0]
-            cargo_final = c_cargo.strip() if c_cargo and c_cargo.strip() else "Colaborador"
+            apelido_final = (
+                c_apelido.strip()
+                if c_apelido and c_apelido.strip()
+                else c_nome.split()[0]
+            )
+            cargo_final = (
+                c_cargo.strip() if c_cargo and c_cargo.strip() else "Colaborador"
+            )
             try:
               cursor.execute(
                   "INSERT INTO usuarios_sistema (nome_completo, cpf, email,"
                   " senha, celular_seguranca, status_assinatura, plano_atual,"
-                  " data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', 'Enterprise',"
-                  " ?, ?, ?)",
+                  " data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?,"
+                  " 'Ativo', 'Enterprise', ?, ?, ?)",
                   (
                       c_nome,
                       c_cpf,
@@ -742,8 +756,16 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 "cpf": user_pin[2],
                 "email": user_pin[3],
                 "status": user_pin[6],
-                "apelido": user_pin[9] if len(user_pin) > 9 and user_pin[9] else user_pin[1].split()[0],
-                "cargo": user_pin[10] if len(user_pin) > 10 and user_pin[10] else "Colaborador",
+                "apelido": (
+                    user_pin[9]
+                    if len(user_pin) > 9 and user_pin[9]
+                    else user_pin[1].split()[0]
+                ),
+                "cargo": (
+                    user_pin[10]
+                    if len(user_pin) > 10 and user_pin[10]
+                    else "Colaborador"
+                ),
             }
             st.success("✅ login por pin validado!")
             st.rerun()
@@ -767,6 +789,7 @@ if usuario_atual and "apelido" not in usuario_atual:
   usuario_atual["apelido"] = usuario_atual["nome"].split()[0]
 if usuario_atual and "cargo" not in usuario_atual:
   usuario_atual["cargo"] = "Colaborador"
+
 
 def exibir_tabela_padronizada(df, nome_tabela):
   if df.empty:
@@ -893,7 +916,7 @@ if menu == "📊 visão geral":
   with col4:
     st.metric("gasto combust.", f"r$ {gasto_total_comb:,.2f}")
   with col5:
-    st.metric("total litros", f"{litros_totais:,.1f} l")
+    st.metric("total litros", f"{litros_totais:,.1f} L")
 
   st.divider()
 
@@ -1741,7 +1764,7 @@ if st.session_state["chat_aberto"]:
   for i, usr in enumerate(usuarios_ativos_db):
     nome_u, cargo_u = usr
     with col_usrs_disp[i % len(col_usrs_disp)]:
-      if st.button(f"🟢 {nome_u} ({cargo_u})", key=f"btn_chat_usr_{i}__"):
+      if st.button(f"🟢 {nome_u} ({cargo_u})", key=f"btn_chat_usr_{i}____"):
         st.session_state["chat_destinatario"] = nome_u
         st.rerun()
 
@@ -1835,4 +1858,4 @@ if st.session_state["chat_aberto"]:
   else:
     st.info("Nenhuma mensagem trocada ainda.")
 
-  st.markdown("</div>", unsafe_allow_html=True)
+  st.markdown("</div>", u
