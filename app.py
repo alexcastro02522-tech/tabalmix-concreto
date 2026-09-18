@@ -942,7 +942,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 "status": user_pin[6],
                 "apelido": (
                     user_pin[9]
-                    if len(user_pin) > 9 and user_pin[9] and user_pin[9] != "None"
+                    if len(user_pin) > 9 and user_pin[9] != "None"
                     else user_pin[1].split()[0]
                 ),
                 "cargo": (
@@ -1112,13 +1112,16 @@ if menu == "📊 visão geral":
       else 0
   )
 
-  col1, col2, col3, col4, col5 = st.columns(5)
+  # LAYOUT ADAPTADO PARA MÓVEL (DIVIDIDO EM 3 E 2 COLUNAS)
+  col1, col2, col3 = st.columns(3)
   with col1:
     st.metric("total frota", total_frota)
   with col2:
     st.metric("os abertas", os_abertas)
   with col3:
     st.metric("custo manut.", f"r$ {custo_total_manut:,.2f}")
+
+  col4, col5 = st.columns(2)
   with col4:
     st.metric("gasto combust.", f"r$ {gasto_total_comb:,.2f}")
   with col5:
