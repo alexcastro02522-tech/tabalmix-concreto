@@ -540,6 +540,20 @@ def init_db():
         )
     """)
 
+  # LIMPEZA AUTOMÁTICA DE REGISTROS VAZIOS/NULL (CORREÇÃO DO BUG "NONE")
+  try:
+    cursor.execute(
+        "UPDATE usuarios_sistema SET apelido = 'Colaborador' WHERE apelido IS"
+        " NULL OR apelido = '' OR apelido = 'None'"
+    )
+    cursor.execute(
+        "UPDATE usuarios_sistema SET cargo_setor = 'Operacional' WHERE"
+        " cargo_setor IS NULL OR cargo_setor = '' OR cargo_setor = 'None'"
+    )
+    conn.commit()
+  except Exception:
+    pass
+
   conn.commit()
   return conn
 
@@ -644,12 +658,12 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 "status": user_data[6],
                 "apelido": (
                     user_data[9]
-                    if len(user_data) > 9 and user_data[9]
+                    if len(user_data) > 9 and user_data[9] and user_data[9] != "None"
                     else user_data[1].split()[0]
                 ),
                 "cargo": (
                     user_data[10]
-                    if len(user_data) > 10 and user_data[10]
+                    if len(user_data) > 10 and user_data[10] and user_data[10] != "None"
                     else "Colaborador"
                 ),
             }
@@ -678,11 +692,13 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           if c_nome and c_email and c_senha:
             apelido_final = (
                 c_apelido.strip()
-                if c_apelido and c_apelido.strip()
+                if c_apelido and c_apelido.strip() and c_apelido != "None"
                 else c_nome.split()[0]
             )
             cargo_final = (
-                c_cargo.strip() if c_cargo and c_cargo.strip() else "Colaborador"
+                c_cargo.strip()
+                if c_cargo and c_cargo.strip() and c_cargo != "None"
+                else "Colaborador"
             )
             try:
               cursor.execute(
@@ -761,12 +777,12 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 "status": user_pin[6],
                 "apelido": (
                     user_pin[9]
-                    if len(user_pin) > 9 and user_pin[9]
+                    if len(user_pin) > 9 and user_pin[9] and user_pin[9] != "None"
                     else user_pin[1].split()[0]
                 ),
                 "cargo": (
                     user_pin[10]
-                    if len(user_pin) > 10 and user_pin[10]
+                    if len(user_pin) > 10 and user_pin[10] and user_pin[10] != "None"
                     else "Colaborador"
                 ),
             }
@@ -788,9 +804,13 @@ status_usuario_ativo = (
     )
 )
 
-if usuario_atual and "apelido" not in usuario_atual:
+if usuario_atual and (
+    not usuario_atual.get("apelido") or usuario_atual["apelido"] == "None"
+):
   usuario_atual["apelido"] = usuario_atual["nome"].split()[0]
-if usuario_atual and "cargo" not in usuario_atual:
+if usuario_atual and (
+    not usuario_atual.get("cargo") or usuario_atual["cargo"] == "None"
+):
   usuario_atual["cargo"] = "Colaborador"
 
 
@@ -1914,33 +1934,46 @@ elif menu == "💬 chat tabalmix pro & rede":
     )
     colaboradores_rede = cursor.fetchall()
 
+    encontrou_contato = False
     if colaboradores_rede:
       for idx_r, (r_nome, r_cargo, r_email) in enumerate(colaboradores_rede):
-        if r_nome != remetente_atual:
-          nome_privado = f"Privado: {r_nome} ({r_cargo})"
+        nome_valido = (
+            r_nome
+            if r_nome and r_nome != "None"
+            else (r_email.split("@")[0] if r_email else "Colaborador")
+        )
+        cargo_valido = r_cargo if r_cargo and r_cargo != "None" else "Operacional"
+
+        if nome_valido != remetente_atual:
+          encontrou_contato = True
+          nome_privado = f"Privado: {nome_valido} ({cargo_valido})"
           st.markdown(
               f"""
                     <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.03);">
                         <div>
-                            <span style="font-size: 15px; font-weight: bold; color: #0f172a;">👤 {r_nome}</span><br>
-                            <span style="font-size: 12px; color: #64748b;">Setor: {r_cargo} • 🟢 Online</span>
+                            <span style="font-size: 15px; font-weight: bold; color: #0f172a;">👤 {nome_valido}</span><br>
+                            <span style="font-size: 12px; color: #64748b;">Setor: {cargo_valido} • 🟢 Online</span>
                         </div>
                     </div>
                 """,
               unsafe_allow_html=True,
           )
           if st.button(
-              f"🔒 Abrir Chat Privado com {r_nome}",
+              f"🔒 Abrir Chat Privado com {nome_valido}",
               key=f"btn_chat_privado_{idx_r}",
           ):
             st.session_state["sala_chat_ativa"] = nome_privado
             st.success(
-                f"✅ Chat privado com {r_nome} aberto! Volte na aba"
+                f"✅ Chat privado com {nome_valido} aberto! Volte na aba"
                 " 'Conversas & Chat Ativo'."
             )
             st.rerun()
-    else:
-      st.info("Nenhum outro colaborador ativo no momento.")
+
+    if not encontrou_contato:
+      st.info(
+          "Nenhum outro colaborador ativo no momento (você é o único usuário"
+          " logado ou os demais cadastros estão sem apelido definido)."
+      )
 
 elif menu == "🔍 consulta / busca geral":
   st.title("🔍 consulta e histórico completo do equipamento")
@@ -2034,7 +2067,7 @@ elif menu == "⚙️ painel de licença (admin)":
           )
           conn.commit()
           st.success(
-              f"✅ Status do usuário #{selected_user_id} atualizado para"
+              f"✅ Status do usuário #{selected_user_id} updated para"
               f" '{novo_status_adm}' com sucesso!"
           )
           st.rerun()
