@@ -44,7 +44,11 @@ st.markdown(
         width: 320px !important;
         background: #f8fafc !important;
         border-right: 1px solid #e2e8f0;
-        padding-top: 15px;
+        padding-top: 10px !important;
+    }
+    /* Oculta o botão padrão feio de recolher o sidebar para limpar o topo */
+    [data-testid="stSidebarNav"] + div, button[kind="header"] {
+        display: none !important;
     }
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label {
         color: #1e293b !important;
@@ -984,19 +988,19 @@ def exibir_tabela_padronizada(df, nome_tabela):
 
 
 with st.sidebar:
-  # CABEÇALHO DA BARRA LATERAL CORRIGIDO (MARCA E FOTO EM DESTAQUE TOTAL)
+  # CABEÇALHO DA BARRA LATERAL 100% LIMPO (SEM O ÍCONE DA SETA NO TOPO)
   try:
     with open("caminhoes.jpg", "rb") as image_file:
       encoded_logo_side = base64.b64encode(image_file.read()).decode()
     st.markdown(
         f"""
-            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 16px; text-align: center; margin-bottom: 15px; box-shadow: 0 10px 25px rgba(5,150,105,0.2); color: white;">
-                <div style="font-size: 16px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 10px; color: white;">🏗️ TABALMIX CONCRETO</div>
-                <div style="border-radius: 12px; overflow: hidden; max-height: 110px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 10px; box-shadow: 0 6px 15px rgba(0,0,0,0.15);">
-                    <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 105px; object-fit: cover; display: block;">
+            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 14px; text-align: center; margin-top: -15px; margin-bottom: 12px; box-shadow: 0 10px 25px rgba(5,150,105,0.2); color: white;">
+                <div style="font-size: 15px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 8px; color: white;">🏗️ TABALMIX CONCRETO</div>
+                <div style="border-radius: 12px; overflow: hidden; max-height: 105px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 8px; box-shadow: 0 6px 15px rgba(0,0,0,0.15);">
+                    <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 100px; object-fit: cover; display: block;">
                 </div>
                 <div style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 10px; padding: 5px; text-align: center;">
-                    <span style="color: white; font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
+                    <span style="color: white; font-size: 10px; font-weight: 800; letter-spacing: 0.8px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
                 </div>
             </div>
         """,
@@ -1005,10 +1009,10 @@ with st.sidebar:
   except Exception:
     st.markdown(
         """
-            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 16px; text-align: center; margin-bottom: 15px; box-shadow: 0 10px 25px rgba(5,150,105,0.2); color: white;">
-                <div style="font-size: 16px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 8px; color: white;">🏗️ TABALMIX CONCRETO</div>
+            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 14px; text-align: center; margin-top: -15px; margin-bottom: 12px; box-shadow: 0 10px 25px rgba(5,150,105,0.2); color: white;">
+                <div style="font-size: 15px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 8px; color: white;">🏗️ TABALMIX CONCRETO</div>
                 <div style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 10px; padding: 6px; text-align: center;">
-                    <span style="color: white; font-size: 11px; font-weight: 800; letter-spacing: 0.8px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
+                    <span style="color: white; font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
                 </div>
             </div>
         """,
