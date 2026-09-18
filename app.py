@@ -1704,7 +1704,7 @@ elif menu == "⚙️ painel de licença (admin)":
           )
           conn.commit()
           st.success(
-              f"✅ Status do usuário #{selected_user_id} atualizado para"
+              f"✅ Status do usuário #{selected_user_id} updated para"
               f" '{novo_status_adm}' com sucesso!"
           )
           st.rerun()
@@ -1750,6 +1750,7 @@ if st.session_state["chat_aberto"]:
                 <h3 style="margin: 0; color: #059669 !important; font-size: 18px;">💬 Chat Corporativo & Central de Documentos</h3>
                 <span style="background: #d1fae5; color: #065f46; font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 20px;">🟢 Online</span>
             </div>
+        </div>
     """,
       unsafe_allow_html=True,
   )
@@ -1764,7 +1765,7 @@ if st.session_state["chat_aberto"]:
   for i, usr in enumerate(usuarios_ativos_db):
     nome_u, cargo_u = usr
     with col_usrs_disp[i % len(col_usrs_disp)]:
-      if st.button(f"🟢 {nome_u} ({cargo_u})", key=f"btn_chat_usr_{i}____"):
+      if st.button(f"🟢 {nome_u} ({cargo_u})", key=f"btn_chat_usr_{i}_____"):
         st.session_state["chat_destinatario"] = nome_u
         st.rerun()
 
@@ -1857,5 +1858,3 @@ if st.session_state["chat_aberto"]:
           )
   else:
     st.info("Nenhuma mensagem trocada ainda.")
-
-  st.markdown("</div>", u
