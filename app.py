@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Enterprise & Chat Tabalmix Pro Style
+# Estilização Visual Enterprise & Vitrine de Cargos Pro Style
 st.markdown(
     """
     <style>
@@ -423,7 +423,6 @@ def init_db():
         )
     """)
 
-  # Garante explicitamente a inclusão de ambas as colunas caso a tabela já exista sem elas
   for col_sql in [
       "ALTER TABLE veiculos ADD COLUMN categoria_equipamento TEXT",
       "ALTER TABLE veiculos ADD COLUMN tipo_equipamento TEXT",
@@ -614,23 +613,23 @@ except Exception:
   pass
 
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
-  col_l1, col_l2, col_l3 = st.columns([1, 2.4, 1])
+  col_l1, col_l2, col_l3 = st.columns([0.2, 3.6, 0.2])
   with col_l2:
     try:
       with open("caminhoes.jpg", "rb") as image_file:
         encoded_logo_login = base64.b64encode(image_file.read()).decode()
       st.markdown(
           f"""
-                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.08); margin-top: 15px; margin-bottom: 15px;">
-                    <div style="border-radius: 12px; overflow: hidden; max-height: 110px; border: 2px solid #059669; margin-bottom: 14px;">
-                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 105px; object-fit: cover; display: block;">
+                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 20px; padding: 30px; text-align: center; box-shadow: 0 20px 40px rgba(5,150,105,0.2); margin-top: 10px; margin-bottom: 20px; color: white;">
+                    <div style="border-radius: 14px; overflow: hidden; max-height: 120px; border: 3px solid white; margin-bottom: 16px; box-shadow: 0 8px 20px rgba(0,0,0,0.15);">
+                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 115px; object-fit: cover; display: block;">
                     </div>
-                    <div style="display: inline-block; background: rgba(5, 150, 105, 0.15); border: 1px solid #059669; border-radius: 20px; padding: 3px 14px; margin-bottom: 8px;">
-                        <span style="color: #059669; font-size: 11px; font-weight: 800; letter-spacing: 1px;">🛡️ selo oficial de garantia enterprise</span>
+                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; padding: 4px 16px; margin-bottom: 10px;">
+                        <span style="color: white; font-size: 11.5px; font-weight: 800; letter-spacing: 1.2px;">🛡️ PLATAFORMA ENTERPRISE CERTIFICADA</span>
                     </div>
-                    <h2 style="color: #0f172a !important; margin: 0; font-size: 20px; font-weight: 900;">tabalmix concreto</h2>
-                    <p style="color: #475569; font-size: 11px; margin: 4px 0 2px 0; text-transform: uppercase; letter-spacing: 1.2px;">gestão inteligente de frota e oficina pro</p>
-                    <p style="color: #94a3b8; font-size: 9.5px; margin: 0; font-style: italic;">powered by castro tech</p>
+                    <h1 style="color: white !important; margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.5px;">tabalmix concreto</h1>
+                    <p style="color: #e2e8f0; font-size: 12px; margin: 6px 0 2px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">sistema inteligente de frotas, obras e oficina pro</p>
+                    <p style="color: #cbd5e1; font-size: 10px; margin: 0; font-style: italic;">powered by castro tech</p>
                 </div>
             """,
           unsafe_allow_html=True,
@@ -638,23 +637,56 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     except Exception:
       st.markdown(
           """
-                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 15px 35px rgba(0,0,0,0.08); margin-top: 15px; margin-bottom: 15px;">
-                    <div style="display: inline-block; background: rgba(5, 150, 105, 0.15); border: 1px solid #059669; border-radius: 20px; padding: 3px 14px; margin-bottom: 8px;">
-                        <span style="color: #059669; font-size: 11px; font-weight: 800; letter-spacing: 1px;">🛡️ selo oficial de garantia enterprise</span>
+                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 20px; padding: 30px; text-align: center; box-shadow: 0 20px 40px rgba(5,150,105,0.2); margin-top: 10px; margin-bottom: 20px; color: white;">
+                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; padding: 4px 16px; margin-bottom: 10px;">
+                        <span style="color: white; font-size: 11.5px; font-weight: 800; letter-spacing: 1.2px;">🛡️ PLATAFORMA ENTERPRISE CERTIFICADA</span>
                     </div>
-                    <h2 style="color: #0f172a !important; margin: 0; font-size: 20px; font-weight: 900;">tabalmix concreto</h2>
-                    <p style="color: #475569; font-size: 11px; margin: 4px 0 2px 0; text-transform: uppercase; letter-spacing: 1.2px;">gestão inteligente de frota e oficina pro</p>
-                    <p style="color: #94a3b8; font-size: 9.5px; margin: 0; font-style: italic;">powered by castro tech</p>
+                    <h1 style="color: white !important; margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.5px;">tabalmix concreto</h1>
+                    <p style="color: #e2e8f0; font-size: 12px; margin: 6px 0 2px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">sistema inteligente de frotas, obras e oficina pro</p>
+                    <p style="color: #cbd5e1; font-size: 10px; margin: 0; font-style: italic;">powered by castro tech</p>
                 </div>
             """,
           unsafe_allow_html=True,
       )
 
+    # VITRINE DE VANTAGENS E PLANOS POR CARGO
+    st.markdown(
+        """
+        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
+            <h3 style="color: #0f172a !important; font-size: 16px; margin-top: 0; text-align: center; font-weight: 800;">🌟 Vantagens e Recursos Exclusivos por Função na Obra</h3>
+            <p style="font-size: 12.5px; color: #475569; text-align: center; margin-bottom: 16px;">Conheça o superpoder de cada plano corporativo integrado para a sua equipe:</p>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #059669; border-radius: 10px; padding: 12px;">
+                    <strong style="color: #065f46; font-size: 13px;">👑 Alta Gestão & Diretoria</strong>
+                    <p style="font-size: 11.5px; color: #334155; margin: 4px 0 0 0;">Visão global da frota, relatórios executivos em PDF e recepção em tempo real dos <b>Alertas SOS</b> de pânico em campo.</p>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #0284c7; border-radius: 10px; padding: 12px;">
+                    <strong style="color: #0369a1; font-size: 13px;">👷 Segurança do Trabalho (SST)</strong>
+                    <p style="font-size: 11.5px; color: #334155; margin: 4px 0 0 0;">Conformidade regulamentada, vistorias fotográficas e emissão rápida de laudos de <b>Check-list de Mobilização</b>.</p>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #d97706; border-radius: 10px; padding: 12px;">
+                    <strong style="color: #b45309; font-size: 13px;">🛠️ Oficina & Manutenção</strong>
+                    <p style="font-size: 11.5px; color: #334155; margin: 4px 0 0 0;">Gestão ágil de Ordens de Serviço (OS), controle detalhado de estoque de peças e laudos de custos mecânicos.</p>
+                </div>
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #7c3aed; border-radius: 10px; padding: 12px;">
+                    <strong style="color: #6d28d9; font-size: 13px;">🚜 Operacional de Campo</strong>
+                    <p style="font-size: 11.5px; color: #334155; margin: 4px 0 0 0;">Praticidade diária, registros rápidos de abastecimento, chat integrado e acionamento instantâneo do <b>Botão SOS</b>.</p>
+                </div>
+            </div>
+        </div>
+    """,
+        unsafe_allow_html=True,
+    )
+
     tab_login, tab_cadastro, tab_recuperar, tab_pin = st.tabs([
-        "🔑 entrar",
-        "📝 criar conta",
-        "🔄 recuperar",
-        "🔐 pin rápido",
+        "🔑 entrar na conta",
+        "📝 cadastrar colaborador",
+        "🔄 recuperar senha",
+        "🔐 pin rápido (obra)",
     ])
 
     with tab_login:
@@ -718,18 +750,28 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     with tab_cadastro:
       st.markdown(
           "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>cadastro"
-          " de novo usuário na plataforma:</p>",
+          " de novo usuário e atribuição de plano por cargo:</p>",
           unsafe_allow_html=True,
       )
       with st.form("form_novo_cadastro"):
         c_nome = st.text_input("nome completo")
-        c_apelido = st.text_input("primeiro nome ou como é conhecido (apelido)")
-        c_cargo = st.text_input("posição hierárquica / setor (opcional)")
+        c_apelido = st.text_input("primeiro nome ou apelido de guerra")
+        c_cargo = st.selectbox(
+            "cargo / plano na empresa",
+            [
+                "Diretoria / Gestão",
+                "Segurança do Trabalho (SST)",
+                "Engenheiro / Gestor de Obra",
+                "Mecânico / Oficina",
+                "Operador / Motorista",
+                "Servente / Pedreiro / Campo",
+            ],
+        )
         c_cpf = st.text_input("cpf")
-        c_email = st.text_input("e-mail de login")
+        c_email = st.text_input("e-mail corporativo de login")
         c_senha = st.text_input("criar senha", type="password")
         c_cel = st.text_input("celular / whatsapp")
-        btn_cadastrar = st.form_submit_button("finalizar cadastro")
+        btn_cadastrar = st.form_submit_button("ativar conta com vantagens")
 
         if btn_cadastrar:
           if c_nome and c_email and c_senha:
@@ -737,11 +779,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 c_apelido.strip()
                 if c_apelido and c_apelido.strip() and c_apelido != "None"
                 else c_nome.split()[0]
-            )
-            cargo_final = (
-                c_cargo.strip()
-                if c_cargo and c_cargo.strip() and c_cargo != "None"
-                else "Colaborador"
             )
             try:
               cursor.execute(
@@ -757,12 +794,13 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                       c_cel,
                       datetime.now().strftime("%Y-%m-%d %H:%M"),
                       apelido_final,
-                      cargo_final,
+                      c_cargo,
                   ),
               )
               conn.commit()
               st.success(
-                  "✅ conta ativada com sucesso! abra a aba 'entrar'."
+                  "✅ conta ativada com sucesso com os benefícios do plano! abra"
+                  " a aba 'entrar'."
               )
             except Exception as e:
               st.error(f"⚠️ erro ao cadastrar (e-mail já cadastrado?): {e}")
@@ -918,8 +956,8 @@ with st.sidebar:
         f"""
             <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; margin-bottom: 10px;">
                 <p style="margin: 0; font-weight: bold; color: #0f172a;">👤 {usuario_atual['apelido']}</p>
-                <p style="margin: 2px 0 6px 0; font-size: 11px; color: #475569;">{usuario_atual['cargo']}</p>
-                <span style="color: #059669; font-weight: bold; font-size: 12px;">🟢 Sessão Fixa na Obra</span>
+                <p style="margin: 2px 0 2px 0; font-size: 11px; color: #047857; font-weight: 700;">{usuario_atual['cargo']}</p>
+                <span style="color: #059669; font-weight: bold; font-size: 11.5px;">🟢 Sessão Fixa na Obra</span>
             </div>
         """,
         unsafe_allow_html=True,
@@ -1790,7 +1828,7 @@ elif menu == "💬 chat tabalmix pro & rede":
               "🚨 ALERTA SOS DISPARADO COM SUCESSO! A gerência foi notificada."
           )
 
-  # EXIBIÇÃO DE ALERTAS SOS PENDENTES (DISPARA ALARME PARA ADMIN / GESTÃO)
+  # EXIBIÇÃO DE ALERTAS SOS PENDENTES (DISPARA ALARME PARA ADMIN / GESTÃO / SEGURANÇA)
   cursor.execute(
       "SELECT * FROM alertas_sos WHERE status = 'PENDENTE' ORDER BY id DESC"
   )
@@ -1799,7 +1837,17 @@ elif menu == "💬 chat tabalmix pro & rede":
       modo_admin_liberado
       or (
           usuario_atual
-          and usuario_atual["cargo"] in ["Gestão", "Gerente", "Admin"]
+          and any(
+              c in usuario_atual["cargo"]
+              for c in [
+                  "Gestão",
+                  "Gerente",
+                  "Admin",
+                  "Segurança",
+                  "Engenheiro",
+                  "Diretoria",
+              ]
+          )
       )
   ):
     st.markdown(
@@ -1860,7 +1908,18 @@ elif menu == "💬 chat tabalmix pro & rede":
       )
 
   if modo_admin_liberado or (
-      usuario_atual and usuario_atual["cargo"] in ["Gestão", "Gerente", "Admin"]
+      usuario_atual
+      and any(
+          c in usuario_atual["cargo"]
+          for c in [
+              "Gestão",
+              "Gerente",
+              "Admin",
+              "Segurança",
+              "Engenheiro",
+              "Diretoria",
+          ]
+      )
   ):
     with st.expander("⚙️ [Gestão] Fixar Novo Aviso no Topo do Chat"):
       with st.form("form_fixar_aviso"):
