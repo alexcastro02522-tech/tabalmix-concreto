@@ -575,41 +575,6 @@ except Exception:
 if "usuario_logado" not in st.session_state:
   st.session_state["usuario_logado"] = None
 
-# PERSISTÊNCIA INTELIGENTE DE SESSÃO NA OBRA (Salva o usuário ativo no navegador/query params para não deslogar ao atualizar)
-try:
-  if st.session_state["usuario_logado"] is None:
-    qp = st.query_params
-    saved_user_id = qp.get("user_id")
-    if saved_user_id:
-      cursor.execute(
-          "SELECT * FROM usuarios_sistema WHERE id = ?", (saved_user_id,)
-      )
-      res_persist = cursor.fetchone()
-      if res_persist:
-        st.session_state["usuario_logado"] = {
-            "id": res_persist[0],
-            "nome": res_persist[1],
-            "cpf": res_persist[2],
-            "email": res_persist[3],
-            "status": res_persist[6],
-            "apelido": (
-                res_persist[9]
-                if len(res_persist) > 9
-                and res_persist[9]
-                and res_persist[9] != "None"
-                else res_persist[1].split()[0]
-            ),
-            "cargo": (
-                res_persist[10]
-                if len(res_persist) > 10
-                and res_persist[10]
-                and res_persist[10] != "None"
-                else "Colaborador"
-            ),
-        }
-except Exception:
-  pass
-
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
   col_l1, col_l2, col_l3 = st.columns([1, 2.4, 1])
   with col_l2:
@@ -703,10 +668,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                     else "Colaborador"
                 ),
             }
-            try:
-              st.query_params["user_id"] = str(user_data[0])
-            except Exception:
-              pass
             st.success("✅ login realizado com sucesso!")
             st.rerun()
           else:
@@ -792,7 +753,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     with tab_pin:
       st.markdown(
           "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>acesso"
-          " instantâneo via pin (4 dígitos) na obra:</p>",
+          " instantâneo via pin (4 dígitos):</p>",
           unsafe_allow_html=True,
       )
       with st.form("form_pin"):
@@ -828,10 +789,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                     else "Colaborador"
                 ),
             }
-            try:
-              st.query_params["user_id"] = str(user_pin[0])
-            except Exception:
-              pass
             st.success("✅ login por pin validado!")
             st.rerun()
           else:
@@ -916,7 +873,7 @@ with st.sidebar:
             <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; margin-bottom: 10px;">
                 <p style="margin: 0; font-weight: bold; color: #0f172a;">👤 {usuario_atual['apelido']}</p>
                 <p style="margin: 2px 0 6px 0; font-size: 11px; color: #475569;">{usuario_atual['cargo']}</p>
-                <span style="color: #059669; font-weight: bold; font-size: 12px;">🟢 Sessão Fixa na Obra</span>
+                <span style="color: #059669; font-weight: bold; font-size: 12px;">🟢 Online (Ativo)</span>
             </div>
         """,
         unsafe_allow_html=True,
@@ -927,10 +884,6 @@ with st.sidebar:
       )
     if st.button("🚪 encerrar sessão"):
       st.session_state["usuario_logado"] = None
-      try:
-        st.query_params.clear()
-      except Exception:
-        pass
       st.rerun()
   st.markdown("---")
 
@@ -1097,9 +1050,16 @@ elif menu == "🚜 cadastro de equipamentos":
     col1, col2 = st.columns(2)
     with col1:
       tag_prefixo = st.text_input("tag / prefixo (ex: EQ-001 / BET-12)")
-      tipo = st.text_input(
-          "tipo / categoria do equipamento (ex: Linha Amarela, Linha Marrom,"
-          " Caminhão Betoneira...)"
+      tipo = st.selectbox(
+          "tipo de equipamento",
+          [
+              "caminhão betoneira",
+              "caminhão basculante",
+              "escavadeira",
+              "utilitário",
+              "trator",
+              "carregadeira",
+          ],
       )
       marca = st.text_input("marca (ex: Volvo, Mercedes-Benz, Scania)")
       modelo = st.text_input("modelo (ex: FMX 420, Atego 2430)")
@@ -1139,7 +1099,6 @@ elif menu == "🚜 cadastro de equipamentos":
             if tag_prefixo and tag_prefixo.strip()
             else "EQ-00" + str(datetime.now().microsecond)[:3]
         )
-        tipo_final = tipo.strip() if tipo and tipo.strip() else "Equipamento"
         cursor.execute(
             "INSERT INTO veiculos (tag_prefixo, tipo, marca, modelo, ano,"
             " chassi, renavam, placa, crv, cor, combustivel, empresa,"
@@ -1147,7 +1106,7 @@ elif menu == "🚜 cadastro de equipamentos":
             " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 tag_final,
-                tipo_final,
+                tipo,
                 marca,
                 modelo,
                 int(ano),
@@ -2203,7 +2162,7 @@ elif menu == "⚙️ painel de licença (admin)":
           )
           conn.commit()
           st.success(
-              f"✅ Status do usuário #{selected_user_id} updated para"
+              f"✅ Status do usuário #{selected_user_id} atualizado para"
               f" '{novo_status_adm}' com sucesso!"
           )
           st.rerun()
