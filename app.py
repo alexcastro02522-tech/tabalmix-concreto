@@ -417,11 +417,27 @@ def init_db():
         CREATE TABLE IF NOT EXISTS veiculos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             tag_prefixo TEXT, tipo TEXT, marca TEXT, modelo TEXT,
-            ano INTEGER, chassi TEXT, placa TEXT, horimetro_km INTEGER,
-            combustivel TEXT, local_atual TEXT, operador_condutor TEXT,
-            status TEXT, data_entrada TEXT, observacoes TEXT
+            ano INTEGER, chassi TEXT, renavam TEXT, placa TEXT, crv TEXT,
+            cor TEXT, combustivel TEXT, empresa TEXT, operador_condutor TEXT,
+            horimetro_km INTEGER, status TEXT, data_entrada TEXT, observacoes TEXT
         )
     """)
+
+  # Garantir colunas completas caso a tabela já exista de versões anteriores
+  for col_sql in [
+      "ALTER TABLE veiculos ADD COLUMN chassi TEXT",
+      "ALTER TABLE veiculos ADD COLUMN renavam TEXT",
+      "ALTER TABLE veiculos ADD COLUMN crv TEXT",
+      "ALTER TABLE veiculos ADD COLUMN cor TEXT",
+      "ALTER TABLE veiculos ADD COLUMN combustivel TEXT",
+      "ALTER TABLE veiculos ADD COLUMN empresa TEXT",
+      "ALTER TABLE veiculos ADD COLUMN operador_condutor TEXT",
+  ]:
+    try:
+      cursor.execute(col_sql)
+    except Exception:
+      pass
+
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS manutencoes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -432,29 +448,6 @@ def init_db():
             data_fechamento TEXT, hora_fechamento TEXT, status_os TEXT
         )
     """)
-  for col_sql in [
-      "ALTER TABLE manutencoes ADD COLUMN tag_prefixo TEXT",
-      "ALTER TABLE manutencoes ADD COLUMN tipo_manutencao TEXT",
-      "ALTER TABLE manutencoes ADD COLUMN horimetro_km_manut TEXT",
-      "ALTER TABLE manutencoes ADD COLUMN origem_falha TEXT",
-      "ALTER TABLE manutencoes ADD COLUMN descricao_problema TEXT",
-      "ALTER TABLE manutencoes ADD COLUMN data_abertura TEXT",
-      "ALTER TABLE manutencoes ADD COLUMN hora_abertura TEXT",
-      "ALTER TABLE manutencoes ADD COLUMN pecas_utilizadas TEXT",
-      "ALTER TABLE manutencoes ADD COLUMN custo_pecas REAL",
-      "ALTER TABLE manutencoes ADD COLUMN mao_de_obra REAL",
-      "ALTER TABLE manutencoes ADD COLUMN custo REAL",
-      "ALTER TABLE manutencoes ADD COLUMN oficina TEXT",
-      "ALTER TABLE manutencoes ADD COLUMN tecnico_mecanico TEXT",
-      "ALTER TABLE manutencoes ADD COLUMN data_fechamento TEXT",
-      "ALTER TABLE manutencoes ADD COLUMN hora_fechamento TEXT",
-      "ALTER TABLE manutencoes ADD COLUMN status_os TEXT",
-  ]:
-    try:
-      cursor.execute(col_sql)
-    except Exception:
-      pass
-
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS pecas (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1000,7 +993,7 @@ if menu == "📊 visão geral":
       st.info("sem dados suficientes de tipos para exibir.")
 
 elif menu == "🚜 cadastro de equipamentos":
-  st.title("🚜 cadastro de equipamentos e frota")
+  st.title("🚜 cadastro completo de equipamentos e frota")
   if not status_usuario_ativo and not modo_admin_liberado:
     st.warning(
         "🔒 **Acesso restrito:** sua conta está inativa. Você pode visualizar"
@@ -1009,7 +1002,7 @@ elif menu == "🚜 cadastro de equipamentos":
   with st.form("form_frota", clear_on_submit=False):
     col1, col2 = st.columns(2)
     with col1:
-      tag_prefixo = st.text_input("tag / prefixo (ex: EQ-001)")
+      tag_prefixo = st.text_input("tag / prefixo (ex: EQ-001 / BET-12)")
       tipo = st.selectbox(
           "tipo de equipamento",
           [
@@ -1018,22 +1011,35 @@ elif menu == "🚜 cadastro de equipamentos":
               "escavadeira",
               "utilitário",
               "trator",
+              "carregadeira",
           ],
       )
-      marca = st.text_input("marca")
-      modelo = st.text_input("modelo")
-    with col2:
+      marca = st.text_input("marca (ex: Volvo, Mercedes-Benz, Scania)")
+      modelo = st.text_input("modelo (ex: FMX 420, Atego 2430)")
       ano = st.number_input(
           "ano de fabricação", min_value=1950, value=2024, step=1
       )
-      placa = st.text_input("placa")
+      chassi = st.text_input("número do chassi")
+      renavam = st.text_input("número do renavam")
+    with col2:
+      placa = st.text_input("placa do veículo")
+      crv = st.text_input("número do crv (certificado de registro)")
+      cor = st.text_input("cor principal")
+      combustivel = st.selectbox(
+          "tipo de combustível",
+          ["Diesel S10", "Diesel S500", "Gasolina", "Flex", "Elétrico"],
+      )
+      empresa = st.text_input("empresa / filial responsável")
+      operador_condutor = st.text_input("operador / motorista responsável")
       horimetro_km = st.number_input(
-          "horímetro ou km atual", min_value=0, value=15000, step=100
+          "horímetro ou km inicial", min_value=0, value=15000, step=100
       )
       status = st.selectbox(
-          "situação", ["Ativo", "Em Manutenção", "Parado", "Mobilizado"]
+          "situação operacional",
+          ["Ativo", "Em Manutenção", "Parado", "Mobilizado"],
       )
-    btn_cad_eq = st.form_submit_button("cadastrar equipamento")
+
+    btn_cad_eq = st.form_submit_button("cadastrar equipamento completo")
     if btn_cad_eq:
       if not status_usuario_ativo and not modo_admin_liberado:
         st.error(
@@ -1048,23 +1054,35 @@ elif menu == "🚜 cadastro de equipamentos":
         )
         cursor.execute(
             "INSERT INTO veiculos (tag_prefixo, tipo, marca, modelo, ano,"
-            " placa, horimetro_km, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            " chassi, renavam, placa, crv, cor, combustivel, empresa,"
+            " operador_condutor, horimetro_km, status) VALUES (?, ?, ?, ?, ?,"
+            " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 tag_final,
                 tipo,
                 marca,
                 modelo,
                 int(ano),
+                chassi.upper(),
+                renavam,
                 placa.upper(),
+                crv,
+                cor,
+                combustivel,
+                empresa,
+                operador_condutor,
                 int(horimetro_km),
                 status,
             ),
         )
         conn.commit()
-        st.success(f"✅ equipamento '{tag_final}' cadastrado com sucesso!")
+        st.success(
+            f"✅ Equipamento '{tag_final}' cadastrado com ficha técnica"
+            " completa!"
+        )
         st.rerun()
       else:
-        st.error("⚠️ preencha ao menos o modelo do equipamento.")
+        st.error("⚠️ Preencha ao menos o modelo do equipamento.")
 
   df_f = pd.read_sql("SELECT * FROM veiculos", conn)
   if not df_f.empty:
