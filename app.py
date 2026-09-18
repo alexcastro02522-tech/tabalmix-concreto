@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Enterprise com Painel Estilo Facebook Messenger no Canto Inferior Direito
+# Estilização Visual Enterprise com Sala de Bate-Papo Corporativa Impecável
 st.markdown(
     """
     <style>
@@ -855,6 +855,7 @@ menu = st.sidebar.radio(
         "🛠️ ordens de serviço (os)",
         "🔩 peças e ferramentas",
         "👥 gestão de clientes",
+        "💬 sala de bate-papo pro",
         "🔍 consulta / busca geral",
         "⚙️ meu perfil / dados",
         "⚙️ painel de licença (admin)",
@@ -1595,6 +1596,157 @@ elif menu == "👥 gestão de clientes":
           st.rerun()
     exibir_tabela_padronizada(df_cli, "clientes")
 
+elif menu == "💬 sala de bate-papo pro":
+  st.title("💬 Sala de Bate-Papo Corporativa Pro X")
+  st.markdown(
+      "Bem-vindo à central oficial de comunicação em tempo real da Tabalmix"
+      " Concreto. Converse com a equipe ou tire dúvidas diretamente com o"
+      " **ADM do Sistema**."
+  )
+
+  # Layout em 2 colunas: Esquerda (Lista de Colaboradores Online), Direita (Canal / Chat Ativo)
+  col_chat_esq, col_chat_dir = st.columns([1, 2.5])
+
+  if "sala_chat_selecionada" not in st.session_state:
+    st.session_state["sala_chat_selecionada"] = "Geral (Equipe)"
+
+  with col_chat_esq:
+    st.markdown("#### 👥 Canais & Contatos")
+    if st.button(
+        "💬 Canal Geral (Equipe)", key="btn_canal_geral_chat_sala"
+    ):
+      st.session_state["sala_chat_selecionada"] = "Geral (Equipe)"
+      st.rerun()
+
+    if st.button(
+        "🛡️ ADM do Sistema (Suporte Técnico)",
+        key="btn_canal_adm_chat_sala",
+    ):
+      st.session_state["sala_chat_selecionada"] = "ADM do Sistema"
+      st.rerun()
+
+    st.markdown("---")
+    st.markdown("**Colegas Online na Rede:**")
+    cursor.execute(
+        "SELECT apelido, cargo_setor FROM usuarios_sistema WHERE"
+        " status_assinatura = 'Ativo'"
+    )
+    colaboradores_chat = cursor.fetchall()
+
+    for idx_c, (col_n, col_g) in enumerate(colaboradores_chat):
+      nome_canal = f"{col_n} ({col_g})"
+      if st.button(f"🟢 {nome_canal}", key=f"btn_col_sala_{idx_c}"):
+        st.session_state["sala_chat_selecionada"] = nome_canal
+        st.rerun()
+
+  with col_chat_dir:
+    canal_atual = st.session_state["sala_chat_selecionada"]
+    st.markdown(f"#### 🗨️ Conversando em: `{canal_atual}`")
+
+    # Formulário de envio de mensagem na sala
+    remetente_atual = (
+        usuario_atual["apelido"]
+        if usuario_atual
+        else ("Administrador" if modo_admin_liberado else "Colaborador")
+    )
+    cargo_atual = usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
+
+    with st.form("form_sala_chat_pro", clear_on_submit=True):
+      texto_msg_sala = st.text_area(
+          "Escreva sua mensagem profissional ou reporte uma falha:"
+      )
+      arquivo_anexo_sala = st.file_uploader(
+          "Anexar arquivo / imagem (opcional)",
+          type=["png", "jpg", "jpeg", "pdf", "docx", "xlsx"],
+      )
+      btn_enviar_sala = st.form_submit_button("📤 Enviar Mensagem para o Canal")
+
+      if btn_enviar_sala:
+        if not texto_msg_sala.strip() and not arquivo_anexo_sala:
+          st.warning("⚠️ Escreva uma mensagem ou anexe um documento.")
+        else:
+          path_arq_sala = ""
+          nome_arq_sala = ""
+          if arquivo_anexo_sala is not None:
+            os.makedirs("chat_documentos", exist_ok=True)
+            nome_arq_sala = arquivo_anexo_sala.name
+            path_arq_sala = (
+                "chat_documentos/"
+                f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nome_arq_sala}"
+            )
+            with open(path_arq_sala, "wb") as f_s:
+              f_s.write(arquivo_anexo_sala.getbuffer())
+
+          data_envio_sala = datetime.now().strftime("%d/%m/%Y às %H:%M")
+          cursor.execute(
+              "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+              " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
+              " ?, ?, ?, ?, ?)",
+              (
+                  f"{remetente_atual} ({cargo_atual})",
+                  canal_atual,
+                  cargo_atual,
+                  texto_msg_sala,
+                  path_arq_sala,
+                  nome_arq_sala,
+                  data_envio_sala,
+              ),
+          )
+          conn.commit()
+          st.success("✅ Mensagem enviada com sucesso na sala!")
+          st.rerun()
+
+    st.markdown("---")
+    st.markdown("##### 📜 Histórico de Mensagens do Canal:")
+
+    # Filtra mensagens do canal atual ou Geral
+    if canal_atual == "Geral (Equipe)":
+      df_mensagens_sala = pd.read_sql(
+          "SELECT * FROM chat_interno WHERE destinatario = 'Geral (Equipe)'"
+          " ORDER BY id DESC LIMIT 25",
+          conn,
+      )
+    else:
+      df_mensagens_sala = pd.read_sql(
+          "SELECT * FROM chat_interno WHERE destinatario = ? OR remetente LIKE ?"
+          " ORDER BY id DESC LIMIT 25",
+          conn,
+          params=(canal_atual, f"%{remetente_atual}%"),
+      )
+
+    if not df_mensagens_sala.empty:
+      for _, row_m_sala in df_mensagens_sala.iterrows():
+        st.markdown(
+            f"""
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                    <div style="display: flex; justify-content: space-between; font-size: 11.5px; color: #64748b; margin-bottom: 4px;">
+                        <span><b>{row_m_sala['remetente']}</b> ➔ <i>{row_m_sala['destinatario']}</i></span>
+                        <span>{row_m_sala['data_envio']}</span>
+                    </div>
+                    <p style="margin: 4px 0 6px 0; color: #0f172a; font-size: 14px; white-space: pre-wrap;">{row_m_sala['mensagem']}</p>
+                </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if row_m_sala["arquivo_path"] and os.path.exists(
+            str(row_m_sala["arquivo_path"])
+        ):
+          with open(row_m_sala["arquivo_path"], "rb") as f_down_sala:
+            st.download_button(
+                label=(
+                    "📥 Baixar anexo do chat:"
+                    f" {row_m_sala['arquivo_nome']}"
+                ),
+                data=f_down_sala.read(),
+                file_name=row_m_sala["arquivo_nome"],
+                key=f"dl_sala_chat_{row_m_sala['id']}",
+            )
+    else:
+      st.info(
+          "Nenhuma mensagem trocada neste canal ainda. Seja o primeiro a"
+          " enviar!"
+      )
+
 elif menu == "🔍 consulta / busca geral":
   st.title("🔍 consulta e histórico completo do equipamento")
   df_v_busca = pd.read_sql(
@@ -1709,163 +1861,3 @@ elif menu == "⚙️ painel de licença (admin)":
           st.rerun()
   else:
     st.info("nenhum usuário cadastrado.")
-
-# ==============================================================================
-# PAINEL LATERAL DE CONTATOS ONLINE E CHAT ESTILO FACEBOOK MESSENGER (CANTO INFERIOR DIREITO)
-# ==============================================================================
-if "messenger_aberto" not in st.session_state:
-  st.session_state["messenger_aberto"] = False
-if "messenger_chat_ativo" not in st.session_state:
-  st.session_state["messenger_chat_ativo"] = None
-
-# Consulta se há novas mensagens na rede
-cursor.execute(
-    "SELECT COUNT(*) FROM chat_interno WHERE destinatario LIKE ? OR destinatario"
-    " = 'Geral (Equipe)'",
-    (
-        f"%{usuario_atual.get('apelido', '')}%"
-        if usuario_atual
-        else "%ADM%",
-    ),
-)
-res_msg_notif = cursor.fetchone()
-tem_nova_msg = res_msg_notif[0] > 0 if res_msg_notif else False
-
-# Se a barra do Messenger estiver aberta no canto inferior direito
-if st.session_state["messenger_aberto"]:
-  st.markdown(
-      """
-        <div style="position: fixed; bottom: 20px; right: 20px; width: 320px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px 12px 0 0; box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999999; font-family: 'Inter', sans-serif; overflow: hidden;">
-            <div style="background: #059669; color: white; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 13.5px;">
-                <span>🟢 Contatos Online & Suporte</span>
-    """,
-      unsafe_allow_html=True,
-  )
-
-  col_m_cls_1, col_m_cls_2 = st.columns([4, 1])
-  with col_m_cls_2:
-    if st.button("✖", key="btn_fechar_messenger_geral"):
-      st.session_state["messenger_aberto"] = False
-      st.session_state["messenger_chat_ativo"] = None
-      st.rerun()
-
-  # Se houver um chat ativo com uma pessoa específica, exibe a conversa
-  if st.session_state["messenger_chat_ativo"]:
-    alvo_chat = st.session_state["messenger_chat_ativo"]
-    st.markdown(
-        f"<div style='padding: 6px 12px; background: #f1f5f9; font-size: 12px;"
-        f" font-weight: bold; color: #0f172a;'>Conversando com: {alvo_chat}</div>",
-        unsafe_allow_html=True,
-    )
-
-    if st.button("⬅️ Voltar para lista", key="btn_voltar_lista_contatos"):
-      st.session_state["messenger_chat_ativo"] = None
-      st.rerun()
-
-    rem_nome = (
-        usuario_atual["apelido"]
-        if usuario_atual
-        else ("Administrador" if modo_admin_liberado else "Colaborador")
-    )
-    rem_cargo = usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
-
-    with st.form("form_messenger_envio", clear_on_submit=True):
-      msg_txt = st.text_input("Mensagem...", placeholder="Escreva...")
-      btn_env_m = st.form_submit_button("Enviar")
-      if btn_env_m and msg_txt.strip():
-        data_env = datetime.now().strftime("%d/%m às %H:%M")
-        cursor.execute(
-            "INSERT INTO chat_interno (remetente, destinatario, cargo,"
-            " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
-            " ?, ?, ?, ?, ?)",
-            (
-                f"{rem_nome} ({rem_cargo})",
-                alvo_chat,
-                rem_cargo,
-                msg_txt,
-                "",
-                "",
-                data_env,
-            ),
-        )
-        conn.commit()
-        st.rerun()
-
-    # Histórico recente
-    df_chat_dir = pd.read_sql(
-        "SELECT * FROM chat_interno WHERE destinatario = ? OR remetente LIKE ?"
-        " ORDER BY id DESC LIMIT 4",
-        conn,
-        params=(alvo_chat, f"%{rem_nome}%"),
-    )
-    if not df_chat_dir.empty:
-      for _, row_m in df_chat_dir.iterrows():
-        st.markdown(
-            f"""
-                    <div style="background: #f8fafc; border-radius: 6px; padding: 6px; margin: 4px 8px; font-size: 11px;">
-                        <b>{row_m['remetente']}</b><br>{row_m['mensagem']}
-                    </div>
-                """,
-            unsafe_allow_html=True,
-        )
-  else:
-    # Exibe a lista estilo Facebook de usuários ativos na rede
-    st.markdown(
-        "<div style='padding: 8px 12px; font-size: 12px; color: #64748b;'>"
-        "Clique em um colega para iniciar o chat rápido:</div>",
-        unsafe_allow_html=True,
-    )
-
-    # Sempre inclui o ADM do Sistema como contato principal de suporte
-    if st.button(
-        "🛡️ ADM do Sistema (Suporte Técnico)",
-        key="btn_contato_adm_sistema_geral",
-    ):
-      st.session_state["messenger_chat_ativo"] = "ADM do Sistema"
-      st.rerun()
-
-    cursor.execute(
-        "SELECT apelido, cargo_setor FROM usuarios_sistema WHERE"
-        " status_assinatura = 'Ativo'"
-    )
-    usuarios_rede = cursor.fetchall()
-
-    for idx_u, (u_nome, u_cargo) in enumerate(usuarios_rede):
-      label_contato = f"🟢 {u_nome} ({u_cargo})"
-      if st.button(label_contato, key=f"btn_contato_rede_{idx_u}"):
-        st.session_state["messenger_chat_ativo"] = f"{u_nome} ({u_cargo})"
-        st.rerun()
-
-else:
-  # Botão flutuante discreto no canto inferior direito estilo Facebook Messenger
-  badge_FB = "🔴" if tem_nova_msg else "🟢"
-  st.markdown(
-      f"""
-        <style>
-        .messenger-trigger {{
-            position: fixed;
-            bottom: 25px;
-            right: 25px;
-            background: #059669;
-            color: white;
-            border-radius: 50px;
-            padding: 10px 18px;
-            box-shadow: 0 8px 25px rgba(5,150,105,0.4);
-            cursor: pointer;
-            z-index: 999999;
-            font-weight: 800;
-            font-size: 13px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }}
-        </style>
-    """,
-      unsafe_allow_html=True,
-  )
-
-  col_m_vazio, col_m_btn = st.columns([5, 1.3])
-  with col_m_btn:
-    if st.button(f"{badge_FB} Messenger", key="btn_abrir_messenger_fb"):
-      st.session_state["messenger_aberto"] = True
-      st.rerun()
