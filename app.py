@@ -1051,8 +1051,8 @@ elif menu == "🚜 cadastro de equipamentos":
     with col1:
       tag_prefixo = st.text_input("tag / prefixo (ex: EQ-001 / BET-12)")
       tipo = st.text_input(
-          "tipo / categoria do equipamento (digite livremente, ex: Caminhão"
-          " Betoneira, Pá Carregadeira...)"
+          "tipo / categoria do equipamento (digite livremente, ex: Linha"
+          " Amarela, Caminhão Betoneira...)"
       )
       marca = st.text_input("marca (ex: Volvo, Mercedes-Benz, Scania)")
       modelo = st.text_input("modelo (ex: FMX 420, Atego 2430)")
