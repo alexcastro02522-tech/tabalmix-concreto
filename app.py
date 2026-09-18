@@ -11,6 +11,7 @@ import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import streamlit as st
+from streamlit_webrtc import webrtc_streamer, WebRtcMode
 
 # CONFIGURAÇÃO DO MERCADO PAGO (Token Oficial de Produção Integrado)
 MERCADO_PAGO_ACCESS_TOKEN = (
@@ -25,7 +26,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Enterprise com Sala de Bate-Papo Corporativa Impecável
+# Estilização Visual Enterprise com Vídeo/Áudio VoIP Integrado
 st.markdown(
     """
     <style>
@@ -1341,7 +1342,7 @@ elif menu == "🛠️ ordens de serviço (os)":
       )
       horimetro_ab = st.text_input("horímetro / km na abertura")
       origem_f = st.selectbox(
-          "origem da falha", ["falha na operação", "falha no equipamento"]
+          "origem da falha", ["falha na operação", "falha na máquina"]
       )
     with c2:
       data_ab = st.date_input("data de abertura", value=datetime.now().date())
@@ -1597,32 +1598,28 @@ elif menu == "👥 gestão de clientes":
     exibir_tabela_padronizada(df_cli, "clientes")
 
 elif menu == "💬 sala de bate-papo pro":
-  st.title("💬 Sala de Bate-Papo Corporativa Pro X")
+  st.title("💬 Sala de Bate-Papo Corporativa Pro X com Chamada de Vídeo")
   st.markdown(
-      "Bem-vindo à central oficial de comunicação em tempo real da Tabalmix"
-      " Concreto. Converse com a equipe ou tire dúvidas diretamente com o"
-      " **ADM do Sistema**."
+      "Central de comunicação de alta performance: envie mensagens,"
+      " documentos ou inicie uma **Chamada de Vídeo / Áudio em Tempo Real**"
+      " direto pelo navegador."
   )
 
-  # Layout em 2 colunas: Esquerda (Lista de Colaboradores Online), Direita (Canal / Chat Ativo)
-  col_chat_esq, col_chat_dir = st.columns([1, 2.5])
+  col_s1, col_s2 = st.columns([1, 2.8])
 
-  if "sala_chat_selecionada" not in st.session_state:
-    st.session_state["sala_chat_selecionada"] = "Geral (Equipe)"
+  if "sala_chat_ativa" not in st.session_state:
+    st.session_state["sala_chat_ativa"] = "Geral (Equipe)"
 
-  with col_chat_esq:
+  with col_s1:
     st.markdown("#### 👥 Canais & Contatos")
-    if st.button(
-        "💬 Canal Geral (Equipe)", key="btn_canal_geral_chat_sala"
-    ):
-      st.session_state["sala_chat_selecionada"] = "Geral (Equipe)"
+    if st.button("💬 Canal Geral (Equipe)", key="btn_chat_geral_sala_pro"):
+      st.session_state["sala_chat_ativa"] = "Geral (Equipe)"
       st.rerun()
 
     if st.button(
-        "🛡️ ADM do Sistema (Suporte Técnico)",
-        key="btn_canal_adm_chat_sala",
+        "🛡️ ADM do Sistema (Suporte Técnico)", key="btn_chat_adm_sala_pro"
     ):
-      st.session_state["sala_chat_selecionada"] = "ADM do Sistema"
+      st.session_state["sala_chat_ativa"] = "ADM do Sistema"
       st.rerun()
 
     st.markdown("---")
@@ -1635,15 +1632,30 @@ elif menu == "💬 sala de bate-papo pro":
 
     for idx_c, (col_n, col_g) in enumerate(colaboradores_chat):
       nome_canal = f"{col_n} ({col_g})"
-      if st.button(f"🟢 {nome_canal}", key=f"btn_col_sala_{idx_c}"):
-        st.session_state["sala_chat_selecionada"] = nome_canal
+      if st.button(f"🟢 {nome_canal}", key=f"btn_chat_col_sala_{idx_c}"):
+        st.session_state["sala_chat_ativa"] = nome_canal
         st.rerun()
 
-  with col_chat_dir:
-    canal_atual = st.session_state["sala_chat_selecionada"]
-    st.markdown(f"#### 🗨️ Conversando em: `{canal_atual}`")
+  with col_s2:
+    canal_corrente = st.session_state["sala_chat_ativa"]
+    st.markdown(f"#### 🗨️ Canal Ativo: `{canal_corrente}`")
 
-    # Formulário de envio de mensagem na sala
+    # BOTÃO PARA INICIAR CHAMADA DE VÍDEO/ÁUDIO WEBRTC
+    with st.expander(
+        "📹 Iniciar Chamada de Vídeo ou Áudio ao Vivo (WebRTC)", expanded=False
+    ):
+      st.markdown(
+          "Clique em **START** abaixo para transmitir seu vídeo e áudio com a"
+          " central ou equipe:"
+      )
+      webrtc_streamer(
+          key=f"room_call_{canal_corrente.replace(' ', '_')}",
+          mode=WebRtcMode.SENDRECV,
+          rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
+          media_stream_constraints={"video": True, "audio": True},
+      )
+
+    st.markdown("---")
     remetente_atual = (
         usuario_atual["apelido"]
         if usuario_atual
@@ -1651,101 +1663,94 @@ elif menu == "💬 sala de bate-papo pro":
     )
     cargo_atual = usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
 
-    with st.form("form_sala_chat_pro", clear_on_submit=True):
-      texto_msg_sala = st.text_area(
-          "Escreva sua mensagem profissional ou reporte uma falha:"
+    with st.form("form_chat_sala_principal", clear_on_submit=True):
+      msg_sala_txt = st.text_area(
+          "Digite sua mensagem profissional ou reporte uma falha:"
       )
-      arquivo_anexo_sala = st.file_uploader(
-          "Anexar arquivo / imagem (opcional)",
+      file_sala_up = st.file_uploader(
+          "Anexar arquivo / documento / comprovante",
           type=["png", "jpg", "jpeg", "pdf", "docx", "xlsx"],
       )
-      btn_enviar_sala = st.form_submit_button("📤 Enviar Mensagem para o Canal")
+      btn_enviar_sala_pro = st.form_submit_button(
+          "📤 Enviar Mensagem para o Canal"
+      )
 
-      if btn_enviar_sala:
-        if not texto_msg_sala.strip() and not arquivo_anexo_sala:
+      if btn_enviar_sala_pro:
+        if not msg_sala_txt.strip() and not file_sala_up:
           st.warning("⚠️ Escreva uma mensagem ou anexe um documento.")
         else:
-          path_arq_sala = ""
-          nome_arq_sala = ""
-          if arquivo_anexo_sala is not None:
+          path_s = ""
+          nome_s = ""
+          if file_sala_up is not None:
             os.makedirs("chat_documentos", exist_ok=True)
-            nome_arq_sala = arquivo_anexo_sala.name
-            path_arq_sala = (
+            nome_s = file_sala_up.name
+            path_s = (
                 "chat_documentos/"
-                f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nome_arq_sala}"
+                f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nome_s}"
             )
-            with open(path_arq_sala, "wb") as f_s:
-              f_s.write(arquivo_anexo_sala.getbuffer())
+            with open(path_s, "wb") as f_out_s:
+              f_out_s.write(file_sala_up.getbuffer())
 
-          data_envio_sala = datetime.now().strftime("%d/%m/%Y às %H:%M")
+          data_env_s = datetime.now().strftime("%d/%m/%Y às %H:%M")
           cursor.execute(
               "INSERT INTO chat_interno (remetente, destinatario, cargo,"
               " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
               " ?, ?, ?, ?, ?)",
               (
                   f"{remetente_atual} ({cargo_atual})",
-                  canal_atual,
+                  canal_corrente,
                   cargo_atual,
-                  texto_msg_sala,
-                  path_arq_sala,
-                  nome_arq_sala,
-                  data_envio_sala,
+                  msg_sala_txt,
+                  path_s,
+                  nome_s,
+                  data_env_s,
               ),
           )
           conn.commit()
-          st.success("✅ Mensagem enviada com sucesso na sala!")
+          st.success("✅ Mensagem enviada com sucesso!")
           st.rerun()
 
     st.markdown("---")
-    st.markdown("##### 📜 Histórico de Mensagens do Canal:")
+    st.markdown("##### 📜 Histórico de Mensagens:")
 
-    # Filtra mensagens do canal atual ou Geral
-    if canal_atual == "Geral (Equipe)":
-      df_mensagens_sala = pd.read_sql(
+    if canal_corrente == "Geral (Equipe)":
+      df_msgs = pd.read_sql(
           "SELECT * FROM chat_interno WHERE destinatario = 'Geral (Equipe)'"
-          " ORDER BY id DESC LIMIT 25",
+          " ORDER BY id DESC LIMIT 30",
           conn,
       )
     else:
-      df_mensagens_sala = pd.read_sql(
+      df_msgs = pd.read_sql(
           "SELECT * FROM chat_interno WHERE destinatario = ? OR remetente LIKE ?"
-          " ORDER BY id DESC LIMIT 25",
+          " ORDER BY id DESC LIMIT 30",
           conn,
-          params=(canal_atual, f"%{remetente_atual}%"),
+          params=(canal_corrente, f"%{remetente_atual}%"),
       )
 
-    if not df_mensagens_sala.empty:
-      for _, row_m_sala in df_mensagens_sala.iterrows():
+    if not df_msgs.empty:
+      for _, row_m in df_msgs.iterrows():
         st.markdown(
             f"""
                 <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
                     <div style="display: flex; justify-content: space-between; font-size: 11.5px; color: #64748b; margin-bottom: 4px;">
-                        <span><b>{row_m_sala['remetente']}</b> ➔ <i>{row_m_sala['destinatario']}</i></span>
-                        <span>{row_m_sala['data_envio']}</span>
+                        <span><b>{row_m['remetente']}</b> ➔ <i>{row_m['destinatario']}</i></span>
+                        <span>{row_m['data_envio']}</span>
                     </div>
-                    <p style="margin: 4px 0 6px 0; color: #0f172a; font-size: 14px; white-space: pre-wrap;">{row_m_sala['mensagem']}</p>
+                    <p style="margin: 4px 0 6px 0; color: #0f172a; font-size: 14px; white-space: pre-wrap;">{row_m['mensagem']}</p>
                 </div>
             """,
             unsafe_allow_html=True,
         )
-        if row_m_sala["arquivo_path"] and os.path.exists(
-            str(row_m_sala["arquivo_path"])
-        ):
-          with open(row_m_sala["arquivo_path"], "rb") as f_down_sala:
+        if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
+          with open(row_m["arquivo_path"], "rb") as f_down:
             st.download_button(
-                label=(
-                    "📥 Baixar anexo do chat:"
-                    f" {row_m_sala['arquivo_nome']}"
-                ),
-                data=f_down_sala.read(),
-                file_name=row_m_sala["arquivo_nome"],
-                key=f"dl_sala_chat_{row_m_sala['id']}",
+                label=f"📥 Baixar anexo: {row_m['arquivo_nome']}",
+                data=f_down.read(),
+                file_name=row_m["arquivo_nome"],
+                key=f"dl_sala_msg_{row_m['id']}",
             )
     else:
-      st.info(
-          "Nenhuma mensagem trocada neste canal ainda. Seja o primeiro a"
-          " enviar!"
-      )
+      st.info("Nenhuma mensagem trocada neste canal ainda.")
 
 elif menu == "🔍 consulta / busca geral":
   st.title("🔍 consulta e histórico completo do equipamento")
@@ -1861,3 +1866,125 @@ elif menu == "⚙️ painel de licença (admin)":
           st.rerun()
   else:
     st.info("nenhum usuário cadastrado.")
+
+# ==============================================================================
+# WIDGET FLUTUANTE DE CHAT RÁPIDO & CHAMADA DE VÍDEO RÁPIDA NO CANTO INFERIOR DIREITO
+# ==============================================================================
+if "widget_chat_aberto" not in st.session_state:
+  st.session_state["widget_chat_aberto"] = False
+
+cursor.execute(
+    "SELECT COUNT(*) FROM chat_interno WHERE destinatario LIKE ? OR destinatario"
+    " = 'Geral (Equipe)'",
+    (
+        f"%{usuario_atual.get('apelido', '')}%"
+        if usuario_atual
+        else "%ADM%",
+    ),
+)
+res_n = cursor.fetchone()
+tem_msgs_pendentes = res_n[0] > 0 if res_n else False
+
+if st.session_state["widget_chat_aberto"]:
+  st.markdown(
+      """
+        <div style="position: fixed; bottom: 20px; right: 20px; width: 350px; background: #ffffff; border: 2px solid #059669; border-radius: 14px; box-shadow: 0 15px 35px rgba(0,0,0,0.25); z-index: 999999; padding: 14px; font-family: 'Inter', sans-serif;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 10px;">
+                <div style="font-weight: 800; font-size: 13.5px; color: #059669;">📹 Chat & Vídeo (Suporte ADM)</div>
+    """,
+      unsafe_allow_html=True,
+  )
+
+  col_wc_l, col_wc_r = st.columns([4, 1])
+  with col_wc_r:
+    if st.button("❌", key="btn_fechar_widget_chat_flutuante"):
+      st.session_state["widget_chat_aberto"] = False
+      st.rerun()
+
+  # Atalho WebRTC direto no Widget Flutuante
+  with st.expander("🔴 Ligar Câmera / Vídeo ao Vivo", expanded=False):
+    webrtc_streamer(
+        key="widget_webrtc_call",
+        mode=WebRtcMode.SENDRECV,
+        rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
+        media_stream_constraints={"video": True, "audio": True},
+    )
+
+  rem_widget_n = (
+      usuario_atual["apelido"]
+      if usuario_atual
+      else ("Administrador" if modo_admin_liberado else "Colaborador")
+  )
+  rem_widget_c = usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
+
+  with st.form("form_widget_chat_rapido", clear_on_submit=True):
+    msg_w_input = st.text_input("Mensagem rápida para o ADM ou Equipe:")
+    btn_w_env = st.form_submit_button("Enviar Rápido")
+    if btn_w_env and msg_w_input.strip():
+      data_w_str = datetime.now().strftime("%d/%m às %H:%M")
+      cursor.execute(
+          "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+          " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
+          " ?, ?, ?, ?, ?)",
+          (
+              f"{rem_widget_n} ({rem_widget_c})",
+              "ADM do Sistema",
+              rem_widget_c,
+              msg_w_input,
+              "",
+              "",
+              data_w_str,
+          ),
+      )
+      conn.commit()
+      st.success("✅ Enviado com sucesso!")
+      st.rerun()
+
+  st.markdown("---")
+  st.markdown("##### 📜 Últimas Mensagens:")
+  df_widget_hist = pd.read_sql(
+      "SELECT * FROM chat_interno ORDER BY id DESC LIMIT 3", conn
+  )
+  if not df_widget_hist.empty:
+    for _, rw_w in df_widget_hist.iterrows():
+      st.markdown(
+          f"""
+                <div style="background: #f8fafc; border-radius: 6px; padding: 6px; margin-bottom: 4px; font-size: 11px;">
+                    <b>{rw_w['remetente']}</b><br>
+                    <span style="color: #0f172a;">{rw_w['mensagem']}</span>
+                </div>
+            """,
+          unsafe_allow_html=True,
+      )
+  else:
+    st.info("Sem mensagens recentes.")
+
+else:
+  badge_w = "🔴" if tem_msgs_pendentes else "🟢"
+  st.markdown(
+      """
+        <style>
+        .widget-chat-btn {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: #059669;
+            color: white;
+            border-radius: 50px;
+            padding: 10px 18px;
+            box-shadow: 0 8px 25px rgba(5,150,105,0.4);
+            cursor: pointer;
+            z-index: 999999;
+            font-weight: 800;
+            font-size: 13px;
+        }
+        </style>
+    """,
+      unsafe_allow_html=True,
+  )
+
+  col_bw_l, col_bw_r = st.columns([5, 1.4])
+  with col_bw_r:
+    if st.button(f"{badge_w} Vídeo & ADM", key="btn_abrir_widget_chat_flutu"):
+      st.session_state["widget_chat_aberto"] = True
+      st.rerun()
