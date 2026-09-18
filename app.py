@@ -423,7 +423,6 @@ def init_db():
         )
     """)
 
-  # Garantir colunas completas caso a tabela já exista de versões anteriores
   for col_sql in [
       "ALTER TABLE veiculos ADD COLUMN chassi TEXT",
       "ALTER TABLE veiculos ADD COLUMN renavam TEXT",
@@ -1402,81 +1401,82 @@ elif menu == "🛠️ ordens de serviço (os)":
           st.success("✅ Ordem atualizada para todos os colaboradores!")
           st.rerun()
     exibir_tabela_padronizada(df_os, "manutencoes")
+  else:
+    st.info("Nenhuma OS cadastrada no momento. Abra uma OS acima para gerenciar.")
 
-    st.markdown("### 🔴 encerramento e faturamento de os (etapa 2)")
+  st.divider()
+  st.markdown("### 🔴 encerramento e faturamento de os (etapa 2)")
+  df_os_todas = pd.read_sql("SELECT * FROM manutencoes", conn)
+  if not df_os_todas.empty:
     with st.form("form_fechamento_os"):
-      os_ids = (
-          df_os[df_os["status_os"] == "aberta"]["id"].tolist()
-          if "status_os" in df_os.columns
-          else df_os["id"].tolist()
+      os_ids_disp = df_os_todas["id"].tolist()
+      os_selecionada = st.selectbox(
+          "selecione o id da os para fechar / gerenciar", os_ids_disp
       )
-      if os_ids:
-        os_selecionada = st.selectbox(
-            "selecione o id da os para fechar", os_ids
-        )
-        oficina_f = st.text_input("oficina responsável")
-        tecnico_f = st.text_input("técnico / mecânico responsável")
-        pecas_f = st.text_input("peças utilizadas")
-        custo_pecas_f = st.number_input(
-            "custo total de peças (r$)", min_value=0.0, value=0.0
-        )
-        mao_obra_f = st.number_input(
-            "custo de mão de obra (r$)", min_value=0.0, value=0.0
-        )
-        data_fec = st.date_input(
-            "data de fechamento", value=datetime.now().date()
-        )
-        hora_fec = st.text_input(
-            "horário de fechamento", value=datetime.now().strftime("%H:%M")
-        )
+      oficina_f = st.text_input("oficina responsável")
+      tecnico_f = st.text_input("técnico / mecânico responsável")
+      pecas_f = st.text_input("peças utilizadas")
+      custo_pecas_f = st.number_input(
+          "custo total de peças (r$)", min_value=0.0, value=0.0
+      )
+      mao_obra_f = st.number_input(
+          "custo de mão de obra (r$)", min_value=0.0, value=0.0
+      )
+      data_fec = st.date_input(
+          "data de fechamento", value=datetime.now().date()
+      )
+      hora_fec = st.text_input(
+          "horário de fechamento", value=datetime.now().strftime("%H:%M")
+      )
 
-        btn_fechar_os = st.form_submit_button("encerrar os e gerar custos")
-        if btn_fechar_os:
-          if not status_usuario_ativo and not modo_admin_liberado:
-            st.error(
-                "⚠️ Conta inativa: você não tem permissão para encerrar OS."
-            )
-          else:
-            custo_total = float(custo_pecas_f) + float(mao_obra_f)
-            cursor.execute(
-                "UPDATE manutencoes SET oficina = ?, tecnico_mecanico = ?,"
-                " pecas_utilizadas = ?, custo_pecas = ?, mao_de_obra = ?,"
-                " custo = ?, data_fechamento = ?, hora_fechamento = ?,"
-                " status_os = 'fechada' WHERE id = ?",
-                (
-                    oficina_f,
-                    tecnico_f,
-                    pecas_f,
-                    float(custo_pecas_f),
-                    float(mao_obra_f),
-                    custo_total,
-                    str(data_fec),
-                    hora_fec,
-                    os_selecionada,
-                ),
-            )
-            conn.commit()
-            st.success(
-                f"✅ os #{os_selecionada} fechada com sucesso! custo total:"
-                f" r$ {custo_total:,.2f}"
-            )
-            st.rerun()
-      else:
-        st.info("não há ordens de serviço com status 'aberta' para encerrar.")
+      btn_fechar_os = st.form_submit_button("encerrar os e gerar custos")
+      if btn_fechar_os:
+        if not status_usuario_ativo and not modo_admin_liberado:
+          st.error(
+              "⚠️ Conta inativa: você não tem permissão para encerrar OS."
+          )
+        else:
+          custo_total = float(custo_pecas_f) + float(mao_obra_f)
+          cursor.execute(
+              "UPDATE manutencoes SET oficina = ?, tecnico_mecanico = ?,"
+              " pecas_utilizadas = ?, custo_pecas = ?, mao_de_obra = ?,"
+              " custo = ?, data_fechamento = ?, hora_fechamento = ?,"
+              " status_os = 'fechada' WHERE id = ?",
+              (
+                  oficina_f,
+                  tecnico_f,
+                  pecas_f,
+                  float(custo_pecas_f),
+                  float(mao_obra_f),
+                  custo_total,
+                  str(data_fec),
+                  hora_fec,
+                  os_selecionada,
+              ),
+          )
+          conn.commit()
+          st.success(
+              f"✅ OS #{os_selecionada} fechada com sucesso! Custo total:"
+              f" R$ {custo_total:,.2f}"
+          )
+          st.rerun()
 
-    for index, row in df_os.iterrows():
+    for index, row in df_os_todas.iterrows():
       if str(row.get("status_os")) == "fechada":
         if status_usuario_ativo or modo_admin_liberado:
           pdf_os_buffer = gerar_pdf_os_tecnica(row)
           st.download_button(
-              label=f"📄 baixar pdf da os #{row['id']}",
+              label=f"📄 Baixar PDF da OS Fechada #{row['id']}",
               data=pdf_os_buffer,
               file_name=f"ordem_servico_{row['id']}.pdf",
               mime="application/pdf",
               key=f"dl_os_{row['id']}",
           )
   else:
-    st.info("nenhuma os registrada.")
+    st.info(
+        "💡 *A Etapa 2 de encerramento ficará pronta para uso assim que a primeira"
+        " OS for aberta na Etapa 1.*"
+    )
 
 elif menu == "🔩 peças e ferramentas":
   st.title("🔩 controle de peças e ferramentas")
@@ -1741,7 +1741,7 @@ if st.session_state["chat_aberto"]:
   for i, usr in enumerate(usuarios_ativos_db):
     nome_u, cargo_u = usr
     with col_usrs_disp[i % len(col_usrs_disp)]:
-      if st.button(f"🟢 {nome_u} ({cargo_u})", key=f"btn_chat_usr_{i}"):
+      if st.button(f"🟢 {nome_u} ({cargo_u})", key=f"btn_chat_usr_{i}__"):
         st.session_state["chat_destinatario"] = nome_u
         st.rerun()
 
