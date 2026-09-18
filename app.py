@@ -521,6 +521,25 @@ def init_db():
     except Exception:
       pass
 
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS alertas_sos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            remetente TEXT,
+            equipamento TEXT,
+            motivo TEXT,
+            data_alerta TEXT,
+            status TEXT
+        )
+    """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS avisos_fixados (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            autor TEXT,
+            mensagem TEXT,
+            data_fixacao TEXT
+        )
+    """)
+
   conn.commit()
   return conn
 
@@ -1595,15 +1614,131 @@ elif menu == "👥 gestão de clientes":
     exibir_tabela_padronizada(df_cli, "clientes")
 
 elif menu == "💬 chat tabalmix pro & rede":
-  st.title("💬 Chat Tabalmix Pro & Rede")
+  st.title("💬 Chat Tabalmix Pro & Central de Operações")
   st.markdown(
-      "Central de comunicação corporativa: envie mensagens, troque arquivos e"
-      " faça chamadas instantâneas com a equipe."
+      "Comunicação unificada Enterprise: chats privados 1 a 1, canais de"
+      " equipes, mural de avisos fixados e alerta SOS de emergência."
   )
 
-  # ABAS SUPERIORES COM A CARA DO SISTEMA
+  # PAINEL DE ALERTA SOS EM CAMPO
+  st.markdown(
+      """
+        <div style="background: #fee2e2; border: 2px solid #ef4444; border-radius: 12px; padding: 12px 18px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between;">
+            <div>
+                <h4 style="margin: 0; color: #991b1b !important; font-size: 15px;">🚨 Botão de Pânico / Alerta SOS em Campo</h4>
+                <p style="margin: 2px 0 0 0; font-size: 11.5px; color: #b91c1c;">Em caso de emergência ou pane grave, acione imediatamente para alertar a gerência e a oficina.</p>
+            </div>
+        </div>
+    """,
+      unsafe_allow_html=True,
+  )
+
+  with st.expander("🚨 Acionar Alerta de Emergência SOS"):
+    with st.form("form_sos_emergencia"):
+      eq_sos = st.text_input(
+          "Equipamento / Caminhão envolvido (ex: BET-05 ou EQ-01)"
+      )
+      motivo_sos = st.text_area(
+          "Motivo do alerta (ex: pane elétrica, pneu estourado, acidente leve)"
+      )
+      btn_enviar_sos = st.form_submit_button(
+          "🚨 DISPARAR ALERTA SOS IMEDIATO"
+      )
+      if btn_enviar_sos:
+        if not motivo_sos:
+          st.warning("⚠️ Descreva o motivo do alerta.")
+        else:
+          rem_sos = (
+              usuario_atual["apelido"] if usuario_atual else "Colaborador"
+          )
+          dt_sos = datetime.now().strftime("%d/%m/%Y às %H:%M")
+          cursor.execute(
+              "INSERT INTO alertas_sos (remetente, equipamento, motivo,"
+              " data_alerta, status) VALUES (?, ?, ?, ?, 'PENDENTE')",
+              (rem_sos, eq_sos.upper(), motivo_sos, dt_sos),
+          )
+          conn.commit()
+          st.error(
+              "🚨 ALERTA SOS DISPARADO COM SUCESSO! A gerência foi notificada."
+          )
+
+  # EXIBIÇÃO DE ALERTAS SOS PENDENTES PARA A GESTÃO
+  cursor.execute(
+      "SELECT * FROM alertas_sos WHERE status = 'PENDENTE' ORDER BY id DESC"
+  )
+  lista_sos_pend = cursor.fetchall()
+  if lista_sos_pend:
+    st.markdown(
+        "<h4 style='color: #dc2626;'>⚠️ ALERTAS SOS ATIVOS NA FROTA:</h4>",
+        unsafe_allow_html=True,
+    )
+    for sos_item in lista_sos_pend:
+      st.markdown(
+          f"""
+            <div style="background: #fef2f2; border-left: 5px solid #dc2626; padding: 10px; border-radius: 8px; margin-bottom: 6px; font-size: 12.5px;">
+                <b>🚨 Emergência #{sos_item[0]}</b> | Solicitante: <b>{sos_item[1]}</b> | Equipamento: <b>{sos_item[2]}</b><br>
+                <b>Relato:</b> {sos_item[3]} <br> <span style="color: #6b7280; font-size: 11px;">Registrado em: {sos_item[4]}</span>
+            </div>
+        """,
+          unsafe_allow_html=True,
+      )
+
+  # MURAL DE AVISOS FIXADOS (PINNED NOTICES)
+  st.markdown("---")
+  st.markdown("#### 📌 Mural de Avisos Fixados (Diretoria / Oficina)")
+  cursor.execute(
+      "SELECT * FROM avisos_fixados ORDER BY id DESC LIMIT 2"
+  )
+  avisos_fix = cursor.fetchall()
+  if avisos_fix:
+    for av in avisos_fix:
+      st.markdown(
+          f"""
+            <div style="background: #ecfdf5; border: 1px solid #10b981; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px;">
+                <span style="font-size: 11px; font-weight: bold; color: #047857;">📌 Comunicado Oficial de {av[1]} ({av[3]})</span>
+                <div style="font-size: 13px; color: #0f172a; margin-top: 2px;">{av[2]}</div>
+            </div>
+        """,
+          unsafe_allow_html=True,
+      )
+
+  if modo_admin_liberado or (
+      usuario_atual and usuario_atual["cargo"] in ["Gestão", "Gerente", "Admin"]
+  ):
+    with st.expander("⚙️ [Gestão] Fixar Novo Aviso no Topo do Chat"):
+      with st.form("form_fixar_aviso"):
+        texto_aviso = st.text_area("Texto do comunicado oficial:")
+        btn_fixar = st.form_submit_button("Fixar Comunicado")
+        if btn_fixar and texto_aviso:
+          autor_av = (
+              usuario_atual["apelido"] if usuario_atual else "Administrador"
+          )
+          dt_av = datetime.now().strftime("%d/%m às %H:%M")
+          cursor.execute(
+              "INSERT INTO avisos_fixados (autor, mensagem, data_fixacao)"
+              " VALUES (?, ?, ?)",
+              (autor_av, texto_aviso, dt_av),
+          )
+          conn.commit()
+          st.success("✅ Aviso fixado no topo com sucesso!")
+          st.rerun()
+
+  # SELETOR DE STATUS DO USUÁRIO
+  st.markdown("---")
+  status_escolhido = st.radio(
+      "Meu Status Atual na Rede:",
+      [
+          "🟢 Disponível / Online",
+          "🟡 Em Campo / Obra",
+          "🔴 Ocupado / Reunião",
+          "⚫ Ausente",
+      ],
+      horizontal=True,
+  )
+
+  # ABAS SUPERIORES
   tab_conversa, tab_contatos_rede = st.tabs(
-      ["💬 Conversas & Chat", "👥 Rede de Colaboradores (Contatos)"]
+      ["💬 Conversas & Chat Ativo", "👥 Rede de Colaboradores & Privado"]
   )
 
   if "sala_chat_ativa" not in st.session_state:
@@ -1618,9 +1753,9 @@ elif menu == "💬 chat tabalmix pro & rede":
   link_meet = "https://meet.jit.si/TabalmixConcretoEnterprisePro"
 
   with tab_conversa:
-    st.markdown(f"#### 🗨️ Chat Ativo: `{st.session_state['sala_chat_ativa']}`")
+    st.markdown(f"#### 🗨️ Conversa: `{st.session_state['sala_chat_ativa']}`")
 
-    # CABEÇALHO DO CHAT COM OS BOTÕES DE LIGAÇÃO E VÍDEO NO TOPO
+    # CABEÇALHO DO CHAT COM BOTÕES DE ÁUDIO E VÍDEO
     st.markdown(
         f"""
         <div style="background: #047857; padding: 12px 18px; border-radius: 12px 12px 0 0; display: flex; align-items: center; justify-content: space-between; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -1628,7 +1763,7 @@ elif menu == "💬 chat tabalmix pro & rede":
                 <div style="background: #10b981; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; border: 2px solid white;">💬</div>
                 <div>
                     <h4 style="margin: 0; color: white !important; font-size: 15px;">{st.session_state['sala_chat_ativa']}</h4>
-                    <span style="font-size: 10.5px; opacity: 0.9;">online • rede tabalmix pro</span>
+                    <span style="font-size: 10.5px; opacity: 0.9;">status: {status_escolhido} • criptografado</span>
                 </div>
             </div>
             <div style="display: flex; gap: 10px;">
@@ -1640,7 +1775,7 @@ elif menu == "💬 chat tabalmix pro & rede":
         unsafe_allow_html=True,
     )
 
-    # ÁREA DE MENSAGENS COM FUNDO SUAVE
+    # ÁREA DE MENSAGENS
     st.markdown(
         """
         <div style="background: #f1f5f9; padding: 15px; border-radius: 0 0 12px 12px; border: 1px solid #cbd5e1; border-top: none; min-height: 250px; max-height: 350px; overflow-y: auto; margin-bottom: 12px;">
@@ -1657,11 +1792,24 @@ elif menu == "💬 chat tabalmix pro & rede":
       )
     else:
       df_msgs = pd.read_sql(
-          "SELECT * FROM chat_interno WHERE destinatario = ? OR remetente LIKE ?"
-          " ORDER BY id DESC LIMIT 25",
+          "SELECT * FROM chat_interno WHERE (destinatario = ? AND remetente LIKE"
+          " ?) OR (destinatario LIKE ? AND remetente LIKE ?) ORDER BY id DESC"
+          " LIMIT 25",
           conn,
-          params=(canal_corrente, f"%{canal_corrente.split()[0]}%"),
+          params=(
+              canal_corrente,
+              f"%{remetente_atual}%",
+              f"%{remetente_atual}%",
+              f"%{canal_corrente.split()[0]}%",
+          ),
       )
+      if df_msgs.empty:
+        df_msgs = pd.read_sql(
+            "SELECT * FROM chat_interno WHERE destinatario = ? ORDER BY id DESC"
+            " LIMIT 25",
+            conn,
+            params=(canal_corrente,),
+        )
 
     if not df_msgs.empty:
       for _, row_m in df_msgs.iterrows():
@@ -1694,7 +1842,7 @@ elif menu == "💬 chat tabalmix pro & rede":
     else:
       st.markdown(
           "<p style='text-align: center; color: #64748b; font-size: 12px;"
-          " margin-top: 30px;'>Nenhuma mensagem trocada ainda. Envie a primeira"
+          " margin-top: 30px;'>Inicie a conversa enviando uma mensagem"
           " abaixo!</p>",
           unsafe_allow_html=True,
       )
@@ -1702,9 +1850,9 @@ elif menu == "💬 chat tabalmix pro & rede":
     st.markdown("</div>", unsafe_allow_html=True)
 
     with st.form("form_chat_sala_principal", clear_on_submit=True):
-      msg_sala_txt = st.text_input("Digite uma mensagem corporativa...")
+      msg_sala_txt = st.text_input("Digite sua mensagem corporativa...")
       file_sala_up = st.file_uploader(
-          "Anexar documento, foto ou arquivo",
+          "Anexar documento ou foto",
           type=["png", "jpg", "jpeg", "pdf", "docx", "xlsx"],
       )
       btn_enviar_sala_pro = st.form_submit_button("➤ Enviar Mensagem")
@@ -1745,33 +1893,21 @@ elif menu == "💬 chat tabalmix pro & rede":
           st.rerun()
 
   with tab_contatos_rede:
-    st.markdown(
-        "#### 👥 Rede de Colaboradores & Canais (Lista de Contatos)"
-    )
-    st.markdown(
-        "Selecione abaixo para abrir a conversa instantaneamente com o canal"
-        " ou colega:"
-    )
-
+    st.markdown("#### 👥 Rede de Colaboradores & Conversas 1 a 1")
     col_btn_g, col_btn_adm = st.columns(2)
     with col_btn_g:
-      if st.button(
-          "💬 Abrir Canal Geral (Equipe)", key="btn_rede_geral_whatsapp"
-      ):
+      if st.button("💬 Canal Geral da Equipe", key="btn_rede_geral_pro"):
         st.session_state["sala_chat_ativa"] = "Geral (Equipe)"
-        st.success("✅ Conversa alterada para Canal Geral! Volte na aba"
-                   " 'Conversas & Chat'.")
+        st.success("✅ Conversa alterada para Canal Geral! Volte na aba 'Conversas'.")
         st.rerun()
     with col_btn_adm:
-      if st.button(
-          "🛡️ Abrir Suporte ADM (Oficial)", key="btn_rede_adm_whatsapp"
-      ):
+      if st.button("🛡️ Suporte Técnico ADM", key="btn_rede_adm_pro"):
         st.session_state["sala_chat_ativa"] = "Suporte ADM"
-        st.success("✅ Conversa alterada para Suporte ADM! Volte na aba"
-                   " 'Conversas & Chat'.")
+        st.success("✅ Conversa alterada para Suporte ADM! Volte na aba 'Conversas'.")
         st.rerun()
 
     st.markdown("---")
+    st.markdown("**Contatos Ativos para Chat Privado:**")
     cursor.execute(
         "SELECT apelido, cargo_setor, email FROM usuarios_sistema WHERE"
         " status_assinatura = 'Ativo'"
@@ -1780,25 +1916,29 @@ elif menu == "💬 chat tabalmix pro & rede":
 
     if colaboradores_rede:
       for idx_r, (r_nome, r_cargo, r_email) in enumerate(colaboradores_rede):
-        nome_contato = f"{r_nome} ({r_cargo})"
-        st.markdown(
-            f"""
-                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.03);">
-                    <div>
-                        <span style="font-size: 15px; font-weight: bold; color: #0f172a;">👤 {r_nome}</span><br>
-                        <span style="font-size: 12px; color: #64748b;">Setor: {r_cargo} • 🟢 Online</span>
+        if r_nome != remetente_atual:
+          nome_privado = f"Privado: {r_nome} ({r_cargo})"
+          st.markdown(
+              f"""
+                    <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.03);">
+                        <div>
+                            <span style="font-size: 15px; font-weight: bold; color: #0f172a;">👤 {r_nome}</span><br>
+                            <span style="font-size: 12px; color: #64748b;">Setor: {r_cargo} • 🟢 Online</span>
+                        </div>
                     </div>
-                </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if st.button(f"💬 Conversar com {r_nome}", key=f"btn_chat_contato_{idx_r}"):
-          st.session_state["sala_chat_ativa"] = nome_contato
-          st.success(
-              f"✅ Conversa com {r_nome} selecionada! Volte na aba 'Conversas &"
-              " Chat'."
+                """,
+              unsafe_allow_html=True,
           )
-          st.rerun()
+          if st.button(
+              f"🔒 Abrir Chat Privado com {r_nome}",
+              key=f"btn_chat_privado_{idx_r}",
+          ):
+            st.session_state["sala_chat_ativa"] = nome_privado
+            st.success(
+                f"✅ Chat privado com {r_nome} aberto! Volte na aba"
+                " 'Conversas & Chat Ativo'."
+            )
+            st.rerun()
     else:
       st.info("Nenhum outro colaborador ativo no momento.")
 
