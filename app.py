@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Enterprise com Layout Otimizado
+# Estilização Visual Enterprise com Painel Estilo Facebook Messenger no Canto Inferior Direito
 st.markdown(
     """
     <style>
@@ -1701,7 +1701,7 @@ elif menu == "⚙️ painel de licença (admin)":
         if st.button("🗑️ Excluir Definitivamente este Cadastro"):
           cursor.execute(
               "DELETE FROM usuarios_sistema WHERE id = ?", (selected_user_id,)
-            )
+          )
           conn.commit()
           st.success(
               f"✅ Cadastro #{selected_user_id} excluído com sucesso!"
@@ -1711,14 +1711,14 @@ elif menu == "⚙️ painel de licença (admin)":
     st.info("nenhum usuário cadastrado.")
 
 # ==============================================================================
-# CHAT CORPORATIVO FLUTUANTE DISCRETO "TABALMIX CHAT PRO" (ESTILO SUPORTE & NOTIFICAÇÃO)
+# PAINEL LATERAL DE CONTATOS ONLINE E CHAT ESTILO FACEBOOK MESSENGER (CANTO INFERIOR DIREITO)
 # ==============================================================================
-if "chat_aberto" not in st.session_state:
-  st.session_state["chat_aberto"] = False
-if "chat_destinatario" not in st.session_state:
-  st.session_state["chat_destinatario"] = "ADM do Sistema (Suporte Técnico)"
+if "messenger_aberto" not in st.session_state:
+  st.session_state["messenger_aberto"] = False
+if "messenger_chat_ativo" not in st.session_state:
+  st.session_state["messenger_chat_ativo"] = None
 
-# Verifica se há novas mensagens não lidas para exibir a bolinha de notificação
+# Consulta se há novas mensagens na rede
 cursor.execute(
     "SELECT COUNT(*) FROM chat_interno WHERE destinatario LIKE ? OR destinatario"
     " = 'Geral (Equipe)'",
@@ -1728,127 +1728,121 @@ cursor.execute(
         else "%ADM%",
     ),
 )
-res_contagem_msgs = cursor.fetchone()
-tem_mensagens_novas = res_contagem_msgs[0] > 0 if res_contagem_msgs else False
+res_msg_notif = cursor.fetchone()
+tem_nova_msg = res_msg_notif[0] > 0 if res_msg_notif else False
 
-# Renderização Lateral Direta (Não atrapalha o centro)
-if st.session_state["chat_aberto"]:
+# Se a barra do Messenger estiver aberta no canto inferior direito
+if st.session_state["messenger_aberto"]:
   st.markdown(
       """
-        <div style="position: fixed; bottom: 20px; right: 20px; width: 340px; background: #ffffff; border: 2px solid #059669; border-radius: 14px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); z-index: 999999; padding: 14px; font-family: 'Inter', sans-serif;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 10px;">
-                <div style="font-weight: 800; font-size: 13.5px; color: #059669;">💬 Chat & Suporte (ADM)</div>
-        """,
+        <div style="position: fixed; bottom: 20px; right: 20px; width: 320px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 12px 12px 0 0; box-shadow: 0 10px 30px rgba(0,0,0,0.15); z-index: 999999; font-family: 'Inter', sans-serif; overflow: hidden;">
+            <div style="background: #059669; color: white; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: 13.5px;">
+                <span>🟢 Contatos Online & Suporte</span>
+    """,
       unsafe_allow_html=True,
   )
 
-  col_ch_close_l, col_ch_close_r = st.columns([3, 1])
-  with col_ch_close_r:
-    if st.button("❌", key="btn_fechar_janela_chat_x"):
-      st.session_state["chat_aberto"] = False
+  col_m_cls_1, col_m_cls_2 = st.columns([4, 1])
+  with col_m_cls_2:
+    if st.button("✖", key="btn_fechar_messenger_geral"):
+      st.session_state["messenger_aberto"] = False
+      st.session_state["messenger_chat_ativo"] = None
       st.rerun()
 
-  # Listagem de contatos ativos no sistema
-  cursor.execute(
-      "SELECT apelido, cargo_setor FROM usuarios_sistema WHERE"
-      " status_assinatura = 'Ativo'"
-  )
-  contatos_ativos = cursor.fetchall()
-
-  lista_opcoes_chat = ["ADM do Sistema (Suporte Técnico)"]
-  for c_n, c_c in contatos_ativos:
-    fmt = f"{c_n} ({c_c})"
-    if fmt not in lista_opcoes_chat:
-      lista_opcoes_chat.append(fmt)
-
-  dest_selecionado = st.selectbox(
-      "Conversar com:",
-      lista_opcoes_chat,
-      key="select_chat_dest_pro_moderno",
-      label_visibility="collapsed",
-  )
-  st.session_state["chat_destinatario"] = dest_selecionado
-
-  # Formulário compacto de envio
-  remetente_nome = (
-      usuario_atual["apelido"]
-      if usuario_atual
-      else ("Administrador" if modo_admin_liberado else "Colaborador")
-  )
-  remetente_cargo = (
-      usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
-  )
-
-  with st.form("form_chat_discreto_envio", clear_on_submit=True):
-    msg_input = st.text_input(
-        "Digite sua mensagem...", placeholder="Escreva aqui..."
+  # Se houver um chat ativo com uma pessoa específica, exibe a conversa
+  if st.session_state["messenger_chat_ativo"]:
+    alvo_chat = st.session_state["messenger_chat_ativo"]
+    st.markdown(
+        f"<div style='padding: 6px 12px; background: #f1f5f9; font-size: 12px;"
+        f" font-weight: bold; color: #0f172a;'>Conversando com: {alvo_chat}</div>",
+        unsafe_allow_html=True,
     )
-    file_upload = st.file_uploader(
-        "Anexar", type=["png", "jpg", "pdf", "docx"], label_visibility="collapsed"
+
+    if st.button("⬅️ Voltar para lista", key="btn_voltar_lista_contatos"):
+      st.session_state["messenger_chat_ativo"] = None
+      st.rerun()
+
+    rem_nome = (
+        usuario_atual["apelido"]
+        if usuario_atual
+        else ("Administrador" if modo_admin_liberado else "Colaborador")
     )
-    btn_enviar_chat_compacto = st.form_submit_button("Enviar Mensagem")
+    rem_cargo = usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
 
-    if btn_enviar_chat_compacto:
-      if not msg_input.strip() and not file_upload:
-        st.warning("⚠️ Digite uma mensagem.")
-      else:
-        p_path = ""
-        p_nome = ""
-        if file_upload is not None:
-          os.makedirs("chat_documentos", exist_ok=True)
-          p_nome = file_upload.name
-          p_path = (
-              "chat_documentos/"
-              f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{p_nome}"
-          )
-          with open(p_path, "wb") as f_to:
-            f_to.write(file_upload.getbuffer())
-
-        data_envio_str = datetime.now().strftime("%d/%m às %H:%M")
+    with st.form("form_messenger_envio", clear_on_submit=True):
+      msg_txt = st.text_input("Mensagem...", placeholder="Escreva...")
+      btn_env_m = st.form_submit_button("Enviar")
+      if btn_env_m and msg_txt.strip():
+        data_env = datetime.now().strftime("%d/%m às %H:%M")
         cursor.execute(
             "INSERT INTO chat_interno (remetente, destinatario, cargo,"
             " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
             " ?, ?, ?, ?, ?)",
             (
-                f"{remetente_nome} ({remetente_cargo})",
-                dest_selecionado,
-                remetente_cargo,
-                msg_input,
-                p_path,
-                p_nome,
-                data_envio_str,
+                f"{rem_nome} ({rem_cargo})",
+                alvo_chat,
+                rem_cargo,
+                msg_txt,
+                "",
+                "",
+                data_env,
             ),
         )
         conn.commit()
-        st.success("✅ Enviado!")
         st.rerun()
 
-  # Histórico recente compacto
-  st.markdown("---")
-  df_hist_chat = pd.read_sql(
-      "SELECT * FROM chat_interno ORDER BY id DESC LIMIT 5", conn
-  )
-  if not df_hist_chat.empty:
-    for _, rw in df_hist_chat.iterrows():
-      st.markdown(
-          f"""
-                <div style="background: #f8fafc; border-radius: 6px; padding: 6px; margin-bottom: 4px; font-size: 11.5px;">
-                    <b>{rw['remetente']}</b><br>
-                    <span style="color: #0f172a;">{rw['mensagem']}</span>
-                </div>
-            """,
-          unsafe_allow_html=True,
-      )
+    # Histórico recente
+    df_chat_dir = pd.read_sql(
+        "SELECT * FROM chat_interno WHERE destinatario = ? OR remetente LIKE ?"
+        " ORDER BY id DESC LIMIT 4",
+        conn,
+        params=(alvo_chat, f"%{rem_nome}%"),
+    )
+    if not df_chat_dir.empty:
+      for _, row_m in df_chat_dir.iterrows():
+        st.markdown(
+            f"""
+                    <div style="background: #f8fafc; border-radius: 6px; padding: 6px; margin: 4px 8px; font-size: 11px;">
+                        <b>{row_m['remetente']}</b><br>{row_m['mensagem']}
+                    </div>
+                """,
+            unsafe_allow_html=True,
+        )
   else:
-    st.info("Sem mensagens.")
+    # Exibe a lista estilo Facebook de usuários ativos na rede
+    st.markdown(
+        "<div style='padding: 8px 12px; font-size: 12px; color: #64748b;'>"
+        "Clique em um colega para iniciar o chat rápido:</div>",
+        unsafe_allow_html=True,
+    )
+
+    # Sempre inclui o ADM do Sistema como contato principal de suporte
+    if st.button(
+        "🛡️ ADM do Sistema (Suporte Técnico)",
+        key="btn_contato_adm_sistema_geral",
+    ):
+      st.session_state["messenger_chat_ativo"] = "ADM do Sistema"
+      st.rerun()
+
+    cursor.execute(
+        "SELECT apelido, cargo_setor FROM usuarios_sistema WHERE"
+        " status_assinatura = 'Ativo'"
+    )
+    usuarios_rede = cursor.fetchall()
+
+    for idx_u, (u_nome, u_cargo) in enumerate(usuarios_rede):
+      label_contato = f"🟢 {u_nome} ({u_cargo})"
+      if st.button(label_contato, key=f"btn_contato_rede_{idx_u}"):
+        st.session_state["messenger_chat_ativo"] = f"{u_nome} ({u_cargo})"
+        st.rerun()
 
 else:
-  # Bolinha flutuante sutil no canto inferior direito com indicador de notificação se houver mensagens
-  badge_notif = "🔴 1" if tem_mensagens_novas else "💬"
+  # Botão flutuante discreto no canto inferior direito estilo Facebook Messenger
+  badge_FB = "🔴" if tem_nova_msg else "🟢"
   st.markdown(
       f"""
         <style>
-        .bolha-chat-sutil {{
+        .messenger-trigger {{
             position: fixed;
             bottom: 25px;
             right: 25px;
@@ -1856,22 +1850,22 @@ else:
             color: white;
             border-radius: 50px;
             padding: 10px 18px;
-            box-shadow: 0 8px 20px rgba(5,150,105,0.35);
+            box-shadow: 0 8px 25px rgba(5,150,105,0.4);
             cursor: pointer;
             z-index: 999999;
             font-weight: 800;
-            font-size: 12.5px;
+            font-size: 13px;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
         }}
         </style>
     """,
       unsafe_allow_html=True,
   )
 
-  col_b_vaziu, col_b_botao = st.columns([5, 1.2])
-  with col_b_botao:
-    if st.button(f"{badge_notif} Chat ADM", key="btn_abrir_bolha_chat_discreto"):
-      st.session_state["chat_aberto"] = True
+  col_m_vazio, col_m_btn = st.columns([5, 1.3])
+  with col_m_btn:
+    if st.button(f"{badge_FB} Messenger", key="btn_abrir_messenger_fb"):
+      st.session_state["messenger_aberto"] = True
       st.rerun()
