@@ -40,14 +40,25 @@ st.markdown(
         max-width: 100% !important;
     }
     
-    /* REMOVE COMPLETAMENTE O ESPAÇO E O BOTÃO DO TOPO DA BARRA LATERAL */
+    /* REMOVE COMPLETAMENTE O BOTÃO DE RECOLHER E O TEXTO RESIDUAL DO TOPO DA BARRA LATERAL */
+    [data-testid="stSidebar"] button[kind="header"], 
+    [data-testid="stSidebar"] [data-testid="baseButton-header"],
+    button[data-testid="baseButton-header"],
+    header button,
+    [data-testid="stSidebar"] header {
+        display: none !important;
+        visibility: hidden !important;
+    }
+    
+    /* OCULTA QUALQUER TEXTO RESIDUAL DE ÍCONE DO STREAMLIT NO TOPO */
+    [data-testid="stSidebar"] > div:first-child div:first-child span {
+        display: none !important;
+    }
+
     [data-testid="stSidebar"] > div:first-child {
         padding-top: 0px !important;
     }
     [data-testid="stSidebarNav"] {
-        display: none !important;
-    }
-    button[kind="header"] {
         display: none !important;
     }
     section[data-testid="stSidebar"] div.block-container {
@@ -998,7 +1009,7 @@ def exibir_tabela_padronizada(df, nome_tabela):
 
 
 with st.sidebar:
-  # TOPO DA BARRA LATERAL COM O NOME DA MARCA E FOTO COLADOS NO EXATO TOPO (SEM ESPAÇO)
+  # TOPO DA BARRA LATERAL LIMPO E ALINHADO SEM TEXTOS RESIDUAIS
   try:
     with open("caminhoes.jpg", "rb") as image_file:
       encoded_logo_side = base64.b64encode(image_file.read()).decode()
