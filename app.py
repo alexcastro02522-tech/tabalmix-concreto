@@ -1050,16 +1050,9 @@ elif menu == "🚜 cadastro de equipamentos":
     col1, col2 = st.columns(2)
     with col1:
       tag_prefixo = st.text_input("tag / prefixo (ex: EQ-001 / BET-12)")
-      tipo = st.selectbox(
-          "tipo de equipamento",
-          [
-              "caminhão betoneira",
-              "caminhão basculante",
-              "escavadeira",
-              "utilitário",
-              "trator",
-              "carregadeira",
-          ],
+      tipo = st.text_input(
+          "tipo / categoria do equipamento (digite livremente, ex: Caminhão"
+          " Betoneira, Pá Carregadeira...)"
       )
       marca = st.text_input("marca (ex: Volvo, Mercedes-Benz, Scania)")
       modelo = st.text_input("modelo (ex: FMX 420, Atego 2430)")
@@ -1099,6 +1092,7 @@ elif menu == "🚜 cadastro de equipamentos":
             if tag_prefixo and tag_prefixo.strip()
             else "EQ-00" + str(datetime.now().microsecond)[:3]
         )
+        tipo_final = tipo.strip() if tipo and tipo.strip() else "Equipamento"
         cursor.execute(
             "INSERT INTO veiculos (tag_prefixo, tipo, marca, modelo, ano,"
             " chassi, renavam, placa, crv, cor, combustivel, empresa,"
@@ -1106,7 +1100,7 @@ elif menu == "🚜 cadastro de equipamentos":
             " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 tag_final,
-                tipo,
+                tipo_final,
                 marca,
                 modelo,
                 int(ano),
