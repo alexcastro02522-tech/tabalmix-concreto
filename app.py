@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Enterprise & Vitrine de Cargos Pro Style
+# Estilização Visual Enterprise Pro Style
 st.markdown(
     """
     <style>
@@ -649,38 +649,57 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           unsafe_allow_html=True,
       )
 
-    # VITRINE DE VANTAGENS E PLANOS POR CARGO
+    # VITRINE DE VANTAGENS E PLANOS POR CARGO (COM COLUNAS NATIVAS DO STREAMLIT PARA PERFEITA RENDERIZAÇÃO)
     st.markdown(
         """
-        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05);">
-            <h3 style="color: #0f172a !important; font-size: 16px; margin-top: 0; text-align: center; font-weight: 800;">🌟 Vantagens e Recursos Exclusivos por Função na Obra</h3>
-            <p style="font-size: 12.5px; color: #475569; text-align: center; margin-bottom: 16px;">Conheça o superpoder de cada plano corporativo integrado para a sua equipe:</p>
-            
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 10px;">
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #059669; border-radius: 10px; padding: 12px;">
-                    <strong style="color: #065f46; font-size: 13px;">👑 Alta Gestão & Diretoria</strong>
-                    <p style="font-size: 11.5px; color: #334155; margin: 4px 0 0 0;">Visão global da frota, relatórios executivos em PDF e recepção em tempo real dos <b>Alertas SOS</b> de pânico em campo.</p>
-                </div>
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #0284c7; border-radius: 10px; padding: 12px;">
-                    <strong style="color: #0369a1; font-size: 13px;">👷 Segurança do Trabalho (SST)</strong>
-                    <p style="font-size: 11.5px; color: #334155; margin: 4px 0 0 0;">Conformidade regulamentada, vistorias fotográficas e emissão rápida de laudos de <b>Check-list de Mobilização</b>.</p>
-                </div>
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #d97706; border-radius: 10px; padding: 12px;">
-                    <strong style="color: #b45309; font-size: 13px;">🛠️ Oficina & Manutenção</strong>
-                    <p style="font-size: 11.5px; color: #334155; margin: 4px 0 0 0;">Gestão ágil de Ordens de Serviço (OS), controle detalhado de estoque de peças e laudos de custos mecânicos.</p>
-                </div>
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #7c3aed; border-radius: 10px; padding: 12px;">
-                    <strong style="color: #6d28d9; font-size: 13px;">🚜 Operacional de Campo</strong>
-                    <p style="font-size: 11.5px; color: #334155; margin: 4px 0 0 0;">Praticidade diária, registros rápidos de abastecimento, chat integrado e acionamento instantâneo do <b>Botão SOS</b>.</p>
-                </div>
-            </div>
+        <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); text-align: center;">
+            <h3 style="color: #0f172a !important; font-size: 16px; margin-top: 0; font-weight: 800;">🌟 Vantagens e Recursos Exclusivos por Função na Obra</h3>
+            <p style="font-size: 12.5px; color: #475569; margin-bottom: 16px;">Conheça o superpoder de cada plano corporativo integrado para a sua equipe:</p>
         </div>
-    """,
+        """,
         unsafe_allow_html=True,
     )
+
+    v1, v2 = st.columns(2)
+    with v1:
+      st.markdown(
+          """
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #059669; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                <span style="color: #065f46; font-size: 14px; font-weight: bold;">👑 Alta Gestão & Diretoria</span>
+                <p style="font-size: 12px; color: #334155; margin: 6px 0 0 0;">Visão global da frota, relatórios executivos em PDF e recepção em tempo real dos <b>Alertas SOS</b> de pânico em campo.</p>
+            </div>
+            """,
+          unsafe_allow_html=True,
+      )
+      st.markdown(
+          """
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #d97706; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                <span style="color: #b45309; font-size: 14px; font-weight: bold;">🛠️ Oficina & Manutenção</span>
+                <p style="font-size: 12px; color: #334155; margin: 6px 0 0 0;">Gestão ágil de Ordens de Serviço (OS), controle detalhado de estoque de peças e laudos de custos mecânicos.</p>
+            </div>
+            """,
+          unsafe_allow_html=True,
+      )
+
+    with v2:
+      st.markdown(
+          """
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #0284c7; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                <span style="color: #0369a1; font-size: 14px; font-weight: bold;">👷 Segurança do Trabalho (SST)</span>
+                <p style="font-size: 12px; color: #334155; margin: 6px 0 0 0;">Conformidade regulamentada, vistorias fotográficas e emissão rápida de laudos de <b>Check-list de Mobilização</b>.</p>
+            </div>
+            """,
+          unsafe_allow_html=True,
+      )
+      st.markdown(
+          """
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #7c3aed; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                <span style="color: #6d28d9; font-size: 14px; font-weight: bold;">🚜 Operacional de Campo</span>
+                <p style="font-size: 12px; color: #334155; margin: 6px 0 0 0;">Praticidade diária, registros rápidos de abastecimento, chat integrado e acionamento instantâneo do <b>Botão SOS</b>.</p>
+            </div>
+            """,
+          unsafe_allow_html=True,
+      )
 
     tab_login, tab_cadastro, tab_recuperar, tab_pin = st.tabs([
         "🔑 entrar na conta",
@@ -2279,7 +2298,7 @@ elif menu == "⚙️ painel de licença (admin)":
           )
           conn.commit()
           st.success(
-              f"✅ Status do usuário #{selected_user_id} atualizado para"
+              f"✅ Status do usuário #{selected_user_id} updated para"
               f" '{novo_status_adm}' com sucesso!"
           )
           st.rerun()
