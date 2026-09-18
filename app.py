@@ -1535,8 +1535,8 @@ elif menu == "🔩 peças e ferramentas":
     c1, c2 = st.columns(2)
     with c1:
       nome_i = st.text_input("nome da peça ou ferramenta")
-      cat = st.selectbox(
-          "categoria", ["reposição", "filtro/óleo", "ferramenta", "insumo"]
+      cat = st.text_input(
+          "categoria (digite livremente, ex: Reposição, Filtro, Óleo, Pneu...)"
       )
     with c2:
       qtd = st.number_input("quantidade", min_value=1, value=1)
@@ -1548,10 +1548,13 @@ elif menu == "🔩 peças e ferramentas":
             "⚠️ Conta inativa: você não tem permissão para cadastrar peças."
         )
       else:
+        cat_final = (
+            cat.strip() if cat and cat.strip() else "Geral"
+        )
         cursor.execute(
             "INSERT INTO pecas (nome_item, categoria, quantidade,"
             " valor_unitario) VALUES (?, ?, ?, ?)",
-            (nome_i, cat, qtd, v_unit),
+            (nome_i, cat_final, qtd, v_unit),
         )
         conn.commit()
         st.success("✅ peça cadastrada com sucesso!")
@@ -1908,7 +1911,6 @@ elif menu == "💬 chat tabalmix pro & rede":
         )
 
     if not df_msgs.empty:
-      # Verifica se há mensagens recentes de outros usuários para disparar vibração e toque leve em qualquer colaborador
       ultima_msg_remetente = str(df_msgs.iloc[0]["remetente"])
       if (
           remetente_atual
