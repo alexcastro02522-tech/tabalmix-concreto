@@ -540,7 +540,6 @@ def init_db():
         )
     """)
 
-  # LIMPEZA AUTOMÁTICA DE REGISTROS VAZIOS/NULL (CORREÇÃO DO BUG "NONE")
   try:
     cursor.execute(
         "UPDATE usuarios_sistema SET apelido = 'Colaborador' WHERE apelido IS"
@@ -663,7 +662,9 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 ),
                 "cargo": (
                     user_data[10]
-                    if len(user_data) > 10 and user_data[10] and user_data[10] != "None"
+                    if len(user_data) > 10
+                    and user_data[10]
+                    and user_data[10] != "None"
                     else "Colaborador"
                 ),
             }
@@ -782,7 +783,9 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 ),
                 "cargo": (
                     user_pin[10]
-                    if len(user_pin) > 10 and user_pin[10] and user_pin[10] != "None"
+                    if len(user_pin) > 10
+                    and user_pin[10]
+                    and user_pin[10] != "None"
                     else "Colaborador"
                 ),
             }
@@ -1640,6 +1643,50 @@ elif menu == "💬 chat tabalmix pro & rede":
       " equipes, mural de avisos fixados e alerta SOS de emergência."
   )
 
+  # SCRIPTS JAVASCRIPT NATIVOS: ALARME SOS (ADMIN) + VIBRAÇÃO DE MENSAGEM (TODOS)
+  st.markdown(
+      """
+        <script>
+        function dispararAlarmeSOS() {
+            try {
+                if (navigator.vibrate) {
+                    navigator.vibrate([600, 200, 600, 200, 1000]);
+                }
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(950, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 1.5);
+            } catch(e) {}
+        }
+
+        function vibrarMensagemChat() {
+            try {
+                if (navigator.vibrate) {
+                    navigator.vibrate([200, 100, 200]);
+                }
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } catch(e) {}
+        }
+        </script>
+    """,
+      unsafe_allow_html=True,
+  )
+
   # PAINEL DE ALERTA SOS EM CAMPO
   st.markdown(
       """
@@ -1682,26 +1729,55 @@ elif menu == "💬 chat tabalmix pro & rede":
               "🚨 ALERTA SOS DISPARADO COM SUCESSO! A gerência foi notificada."
           )
 
-  # EXIBIÇÃO DE ALERTAS SOS PENDENTES PARA A GESTÃO
+  # EXIBIÇÃO DE ALERTAS SOS PENDENTES (DISPARA ALARME PARA ADMIN / GESTÃO)
   cursor.execute(
       "SELECT * FROM alertas_sos WHERE status = 'PENDENTE' ORDER BY id DESC"
   )
   lista_sos_pend = cursor.fetchall()
+  if lista_sos_pend and (
+      modo_admin_liberado
+      or (
+          usuario_atual
+          and usuario_atual["cargo"] in ["Gestão", "Gerente", "Admin"]
+      )
+  ):
+    st.markdown(
+        """
+            <script>
+            if (typeof dispararAlarmeSOS === 'function') {
+                dispararAlarmeSOS();
+            }
+            </script>
+        """,
+        unsafe_allow_html=True,
+    )
+
   if lista_sos_pend:
     st.markdown(
         "<h4 style='color: #dc2626;'>⚠️ ALERTAS SOS ATIVOS NA FROTA:</h4>",
         unsafe_allow_html=True,
     )
     for sos_item in lista_sos_pend:
-      st.markdown(
-          f"""
-            <div style="background: #fef2f2; border-left: 5px solid #dc2626; padding: 10px; border-radius: 8px; margin-bottom: 6px; font-size: 12.5px;">
-                <b>🚨 Emergência #{sos_item[0]}</b> | Solicitante: <b>{sos_item[1]}</b> | Equipamento: <b>{sos_item[2]}</b><br>
-                <b>Relato:</b> {sos_item[3]} <br> <span style="color: #6b7280; font-size: 11px;">Registrado em: {sos_item[4]}</span>
-            </div>
-        """,
-          unsafe_allow_html=True,
-      )
+      col_sos_info, col_sos_btn = st.columns([4, 1])
+      with col_sos_info:
+        st.markdown(
+            f"""
+                <div style="background: #fef2f2; border-left: 5px solid #dc2626; padding: 10px; border-radius: 8px; margin-bottom: 6px; font-size: 12.5px;">
+                    <b>🚨 Emergência #{sos_item[0]}</b> | Solicitante: <b>{sos_item[1]}</b> | Equipamento: <b>{sos_item[2]}</b><br>
+                    <b>Relato:</b> {sos_item[3]} <br> <span style="color: #6b7280; font-size: 11px;">Registrado em: {sos_item[4]}</span>
+                </div>
+            """,
+            unsafe_allow_html=True,
+        )
+      with col_sos_btn:
+        if st.button(f"✅ Resolver #{sos_item[0]}", key=f"btn_res_sos_{sos_item[0]}"):
+          cursor.execute(
+              "UPDATE alertas_sos SET status = 'RESOLVIDO' WHERE id = ?",
+              (sos_item[0],),
+          )
+          conn.commit()
+          st.success(f"✅ Alerta #{sos_item[0]} marcado como resolvido!")
+          st.rerun()
 
   # MURAL DE AVISOS FIXADOS (PINNED NOTICES)
   st.markdown("---")
@@ -1832,6 +1908,23 @@ elif menu == "💬 chat tabalmix pro & rede":
         )
 
     if not df_msgs.empty:
+      # Verifica se há mensagens recentes de outros usuários para disparar vibração e toque leve em qualquer colaborador
+      ultima_msg_remetente = str(df_msgs.iloc[0]["remetente"])
+      if (
+          remetente_atual
+          and remetente_atual.lower() not in ultima_msg_remetente.lower()
+      ):
+        st.markdown(
+            """
+                <script>
+                if (typeof vibrarMensagemChat === 'function') {
+                    vibrarMensagemChat();
+                }
+                </script>
+            """,
+            unsafe_allow_html=True,
+        )
+
       for _, row_m in df_msgs.iterrows():
         is_me = (
             remetente_atual.lower() in str(row_m["remetente"]).lower()
@@ -2067,7 +2160,7 @@ elif menu == "⚙️ painel de licença (admin)":
           )
           conn.commit()
           st.success(
-              f"✅ Status do usuário #{selected_user_id} updated para"
+              f"✅ Status do usuário #{selected_user_id} atualizado para"
               f" '{novo_status_adm}' com sucesso!"
           )
           st.rerun()
