@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Enterprise & WhatsApp Style Chat
+# Estilização Visual Enterprise & Chat Tabalmix Pro Style
 st.markdown(
     """
     <style>
@@ -855,7 +855,7 @@ menu = st.sidebar.radio(
         "🛠️ ordens de serviço (os)",
         "🔩 peças e ferramentas",
         "👥 gestão de clientes",
-        "💬 whatsapp chat & chamadas pro",
+        "💬 chat tabalmix pro & rede",
         "🔍 consulta / busca geral",
         "⚙️ meu perfil / dados",
         "⚙️ painel de licença (admin)",
@@ -1594,77 +1594,61 @@ elif menu == "👥 gestão de clientes":
           st.rerun()
     exibir_tabela_padronizada(df_cli, "clientes")
 
-elif menu == "💬 whatsapp chat & chamadas pro":
-  st.title("💬 WhatsApp Chat & Chamadas Pro")
+elif menu == "💬 chat tabalmix pro & rede":
+  st.title("💬 Chat Tabalmix Pro & Rede")
   st.markdown(
-      "Comunicação corporativa inspirada no WhatsApp: escolha o canal ou"
-      " colega e utilize os botões de ligação de voz ou vídeo diretamente no"
-      " topo."
+      "Central de comunicação corporativa: envie mensagens, troque arquivos e"
+      " faça chamadas instantâneas com a equipe."
   )
 
-  col_s1, col_s2 = st.columns([1, 2.8])
+  # ABAS SUPERIORES COM A CARA DO SISTEMA
+  tab_conversa, tab_contatos_rede = st.tabs(
+      ["💬 Conversas & Chat", "👥 Rede de Colaboradores (Contatos)"]
+  )
 
   if "sala_chat_ativa" not in st.session_state:
     st.session_state["sala_chat_ativa"] = "Geral (Equipe)"
 
-  with col_s1:
-    st.markdown("#### 💬 Conversas")
-    if st.button("💬 Geral (Equipe)", key="btn_chat_geral_sala_pro"):
-      st.session_state["sala_chat_ativa"] = "Geral (Equipe)"
-      st.rerun()
+  remetente_atual = (
+      usuario_atual["apelido"]
+      if usuario_atual
+      else ("Administrador" if modo_admin_liberado else "Colaborador")
+  )
+  cargo_atual = usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
+  link_meet = "https://meet.jit.si/TabalmixConcretoEnterprisePro"
 
-    if st.button(
-        "🛡️ Suporte ADM (Oficial)", key="btn_chat_adm_sala_pro"
-    ):
-      st.session_state["sala_chat_ativa"] = "Suporte ADM"
-      st.rerun()
+  with tab_conversa:
+    st.markdown(f"#### 🗨️ Chat Ativo: `{st.session_state['sala_chat_ativa']}`")
 
-    st.markdown("---")
-    st.markdown("**Contatos na Rede:**")
-    cursor.execute(
-        "SELECT apelido, cargo_setor FROM usuarios_sistema WHERE"
-        " status_assinatura = 'Ativo'"
-    )
-    colaboradores_chat = cursor.fetchall()
-
-    for idx_c, (col_n, col_g) in enumerate(colaboradores_chat):
-      nome_canal = f"{col_n} ({col_g})"
-      if st.button(f"🟢 {nome_canal}", key=f"btn_chat_col_sala_{idx_c}"):
-        st.session_state["sala_chat_ativa"] = nome_canal
-        st.rerun()
-
-  with col_s2:
-    canal_corrente = st.session_state["sala_chat_ativa"]
-    link_meet = "https://meet.jit.si/TabalmixConcretoEnterprisePro"
-
-    # CABEÇALHO DO CHAT IDÊNTICO AO WHATSAPP (COM BOTÕES DE CHAMADA DE VÍDEO E LIGAÇÃO NORMAL NO TOPO)
+    # CABEÇALHO DO CHAT COM OS BOTÕES DE LIGAÇÃO E VÍDEO NO TOPO
     st.markdown(
         f"""
-        <div style="background: #075e54; padding: 12px 18px; border-radius: 12px 12px 0 0; display: flex; align-items: center; justify-content: space-between; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+        <div style="background: #047857; padding: 12px 18px; border-radius: 12px 12px 0 0; display: flex; align-items: center; justify-content: space-between; color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
             <div style="display: flex; align-items: center; gap: 12px;">
-                <div style="background: #25d366; width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; border: 2px solid white;">💬</div>
+                <div style="background: #10b981; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; border: 2px solid white;">💬</div>
                 <div>
-                    <h4 style="margin: 0; color: white !important; font-size: 16px;">{canal_corrente}</h4>
-                    <span style="font-size: 11px; opacity: 0.9;">online • criptografado enterprise</span>
+                    <h4 style="margin: 0; color: white !important; font-size: 15px;">{st.session_state['sala_chat_ativa']}</h4>
+                    <span style="font-size: 10.5px; opacity: 0.9;">online • rede tabalmix pro</span>
                 </div>
             </div>
-            <div style="display: flex; gap: 8px;">
-                <a href="{link_meet}" target="_blank" title="Chamada de Voz" style="background: #128c7e; padding: 8px 12px; border-radius: 50%; color: white; text-decoration: none; font-size: 16px;">📞</a>
-                <a href="{link_meet}" target="_blank" title="Chamada de Vídeo" style="background: #25d366; padding: 8px 12px; border-radius: 50%; color: white; text-decoration: none; font-size: 16px;">📹</a>
+            <div style="display: flex; gap: 10px;">
+                <a href="{link_meet}" target="_blank" title="Chamada de Áudio" style="background: #065f46; padding: 6px 12px; border-radius: 50%; color: white; text-decoration: none; font-size: 15px;">📞</a>
+                <a href="{link_meet}" target="_blank" title="Chamada de Vídeo" style="background: #10b981; padding: 6px 12px; border-radius: 50%; color: white; text-decoration: none; font-size: 15px;">📹</a>
             </div>
         </div>
         """,
         unsafe_allow_html=True,
     )
 
-    # CORPO DO CHAT COM ESTILO WHATSAPP (FUNDO CLARO SUAVE)
+    # ÁREA DE MENSAGENS COM FUNDO SUAVE
     st.markdown(
         """
-        <div style="background: #efeae2; padding: 15px; border-radius: 0 0 12px 12px; border: 1px solid #cbd5e1; border-top: none; min-height: 280px; max-height: 380px; overflow-y: auto; margin-bottom: 15px;">
+        <div style="background: #f1f5f9; padding: 15px; border-radius: 0 0 12px 12px; border: 1px solid #cbd5e1; border-top: none; min-height: 250px; max-height: 350px; overflow-y: auto; margin-bottom: 12px;">
         """,
         unsafe_allow_html=True,
     )
 
+    canal_corrente = st.session_state["sala_chat_ativa"]
     if canal_corrente == "Geral (Equipe)":
       df_msgs = pd.read_sql(
           "SELECT * FROM chat_interno WHERE destinatario = 'Geral (Equipe)'"
@@ -1679,13 +1663,6 @@ elif menu == "💬 whatsapp chat & chamadas pro":
           params=(canal_corrente, f"%{canal_corrente.split()[0]}%"),
       )
 
-    remetente_atual = (
-        usuario_atual["apelido"]
-        if usuario_atual
-        else ("Administrador" if modo_admin_liberado else "Colaborador")
-    )
-    cargo_atual = usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
-
     if not df_msgs.empty:
       for _, row_m in df_msgs.iterrows():
         is_me = (
@@ -1693,15 +1670,15 @@ elif menu == "💬 whatsapp chat & chamadas pro":
             if remetente_atual
             else False
         )
-        bg_balao = "#dcf8c6" if is_me else "#ffffff"
+        bg_balao = "#d1fae5" if is_me else "#ffffff"
         align_balao = "margin-left: auto;" if is_me else "margin-right: auto;"
 
         st.markdown(
             f"""
-                <div style="background: {bg_balao}; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; max-width: 80%; {align_balao} box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-                    <div style="font-size: 10px; color: #075e54; font-weight: bold; margin-bottom: 2px;">{row_m['remetente']}</div>
-                    <div style="font-size: 13.5px; color: #111827; white-space: pre-wrap;">{row_m['mensagem']}</div>
-                    <div style="font-size: 9.5px; color: #6b7280; text-align: right; margin-top: 2px;">{row_m['data_envio']}</div>
+                <div style="background: {bg_balao}; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; max-width: 80%; {align_balao} box-shadow: 0 1px 2px rgba(0,0,0,0.05); border: 1px solid #e2e8f0;">
+                    <div style="font-size: 10px; color: #047857; font-weight: bold; margin-bottom: 2px;">{row_m['remetente']}</div>
+                    <div style="font-size: 13.5px; color: #0f172a; white-space: pre-wrap;">{row_m['mensagem']}</div>
+                    <div style="font-size: 9.5px; color: #64748b; text-align: right; margin-top: 2px;">{row_m['data_envio']}</div>
                 </div>
             """,
             unsafe_allow_html=True,
@@ -1716,9 +1693,9 @@ elif menu == "💬 whatsapp chat & chamadas pro":
             )
     else:
       st.markdown(
-          "<p style='text-align: center; color: #666; font-size: 12px; margin-top:"
-          " 40px;'>Nenhuma mensagem enviada ainda. Digite abaixo para"
-          " iniciar!</p>",
+          "<p style='text-align: center; color: #64748b; font-size: 12px;"
+          " margin-top: 30px;'>Nenhuma mensagem trocada ainda. Envie a primeira"
+          " abaixo!</p>",
           unsafe_allow_html=True,
       )
 
@@ -1727,7 +1704,7 @@ elif menu == "💬 whatsapp chat & chamadas pro":
     with st.form("form_chat_sala_principal", clear_on_submit=True):
       msg_sala_txt = st.text_input("Digite uma mensagem corporativa...")
       file_sala_up = st.file_uploader(
-          "Anexar documento ou foto",
+          "Anexar documento, foto ou arquivo",
           type=["png", "jpg", "jpeg", "pdf", "docx", "xlsx"],
       )
       btn_enviar_sala_pro = st.form_submit_button("➤ Enviar Mensagem")
@@ -1767,6 +1744,64 @@ elif menu == "💬 whatsapp chat & chamadas pro":
           st.success("✅ Mensagem enviada!")
           st.rerun()
 
+  with tab_contatos_rede:
+    st.markdown(
+        "#### 👥 Rede de Colaboradores & Canais (Lista de Contatos)"
+    )
+    st.markdown(
+        "Selecione abaixo para abrir a conversa instantaneamente com o canal"
+        " ou colega:"
+    )
+
+    col_btn_g, col_btn_adm = st.columns(2)
+    with col_btn_g:
+      if st.button(
+          "💬 Abrir Canal Geral (Equipe)", key="btn_rede_geral_whatsapp"
+      ):
+        st.session_state["sala_chat_ativa"] = "Geral (Equipe)"
+        st.success("✅ Conversa alterada para Canal Geral! Volte na aba"
+                   " 'Conversas & Chat'.")
+        st.rerun()
+    with col_btn_adm:
+      if st.button(
+          "🛡️ Abrir Suporte ADM (Oficial)", key="btn_rede_adm_whatsapp"
+      ):
+        st.session_state["sala_chat_ativa"] = "Suporte ADM"
+        st.success("✅ Conversa alterada para Suporte ADM! Volte na aba"
+                   " 'Conversas & Chat'.")
+        st.rerun()
+
+    st.markdown("---")
+    cursor.execute(
+        "SELECT apelido, cargo_setor, email FROM usuarios_sistema WHERE"
+        " status_assinatura = 'Ativo'"
+    )
+    colaboradores_rede = cursor.fetchall()
+
+    if colaboradores_rede:
+      for idx_r, (r_nome, r_cargo, r_email) in enumerate(colaboradores_rede):
+        nome_contato = f"{r_nome} ({r_cargo})"
+        st.markdown(
+            f"""
+                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.03);">
+                    <div>
+                        <span style="font-size: 15px; font-weight: bold; color: #0f172a;">👤 {r_nome}</span><br>
+                        <span style="font-size: 12px; color: #64748b;">Setor: {r_cargo} • 🟢 Online</span>
+                    </div>
+                </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if st.button(f"💬 Conversar com {r_nome}", key=f"btn_chat_contato_{idx_r}"):
+          st.session_state["sala_chat_ativa"] = nome_contato
+          st.success(
+              f"✅ Conversa com {r_nome} selecionada! Volte na aba 'Conversas &"
+              " Chat'."
+          )
+          st.rerun()
+    else:
+      st.info("Nenhum outro colaborador ativo no momento.")
+
 elif menu == "🔍 consulta / busca geral":
   st.title("🔍 consulta e histórico completo do equipamento")
   df_v_busca = pd.read_sql(
@@ -1783,4 +1818,223 @@ elif menu == "🔍 consulta / busca geral":
         "selecione a tag/prefixo para ver o histórico completo", lista_tags
     )
     if eq_selecionado_historico:
-      df_eq_info = df_v_busca
+      df_eq_info = df_v_busca[
+          df_v_busca["tag_prefixo"] == eq_selecionado_historico
+      ]
+      if not df_eq_info.empty:
+        st.markdown(
+            f"### dados do equipamento: **{eq_selecionado_historico}**"
+        )
+        exibir_tabela_padronizada(df_eq_info, "busca_eq_info")
+
+        st.markdown("#### 🛠️ histórico de ordens de serviço")
+        df_os_eq = pd.read_sql(
+            "SELECT * FROM manutencoes WHERE tag_prefixo = ?",
+            conn,
+            params=(eq_selecionado_historico,),
+        )
+        if not df_os_eq.empty:
+          exibir_tabela_padronizada(df_os_eq, "busca_os_eq")
+        else:
+          st.info("nenhuma os registrada para este equipamento.")
+
+        st.markdown("#### ⛽ histórico de abastecimentos")
+        df_comb_eq = pd.read_sql(
+            "SELECT * FROM combustivel WHERE equipamento = ?",
+            conn,
+            params=(eq_selecionado_historico,),
+        )
+        if not df_comb_eq.empty:
+          exibir_tabela_padronizada(df_comb_eq, "busca_comb_eq")
+        else:
+          st.info("nenhum abastecimento registrado para este equipamento.")
+  else:
+    st.info("nenhum equipamento cadastrado para realizar consultas.")
+
+elif menu == "⚙️ meu perfil / dados":
+  st.title("⚙️ atualização de perfil")
+  if usuario_atual:
+    st.info(f"logado como: {usuario_atual['nome']} ({usuario_atual['email']})")
+
+elif menu == "⚙️ painel de licença (admin)":
+  st.title("⚙️ painel administrativo de colaboradores")
+  st.markdown("Gerencie o status de acesso ou remova cadastros do sistema:")
+
+  df_users = pd.read_sql(
+      "SELECT id, nome_completo, email, status_assinatura, cargo_setor,"
+      " data_cadastro FROM usuarios_sistema",
+      conn,
+  )
+  if not df_users.empty:
+    exibir_tabela_padronizada(df_users, "usuarios_sistema")
+
+    st.markdown("---")
+    st.subheader("🛠️ Ações Administrativas de Gestão de Usuários")
+
+    user_dict_map = {
+        f"#{r['id']} - {r['nome_completo']} ({r['email']})": r["id"]
+        for _, r in df_users.iterrows()
+    }
+
+    if user_dict_map:
+      sel_user_str = st.selectbox(
+          "Selecione o colaborador para gerenciar:", list(user_dict_map.keys())
+      )
+      selected_user_id = user_dict_map[sel_user_str]
+
+      col_acao1, col_acao2 = st.columns(2)
+      with col_acao1:
+        novo_status_adm = st.selectbox(
+            "Alterar status de assinatura:", ["Ativo", "Inativo"]
+        )
+        if st.button("🔄 Atualizar Status do Usuário"):
+          cursor.execute(
+              "UPDATE usuarios_sistema SET status_assinatura = ? WHERE id = ?",
+              (novo_status_adm, selected_user_id),
+          )
+          conn.commit()
+          st.success(
+              f"✅ Status do usuário #{selected_user_id} atualizado para"
+              f" '{novo_status_adm}' com sucesso!"
+          )
+          st.rerun()
+
+      with col_acao2:
+        st.markdown(
+            "<p style='color: #dc2626; font-weight: bold; margin-bottom:"
+            " 18px;'>⚠️ Zona de Exclusão</p>",
+            unsafe_allow_html=True,
+        )
+        if st.button("🗑️ Excluir Definitivamente este Cadastro"):
+          cursor.execute(
+              "DELETE FROM usuarios_sistema WHERE id = ?", (selected_user_id,)
+          )
+          conn.commit()
+          st.success(
+              f"✅ Cadastro #{selected_user_id} excluído com sucesso!"
+          )
+          st.rerun()
+  else:
+    st.info("nenhum usuário cadastrado.")
+
+# ==============================================================================
+# WIDGET FLUTUANTE DE CHAT RÁPIDO & VÍDEO NO CANTO INFERIOR DIREITO
+# ==============================================================================
+if "widget_chat_aberto" not in st.session_state:
+  st.session_state["widget_chat_aberto"] = False
+
+cursor.execute(
+    "SELECT COUNT(*) FROM chat_interno WHERE destinatario LIKE ? OR destinatario"
+    " = 'Geral (Equipe)'",
+    (
+        f"%{usuario_atual.get('apelido', '')}%"
+        if usuario_atual
+        else "%ADM%",
+    ),
+)
+res_n = cursor.fetchone()
+tem_msgs_pendentes = res_n[0] > 0 if res_n else False
+
+if st.session_state["widget_chat_aberto"]:
+  st.markdown(
+      """
+        <div style="position: fixed; bottom: 20px; right: 20px; width: 350px; background: #ffffff; border: 2px solid #047857; border-radius: 14px; box-shadow: 0 15px 35px rgba(0,0,0,0.25); z-index: 999999; padding: 14px; font-family: 'Inter', sans-serif;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 10px;">
+                <div style="font-weight: 800; font-size: 13.5px; color: #047857;">💬 Chat Tabalmix Rápido</div>
+    """,
+      unsafe_allow_html=True,
+  )
+
+  col_wc_l, col_wc_r = st.columns([4, 1])
+  with col_wc_r:
+    if st.button("❌", key="btn_fechar_widget_chat_flutuante"):
+      st.session_state["widget_chat_aberto"] = False
+      st.rerun()
+
+  st.markdown(
+      '<a href="https://meet.jit.si/TabalmixConcretoEnterprisePro"'
+      ' target="_blank"><button style="background: #059669; color: white; width:'
+      ' 100%; border: none; padding: 8px; border-radius: 6px; font-weight:'
+      ' bold; cursor: pointer; margin-bottom: 10px;">📹 Iniciar Vídeo Chamada'
+      " Rápida</button></a>",
+      unsafe_allow_html=True,
+  )
+
+  rem_widget_n = (
+      usuario_atual["apelido"]
+      if usuario_atual
+      else ("Administrador" if modo_admin_liberado else "Colaborador")
+  )
+  rem_widget_c = usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
+
+  with st.form("form_widget_chat_rapido", clear_on_submit=True):
+    msg_w_input = st.text_input("Mensagem rápida:")
+    btn_w_env = st.form_submit_button("Enviar")
+    if btn_w_env and msg_w_input.strip():
+      data_w_str = datetime.now().strftime("%d/%m às %H:%M")
+      cursor.execute(
+          "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+          " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
+          " ?, ?, ?, ?, ?)",
+          (
+              f"{rem_widget_n} ({rem_widget_c})",
+              "Suporte ADM",
+              rem_widget_c,
+              msg_w_input,
+              "",
+              "",
+              data_w_str,
+          ),
+      )
+      conn.commit()
+      st.success("✅ Enviado!")
+      st.rerun()
+
+  st.markdown("---")
+  st.markdown("##### 📜 Últimas Mensagens:")
+  df_widget_hist = pd.read_sql(
+      "SELECT * FROM chat_interno ORDER BY id DESC LIMIT 3", conn
+  )
+  if not df_widget_hist.empty:
+    for _, rw_w in df_widget_hist.iterrows():
+      st.markdown(
+          f"""
+                <div style="background: #f8fafc; border-radius: 6px; padding: 6px; margin-bottom: 4px; font-size: 11px;">
+                    <b>{rw_w['remetente']}</b><br>
+                    <span style="color: #0f172a;">{rw_w['mensagem']}</span>
+                </div>
+            """,
+          unsafe_allow_html=True,
+      )
+  else:
+    st.info("Sem mensagens recentes.")
+
+else:
+  badge_w = "🔴" if tem_msgs_pendentes else "🟢"
+  st.markdown(
+      """
+        <style>
+        .widget-chat-btn {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: #059669;
+            color: white;
+            border-radius: 50px;
+            padding: 10px 18px;
+            box-shadow: 0 8px 25px rgba(5,150,105,0.4);
+            cursor: pointer;
+            z-index: 999999;
+            font-weight: 800;
+            font-size: 13px;
+        }
+        </style>
+    """,
+      unsafe_allow_html=True,
+  )
+
+  col_bw_l, col_bw_r = st.columns([5, 1.4])
+  with col_bw_r:
+    if st.button(f"{badge_w} Chat Pro", key="btn_abrir_widget_chat_flutu"):
+      st.session_state["widget_chat_aberto"] = True
+      st.rerun()
