@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE (UX/UI World Class - Minimalista, Fluido e Sofisticado)
+# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE ORIGINAL (UX/UI World Class - Sem Regressões)
 st.markdown(
     """
     <style>
@@ -40,31 +40,6 @@ st.markdown(
         max-width: 100% !important;
     }
     
-    /* REMOVE COMPLETAMENTE O BOTÃO DE RECOLHER E O TEXTO RESIDUAL DO TOPO DA BARRA LATERAL */
-    [data-testid="stSidebar"] button[kind="header"], 
-    [data-testid="stSidebar"] [data-testid="baseButton-header"],
-    button[data-testid="baseButton-header"],
-    header button,
-    [data-testid="stSidebar"] header {
-        display: none !important;
-        visibility: hidden !important;
-    }
-    
-    /* OCULTA QUALQUER TEXTO RESIDUAL DE ÍCONE DO STREAMLIT NO TOPO */
-    [data-testid="stSidebar"] > div:first-child div:first-child span {
-        display: none !important;
-    }
-
-    [data-testid="stSidebar"] > div:first-child {
-        padding-top: 0px !important;
-    }
-    [data-testid="stSidebarNav"] {
-        display: none !important;
-    }
-    section[data-testid="stSidebar"] div.block-container {
-        padding-top: 0px !important;
-    }
-
     [data-testid="stSidebar"] {
         min-width: 320px !important;
         width: 320px !important;
@@ -1009,7 +984,6 @@ def exibir_tabela_padronizada(df, nome_tabela):
 
 
 with st.sidebar:
-  # TOPO DA BARRA LATERAL LIMPO E ALINHADO SEM TEXTOS RESIDUAIS
   try:
     with open("caminhoes.jpg", "rb") as image_file:
       encoded_logo_side = base64.b64encode(image_file.read()).decode()
@@ -1112,16 +1086,14 @@ if menu == "📊 visão geral":
       else 0
   )
 
-  # LAYOUT ADAPTADO PARA MÓVEL (DIVIDIDO EM 3 E 2 COLUNAS)
-  col1, col2, col3 = st.columns(3)
+  # RESTAURADO PARA 5 COLUNAS ORIGINAIS (VISÃO COMPLETA TOP)
+  col1, col2, col3, col4, col5 = st.columns(5)
   with col1:
     st.metric("total frota", total_frota)
   with col2:
     st.metric("os abertas", os_abertas)
   with col3:
     st.metric("custo manut.", f"r$ {custo_total_manut:,.2f}")
-
-  col4, col5 = st.columns(2)
   with col4:
     st.metric("gasto combust.", f"r$ {gasto_total_comb:,.2f}")
   with col5:
@@ -1837,7 +1809,6 @@ elif menu == "💬 chat tabalmix pro & rede":
       " equipes, mural de avisos fixados e alerta SOS de emergência."
   )
 
-  # SCRIPTS JAVASCRIPT NATIVOS: ALARME SOS (ADMIN) + VIBRAÇÃO DE MENSAGEM (TODOS)
   st.markdown(
       """
         <script>
@@ -1881,7 +1852,6 @@ elif menu == "💬 chat tabalmix pro & rede":
       unsafe_allow_html=True,
   )
 
-  # PAINEL DE ALERTA SOS EM CAMPO
   st.markdown(
       """
         <div style="background: #fef2f2; border: 2px solid #ef4444; border-radius: 14px; padding: 14px 20px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(239,68,68,0.1);">
@@ -1923,7 +1893,6 @@ elif menu == "💬 chat tabalmix pro & rede":
               "🚨 ALERTA SOS DISPARADO COM SUCESSO! A gerência foi notificada."
           )
 
-  # EXIBIÇÃO DE ALERTAS SOS PENDENTES (DISPARA ALARME PARA ADMIN / GESTÃO / SEGURANÇA)
   cursor.execute(
       "SELECT * FROM alertas_sos WHERE status = 'PENDENTE' ORDER BY id DESC"
   )
@@ -1983,7 +1952,6 @@ elif menu == "💬 chat tabalmix pro & rede":
           st.success(f"✅ Alerta #{sos_item[0]} marcado como resolvido!")
           st.rerun()
 
-  # MURAL DE AVISOS FIXADOS (PINNED NOTICES)
   st.markdown("---")
   st.markdown("#### 📌 Mural de Avisos Fixados (Diretoria / Oficina)")
   cursor.execute(
@@ -2034,7 +2002,6 @@ elif menu == "💬 chat tabalmix pro & rede":
           st.success("✅ Aviso fixado no topo com sucesso!")
           st.rerun()
 
-  # SELETOR DE STATUS DO USUÁRIO
   st.markdown("---")
   status_escolhido = st.radio(
       "Meu Status Atual na Rede:",
@@ -2047,7 +2014,6 @@ elif menu == "💬 chat tabalmix pro & rede":
       horizontal=True,
   )
 
-  # ABAS SUPERIORES
   tab_conversa, tab_contatos_rede = st.tabs(
       ["💬 Conversas & Chat Ativo", "👥 Rede de Colaboradores & Privado"]
   )
@@ -2066,7 +2032,6 @@ elif menu == "💬 chat tabalmix pro & rede":
   with tab_conversa:
     st.markdown(f"#### 🗨️ Conversa: `{st.session_state['sala_chat_ativa']}`")
 
-    # CABEÇALHO DO CHAT ULTRA MODERNO
     st.markdown(
         f"""
         <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 14px 20px; border-radius: 14px 14px 0 0; display: flex; align-items: center; justify-content: space-between; color: white; box-shadow: 0 6px 18px rgba(5,150,105,0.2);">
@@ -2086,7 +2051,6 @@ elif menu == "💬 chat tabalmix pro & rede":
         unsafe_allow_html=True,
     )
 
-    # ÁREA DE MENSAGENS COM ESTILO FLUIDO
     st.markdown(
         """
         <div style="background: #ffffff; padding: 18px; border-radius: 0 0 14px 14px; border: 1px solid #e2e8f0; border-top: none; min-height: 280px; max-height: 380px; overflow-y: auto; margin-bottom: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.02);">
