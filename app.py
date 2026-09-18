@@ -416,14 +416,17 @@ def init_db():
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS veiculos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tag_prefixo TEXT, tipo TEXT, marca TEXT, modelo TEXT,
-            ano INTEGER, chassi TEXT, renavam TEXT, placa TEXT, crv TEXT,
-            cor TEXT, combustivel TEXT, empresa TEXT, operador_condutor TEXT,
-            horimetro_km INTEGER, status TEXT, data_entrada TEXT, observacoes TEXT
+            tag_prefixo TEXT, categoria_equipamento TEXT, tipo_equipamento TEXT,
+            marca TEXT, modelo TEXT, ano INTEGER, chassi TEXT, renavam TEXT,
+            placa TEXT, crv TEXT, cor TEXT, combustivel TEXT, empresa TEXT,
+            operador_condutor TEXT, horimetro_km INTEGER, status TEXT, data_entrada TEXT, observacoes TEXT
         )
     """)
 
+  # Garante explicitamente a inclusão de ambas as colunas caso a tabela já exista sem elas
   for col_sql in [
+      "ALTER TABLE veiculos ADD COLUMN categoria_equipamento TEXT",
+      "ALTER TABLE veiculos ADD COLUMN tipo_equipamento TEXT",
       "ALTER TABLE veiculos ADD COLUMN chassi TEXT",
       "ALTER TABLE veiculos ADD COLUMN renavam TEXT",
       "ALTER TABLE veiculos ADD COLUMN crv TEXT",
@@ -575,6 +578,41 @@ except Exception:
 if "usuario_logado" not in st.session_state:
   st.session_state["usuario_logado"] = None
 
+# PERSISTÊNCIA INTELIGENTE DE SESSÃO NA OBRA (Salva o usuário ativo no navegador/query params para não deslogar ao atualizar)
+try:
+  if st.session_state["usuario_logado"] is None:
+    qp = st.query_params
+    saved_user_id = qp.get("user_id")
+    if saved_user_id:
+      cursor.execute(
+          "SELECT * FROM usuarios_sistema WHERE id = ?", (saved_user_id,)
+      )
+      res_persist = cursor.fetchone()
+      if res_persist:
+        st.session_state["usuario_logado"] = {
+            "id": res_persist[0],
+            "nome": res_persist[1],
+            "cpf": res_persist[2],
+            "email": res_persist[3],
+            "status": res_persist[6],
+            "apelido": (
+                res_persist[9]
+                if len(res_persist) > 9
+                and res_persist[9]
+                and res_persist[9] != "None"
+                else res_persist[1].split()[0]
+            ),
+            "cargo": (
+                res_persist[10]
+                if len(res_persist) > 10
+                and res_persist[10]
+                and res_persist[10] != "None"
+                else "Colaborador"
+            ),
+        }
+except Exception:
+  pass
+
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
   col_l1, col_l2, col_l3 = st.columns([1, 2.4, 1])
   with col_l2:
@@ -668,6 +706,10 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                     else "Colaborador"
                 ),
             }
+            try:
+              st.query_params["user_id"] = str(user_data[0])
+            except Exception:
+              pass
             st.success("✅ login realizado com sucesso!")
             st.rerun()
           else:
@@ -753,7 +795,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     with tab_pin:
       st.markdown(
           "<p style='font-size: 13px; color: #475569; margin-top: 10px;'>acesso"
-          " instantâneo via pin (4 dígitos):</p>",
+          " instantâneo via pin (4 dígitos) na obra:</p>",
           unsafe_allow_html=True,
       )
       with st.form("form_pin"):
@@ -789,6 +831,10 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                     else "Colaborador"
                 ),
             }
+            try:
+              st.query_params["user_id"] = str(user_pin[0])
+            except Exception:
+              pass
             st.success("✅ login por pin validado!")
             st.rerun()
           else:
@@ -873,7 +919,7 @@ with st.sidebar:
             <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px; margin-bottom: 10px;">
                 <p style="margin: 0; font-weight: bold; color: #0f172a;">👤 {usuario_atual['apelido']}</p>
                 <p style="margin: 2px 0 6px 0; font-size: 11px; color: #475569;">{usuario_atual['cargo']}</p>
-                <span style="color: #059669; font-weight: bold; font-size: 12px;">🟢 Online (Ativo)</span>
+                <span style="color: #059669; font-weight: bold; font-size: 12px;">🟢 Sessão Fixa na Obra</span>
             </div>
         """,
         unsafe_allow_html=True,
@@ -884,6 +930,10 @@ with st.sidebar:
       )
     if st.button("🚪 encerrar sessão"):
       st.session_state["usuario_logado"] = None
+      try:
+        st.query_params.clear()
+      except Exception:
+        pass
       st.rerun()
   st.markdown("---")
 
@@ -1033,8 +1083,8 @@ if menu == "📊 visão geral":
 
   with col_graf2:
     st.markdown("**tipos de equipamentos na frota**")
-    if not df_veiculos.empty and "tipo" in df_veiculos.columns:
-      tipo_counts = df_veiculos["tipo"].value_counts()
+    if not df_veiculos.empty and "tipo_equipamento" in df_veiculos.columns:
+      tipo_counts = df_veiculos["tipo_equipamento"].value_counts()
       st.bar_chart(tipo_counts)
     else:
       st.info("sem dados suficientes de tipos para exibir.")
@@ -1050,16 +1100,13 @@ elif menu == "🚜 cadastro de equipamentos":
     col1, col2 = st.columns(2)
     with col1:
       tag_prefixo = st.text_input("tag / prefixo (ex: EQ-001 / BET-12)")
-      tipo = st.selectbox(
-          "tipo de equipamento",
-          [
-              "caminhão betoneira",
-              "caminhão basculante",
-              "escavadeira",
-              "utilitário",
-              "trator",
-              "carregadeira",
-          ],
+      categoria_equipamento = st.text_input(
+          "categoria do equipamento (ex: Linha Amarela, Linha Marrom, Linha"
+          " Branca...)"
+      )
+      tipo_equipamento = st.text_input(
+          "tipo de equipamento (ex: Caminhão Betoneira, Escavadeira, Pá"
+          " Carregadeira...)"
       )
       marca = st.text_input("marca (ex: Volvo, Mercedes-Benz, Scania)")
       modelo = st.text_input("modelo (ex: FMX 420, Atego 2430)")
@@ -1099,14 +1146,25 @@ elif menu == "🚜 cadastro de equipamentos":
             if tag_prefixo and tag_prefixo.strip()
             else "EQ-00" + str(datetime.now().microsecond)[:3]
         )
+        cat_final = (
+            categoria_equipamento.strip()
+            if categoria_equipamento and categoria_equipamento.strip()
+            else "Geral"
+        )
+        tipo_final = (
+            tipo_equipamento.strip()
+            if tipo_equipamento and tipo_equipamento.strip()
+            else "Equipamento"
+        )
         cursor.execute(
-            "INSERT INTO veiculos (tag_prefixo, tipo, marca, modelo, ano,"
-            " chassi, renavam, placa, crv, cor, combustivel, empresa,"
-            " operador_condutor, horimetro_km, status) VALUES (?, ?, ?, ?, ?,"
-            " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO veiculos (tag_prefixo, categoria_equipamento,"
+            " tipo_equipamento, marca, modelo, ano, chassi, renavam, placa, crv,"
+            " cor, combustivel, empresa, operador_condutor, horimetro_km,"
+            " status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 tag_final,
-                tipo,
+                cat_final,
+                tipo_final,
                 marca,
                 modelo,
                 int(ano),
