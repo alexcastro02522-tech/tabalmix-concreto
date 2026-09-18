@@ -39,16 +39,26 @@ st.markdown(
         padding-bottom: 3rem !important;
         max-width: 100% !important;
     }
+    
+    /* REMOVE COMPLETAMENTE O ESPAÇO E O BOTÃO DO TOPO DA BARRA LATERAL */
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 0px !important;
+    }
+    [data-testid="stSidebarNav"] {
+        display: none !important;
+    }
+    button[kind="header"] {
+        display: none !important;
+    }
+    section[data-testid="stSidebar"] div.block-container {
+        padding-top: 0px !important;
+    }
+
     [data-testid="stSidebar"] {
         min-width: 320px !important;
         width: 320px !important;
         background: #f8fafc !important;
         border-right: 1px solid #e2e8f0;
-        padding-top: 10px !important;
-    }
-    /* Oculta o botão padrão feio de recolher o sidebar para limpar o topo */
-    [data-testid="stSidebarNav"] + div, button[kind="header"] {
-        display: none !important;
     }
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label {
         color: #1e293b !important;
@@ -988,13 +998,13 @@ def exibir_tabela_padronizada(df, nome_tabela):
 
 
 with st.sidebar:
-  # CABEÇALHO DA BARRA LATERAL 100% LIMPO (SEM O ÍCONE DA SETA NO TOPO)
+  # TOPO DA BARRA LATERAL COM O NOME DA MARCA E FOTO COLADOS NO EXATO TOPO (SEM ESPAÇO)
   try:
     with open("caminhoes.jpg", "rb") as image_file:
       encoded_logo_side = base64.b64encode(image_file.read()).decode()
     st.markdown(
         f"""
-            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 14px; text-align: center; margin-top: -15px; margin-bottom: 12px; box-shadow: 0 10px 25px rgba(5,150,105,0.2); color: white;">
+            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 14px; text-align: center; margin-top: 0px; margin-bottom: 12px; box-shadow: 0 10px 25px rgba(5,150,105,0.2); color: white;">
                 <div style="font-size: 15px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 8px; color: white;">🏗️ TABALMIX CONCRETO</div>
                 <div style="border-radius: 12px; overflow: hidden; max-height: 105px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 8px; box-shadow: 0 6px 15px rgba(0,0,0,0.15);">
                     <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 100px; object-fit: cover; display: block;">
@@ -1009,7 +1019,7 @@ with st.sidebar:
   except Exception:
     st.markdown(
         """
-            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 14px; text-align: center; margin-top: -15px; margin-bottom: 12px; box-shadow: 0 10px 25px rgba(5,150,105,0.2); color: white;">
+            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 14px; text-align: center; margin-top: 0px; margin-bottom: 12px; box-shadow: 0 10px 25px rgba(5,150,105,0.2); color: white;">
                 <div style="font-size: 15px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 8px; color: white;">🏗️ TABALMIX CONCRETO</div>
                 <div style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 10px; padding: 6px; text-align: center;">
                     <span style="color: white; font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
