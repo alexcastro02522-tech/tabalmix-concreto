@@ -11,7 +11,6 @@ import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import streamlit as st
-from streamlit_webrtc import webrtc_streamer, WebRtcMode
 
 # CONFIGURAÇÃO DO MERCADO PAGO (Token Oficial de Produção Integrado)
 MERCADO_PAGO_ACCESS_TOKEN = (
@@ -26,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Enterprise com Vídeo/Áudio VoIP Integrado
+# Estilização Visual Enterprise
 st.markdown(
     """
     <style>
@@ -906,7 +905,6 @@ if menu == "📊 visão geral":
 
   st.divider()
 
-  # 1. LISTAGEM DE EQUIPAMENTOS PRIMEIRO (EM CIMA)
   col_exp1, col_exp2 = st.columns([3, 1])
   with col_exp1:
     st.subheader("📋 listagem geral de equipamentos")
@@ -980,7 +978,6 @@ if menu == "📊 visão geral":
 
   st.divider()
 
-  # 2. ANALYTICS E GRÁFICOS EMBAIXO
   st.subheader("📈 analytics avançado de desempenho")
   col_graf1, col_graf2 = st.columns(2)
 
@@ -1598,11 +1595,10 @@ elif menu == "👥 gestão de clientes":
     exibir_tabela_padronizada(df_cli, "clientes")
 
 elif menu == "💬 sala de bate-papo pro":
-  st.title("💬 Sala de Bate-Papo Corporativa Pro X com Chamada de Vídeo")
+  st.title("💬 Sala de Bate-Papo Corporativa Pro X")
   st.markdown(
       "Central de comunicação de alta performance: envie mensagens,"
-      " documentos ou inicie uma **Chamada de Vídeo / Áudio em Tempo Real**"
-      " direto pelo navegador."
+      " documentos ou inicie uma **Chamada de Vídeo ao Vivo** com um clique."
   )
 
   col_s1, col_s2 = st.columns([1, 2.8])
@@ -1640,22 +1636,19 @@ elif menu == "💬 sala de bate-papo pro":
     canal_corrente = st.session_state["sala_chat_ativa"]
     st.markdown(f"#### 🗨️ Canal Ativo: `{canal_corrente}`")
 
-    # BOTÃO PARA INICIAR CHAMADA DE VÍDEO/ÁUDIO WEBRTC
-    with st.expander(
-        "📹 Iniciar Chamada de Vídeo ou Áudio ao Vivo (WebRTC)", expanded=False
-    ):
-      st.markdown(
-          "Clique em **START** abaixo para transmitir seu vídeo e áudio com a"
-          " central ou equipe:"
-      )
-      webrtc_streamer(
-          key=f"room_call_{canal_corrente.replace(' ', '_')}",
-          mode=WebRtcMode.SENDRECV,
-          rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
-          media_stream_constraints={"video": True, "audio": True},
-      )
+    # BOTÃO PROFISSIONAL DE CHAMADA DE VÍDEO / ÁUDIO INSTANTÂNEA
+    link_meet = "https://meet.jit.si/TabalmixConcretoEnterprisePro"
+    st.markdown(
+        f"""
+        <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 16px; border-radius: 12px; color: white; margin-bottom: 20px; box-shadow: 0 8px 20px rgba(5,150,105,0.3); text-align: center;">
+            <h4 style="margin: 0 0 6px 0; color: white !important;">📹 Sala de Videoconferência Ativa</h4>
+            <p style="margin: 0 0 14px 0; font-size: 13px; opacity: 0.9;">Conecte-se por vídeo ou áudio de alta definição com a equipe ou suporte técnico instantaneamente.</p>
+            <a href="{link_meet}" target="_blank"><button style="background: white; color: #059669; border: none; padding: 10px 24px; font-weight: bold; border-radius: 8px; cursor: pointer; font-size: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">🚀 Entrar na Sala de Vídeo ao Vivo</button></a>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    st.markdown("---")
     remetente_atual = (
         usuario_atual["apelido"]
         if usuario_atual
@@ -1844,7 +1837,7 @@ elif menu == "⚙️ painel de licença (admin)":
           )
           conn.commit()
           st.success(
-              f"✅ Status do usuário #{selected_user_id} atualizado para"
+              f"✅ Status do usuário #{selected_user_id} updated para"
               f" '{novo_status_adm}' com sucesso!"
           )
           st.rerun()
@@ -1868,7 +1861,7 @@ elif menu == "⚙️ painel de licença (admin)":
     st.info("nenhum usuário cadastrado.")
 
 # ==============================================================================
-# WIDGET FLUTUANTE DE CHAT RÁPIDO & CHAMADA DE VÍDEO RÁPIDA NO CANTO INFERIOR DIREITO
+# WIDGET FLUTUANTE DE CHAT RÁPIDO & VÍDEO NO CANTO INFERIOR DIREITO
 # ==============================================================================
 if "widget_chat_aberto" not in st.session_state:
   st.session_state["widget_chat_aberto"] = False
@@ -1901,14 +1894,14 @@ if st.session_state["widget_chat_aberto"]:
       st.session_state["widget_chat_aberto"] = False
       st.rerun()
 
-  # Atalho WebRTC direto no Widget Flutuante
-  with st.expander("🔴 Ligar Câmera / Vídeo ao Vivo", expanded=False):
-    webrtc_streamer(
-        key="widget_webrtc_call",
-        mode=WebRtcMode.SENDRECV,
-        rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
-        media_stream_constraints={"video": True, "audio": True},
-    )
+  st.markdown(
+      '<a href="https://meet.jit.si/TabalmixConcretoEnterprisePro"'
+      ' target="_blank"><button style="background: #059669; color: white; width:'
+      ' 100%; border: none; padding: 8px; border-radius: 6px; font-weight:'
+      ' bold; cursor: pointer; margin-bottom: 10px;">📹 Entrar em Chamada de'
+      " Vídeo</button></a>",
+      unsafe_allow_html=True,
+  )
 
   rem_widget_n = (
       usuario_atual["apelido"]
