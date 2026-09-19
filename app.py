@@ -1314,6 +1314,31 @@ elif menu == "🚜 cadastro de equipamentos":
           st.rerun()
     exibir_tabela_padronizada(df_f, "cad_veiculos")
 
+    st.markdown("---")
+    st.markdown("### 🗑️ Remover Equipamento Duplicado ou Errado")
+    with st.form("form_excluir_veiculo"):
+      veiculos_map = {
+          f"ID #{r['id']} - Tag: {r.get('tag_prefixo', '-')} | Modelo:"
+          f" {r.get('modelo', '-')} | Placa: {r.get('placa', '-')}": r["id"]
+          for _, r in df_f.iterrows()
+      }
+      sel_veiculo_excluir = st.selectbox(
+          "Selecione o equipamento para excluir permanentemente:",
+          list(veiculos_map.keys()),
+      )
+      btn_conf_excluir = st.form_submit_button(
+          "🗑️ Excluir Equipamento Selecionado"
+      )
+
+      if btn_conf_excluir:
+        id_para_apagar = veiculos_map[sel_veiculo_excluir]
+        cursor.execute("DELETE FROM veiculos WHERE id = ?", (id_para_apagar,))
+        conn.commit()
+        st.success(
+            f"✅ Equipamento #{id_para_apagar} excluído com sucesso da frota!"
+        )
+        st.rerun()
+
 elif menu == "⛽ abastecimentos & combustível":
   st.title("⛽ controle de abastecimento e combustível")
   if not status_usuario_ativo and not modo_admin_liberado:
@@ -1682,7 +1707,7 @@ elif menu == "🛠️ ordens de serviço (os)":
   else:
     st.info(
         "💡 *A Etapa 2 de encerramento ficará pronta para uso assim que a primeira"
-        " OS for aberta na Etapa 1.*"
+        " OS foi aberta na Etapa 1.*"
     )
 
 elif menu == "🔩 peças e ferramentas":
