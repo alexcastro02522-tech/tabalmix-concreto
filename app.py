@@ -535,45 +535,45 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             st.error("⚠️ E-mail ou senha incorretos.")
 
     elif escolha_modo_login == "📝 Criar Novo Cadastro":
-      with st.form("form_novo_cadastro"):
-        st.markdown("### 📝 Criar Novo Cadastro na Obra")
-        c_nome = st.text_input("Nome Completo")
-        c_apelido = st.text_input("Apelido / Primeiro Nome")
-        c_cargo = st.selectbox(
-            "Cargo / Função na Empresa",
-            [
-                "Diretoria / Gestão",
-                "Engenheiro / Gestor de Obra",
-                "Mecânico / Oficina",
-                "Operador / Motorista / Campo",
-            ],
+      # Campos fora do formulário para permitir atualização instantânea da tela ao mudar o selectbox de cargo
+      st.markdown("### 📝 Criar Novo Cadastro na Obra")
+      c_nome = st.text_input("Nome Completo")
+      c_apelido = st.text_input("Apelido / Primeiro Nome")
+      c_cargo = st.selectbox(
+          "Cargo / Função na Empresa",
+          [
+              "Diretoria / Gestão",
+              "Engenheiro / Gestor de Obra",
+              "Mecânico / Oficina",
+              "Operador / Motorista / Campo",
+          ],
+      )
+
+      if "Diretoria" in c_cargo:
+        sugestao_preco = (
+            "💎 Master Concreto & Diretoria — Mensal: R$ 299,90 | Anual: R$"
+            " 2.999,00"
         )
+        valor_num = 299.90
+      elif "Engenheiro" in c_cargo:
+        sugestao_preco = (
+            "🏗️ Engenharia & Obra Pro — Mensal: R$ 189,90 | Anual: R$ 1.899,00"
+        )
+        valor_num = 189.90
+      elif "Mecânico" in c_cargo:
+        sugestao_preco = (
+            "🛠️ Oficina & Mecânica X — Mensal: R$ 119,90 | Anual: R$ 1.199,00"
+        )
+        valor_num = 119.90
+      else:
+        sugestao_preco = (
+            "🚜 Operacional Campo & Frota — Mensal: R$ 69,90 | Anual: R$ 699,00"
+        )
+        valor_num = 69.90
 
-        if "Diretoria" in c_cargo:
-          sugestao_preco = (
-              "💎 Master Concreto & Diretoria — Mensal: R$ 299,90 | Anual: R$"
-              " 2.999,00"
-          )
-          valor_num = 299.90
-        elif "Engenheiro" in c_cargo:
-          sugestao_preco = (
-              "🏗️ Engenharia & Obra Pro — Mensal: R$ 189,90 | Anual: R$ 1.899,00"
-          )
-          valor_num = 189.90
-        elif "Mecânico" in c_cargo:
-          sugestao_preco = (
-              "🛠️ Oficina & Mecânica X — Mensal: R$ 119,90 | Anual: R$ 1.199,00"
-          )
-          valor_num = 119.90
-        else:
-          sugestao_preco = (
-              "🚜 Operacional Campo & Frota — Mensal: R$ 69,90 | Anual: R$"
-              " 699,00"
-          )
-          valor_num = 69.90
+      st.info(f"💡 **Plano Sugerido:**\n\n{sugestao_preco}")
 
-        st.info(f"💡 **Plano Sugerido:**\n\n{sugestao_preco}")
-
+      with st.form("form_novo_cadastro"):
         c_cpf = st.text_input("CPF")
         c_email = st.text_input("E-mail corporativo de login")
         c_senha = st.text_input("Criar senha", type="password")
