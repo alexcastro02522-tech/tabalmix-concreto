@@ -146,7 +146,7 @@ st.markdown(
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
     .stButton button:hover {
-        background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important;
+        background: linear-gradient(135deg, #047857 100%, #065f46 100%) !important;
         box-shadow: 0 8px 22px rgba(5, 150, 105, 0.45);
         transform: translateY(-2px);
     }
@@ -2054,8 +2054,12 @@ elif menu == "💬 chat tabalmix pro & rede":
       horizontal=True,
   )
 
-  tab_conversa, tab_contatos_rede = st.tabs(
-      ["💬 Conversas & Chat Ativo", "👥 Rede de Colaboradores & Privado"]
+  tab_conversa, tab_contatos_rede, tab_chamada_interna = st.tabs(
+      [
+          "💬 Conversas & Chat Ativo",
+          "👥 Rede de Colaboradores & Privado",
+          "📹 Chamada de Vídeo Interna (WebRTC)",
+      ]
   )
 
   if "sala_chat_ativa" not in st.session_state:
@@ -2067,7 +2071,6 @@ elif menu == "💬 chat tabalmix pro & rede":
       else ("Administrador" if modo_admin_liberado else "Colaborador")
   )
   cargo_atual = usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
-  link_meet = "https://meet.jit.si/TabalmixConcretoEnterprisePro"
 
   with tab_conversa:
     st.markdown(f"#### 🗨️ Conversa: `{st.session_state['sala_chat_ativa']}`")
@@ -2079,12 +2082,8 @@ elif menu == "💬 chat tabalmix pro & rede":
                 <div style="background: rgba(255,255,255,0.2); width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: bold; border: 2px solid white;">💬</div>
                 <div>
                     <h4 style="margin: 0; color: white !important; font-size: 15.5px;">{st.session_state['sala_chat_ativa']}</h4>
-                    <span style="font-size: 11px; opacity: 0.9;">status: {status_escolhido} • criptografia enterprise</span>
+                    <span style="font-size: 11px; opacity: 0.9;">status: {status_escolhido} • sistema enterprise fechado</span>
                 </div>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <a href="{link_meet}" target="_blank" title="Chamada de Áudio" style="background: rgba(255,255,255,0.25); padding: 8px 14px; border-radius: 50%; color: white; text-decoration: none; font-size: 15px; border: 1px solid rgba(255,255,255,0.4);">📞</a>
-                <a href="{link_meet}" target="_blank" title="Chamada de Vídeo" style="background: rgba(255,255,255,0.25); padding: 8px 14px; border-radius: 50%; color: white; text-decoration: none; font-size: 15px; border: 1px solid rgba(255,255,255,0.4);">📹</a>
             </div>
         </div>
         """,
@@ -2127,22 +2126,6 @@ elif menu == "💬 chat tabalmix pro & rede":
         )
 
     if not df_msgs.empty:
-      ultima_msg_remetente = str(df_msgs.iloc[0]["remetente"])
-      if (
-          remetente_atual
-          and remetente_atual.lower() not in ultima_msg_remetente.lower()
-      ):
-        st.markdown(
-            """
-                <script>
-                if (typeof vibrarMensagemChat === 'function') {
-                    vibrarMensagemChat();
-                }
-                </script>
-            """,
-            unsafe_allow_html=True,
-        )
-
       for _, row_m in df_msgs.iterrows():
         is_me = (
             remetente_atual.lower() in str(row_m["remetente"]).lower()
@@ -2282,10 +2265,52 @@ elif menu == "💬 chat tabalmix pro & rede":
             st.rerun()
 
     if not encontrou_contato:
-      st.info(
-          "Nenhum outro colaborador ativo no momento (você é o único usuário"
-          " logado ou os demais cadastros estão sem apelido definido)."
-      )
+      st.info("Nenhum outro colaborador ativo no momento.")
+
+  with tab_chamada_interna:
+    st.markdown("#### 📹 Sala de Vídeo e Áudio Nativa Integrada")
+    st.markdown(
+        "Inicie a sua transmissão de vídeo ou áudio diretamente na tela do"
+        " sistema (utiliza a câmara e microfone do telemóvel/computador sem"
+        " aplicativos externos)."
+    )
+
+    st.components.v1.html(
+        """
+        <div style="background: #0f172a; border-radius: 16px; padding: 20px; text-align: center; color: white; font-family: 'Plus Jakarta Sans', sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
+            <h3 style="margin-top: 0; color: #34d399 !important; font-size: 16px;">🎥 Transmissão Interna Tabalmix Pro</h3>
+            <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 15px;">
+                <video id="localVideo" autoplay playsinline muted style="width: 45%; max-height: 200px; border-radius: 12px; background: #1e293b; border: 2px solid #059669; object-fit: cover;"></video>
+                <div style="width: 45%; max-height: 200px; border-radius: 12px; background: #1e293b; border: 2px solid #334155; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 12px; text-align: center; padding: 10px;">
+                    Aguardando outro operador entrar na sala de vídeo...
+                </div>
+            </div>
+            <button onclick="ligarCamera()" style="background: #059669; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px; box-shadow: 0 4px 12px rgba(5,150,105,0.4);">🟢 Ligar Câmara & Microfone</button>
+            <button onclick="desligarCamera()" style="background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px; margin-left: 10px;">🔴 Desligar</button>
+        </div>
+
+        <script>
+        let localStream = null;
+        async function ligarCamera() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                const videoElement = document.getElementById('localVideo');
+                videoElement.srcObject = localStream;
+            } catch (err) {
+                alert("Erro ao aceder à câmara ou microfone: " + err);
+            }
+        }
+        function desligarCamera() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                const videoElement = document.getElementById('localVideo');
+                videoElement.srcObject = null;
+            }
+        }
+        </script>
+        """,
+        height=320,
+    )
 
 elif menu == "🔍 consulta / busca geral":
   st.title("🔍 consulta e histórico completo do equipamento")
@@ -2478,7 +2503,7 @@ elif menu == "⚙️ painel de licença (admin)":
     st.info("nenhum usuário cadastrado.")
 
 # ==============================================================================
-# WIDGET FLUTUANTE DE CHAT RÁPIDO & VÍDEO NO CANTO INFERIOR DIREITO
+# WIDGET FLUTUANTE DE CHAT RÁPIDO NO CANTO INFERIOR DIREITO
 # ==============================================================================
 if "widget_chat_aberto" not in st.session_state:
   st.session_state["widget_chat_aberto"] = False
@@ -2510,15 +2535,6 @@ if st.session_state["widget_chat_aberto"]:
     if st.button("❌", key="btn_fechar_widget_chat_flutuante"):
       st.session_state["widget_chat_aberto"] = False
       st.rerun()
-
-  st.markdown(
-      '<a href="https://meet.jit.si/TabalmixConcretoEnterprisePro"'
-      ' target="_blank"><button style="background: #059669; color: white; width:'
-      ' 100%; border: none; padding: 9px; border-radius: 10px; font-weight:'
-      ' bold; cursor: pointer; margin-bottom: 12px; box-shadow: 0 4px 12px'
-      ' rgba(5,150,105,0.3);">📹 Iniciar Vídeo Chamada Rápida</button></a>',
-      unsafe_allow_html=True,
-  )
 
   rem_widget_n = (
       usuario_atual["apelido"]
