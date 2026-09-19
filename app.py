@@ -751,7 +751,7 @@ if usuario_atual and (
 ):
   usuario_atual["cargo"] = "Colaborador"
 
-# VERIFICAÇÃO GLOBAL DE CHAMADA PENDENTE EM TEMPO REAL PARA O USUÁRIO LOGADO
+# VERIFICAÇÃO GLOBAL DE CHAMADA PENDENTE COM AUTO-REFRESH EM TEMPO REAL NO SMARTPHONE DELA
 if usuario_atual:
   nome_apelido_atual = usuario_atual["apelido"]
   cursor.execute(
@@ -762,13 +762,19 @@ if usuario_atual:
   if chamada_pendente:
     st.markdown(
         f"""
-            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 16px 22px; border-radius: 14px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(220,38,38,0.4); display: flex; justify-content: space-between; align-items: center;">
+            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 18px 24px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 15px 35px rgba(220,38,38,0.5); display: flex; justify-content: space-between; align-items: center; animation: pulse 1s infinite;">
                 <div>
-                    <h3 style="color: white !important; margin: 0; font-size: 17px;">🚨 CHAMADA DE VÍDEO AO VIVO A TOCAR!</h3>
-                    <p style="margin: 4px 0 0 0; font-size: 13.5px;">Alguém da diretoria/equipe está a chamar-te em tempo real.</p>
+                    <h3 style="color: white !important; margin: 0; font-size: 18px;">🚨 CHAMADA DE VÍDEO A TOCAR AGORA!</h3>
+                    <p style="margin: 4px 0 0 0; font-size: 14px;">Alguém está a chamar-te em tempo real para uma reunião ao vivo.</p>
                 </div>
-                <a href="?p=chat" target="_self" style="background: white; color: #991b1b; padding: 10px 20px; border-radius: 10px; font-weight: 800; text-decoration: none; font-size: 14px;">Atender na Central de Chat</a>
+                <a href="?p=chat" target="_self" style="background: white; color: #991b1b; padding: 12px 24px; border-radius: 12px; font-weight: 800; text-decoration: none; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">ATENDER CHAMADA</a>
             </div>
+            <script>
+                // Força o smartphone dela a atualizar a página automaticamente a cada 4 segundos para tocar na hora
+                setTimeout(function(){
+                    window.location.reload();
+                }, 4000);
+            </script>
         """,
         unsafe_allow_html=True,
     )
@@ -1495,7 +1501,6 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
     else:
       alvo_selecionado = "Equipe Geral"
 
-    # Nome da sala direto e otimizado sem travas de moderação
     nome_sala_direta = f"TabalmixDirectCall{alvo_selecionado.split()[0]}2026"
 
     if "chamada_ativa" not in st.session_state:
@@ -1543,7 +1548,6 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
 
     if st.session_state["chamada_ativa"]:
       st.markdown(f"**🟢 Chamada em curso com: {alvo_selecionado}**")
-      # Parâmetros reforçados para saltar moderação e ecrãs publicitários/app
       jitsi_embed_html = f"""
             <div style="width: 100%; height: 600px; border-radius: 16px; overflow: hidden; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
                 <iframe src="https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false&interfaceConfigOverwrite.MOBILE_APP_PROMO=false" 
