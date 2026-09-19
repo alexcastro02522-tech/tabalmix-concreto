@@ -1135,7 +1135,7 @@ elif menu == "💬 chat tabalmix pro & rede":
   st.title("💬 Central Pro de Chamadas e Chat em Tempo Real")
   st.markdown(
       "Comunicação corporativa avançada com **chamada interativa** e alertas"
-      " sonoros automáticos para a equipe na obra."
+      " sonoros automáticos para a equipe na obra, unificada no mesmo aplicativo."
   )
 
   # CENTRAL DE CHAMADA COM ALARME SONORO E VIBRAÇÃO EM TEMPO REAL
@@ -1143,14 +1143,14 @@ elif menu == "💬 chat tabalmix pro & rede":
       "📞 CENTRAL DE CHAMADAS E VÍDEO AO VIVO (TOQUE & ALARME)", expanded=True
   ):
     st.markdown(
-        "Utilize a central para iniciar chamadas diretas com som de toque e"
-        " câmara integrada:"
+        "Utilize a central para iniciar chamadas diretas com som de toque,"
+        " vibração e câmara integrada:"
     )
     st.components.v1.html(
         """
         <div style="background: #0f172a; border-radius: 16px; padding: 20px; text-align: center; color: white; font-family: 'Plus Jakarta Sans', sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
             <div id="callStatus" style="background: #1e293b; border: 1px solid #334155; padding: 12px; border-radius: 10px; margin-bottom: 15px; font-weight: bold; color: #38bdf8;">
-                📲 Central Pronta. Clique em "Tocar Alarme de Chamada" para testar o toque/vibração ou inicie a câmara.
+                📲 Central Pronta. Clique em "Tocar Alarme de Chamada" para disparar o toque ou inicie a câmara.
             </div>
             
             <video id="localVideo" autoplay playsinline muted style="width: 100%; max-height: 220px; border-radius: 12px; background: #1e293b; border: 2px solid #059669; object-fit: cover; margin-bottom: 12px;"></video>
@@ -1158,7 +1158,7 @@ elif menu == "💬 chat tabalmix pro & rede":
             <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
                 <button onclick="tocarAlarmeChamada()" style="background: #f59e0b; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🔔 Tocar Toque de Chamada</button>
                 <button onclick="ligarCamera()" style="background: #059669; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🟢 Atender / Ligar Câmara</button>
-                <button onclick="desligarCamera()" style="background: #dc2626; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🔴 Recusar / Desligar</button>
+                <button onclick="desligarCamera()" style="background: #dc2626; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🔴 Desligar / Recusar</button>
             </div>
         </div>
         <script>
@@ -1170,24 +1170,23 @@ elif menu == "💬 chat tabalmix pro & rede":
                 if (!audioCtx) {
                     audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 }
-                // Simula toque de chamada telefônica (beep duplo repetido)
                 let now = audioCtx.currentTime;
-                for (let i = 0; i < 4; i++) {
+                for (let i = 0; i < 6; i++) {
                     let osc = audioCtx.createOscillator();
                     let gain = audioCtx.createGain();
                     osc.type = 'sine';
-                    osc.frequency.setValueAtTime(440, now + (i * 0.8));
-                    gain.gain.setValueAtTime(0.2, now + (i * 0.8));
-                    gain.gain.exponentialRampToValueAtTime(0.00001, now + (i * 0.8) + 0.4);
+                    osc.frequency.setValueAtTime(480, now + (i * 0.7));
+                    gain.gain.setValueAtTime(0.25, now + (i * 0.7));
+                    gain.gain.exponentialRampToValueAtTime(0.00001, now + (i * 0.7) + 0.35);
                     osc.connect(gain);
                     gain.connect(audioCtx.destination);
-                    osc.start(now + (i * 0.8));
-                    osc.stop(now + (i * 0.8) + 0.4);
+                    osc.start(now + (i * 0.7));
+                    osc.stop(now + (i * 0.7) + 0.35);
                 }
                 if (navigator.vibrate) {
-                    navigator.vibrate([500, 300, 500, 300]);
+                    navigator.vibrate([600, 300, 600, 300, 600]);
                 }
-                document.getElementById('callStatus').innerText = "📞 A receber chamada entrante! Toque e vibração ativados.";
+                document.getElementById('callStatus').innerText = "📞 A tocar sinal de chamada no telemóvel!";
             } catch(e) {
                 console.log("Erro ao reproduzir áudio:", e);
             }
@@ -1197,9 +1196,9 @@ elif menu == "💬 chat tabalmix pro & rede":
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 document.getElementById('localVideo').srcObject = localStream;
-                document.getElementById('callStatus').innerText = "🟢 Chamada de vídeo ativa com sucesso!";
+                document.getElementById('callStatus').innerText = "🟢 Chamada de vídeo ativa e estabelecida!";
             } catch (err) {
-                alert("Erro ao aceder à câmara: " + err);
+                alert("Erro ao aceder à câmara: Verifique as permissões do telemóvel. " + err);
             }
         }
 
@@ -1208,7 +1207,7 @@ elif menu == "💬 chat tabalmix pro & rede":
                 localStream.getTracks().forEach(track => track.stop());
                 document.getElementById('localVideo').srcObject = null;
             }
-            document.getElementById('callStatus').innerText = "🔴 Chamada encerrada ou recusada.";
+            document.getElementById('callStatus').innerText = "🔴 Chamada encerrada.";
         }
         </script>
         """,
