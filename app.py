@@ -688,58 +688,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           unsafe_allow_html=True,
       )
 
-    # VITRINE DE VANTAGENS E PLANOS POR CARGO (DESIGN ULTRA SOFISTICADO)
-    st.markdown(
-        """
-        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 24px; margin-bottom: 25px; box-shadow: 0 10px 35px rgba(0,0,0,0.04); text-align: center;">
-            <h3 style="color: #0f172a !important; font-size: 17px; margin-top: 0; font-weight: 800;">🌟 Vantagens e Recursos Exclusivos por Função na Obra</h3>
-            <p style="font-size: 13px; color: #475569; margin-bottom: 18px;">Conheça o superpoder de cada plano corporativo integrado para a sua equipe:</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    v1, v2 = st.columns(2)
-    with v1:
-      st.markdown(
-          """
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #059669; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.03);">
-                <span style="color: #065f46; font-size: 14.5px; font-weight: 700;">👑 Alta Gestão & Diretoria</span>
-                <p style="font-size: 12px; color: #334155; margin: 6px 0 0 0; line-height: 1.5;">Visão global da frota, relatórios executivos em PDF e recepção em tempo real dos <b>Alertas SOS</b> de pânico em campo.</p>
-            </div>
-            """,
-          unsafe_allow_html=True,
-      )
-      st.markdown(
-          """
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #d97706; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.03);">
-                <span style="color: #b45309; font-size: 14.5px; font-weight: 700;">🛠️ Oficina & Manutenção</span>
-                <p style="font-size: 12px; color: #334155; margin: 6px 0 0 0; line-height: 1.5;">Gestão ágil de Ordens de Serviço (OS), controle detalhado de estoque de peças e laudos de custos mecânicos.</p>
-            </div>
-            """,
-          unsafe_allow_html=True,
-      )
-
-    with v2:
-      st.markdown(
-          """
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #0284c7; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.03);">
-                <span style="color: #0369a1; font-size: 14.5px; font-weight: 700;">👷 Segurança do Trabalho (SST)</span>
-                <p style="font-size: 12px; color: #334155; margin: 6px 0 0 0; line-height: 1.5;">Conformidade regulamentada, vistorias fotográficas e emissão rápida de laudos de <b>Check-list de Mobilização</b>.</p>
-            </div>
-            """,
-          unsafe_allow_html=True,
-      )
-      st.markdown(
-          """
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #7c3aed; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.03);">
-                <span style="color: #6d28d9; font-size: 14.5px; font-weight: 700;">🚜 Operacional de Campo</span>
-                <p style="font-size: 12px; color: #334155; margin: 6px 0 0 0; line-height: 1.5;">Praticidade diária, registros rápidos de abastecimento, chat integrado e acionamento instantâneo do <b>Botão SOS</b>.</p>
-            </div>
-            """,
-          unsafe_allow_html=True,
-      )
-
     tab_login, tab_cadastro, tab_recuperar, tab_pin = st.tabs([
         "🔑 entrar na conta",
         "📝 cadastrar colaborador",
@@ -748,11 +696,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     ])
 
     with tab_login:
-      st.markdown(
-          "<p style='font-size: 13.5px; color: #475569; margin-top: 12px; font-weight:"
-          " 600;'>acesse sua conta corporativa:</p>",
-          unsafe_allow_html=True,
-      )
       with st.form("form_login"):
         email_login = st.text_input("e-mail corporativo")
         senha_login = st.text_input("senha de acesso", type="password")
@@ -806,11 +749,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             st.error("⚠️ e-mail ou senha incorretos.")
 
     with tab_cadastro:
-      st.markdown(
-          "<p style='font-size: 13.5px; color: #475569; margin-top: 12px; font-weight:"
-          " 600;'>cadastro de novo usuário (requer liberação administrativa após pagamento):</p>",
-          unsafe_allow_html=True,
-      )
       with st.form("form_novo_cadastro"):
         c_nome = st.text_input("nome completo")
         c_apelido = st.text_input("primeiro nome ou apelido de guerra")
@@ -865,11 +803,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             st.error("⚠️ preencha os campos obrigatórios.")
 
     with tab_recuperar:
-      st.markdown(
-          "<p style='font-size: 13.5px; color: #475569; margin-top: 12px; font-weight:"
-          " 600;'>recuperação rápida de credenciais:</p>",
-          unsafe_allow_html=True,
-      )
       with st.form("form_recuperar"):
         rec_email = st.text_input("digite seu e-mail cadastrado")
         btn_rec = st.form_submit_button("consultar senha")
@@ -888,11 +821,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             st.error("⚠️ e-mail não encontrado.")
 
     with tab_pin:
-      st.markdown(
-          "<p style='font-size: 13.5px; color: #475569; margin-top: 12px; font-weight:"
-          " 600;'>acesso instantâneo via pin (4 dígitos) na obra:</p>",
-          unsafe_allow_html=True,
-      )
       with st.form("form_pin"):
         email_pin = st.text_input("e-mail da conta corporativa")
         pin_dig = st.text_input(
@@ -1135,61 +1063,8 @@ if menu == "📊 visão geral":
           st.rerun()
 
     exibir_tabela_padronizada(df_veiculos, "veiculos")
-
-    if status_usuario_ativo or modo_admin_liberado:
-      st.markdown("### 📲 compartilhar relatórios e dados")
-      col_w, col_e = st.columns(2)
-      with col_w:
-        msg_whatsapp = urllib.parse.quote(
-            "Olá! Segue o resumo executivo da frota da Tabalmix Concreto gerado"
-            " via sistema Enterprise."
-        )
-        st.markdown(
-            f'<a href="https://wa.me/?text={msg_whatsapp}" target="_blank"><button'
-            ' style="background-color: #25D366; color: white; border: none; border-radius: 12px; padding: 12px 20px; font-weight: bold; cursor: pointer; width: 100%; box-shadow: 0 4px 12px rgba(37,211,102,0.3);">💬 Enviar Relatório via WhatsApp</button></a>',
-            unsafe_allow_html=True,
-        )
-      with col_e:
-        assunto_email = urllib.parse.quote(
-            "Relatório Executivo de Frota - Tabalmix Concreto"
-        )
-        corpo_email = urllib.parse.quote(
-            "Prezado(a),\n\nSegue em anexo/resumo o relatório operacional da"
-            " frota gerado pelo sistema Tabalmix Concreto"
-            " Enterprise.\n\nAtenciosamente, Gestão de Frota."
-        )
-        st.markdown(
-            f'<a href="mailto:?subject={assunto_email}&body={corpo_email}"'
-            ' target="_blank"><button style="background-color: #0284c7; color:'
-            " white; border: none; border-radius: 12px; padding: 12px 20px; font-"
-            'weight: bold; cursor: pointer; width: 100%; box-shadow: 0 4px 12px'
-            ' rgba(2,132,199,0.3);">✉️ Enviar Relatório via'
-            " E-mail</button></a>",
-            unsafe_allow_html=True,
-        )
   else:
     st.info("nenhum equipamento cadastrado na frota.")
-
-  st.divider()
-
-  st.subheader("📈 analytics avançado de desempenho")
-  col_graf1, col_graf2 = st.columns(2)
-
-  with col_graf1:
-    st.markdown("**distribuição de status operacional**")
-    if not df_veiculos.empty and "status" in df_veiculos.columns:
-      status_counts = df_veiculos["status"].value_counts()
-      st.bar_chart(status_counts)
-    else:
-      st.info("sem dados suficientes de status para exibir.")
-
-  with col_graf2:
-    st.markdown("**tipos de equipamentos na frota**")
-    if not df_veiculos.empty and "tipo_equipamento" in df_veiculos.columns:
-      tipo_counts = df_veiculos["tipo_equipamento"].value_counts()
-      st.bar_chart(tipo_counts)
-    else:
-      st.info("sem dados suficientes de tipos para exibir.")
 
 elif menu == "🚜 cadastro de equipamentos":
   st.title("🚜 cadastro completo de equipamentos e frota")
@@ -1293,25 +1168,6 @@ elif menu == "🚜 cadastro de equipamentos":
 
   df_f = pd.read_sql("SELECT * FROM veiculos", conn)
   if not df_f.empty:
-    if modo_admin_liberado:
-      with st.expander(
-          "⚙️ [ADMIN] Configurar Ordem Padrão das Colunas (Cadastro Frota)"
-      ):
-        cols_disp_f = list(df_f.columns)
-        nova_ordem_f = st.text_input(
-            "Ordem das colunas:",
-            value=",".join(cols_disp_f),
-            key="cfg_col_f",
-        )
-        if st.button("💾 Salvar Ordem", key="btn_sav_f"):
-          cursor.execute(
-              "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
-              " VALUES ('cad_veiculos', ?)",
-              (nova_ordem_f,),
-          )
-          conn.commit()
-          st.success("✅ Ordem atualizada para todos os colaboradores!")
-          st.rerun()
     exibir_tabela_padronizada(df_f, "cad_veiculos")
 
     st.markdown("---")
@@ -1341,11 +1197,6 @@ elif menu == "🚜 cadastro de equipamentos":
 
 elif menu == "⛽ abastecimentos & combustível":
   st.title("⛽ controle de abastecimento e combustível")
-  if not status_usuario_ativo and not modo_admin_liberado:
-    st.warning(
-        "🔒 **Acesso restrito:** sua conta está inativa. Você pode visualizar"
-        " os registros, mas novos lançamentos estão desativados."
-    )
   df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
   tags_comb = (
       df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
@@ -1366,60 +1217,30 @@ elif menu == "⛽ abastecimentos & combustível":
       dt_ab = st.date_input("data")
     btn_cad_comb = st.form_submit_button("registrar abastecimento")
     if btn_cad_comb:
-      if not status_usuario_ativo and not modo_admin_liberado:
-        st.error(
-            "⚠️ Conta inativa: você não tem permissão para registrar"
-            " abastecimentos."
-        )
-      else:
-        cursor.execute(
-            "INSERT INTO combustivel (equipamento, litros, valor_total,"
-            " km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?, ?, ?,"
-            " ?, ?)",
-            (
-                str(eq_comb).upper(),
-                float(litros),
-                float(val_tot),
-                str(km_h),
-                posto,
-                motorista,
-                str(dt_ab),
-            ),
-        )
-        conn.commit()
-        st.success("✅ abastecimento registrado com sucesso!")
-        st.rerun()
+      cursor.execute(
+          "INSERT INTO combustivel (equipamento, litros, valor_total,"
+          " km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?, ?, ?, ?,"
+          " ?)",
+          (
+              str(eq_comb).upper(),
+              float(litros),
+              float(val_tot),
+              str(km_h),
+              posto,
+              motorista,
+              str(dt_ab),
+          ),
+      )
+      conn.commit()
+      st.success("✅ abastecimento registrado com sucesso!")
+      st.rerun()
 
   df_c = pd.read_sql("SELECT * FROM combustivel", conn)
   if not df_c.empty:
-    if modo_admin_liberado:
-      with st.expander(
-          "⚙️ [ADMIN] Configurar Ordem Padrão das Colunas (Abastecimento)"
-      ):
-        cols_disp_c = list(df_c.columns)
-        nova_ordem_c = st.text_input(
-            "Ordem das colunas:",
-            value=",".join(cols_disp_c),
-            key="cfg_col_c",
-        )
-        if st.button("💾 Salvar Ordem", key="btn_sav_c"):
-          cursor.execute(
-              "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
-              " VALUES ('combustivel', ?)",
-              (nova_ordem_c,),
-          )
-          conn.commit()
-          st.success("✅ Ordem atualizada para todos os colaboradores!")
-          st.rerun()
     exibir_tabela_padronizada(df_c, "combustivel")
 
 elif menu == "🏗️ mobilização / desmobilização":
   st.title("🏗️ mobilização e desmobilização de obras")
-  if not status_usuario_ativo and not modo_admin_liberado:
-    st.warning(
-        "🔒 **Acesso restrito:** sua conta está inativa. O modo de prestígio"
-        " permite apenas visualização."
-    )
   df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
   tags_mob = (
       df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
@@ -1442,108 +1263,50 @@ elif menu == "🏗️ mobilização / desmobilização":
       obs = st.text_input("observação")
 
     fotos_subidas = st.file_uploader(
-        "📷 anexar fotos do check-list (selecione de 1 a 15 fotos: frente, trás,"
-        " laterais, painel, pneus)",
+        "📷 anexar fotos do check-list",
         type=["png", "jpg", "jpeg"],
         accept_multiple_files=True,
     )
 
     btn_cad_mob = st.form_submit_button("registrar movimentação")
     if btn_cad_mob:
-      if not status_usuario_ativo and not modo_admin_liberado:
-        st.error(
-            "⚠️ Conta inativa: você não tem permissão para registrar"
-            " movimentações."
-        )
-      else:
-        caminhos_fotos = []
-        if fotos_subidas:
-          os.makedirs("uploads_checklists", exist_ok=True)
-          for f_item in fotos_subidas[:15]:
-            nome_f = (
-                "uploads_checklists/"
-                f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{f_item.name}"
-            )
-            with open(nome_f, "wb") as f_out:
-              f_out.write(f_item.getbuffer())
-            caminhos_fotos.append(nome_f)
+      caminhos_fotos = []
+      if fotos_subidas:
+        os.makedirs("uploads_checklists", exist_ok=True)
+        for f_item in fotos_subidas[:15]:
+          nome_f = (
+              "uploads_checklists/"
+              f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{f_item.name}"
+          )
+          with open(nome_f, "wb") as f_out:
+            f_out.write(f_item.getbuffer())
+          caminhos_fotos.append(nome_f)
 
-        paths_str = "|".join(caminhos_fotos)
-
-        cursor.execute(
-            "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
-            " destino_origem, responsavel, data, observacao, foto_checklist)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (
-                str(eq_mob).upper(),
-                tipo_mov,
-                destino,
-                resp,
-                str(dt_mob),
-                obs,
-                paths_str,
-            ),
-        )
-        conn.commit()
-        st.success(
-            "✅ movimentação e check-list fotográfico múltiplo registrados com"
-            " sucesso!"
-        )
-        st.rerun()
+      paths_str = "|".join(caminhos_fotos)
+      cursor.execute(
+          "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
+          " destino_origem, responsavel, data, observacao, foto_checklist)"
+          " VALUES (?, ?, ?, ?, ?, ?, ?)",
+          (
+              str(eq_mob).upper(),
+              tipo_mov,
+              destino,
+              resp,
+              str(dt_mob),
+              obs,
+              paths_str,
+          ),
+      )
+      conn.commit()
+      st.success("✅ movimentação registrada com sucesso!")
+      st.rerun()
 
   df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
   if not df_mobs.empty:
-    if modo_admin_liberado:
-      with st.expander(
-          "⚙️ [ADMIN] Configurar Ordem Padrão das Colunas (Mobilizações)"
-      ):
-        cols_disp_m = list(df_mobs.columns)
-        nova_ordem_m = st.text_input(
-            "Ordem das colunas:",
-            value=",".join(cols_disp_m),
-            key="cfg_col_m",
-        )
-        if st.button("💾 Salvar Ordem", key="btn_sav_m"):
-          cursor.execute(
-              "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
-              " VALUES ('mobilizacoes', ?)",
-              (nova_ordem_m,),
-          )
-          conn.commit()
-          st.success("✅ Ordem atualizada para todos os colaboradores!")
-          st.rerun()
     exibir_tabela_padronizada(df_mobs, "mobilizacoes")
-
-    for idx, row in df_mobs.iterrows():
-      col_m_view1, col_m_view2 = st.columns([2, 1])
-      with col_m_view1:
-        if row.get("foto_checklist"):
-          paths_lista = str(row["foto_checklist"]).split("|")
-          with st.expander(
-              f"📸 ver fotos do check-list #{row['id']} - {row['equipamento']} ("
-              f"{len(paths_lista)} fotos)"
-          ):
-            for p_img in paths_lista:
-              if p_img and os.path.exists(p_img):
-                st.image(p_img, width=300)
-      with col_m_view2:
-        if status_usuario_ativo or modo_admin_liberado:
-          pdf_mob_buf = gerar_pdf_mobilizacao(row)
-          st.download_button(
-              label=f"📄 baixar pdf check-list #{row['id']}",
-              data=pdf_mob_buf,
-              file_name=f"checklist_mobilizacao_{row['id']}.pdf",
-              mime="application/pdf",
-              key=f"dl_mob_pdf_{row['id']}",
-          )
 
 elif menu == "🛠️ ordens de serviço (os)":
   st.title("🛠️ gestão unificada de ordens de serviço (os)")
-  if not status_usuario_ativo and not modo_admin_liberado:
-    st.warning(
-        "🔒 **Acesso restrito:** sua conta está inativa. Visualização de OS"
-        " liberada, edição bloqueada."
-    )
   df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
   tags_disponiveis = (
       df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
@@ -1556,10 +1319,7 @@ elif menu == "🛠️ ordens de serviço (os)":
       if tags_disponiveis:
         tag_os = st.selectbox("tag / prefixo do equipamento", tags_disponiveis)
       else:
-        tag_os = st.text_input(
-            "tag / prefixo do equipamento (digite manualmente)"
-        )
-
+        tag_os = st.text_input("tag / prefixo do equipamento (manual)")
       tipo_manut = st.selectbox(
           "tipo de manutenção",
           ["preventiva", "corretiva", "preditiva", "revisão geral"],
@@ -1579,202 +1339,62 @@ elif menu == "🛠️ ordens de serviço (os)":
 
     btn_abrir_os = st.form_submit_button("abrir nova os")
     if btn_abrir_os:
-      if not status_usuario_ativo and not modo_admin_liberado:
-        st.error(
-            "⚠️ Conta inativa: você não tem permissão para abrir novas OS."
-        )
-      else:
-        tag_final_os = (
-            str(tag_os).upper()
-            if tag_os and str(tag_os).strip()
-            else "EQ-GERAL"
-        )
-        cursor.execute(
-            "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao,"
-            " horimetro_km_manut, origem_falha, descricao_problema,"
-            " data_abertura, hora_abertura, status_os, custo, custo_pecas,"
-            " mao_de_obra) VALUES (?, ?, ?, ?, ?, ?, ?, 'aberta', 0.0, 0.0,"
-            " 0.0)",
-            (
-                tag_final_os,
-                tipo_manut,
-                horimetro_ab,
-                origem_f,
-                desc_prob,
-                str(data_ab),
-                hora_ab,
-            ),
-        )
-        conn.commit()
-        st.success("✅ os aberta com sucesso!")
-        st.rerun()
+      tag_final_os = (
+          str(tag_os).upper() if tag_os and str(tag_os).strip() else "EQ-GERAL"
+      )
+      cursor.execute(
+          "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao,"
+          " horimetro_km_manut, origem_falha, descricao_problema,"
+          " data_abertura, hora_abertura, status_os, custo, custo_pecas,"
+          " mao_de_obra) VALUES (?, ?, ?, ?, ?, ?, ?, 'aberta', 0.0, 0.0,"
+          " 0.0)",
+          (
+              tag_final_os,
+              tipo_manut,
+              horimetro_ab,
+              origem_f,
+              desc_prob,
+              str(data_ab),
+              hora_ab,
+          ),
+      )
+      conn.commit()
+      st.success("✅ os aberta com sucesso!")
+      st.rerun()
 
   st.divider()
-  st.subheader("📋 ordens de serviço cadastradas")
   df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
   if not df_os.empty:
-    if modo_admin_liberado:
-      with st.expander(
-          "⚙️ [ADMIN] Configurar Ordem Padrão das Colunas (Ordens de Serviço)"
-      ):
-        cols_disp_os = list(df_os.columns)
-        nova_ordem_os = st.text_input(
-            "Ordem das colunas:",
-            value=",".join(cols_disp_os),
-            key="cfg_col_os",
-        )
-        if st.button("💾 Salvar Ordem", key="btn_sav_os"):
-          cursor.execute(
-              "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
-              " VALUES ('manutencoes', ?)",
-              (nova_ordem_os,),
-          )
-          conn.commit()
-          st.success("✅ Ordem atualizada para todos os colaboradores!")
-          st.rerun()
     exibir_tabela_padronizada(df_os, "manutencoes")
-  else:
-    st.info("Nenhuma OS cadastrada no momento. Abra uma OS acima para gerenciar.")
-
-  st.divider()
-  st.markdown("### 🔴 encerramento e faturamento de os (etapa 2)")
-  df_os_todas = pd.read_sql("SELECT * FROM manutencoes", conn)
-  if not df_os_todas.empty:
-    with st.form("form_fechamento_os"):
-      os_ids_disp = df_os_todas["id"].tolist()
-      os_selecionada = st.selectbox(
-          "selecione o id da os para fechar / gerenciar", os_ids_disp
-      )
-      oficina_f = st.text_input("oficina responsável")
-      tecnico_f = st.text_input("técnico / mecânico responsável")
-      pecas_f = st.text_input("peças utilizadas")
-      custo_pecas_f = st.number_input(
-          "custo total de peças (r$)", min_value=0.0, value=0.0
-      )
-      mao_obra_f = st.number_input(
-          "custo de mão de obra (r$)", min_value=0.0, value=0.0
-      )
-      data_fec = st.date_input(
-          "data de fechamento", value=datetime.now().date()
-      )
-      hora_fec = st.text_input(
-          "horário de fechamento", value=datetime.now().strftime("%H:%M")
-      )
-
-      btn_fechar_os = st.form_submit_button("encerrar os e gerar custos")
-      if btn_fechar_os:
-        if not status_usuario_ativo and not modo_admin_liberado:
-          st.error(
-              "⚠️ Conta inativa: você não tem permissão para encerrar OS."
-          )
-        else:
-          custo_total = float(custo_pecas_f) + float(mao_obra_f)
-          cursor.execute(
-              "UPDATE manutencoes SET oficina = ?, tecnico_mecanico = ?,"
-              " pecas_utilizadas = ?, custo_pecas = ?, mao_de_obra = ?,"
-              " custo = ?, data_fechamento = ?, hora_fechamento = ?,"
-              " status_os = 'fechada' WHERE id = ?",
-              (
-                  oficina_f,
-                  tecnico_f,
-                  pecas_f,
-                  float(custo_pecas_f),
-                  float(mao_obra_f),
-                  custo_total,
-                  str(data_fec),
-                  hora_fec,
-                  os_selecionada,
-              ),
-          )
-          conn.commit()
-          st.success(
-              f"✅ OS #{os_selecionada} fechada com sucesso! Custo total:"
-              f" R$ {custo_total:,.2f}"
-          )
-          st.rerun()
-
-    for index, row in df_os_todas.iterrows():
-      if str(row.get("status_os")) == "fechada":
-        if status_usuario_ativo or modo_admin_liberado:
-          pdf_os_buffer = gerar_pdf_os_tecnica(row)
-          st.download_button(
-              label=f"📄 Baixar PDF da OS Fechada #{row['id']}",
-              data=pdf_os_buffer,
-              file_name=f"ordem_servico_{row['id']}.pdf",
-              mime="application/pdf",
-              key=f"dl_os_{row['id']}",
-          )
-  else:
-    st.info(
-        "💡 *A Etapa 2 de encerramento ficará pronta para uso assim que a primeira"
-        " OS foi aberta na Etapa 1.*"
-    )
 
 elif menu == "🔩 peças e ferramentas":
   st.title("🔩 controle de peças e ferramentas")
-  if not status_usuario_ativo and not modo_admin_liberado:
-    st.warning(
-        "🔒 **Acesso restrito:** conta inativa. Visualização permitida."
-    )
   with st.form("form_pecas"):
     c1, c2 = st.columns(2)
     with c1:
       nome_i = st.text_input("nome da peça ou ferramenta")
-      cat = st.text_input(
-          "categoria (digite livremente, ex: Reposição, Filtro, Óleo, Pneu...)"
-      )
+      cat = st.text_input("categoria")
     with c2:
       qtd = st.number_input("quantidade", min_value=1, value=1)
       v_unit = st.number_input("valor unitário (r$)", min_value=0.0)
     btn_cad_peca = st.form_submit_button("adicionar peça")
     if btn_cad_peca:
-      if not status_usuario_ativo and not modo_admin_liberado:
-        st.error(
-            "⚠️ Conta inativa: você não tem permissão para cadastrar peças."
-        )
-      else:
-        cat_final = (
-            cat.strip() if cat and cat.strip() else "Geral"
-        )
-        cursor.execute(
-            "INSERT INTO pecas (nome_item, categoria, quantidade,"
-            " valor_unitario) VALUES (?, ?, ?, ?)",
-            (nome_i, cat_final, qtd, v_unit),
-        )
-        conn.commit()
-        st.success("✅ peça cadastrada com sucesso!")
-        st.rerun()
+      cat_final = cat.strip() if cat and cat.strip() else "Geral"
+      cursor.execute(
+          "INSERT INTO pecas (nome_item, categoria, quantidade,"
+          " valor_unitario) VALUES (?, ?, ?, ?)",
+          (nome_i, cat_final, qtd, v_unit),
+      )
+      conn.commit()
+      st.success("✅ peça cadastrada com sucesso!")
+      st.rerun()
 
   df_p = pd.read_sql("SELECT * FROM pecas", conn)
   if not df_p.empty:
-    if modo_admin_liberado:
-      with st.expander(
-          "⚙️ [ADMIN] Configurar Ordem Padrão das Colunas (Peças)"
-      ):
-        cols_disp_p = list(df_p.columns)
-        nova_ordem_p = st.text_input(
-            "Ordem das colunas:",
-            value=",".join(cols_disp_p),
-            key="cfg_col_p",
-        )
-        if st.button("💾 Salvar Ordem", key="btn_sav_p"):
-          cursor.execute(
-              "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
-              " VALUES ('pecas', ?)",
-              (nova_ordem_p,),
-          )
-          conn.commit()
-          st.success("✅ Ordem atualizada para todos os colaboradores!")
-          st.rerun()
     exibir_tabela_padronizada(df_p, "pecas")
 
 elif menu == "👥 gestão de clientes":
   st.title("👥 gestão de clientes")
-  if not status_usuario_ativo and not modo_admin_liberado:
-    st.warning(
-        "🔒 **Acesso restrito:** conta inativa. Visualização de clientes"
-        " liberada."
-    )
   with st.form("form_cli"):
     c1, c2 = st.columns(2)
     with c1:
@@ -1787,281 +1407,62 @@ elif menu == "👥 gestão de clientes":
       end = st.text_input("endereço")
     btn_cad_cli = st.form_submit_button("salvar cliente")
     if btn_cad_cli:
-      if not status_usuario_ativo and not modo_admin_liberado:
-        st.error(
-            "⚠️ Conta inativa: você não tem permissão para cadastrar clientes."
-        )
-      else:
-        cursor.execute(
-            "INSERT INTO clientes (nome, empresa, telefone, documento, email,"
-            " endereco) VALUES (?, ?, ?, ?, ?, ?)",
-            (nome_c, emp, tel, doc, em, end),
-        )
-        conn.commit()
-        st.success("✅ cliente salvo com sucesso!")
-        st.rerun()
+      cursor.execute(
+          "INSERT INTO clientes (nome, empresa, telefone, documento, email,"
+          " endereco) VALUES (?, ?, ?, ?, ?, ?)",
+          (nome_c, emp, tel, doc, em, end),
+      )
+      conn.commit()
+      st.success("✅ cliente salvo com sucesso!")
+      st.rerun()
 
   df_cli = pd.read_sql("SELECT * FROM clientes", conn)
   if not df_cli.empty:
-    if modo_admin_liberado:
-      with st.expander(
-          "⚙️ [ADMIN] Configurar Ordem Padrão das Colunas (Clientes)"
-      ):
-        cols_disp_cl = list(df_cli.columns)
-        nova_ordem_cl = st.text_input(
-            "Ordem das colunas:",
-            value=",".join(cols_disp_cl),
-            key="cfg_col_cl",
-        )
-        if st.button("💾 Salvar Ordem", key="btn_sav_cl"):
-          cursor.execute(
-              "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
-              " VALUES ('clientes', ?)",
-              (nova_ordem_cl,),
-          )
-          conn.commit()
-          st.success("✅ Ordem atualizada para todos os colaboradores!")
-          st.rerun()
     exibir_tabela_padronizada(df_cli, "clientes")
 
 elif menu == "💬 chat tabalmix pro & rede":
-  st.title("💬 Chat Tabalmix Pro & Central de Operações")
+  st.title("💬 Chat Tabalmix Pro & Chamada Interna")
   st.markdown(
-      "Comunicação unificada Enterprise: chats privados 1 a 1, canais de"
-      " equipes, mural de avisos fixados e alerta SOS de emergência."
+      "Comunicação unificada e **Chamada de Vídeo Direta** dentro do"
+      " sistema."
   )
 
-  st.markdown(
-      """
-        <script>
-        function dispararAlarmeSOS() {
-            try {
-                if (navigator.vibrate) {
-                    navigator.vibrate([600, 200, 600, 200, 1000]);
-                }
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(950, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 1.5);
-            } catch(e) {}
-        }
-
-        function vibrarMensagemChat() {
-            try {
-                if (navigator.vibrate) {
-                    navigator.vibrate([200, 100, 200]);
-                }
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
-                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start();
-                osc.stop(audioCtx.currentTime + 0.3);
-            } catch(e) {}
-        }
-        </script>
-    """,
-      unsafe_allow_html=True,
-  )
-
-  st.markdown(
-      """
-        <div style="background: #fef2f2; border: 2px solid #ef4444; border-radius: 14px; padding: 14px 20px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; box-shadow: 0 4px 15px rgba(239,68,68,0.1);">
+  # BOTÃO DIRETO E VISÍVEL DE CHAMADA DE VÍDEO NATIVA
+  with st.expander("🎥 ABRIR CÂMARA DE VÍDEO / ÁUDIO NA TELA", expanded=True):
+    st.markdown(
+        "Ligue a câmara diretamente no seu telemóvel para falar com a equipe:"
+    )
+    st.components.v1.html(
+        """
+        <div style="background: #0f172a; border-radius: 16px; padding: 15px; text-align: center; color: white; font-family: sans-serif;">
+            <video id="localVideo" autoplay playsinline muted style="width: 100%; max-height: 220px; border-radius: 12px; background: #1e293b; border: 2px solid #059669; object-fit: cover; margin-bottom: 10px;"></video>
             <div>
-                <h4 style="margin: 0; color: #991b1b !important; font-size: 15.5px;">🚨 Botão de Pânico / Alerta SOS em Campo</h4>
-                <p style="margin: 3px 0 0 0; font-size: 12px; color: #b91c1c;">Em caso de emergência ou pane grave, acione imediatamente para alertar a gerência e a oficina.</p>
+                <button onclick="ligarCamera()" style="background: #059669; color: white; border: none; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🟢 Ligar Câmara</button>
+                <button onclick="desligarCamera()" style="background: #dc2626; color: white; border: none; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px; margin-left: 10px;">🔴 Desligar</button>
             </div>
         </div>
-    """,
-      unsafe_allow_html=True,
-  )
-
-  with st.expander("🚨 Acionar Alerta de Emergência SOS"):
-    with st.form("form_sos_emergencia"):
-      eq_sos = st.text_input(
-          "Equipamento / Caminhão envolvido (ex: BET-05 ou EQ-01)"
-      )
-      motivo_sos = st.text_area(
-          "Motivo do alerta (ex: pane elétrica, pneu estourado, acidente leve)"
-      )
-      btn_enviar_sos = st.form_submit_button(
-          "🚨 DISPARAR ALERTA SOS IMEDIATO"
-      )
-      if btn_enviar_sos:
-        if not motivo_sos:
-          st.warning("⚠️ Descreva o motivo do alerta.")
-        else:
-          rem_sos = (
-              usuario_atual["apelido"] if usuario_atual else "Colaborador"
-          )
-          dt_sos = datetime.now().strftime("%d/%m/%Y às %H:%M")
-          cursor.execute(
-              "INSERT INTO alertas_sos (remetente, equipamento, motivo,"
-              " data_alerta, status) VALUES (?, ?, ?, ?, 'PENDENTE')",
-              (rem_sos, eq_sos.upper(), motivo_sos, dt_sos),
-          )
-          conn.commit()
-          st.error(
-              "🚨 ALERTA SOS DISPARADO COM SUCESSO! A gerência foi notificada."
-          )
-
-  cursor.execute(
-      "SELECT * FROM alertas_sos WHERE status = 'PENDENTE' ORDER BY id DESC"
-  )
-  lista_sos_pend = cursor.fetchall()
-  if lista_sos_pend and (
-      modo_admin_liberado
-      or (
-          usuario_atual
-          and any(
-              c in usuario_atual["cargo"]
-              for c in [
-                  "Gestão",
-                  "Gerente",
-                  "Admin",
-                  "Segurança",
-                  "Engenheiro",
-                  "Diretoria",
-              ]
-          )
-      )
-  ):
-    st.markdown(
-        """
-            <script>
-            if (typeof dispararAlarmeSOS === 'function') {
-                dispararAlarmeSOS();
+        <script>
+        let localStream = null;
+        async function ligarCamera() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('localVideo').srcObject = localStream;
+            } catch (err) {
+                alert("Erro ao aceder à câmara: " + err);
             }
-            </script>
+        }
+        function desligarCamera() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                document.getElementById('localVideo').srcObject = null;
+            }
+        }
+        </script>
         """,
-        unsafe_allow_html=True,
+        height=310,
     )
 
-  if lista_sos_pend:
-    st.markdown(
-        "<h4 style='color: #dc2626;'>⚠️ ALERTAS SOS ATIVOS NA FROTA:</h4>",
-        unsafe_allow_html=True,
-    )
-    for sos_item in lista_sos_pend:
-      col_sos_info, col_sos_btn = st.columns([4, 1])
-      with col_sos_info:
-        st.markdown(
-            f"""
-                <div style="background: #fef2f2; border-left: 5px solid #dc2626; padding: 12px; border-radius: 10px; margin-bottom: 8px; font-size: 13px; box-shadow: 0 3px 10px rgba(0,0,0,0.03);">
-                    <b>🚨 Emergência #{sos_item[0]}</b> | Solicitante: <b>{sos_item[1]}</b> | Equipamento: <b>{sos_item[2]}</b><br>
-                    <b>Relato:</b> {sos_item[3]} <br> <span style="color: #6b7280; font-size: 11.5px;">Registrado em: {sos_item[4]}</span>
-                </div>
-            """,
-            unsafe_allow_html=True,
-        )
-      with col_sos_btn:
-        if st.button(f"✅ Resolver #{sos_item[0]}", key=f"btn_res_sos_{sos_item[0]}"):
-          cursor.execute(
-              "UPDATE alertas_sos SET status = 'RESOLVIDO' WHERE id = ?",
-              (sos_item[0],),
-          )
-          conn.commit()
-          st.success(f"✅ Alerta #{sos_item[0]} marcado como resolvido!")
-          st.rerun()
-
   st.markdown("---")
-  st.markdown("#### 📌 Mural de Avisos Fixados (Diretoria / Engenharia)")
-  
-  cursor.execute("SELECT * FROM avisos_fixados ORDER BY id DESC LIMIT 5")
-  avisos_fix = cursor.fetchall()
-  
-  eh_alto_escalao = modo_admin_liberado or (
-      usuario_atual
-      and any(
-          c in usuario_atual["cargo"]
-          for c in [
-              "Gestão",
-              "Gerente",
-              "Admin",
-              "Diretoria",
-              "Engenheiro",
-          ]
-      )
-  )
-
-  if avisos_fix:
-    for av in avisos_fix:
-      col_av_txt, col_av_del = st.columns([12, 1])
-      with col_av_txt:
-        st.markdown(
-            f"""
-              <div style="background: #ecfdf5; border: 1px solid #10b981; border-radius: 12px; padding: 12px 16px; margin-bottom: 8px; box-shadow: 0 4px 12px rgba(16,185,129,0.05);">
-                  <span style="font-size: 11.5px; font-weight: bold; color: #047857;">📌 Comunicado Oficial de {av[1]} ({av[3]})</span>
-                  <div style="font-size: 13.5px; color: #0f172a; margin-top: 3px;">{av[2]}</div>
-              </div>
-          """,
-            unsafe_allow_html=True,
-        )
-      with col_av_del:
-        if eh_alto_escalao:
-          if st.button("❌", key=f"del_aviso_{av[0]}", help="Excluir este aviso"):
-            cursor.execute("DELETE FROM avisos_fixados WHERE id = ?", (av[0],))
-            conn.commit()
-            st.success("✅ Aviso excluído com sucesso!")
-            st.rerun()
-  else:
-    st.info("Nenhum aviso fixado no momento.")
-
-  if eh_alto_escalao:
-    with st.expander("⚙️ [Alto Escalão] Fixar Novo Aviso no Mural"):
-      with st.form("form_fixar_aviso"):
-        texto_aviso = st.text_area("Texto do comunicado oficial (máximo de 5 avisos visíveis):")
-        btn_fixar = st.form_submit_button("Fixar Comunicado")
-        if btn_fixar and texto_aviso:
-          cursor.execute("SELECT COUNT(*) FROM avisos_fixados")
-          total_av = cursor.fetchone()[0]
-          
-          if total_av >= 5:
-            st.warning("⚠️ O mural atingiu o limite de 5 avisos. Exclua um aviso antigo usando o botão '❌' ao lado para poder fixar um novo.")
-          else:
-            autor_av = (
-                usuario_atual["apelido"] if usuario_atual else "Diretoria"
-            )
-            dt_av = datetime.now().strftime("%d/%m às %H:%M")
-            cursor.execute(
-                "INSERT INTO avisos_fixados (autor, mensagem, data_fixacao)"
-                " VALUES (?, ?, ?)",
-                (autor_av, texto_aviso, dt_av),
-            )
-            conn.commit()
-            st.success("✅ Aviso fixado no topo com sucesso!")
-            st.rerun()
-
-  st.markdown("---")
-  status_escolhido = st.radio(
-      "Meu Status Atual na Rede:",
-      [
-          "🟢 Disponível / Online",
-          "🟡 Em Campo / Obra",
-          "🔴 Ocupado / Reunião",
-          "⚫ Ausente",
-      ],
-      horizontal=True,
-  )
-
-  tab_conversa, tab_contatos_rede, tab_chamada_interna = st.tabs(
-      [
-          "💬 Conversas & Chat Ativo",
-          "👥 Rede de Colaboradores & Privado",
-          "📹 Chamada de Vídeo Interna (WebRTC)",
-      ]
-  )
-
   if "sala_chat_ativa" not in st.session_state:
     st.session_state["sala_chat_ativa"] = "Geral (Equipe)"
 
@@ -2072,245 +1473,46 @@ elif menu == "💬 chat tabalmix pro & rede":
   )
   cargo_atual = usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
 
-  with tab_conversa:
-    st.markdown(f"#### 🗨️ Conversa: `{st.session_state['sala_chat_ativa']}`")
-
-    st.markdown(
-        f"""
-        <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 14px 20px; border-radius: 14px 14px 0 0; display: flex; align-items: center; justify-content: space-between; color: white; box-shadow: 0 6px 18px rgba(5,150,105,0.2);">
-            <div style="display: flex; align-items: center; gap: 14px;">
-                <div style="background: rgba(255,255,255,0.2); width: 42px; height: 42px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 19px; font-weight: bold; border: 2px solid white;">💬</div>
-                <div>
-                    <h4 style="margin: 0; color: white !important; font-size: 15.5px;">{st.session_state['sala_chat_ativa']}</h4>
-                    <span style="font-size: 11px; opacity: 0.9;">status: {status_escolhido} • sistema enterprise fechado</span>
-                </div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    st.markdown(
-        """
-        <div style="background: #ffffff; padding: 18px; border-radius: 0 0 14px 14px; border: 1px solid #e2e8f0; border-top: none; min-height: 280px; max-height: 380px; overflow-y: auto; margin-bottom: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.02);">
-        """,
-        unsafe_allow_html=True,
-    )
-
-    canal_corrente = st.session_state["sala_chat_ativa"]
-    if canal_corrente == "Geral (Equipe)":
-      df_msgs = pd.read_sql(
-          "SELECT * FROM chat_interno WHERE destinatario = 'Geral (Equipe)'"
-          " ORDER BY id DESC LIMIT 25",
-          conn,
-      )
-    else:
-      df_msgs = pd.read_sql(
-          "SELECT * FROM chat_interno WHERE (destinatario = ? AND remetente LIKE"
-          " ?) OR (destinatario LIKE ? AND remetente LIKE ?) ORDER BY id DESC"
-          " LIMIT 25",
-          conn,
-          params=(
-              canal_corrente,
-              f"%{remetente_atual}%",
-              f"%{remetente_atual}%",
-              f"%{canal_corrente.split()[0]}%",
-          ),
-      )
-      if df_msgs.empty:
-        df_msgs = pd.read_sql(
-            "SELECT * FROM chat_interno WHERE destinatario = ? ORDER BY id DESC"
-            " LIMIT 25",
-            conn,
-            params=(canal_corrente,),
-        )
-
-    if not df_msgs.empty:
-      for _, row_m in df_msgs.iterrows():
-        is_me = (
-            remetente_atual.lower() in str(row_m["remetente"]).lower()
-            if remetente_atual
-            else False
-        )
-        bg_balao = "#ecfdf5" if is_me else "#f8fafc"
-        border_balao = "#10b981" if is_me else "#cbd5e1"
-        align_balao = "margin-left: auto;" if is_me else "margin-right: auto;"
-
-        st.markdown(
-            f"""
-                <div style="background: {bg_balao}; border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; max-width: 82%; {align_balao} box-shadow: 0 3px 10px rgba(0,0,0,0.03); border: 1px solid {border_balao};">
-                    <div style="font-size: 11px; color: #047857; font-weight: bold; margin-bottom: 3px;">{row_m['remetente']}</div>
-                    <div style="font-size: 14px; color: #0f172a; white-space: pre-wrap; line-height: 1.4;">{row_m['mensagem']}</div>
-                    <div style="font-size: 10px; color: #64748b; text-align: right; margin-top: 4px;">{row_m['data_envio']}</div>
-                </div>
-            """,
-            unsafe_allow_html=True,
-        )
-        if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
-          with open(row_m["arquivo_path"], "rb") as f_down:
-            st.download_button(
-                label=f"📥 Baixar anexo: {row_m['arquivo_nome']}",
-                data=f_down.read(),
-                file_name=row_m["arquivo_nome"],
-                key=f"dl_sala_msg_{row_m['id']}",
-            )
-    else:
+  st.markdown(f"#### 🗨️ Conversa Ativa: `{st.session_state['sala_chat_ativa']}`")
+  df_msgs = pd.read_sql(
+      "SELECT * FROM chat_interno WHERE destinatario = 'Geral (Equipe)'"
+      " ORDER BY id DESC LIMIT 20",
+      conn,
+  )
+  if not df_msgs.empty:
+    for _, row_m in df_msgs.iterrows():
       st.markdown(
-          "<p style='text-align: center; color: #64748b; font-size: 13px;"
-          " margin-top: 40px;'>Inicie a conversa enviando uma mensagem"
-          " abaixo!</p>",
+          f"""
+            <div style="background: #f8fafc; border-radius: 10px; padding: 10px; margin-bottom: 8px; border: 1px solid #cbd5e1;">
+                <b style="color: #047857; font-size: 12px;">{row_m['remetente']}</b><br>
+                <span style="font-size: 13.5px; color: #0f172a;">{row_m['mensagem']}</span>
+            </div>
+        """,
           unsafe_allow_html=True,
       )
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    with st.form("form_chat_sala_principal", clear_on_submit=True):
-      msg_sala_txt = st.text_input("Digite sua mensagem corporativa...")
-      file_sala_up = st.file_uploader(
-          "Anexar documento ou foto",
-          type=["png", "jpg", "jpeg", "pdf", "docx", "xlsx"],
+  with st.form("form_chat_sala_principal", clear_on_submit=True):
+    msg_sala_txt = st.text_input("Escreva sua mensagem...")
+    btn_enviar_sala_pro = st.form_submit_button("Enviar Mensagem")
+    if btn_enviar_sala_pro and msg_sala_txt.strip():
+      data_env_s = datetime.now().strftime("%d/%m às %H:%M")
+      cursor.execute(
+          "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+          " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
+          " ?, ?, ?, ?, ?)",
+          (
+              f"{remetente_atual} ({cargo_atual})",
+              "Geral (Equipe)",
+              cargo_atual,
+              msg_sala_txt,
+              "",
+              "",
+              data_env_s,
+          ),
       )
-      btn_enviar_sala_pro = st.form_submit_button("➤ Enviar Mensagem")
-
-      if btn_enviar_sala_pro:
-        if not msg_sala_txt.strip() and not file_sala_up:
-          st.warning("⚠️ Digite uma mensagem ou anexe um arquivo.")
-        else:
-          path_s = ""
-          nome_s = ""
-          if file_sala_up is not None:
-            os.makedirs("chat_documentos", exist_ok=True)
-            nome_s = file_sala_up.name
-            path_s = (
-                "chat_documentos/"
-                f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nome_s}"
-            )
-            with open(path_s, "wb") as f_out_s:
-              f_out_s.write(file_sala_up.getbuffer())
-
-          data_env_s = datetime.now().strftime("%d/%m às %H:%M")
-          cursor.execute(
-              "INSERT INTO chat_interno (remetente, destinatario, cargo,"
-              " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
-              " ?, ?, ?, ?, ?)",
-              (
-                  f"{remetente_atual} ({cargo_atual})",
-                  canal_corrente,
-                  cargo_atual,
-                  msg_sala_txt,
-                  path_s,
-                  nome_s,
-                  data_env_s,
-              ),
-          )
-          conn.commit()
-          st.success("✅ Mensagem enviada!")
-          st.rerun()
-
-  with tab_contatos_rede:
-    st.markdown("#### 👥 Rede de Colaboradores & Conversas 1 a 1")
-    col_btn_g, col_btn_adm = st.columns(2)
-    with col_btn_g:
-      if st.button("💬 Canal Geral da Equipe", key="btn_rede_geral_pro"):
-        st.session_state["sala_chat_ativa"] = "Geral (Equipe)"
-        st.success("✅ Conversa alterada para Canal Geral! Volte na aba 'Conversas'.")
-        st.rerun()
-    with col_btn_adm:
-      if st.button("🛡️ Suporte Técnico ADM", key="btn_rede_adm_pro"):
-        st.session_state["sala_chat_ativa"] = "Suporte ADM"
-        st.success("✅ Conversa alterada para Suporte ADM! Volte na aba 'Conversas'.")
-        st.rerun()
-
-    st.markdown("---")
-    st.markdown("**Contatos Ativos para Chat Privado:**")
-    cursor.execute(
-        "SELECT apelido, cargo_setor, email FROM usuarios_sistema WHERE"
-        " status_assinatura = 'Ativo'"
-    )
-    colaboradores_rede = cursor.fetchall()
-
-    encontrou_contato = False
-    if colaboradores_rede:
-      for idx_r, (r_nome, r_cargo, r_email) in enumerate(colaboradores_rede):
-        nome_valido = (
-            r_nome
-            if r_nome and r_nome != "None"
-            else (r_email.split("@")[0] if r_email else "Colaborador")
-        )
-        cargo_valido = r_cargo if r_cargo and r_cargo != "None" else "Operacional"
-
-        if nome_valido != remetente_atual:
-          encontrou_contato = True
-          nome_privado = f"Privado: {nome_valido} ({cargo_valido})"
-          st.markdown(
-              f"""
-                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.02);">
-                        <div>
-                            <span style="font-size: 15px; font-weight: bold; color: #0f172a;">👤 {nome_valido}</span><br>
-                            <span style="font-size: 12px; color: #64748b;">Setor: {cargo_valido} • 🟢 Online</span>
-                        </div>
-                    </div>
-                """,
-              unsafe_allow_html=True,
-          )
-          if st.button(
-              f"🔒 Abrir Chat Privado com {nome_valido}",
-              key=f"btn_chat_privado_{idx_r}",
-          ):
-            st.session_state["sala_chat_ativa"] = nome_privado
-            st.success(
-                f"✅ Chat privado com {nome_valido} aberto! Volte na aba"
-                " 'Conversas & Chat Ativo'."
-            )
-            st.rerun()
-
-    if not encontrou_contato:
-      st.info("Nenhum outro colaborador ativo no momento.")
-
-  with tab_chamada_interna:
-    st.markdown("#### 📹 Sala de Vídeo e Áudio Nativa Integrada")
-    st.markdown(
-        "Inicie a sua transmissão de vídeo ou áudio diretamente na tela do"
-        " sistema (utiliza a câmara e microfone do telemóvel/computador sem"
-        " aplicativos externos)."
-    )
-
-    st.components.v1.html(
-        """
-        <div style="background: #0f172a; border-radius: 16px; padding: 20px; text-align: center; color: white; font-family: 'Plus Jakarta Sans', sans-serif; box-shadow: 0 10px 30px rgba(0,0,0,0.2);">
-            <h3 style="margin-top: 0; color: #34d399 !important; font-size: 16px;">🎥 Transmissão Interna Tabalmix Pro</h3>
-            <div style="display: flex; justify-content: center; gap: 15px; margin-bottom: 15px;">
-                <video id="localVideo" autoplay playsinline muted style="width: 45%; max-height: 200px; border-radius: 12px; background: #1e293b; border: 2px solid #059669; object-fit: cover;"></video>
-                <div style="width: 45%; max-height: 200px; border-radius: 12px; background: #1e293b; border: 2px solid #334155; display: flex; align-items: center; justify-content: center; color: #94a3b8; font-size: 12px; text-align: center; padding: 10px;">
-                    Aguardando outro operador entrar na sala de vídeo...
-                </div>
-            </div>
-            <button onclick="ligarCamera()" style="background: #059669; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px; box-shadow: 0 4px 12px rgba(5,150,105,0.4);">🟢 Ligar Câmara & Microfone</button>
-            <button onclick="desligarCamera()" style="background: #dc2626; color: white; border: none; padding: 10px 20px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px; margin-left: 10px;">🔴 Desligar</button>
-        </div>
-
-        <script>
-        let localStream = null;
-        async function ligarCamera() {
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                const videoElement = document.getElementById('localVideo');
-                videoElement.srcObject = localStream;
-            } catch (err) {
-                alert("Erro ao aceder à câmara ou microfone: " + err);
-            }
-        }
-        function desligarCamera() {
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                const videoElement = document.getElementById('localVideo');
-                videoElement.srcObject = null;
-            }
-        }
-        </script>
-        """,
-        height=320,
-    )
+      conn.commit()
+      st.success("✅ Mensagem enviada!")
+      st.rerun()
 
 elif menu == "🔍 consulta / busca geral":
   st.title("🔍 consulta e histórico completo do equipamento")
@@ -2322,295 +1524,41 @@ elif menu == "🔍 consulta / busca geral":
       if not df_v_busca.empty
       else []
   )
-
   if lista_tags:
-    eq_selecionado_historico = st.selectbox(
-        "selecione a tag/prefixo para ver o histórico completo", lista_tags
-    )
-    if eq_selecionado_historico:
-      df_eq_info = df_v_busca[
-          df_v_busca["tag_prefixo"] == eq_selecionado_historico
-      ]
-      if not df_eq_info.empty:
-        st.markdown(
-            f"### dados do equipamento: **{eq_selecionado_historico}**"
-        )
-        exibir_tabela_padronizada(df_eq_info, "busca_eq_info")
-
-        st.markdown("#### 🛠️ histórico de ordens de serviço")
-        df_os_eq = pd.read_sql(
-            "SELECT * FROM manutencoes WHERE tag_prefixo = ?",
-            conn,
-            params=(eq_selecionado_historico,),
-        )
-        if not df_os_eq.empty:
-          exibir_tabela_padronizada(df_os_eq, "busca_os_eq")
-        else:
-          st.info("nenhuma os registrada para este equipamento.")
-
-        st.markdown("#### ⛽ histórico de abastecimentos")
-        df_comb_eq = pd.read_sql(
-            "SELECT * FROM combustivel WHERE equipamento = ?",
-            conn,
-            params=(eq_selecionado_historico,),
-        )
-        if not df_comb_eq.empty:
-          exibir_tabela_padronizada(df_comb_eq, "busca_comb_eq")
-        else:
-          st.info("nenhum abastecimento registrado para este equipamento.")
-  else:
-    st.info("nenhum equipamento cadastrado para realizar consultas.")
+    eq_sel = st.selectbox("selecione a tag/prefixo", lista_tags)
+    if eq_sel:
+      df_eq_info = df_v_busca[df_v_busca["tag_prefixo"] == eq_sel]
+      exibir_tabela_padronizada(df_eq_info, "busca_eq_info")
 
 elif menu == "⚙️ meu perfil / dados":
   st.title("⚙️ Meu Perfil & Credenciais Corporativas")
-  st.markdown("Gerencie suas informações de acesso, apelido na obra e cargo/setor integrado:")
-
   if usuario_atual:
     user_id_ativo = usuario_atual.get("id")
-    
-    cursor.execute("SELECT nome_completo, cpf, email, celular_seguranca, apelido, cargo_setor, pin_rapido, plano_atual FROM usuarios_sistema WHERE id = ?", (user_id_ativo,))
+    cursor.execute(
+        "SELECT nome_completo, cpf, email, celular_seguranca, apelido,"
+        " cargo_setor, pin_rapido FROM usuarios_sistema WHERE id = ?",
+        (user_id_ativo,),
+    )
     dados_db = cursor.fetchone()
-    
     if dados_db:
-      n_comp, n_cpf, n_email, n_cel, n_apelido, n_cargo, n_pin, n_plano = dados_db
-      
-      st.markdown(f"""
-        <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-radius: 20px; padding: 24px; color: white; margin-bottom: 22px; box-shadow: 0 10px 25px rgba(5,150,105,0.2);">
-            <div style="display: flex; align-items: center; gap: 16px;">
-                <div style="background: rgba(255,255,255,0.2); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: bold; border: 2px solid white;">👤</div>
-                <div>
-                    <h3 style="margin: 0; color: white !important; font-size: 20px;">{n_comp}</h3>
-                    <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.9;">Apelido de Guerra: <b>{n_apelido or 'Não definido'}</b> • Cargo: <b>{n_cargo or 'Operacional'}</b></p>
-                    <span style="background: rgba(255,255,255,0.25); padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: bold; display: inline-block; margin-top: 8px;">Plano: {n_plano or 'Enterprise'}</span>
-                </div>
-            </div>
-        </div>
-      """, unsafe_allow_html=True)
-
-      st.markdown("### ✏️ Editar Informações Cadastrais")
+      n_comp, n_cpf, n_email, n_cel, n_apelido, n_cargo, n_pin = dados_db
       with st.form("form_atualizar_meu_perfil"):
         novo_nome = st.text_input("Nome Completo", value=n_comp or "")
-        novo_apelido = st.text_input("Apelido de Guerra / Primeiro Nome (exibido no chat)", value=n_apelido or "")
-        
-        cargos_disponiveis = [
-            "Diretoria / Gestão",
-            "Segurança do Trabalho (SST)",
-            "Engenheiro / Gestor de Obra",
-            "Mecânico / Oficina",
-            "Operador / Motorista",
-            "Servente / Pedreiro / Campo"
-        ]
-        cargo_atual_idx = cargos_disponiveis.index(n_cargo) if n_cargo in cargos_disponiveis else 0
-        novo_cargo = st.selectbox("Cargo / Setor na Empresa", cargos_disponiveis, index=cargo_atual_idx)
-        
+        novo_apelido = st.text_input("Apelido de Guerra", value=n_apelido or "")
         novo_cel = st.text_input("Celular / WhatsApp", value=n_cel or "")
-        novo_pin = st.text_input("PIN Rápido de Acesso (4 dígitos)", value=n_pin or "", max_chars=4, type="password")
-        nova_senha = st.text_input("Nova Senha de Acesso (deixe em branco para manter a atual)", type="password")
-
-        btn_salvar_perfil = st.form_submit_button("💾 Salvar Alterações do Perfil")
-
-        if btn_salvar_perfil:
-          if novo_nome:
-            apelido_final = novo_apelido.strip() if novo_apelido and novo_apelido.strip() != "None" else novo_nome.split()[0]
-            
-            if nova_senha.strip():
-              cursor.execute("""
-                UPDATE usuarios_sistema 
-                SET nome_completo = ?, apelido = ?, cargo_setor = ?, celular_seguranca = ?, pin_rapido = ?, senha = ? 
-                WHERE id = ?
-              """, (novo_nome, apelido_final, novo_cargo, novo_cel, novo_pin, nova_senha, user_id_ativo))
-            else:
-              cursor.execute("""
-                UPDATE usuarios_sistema 
-                SET nome_completo = ?, apelido = ?, cargo_setor = ?, celular_seguranca = ?, pin_rapido = ? 
-                WHERE id = ?
-              """, (novo_nome, apelido_final, novo_cargo, novo_cel, novo_pin, user_id_ativo))
-            
-            conn.commit()
-            
-            st.session_state["usuario_logado"]["nome"] = novo_nome
-            st.session_state["usuario_logado"]["apelido"] = apelido_final
-            st.session_state["usuario_logado"]["cargo"] = novo_cargo
-            
-            st.success("✅ Perfil e cargo atualizados com sucesso! As alterações já estão integradas no chat e no sistema.")
-            st.rerun()
-          else:
-            st.error("⚠️ O campo Nome Completo não pode ficar em branco.")
-    else:
-      st.error("⚠️ Erro ao carregar dados do usuário na base de dados.")
-  else:
-    st.warning("⚠️ Nenhum usuário logado no momento.")
+        btn_salvar_perfil = st.form_submit_button("💾 Salvar Alterações")
+        if btn_salvar_perfil and novo_nome:
+          cursor.execute(
+              "UPDATE usuarios_sistema SET nome_completo = ?, apelido = ?,"
+              " celular_seguranca = ? WHERE id = ?",
+              (novo_nome, novo_apelido, novo_cel, user_id_ativo),
+          )
+          conn.commit()
+          st.success("✅ Perfil atualizado com sucesso!")
+          st.rerun()
 
 elif menu == "⚙️ painel de licença (admin)":
   st.title("⚙️ painel administrativo de colaboradores")
-  st.markdown("Gerencie o status de acesso ou remova cadastros do sistema:")
-
-  df_users = pd.read_sql(
-      "SELECT id, nome_completo, email, status_assinatura, cargo_setor,"
-      " data_cadastro FROM usuarios_sistema",
-      conn,
-  )
+  df_users = pd.read_sql("SELECT * FROM usuarios_sistema", conn)
   if not df_users.empty:
     exibir_tabela_padronizada(df_users, "usuarios_sistema")
-
-    st.markdown("---")
-    st.subheader("🛠️ Ações Administrativas de Gestão de Usuários")
-
-    user_dict_map = {
-        f"#{r['id']} - {r['nome_completo']} ({r['email']})": r["id"]
-        for _, r in df_users.iterrows()
-    }
-
-    if user_dict_map:
-      sel_user_str = st.selectbox(
-          "Selecione o colaborador para gerenciar:", list(user_dict_map.keys())
-      )
-      selected_user_id = user_dict_map[sel_user_str]
-
-      col_acao1, col_acao2 = st.columns(2)
-      with col_acao1:
-        novo_status_adm = st.selectbox(
-            "Alterar status de assinatura:", ["Ativo", "Inativo"]
-        )
-        if st.button("🔄 Atualizar Status do Usuário"):
-          cursor.execute(
-              "UPDATE usuarios_sistema SET status_assinatura = ? WHERE id = ?",
-              (novo_status_adm, selected_user_id),
-          )
-          conn.commit()
-          st.success(
-              f"✅ Status do usuário #{selected_user_id} atualizado para"
-              f" '{novo_status_adm}' com sucesso!"
-          )
-          st.rerun()
-
-      with col_acao2:
-        st.markdown(
-            "<p style='color: #dc2626; font-weight: bold; margin-bottom:"
-            " 18px;'>⚠️ Zona de Exclusão</p>",
-            unsafe_allow_html=True,
-        )
-        if st.button("🗑️ Excluir Definitivamente este Cadastro"):
-          cursor.execute(
-              "DELETE FROM usuarios_sistema WHERE id = ?", (selected_user_id,)
-          )
-          conn.commit()
-          st.success(
-              f"✅ Cadastro #{selected_user_id} excluído com sucesso!"
-          )
-          st.rerun()
-  else:
-    st.info("nenhum usuário cadastrado.")
-
-# ==============================================================================
-# WIDGET FLUTUANTE DE CHAT RÁPIDO NO CANTO INFERIOR DIREITO
-# ==============================================================================
-if "widget_chat_aberto" not in st.session_state:
-  st.session_state["widget_chat_aberto"] = False
-
-cursor.execute(
-    "SELECT COUNT(*) FROM chat_interno WHERE destinatario LIKE ? OR destinatario"
-    " = 'Geral (Equipe)'",
-    (
-        f"%{usuario_atual.get('apelido', '')}%"
-        if usuario_atual
-        else "%ADM%",
-    ),
-)
-res_n = cursor.fetchone()
-tem_msgs_pendentes = res_n[0] > 0 if res_n else False
-
-if st.session_state["widget_chat_aberto"]:
-  st.markdown(
-      """
-        <div style="position: fixed; bottom: 20px; right: 20px; width: 360px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 18px; box-shadow: 0 20px 45px rgba(0,0,0,0.25); z-index: 999999; padding: 16px; font-family: 'Plus Jakarta Sans', sans-serif;">
-            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; margin-bottom: 12px;">
-                <div style="font-weight: 800; font-size: 14px; color: #047857;">💬 Chat Tabalmix Rápido</div>
-    """,
-      unsafe_allow_html=True,
-  )
-
-  col_wc_l, col_wc_r = st.columns([4, 1])
-  with col_wc_r:
-    if st.button("❌", key="btn_fechar_widget_chat_flutuante"):
-      st.session_state["widget_chat_aberto"] = False
-      st.rerun()
-
-  rem_widget_n = (
-      usuario_atual["apelido"]
-      if usuario_atual
-      else ("Administrador" if modo_admin_liberado else "Colaborador")
-  )
-  rem_widget_c = usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
-
-  with st.form("form_widget_chat_rapido", clear_on_submit=True):
-    msg_w_input = st.text_input("Mensagem rápida:")
-    btn_w_env = st.form_submit_button("Enviar")
-    if btn_w_env and msg_w_input.strip():
-      data_w_str = datetime.now().strftime("%d/%m às %H:%M")
-      cursor.execute(
-          "INSERT INTO chat_interno (remetente, destinatario, cargo,"
-          " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
-          " ?, ?, ?, ?, ?)",
-          (
-              f"{rem_widget_n} ({rem_widget_c})",
-              "Suporte ADM",
-              rem_widget_c,
-              msg_w_input,
-              "",
-              "",
-              data_w_str,
-          ),
-      )
-      conn.commit()
-      st.success("✅ Enviado!")
-      st.rerun()
-
-  st.markdown("---")
-  st.markdown("##### 📜 Últimas Mensagens:")
-  df_widget_hist = pd.read_sql(
-      "SELECT * FROM chat_interno ORDER BY id DESC LIMIT 3", conn
-  )
-  if not df_widget_hist.empty:
-    for _, rw_w in df_widget_hist.iterrows():
-      st.markdown(
-          f"""
-                <div style="background: #f8fafc; border-radius: 10px; padding: 8px; margin-bottom: 6px; font-size: 11.5px; border: 1px solid #e2e8f0;">
-                    <b>{rw_w['remetente']}</b><br>
-                    <span style="color: #0f172a;">{rw_w['mensagem']}</span>
-                </div>
-            """,
-          unsafe_allow_html=True,
-      )
-  else:
-    st.info("Sem mensagens recentes.")
-
-else:
-  badge_w = "🔴" if tem_msgs_pendentes else "🟢"
-  st.markdown(
-      """
-        <style>
-        .widget-chat-btn {
-            position: fixed;
-            bottom: 25px;
-            right: 25px;
-            background: #059669;
-            color: white;
-            border-radius: 50px;
-            padding: 12px 20px;
-            box-shadow: 0 10px 30px rgba(5,150,105,0.4);
-            cursor: pointer;
-            z-index: 999999;
-            font-weight: 800;
-            font-size: 13.5px;
-        }
-        </style>
-    """,
-      unsafe_allow_html=True,
-  )
-
-  col_bw_l, col_bw_r = st.columns([5, 1.4])
-  with col_bw_r:
-    if st.button(f"{badge_w} Chat Pro", key="btn_abrir_widget_chat_flutu"):
-      st.session_state["widget_chat_aberto"] = True
-      st.rerun()
