@@ -25,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE ORIGINAL (UX/UI World Class - Sem Regressões)
+# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE ORIGINAL
 st.markdown(
     """
     <style>
@@ -252,203 +252,6 @@ def gerar_pdf_relatorio(titulo, dataframe):
   return buffer
 
 
-def gerar_pdf_os_tecnica(os_row):
-  buffer = io.BytesIO()
-  c = canvas.Canvas(buffer, pagesize=letter)
-  largura, altura = letter
-  margem = 40
-
-  c.setFillColorRGB(0.04, 0.35, 0.22)
-  c.rect(0, altura - 70, largura, 70, fill=1, stroke=0)
-  c.setFillColorRGB(1, 1, 1)
-  c.setFont("Helvetica-Bold", 16)
-  c.drawString(margem, altura - 30, "ordem de serviço técnica oficial (os)")
-  c.setFont("Helvetica", 10)
-  c.drawString(
-      margem,
-      altura - 50,
-      f"tabalmix concreto — alta performance | os #{os_row.get('id', 1)}",
-  )
-
-  y = altura - 100
-  c.setFillColorRGB(0.1, 0.1, 0.1)
-  c.setFont("Helvetica-Bold", 11)
-  c.drawString(margem, y, "dados do equipamento e abertura:")
-  y = altura - 120
-  c.setFont("Helvetica", 10)
-
-  tag_eq = (
-      os_row.get("tag_prefixo") or os_row.get("equipamento") or "não informado"
-  )
-  c.drawString(margem, y, f"• equipamento (tag): {tag_eq}")
-  y -= 18
-  c.drawString(
-      margem,
-      y,
-      f"• tipo de manutenção: {os_row.get('tipo_manutencao', 'preventiva')}",
-  )
-  y -= 18
-  c.drawString(
-      margem,
-      y,
-      f"• horímetro / km: {os_row.get('horimetro_km_manut', 'não informado')}",
-  )
-  y -= 18
-  c.drawString(
-      margem,
-      y,
-      f"• origem da falha: {os_row.get('origem_falha', 'operação')}",
-  )
-  y -= 18
-  c.drawString(
-      margem,
-      y,
-      f"• abertura: {os_row.get('data_abertura', datetime.now().strftime('%Y-%m-%d'))} às"
-      f" {os_row.get('hora_abertura', datetime.now().strftime('%H:%M'))}",
-  )
-
-  y -= 30
-  c.setFont("Helvetica-Bold", 11)
-  c.drawString(margem, y, "descrição do problema relatado:")
-  y = y - 18
-  c.setFont("Helvetica", 10)
-  desc_txt = str(os_row.get("descricao_problema", "sem descrição."))
-  c.drawString(margem, y, desc_txt[:95])
-
-  y -= 40
-  c.setFont("Helvetica-Bold", 11)
-  c.drawString(margem, y, "dados de encerramento e faturamento:")
-  y -= 20
-  c.setFont("Helvetica", 10)
-  c.drawString(
-      margem,
-      y,
-      f"• oficina responsável: {os_row.get('oficina', 'não informada')}",
-  )
-  y -= 18
-  c.drawString(
-      margem,
-      y,
-      f"• técnico / mecânico: {os_row.get('tecnico_mecanico', 'não informado')}",
-  )
-  y -= 18
-  c.drawString(
-      margem,
-      y,
-      f"• peças utilizadas: {os_row.get('pecas_utilizadas', 'nenhuma')}",
-  )
-  y -= 18
-  c.drawString(
-      margem,
-      y,
-      f"• custo de peças: r$ {(os_row.get('custo_pecas') or 0.0):,.2f}",
-  )
-  y -= 18
-  c.drawString(
-      margem,
-      y,
-      f"• custo mão de obra: r$ {(os_row.get('mao_de_obra') or 0.0):,.2f}",
-  )
-  y -= 22
-  c.setFont("Helvetica-Bold", 11)
-  c.setFillColorRGB(0.04, 0.35, 0.22)
-  c.drawString(
-      margem,
-      y,
-      f"• custo total da os: r$ {(os_row.get('custo') or 0.0):,.2f} | status:"
-      f" {os_row.get('status_os', 'aberta').upper()}",
-  )
-
-  y -= 90
-  c.setStrokeColorRGB(0.5, 0.5, 0.5)
-  c.setLineWidth(1)
-  c.line(margem, y, largura / 2 - 20, y)
-  c.line(largura / 2 + 20, y, largura - margem, y)
-  y -= 15
-  c.setFont("Helvetica", 9)
-  c.setFillColorRGB(0.2, 0.2, 0.2)
-  c.drawString(margem, y, "assinatura do encarregado responsável")
-  c.drawString(largura / 2 + 20, y, "assinatura do técnico / oficina")
-
-  c.save()
-  buffer.seek(0)
-  return buffer
-
-
-def gerar_pdf_mobilizacao(mob_row):
-  buffer = io.BytesIO()
-  c = canvas.Canvas(buffer, pagesize=letter)
-  largura, altura = letter
-  margem = 40
-
-  c.setFillColorRGB(0.04, 0.35, 0.22)
-  c.rect(0, altura - 70, largura, 70, fill=1, stroke=0)
-  c.setFillColorRGB(1, 1, 1)
-  c.setFont("Helvetica-Bold", 16)
-  c.drawString(
-      margem, altura - 30, "laudo de check-list de mobilização / desmobilização"
-  )
-  c.setFont("Helvetica", 10)
-  c.drawString(
-      margem,
-      altura - 50,
-      f"tabalmix concreto — registro #{mob_row.get('id', 1)}",
-  )
-
-  y = altura - 100
-  c.setFillColorRGB(0.1, 0.1, 0.1)
-  c.setFont("Helvetica-Bold", 11)
-  c.drawString(margem, y, "detalhes da movimentação:")
-  y = altura - 125
-  c.setFont("Helvetica", 10)
-
-  c.drawString(
-      margem, y, f"• equipamento (tag): {mob_row.get('equipamento', '-')}"
-  )
-  y -= 20
-  c.drawString(
-      margem, y, f"• tipo de movimento: {mob_row.get('tipo_movimento', '-')}"
-  )
-  y -= 20
-  c.drawString(
-      margem, y, f"• destino / origem: {mob_row.get('destino_origem', '-')}"
-  )
-  y -= 20
-  c.drawString(
-      margem, y, f"• responsável técnico: {mob_row.get('responsavel', '-')}"
-  )
-  y -= 20
-  c.drawString(margem, y, f"• data da vistoria: {mob_row.get('data', '-')}")
-  y -= 25
-  c.drawString(
-      margem, y, f"• observações: {mob_row.get('observacao', 'nenhuma')}"
-  )
-
-  y -= 50
-  c.setFont("Helvetica-Bold", 11)
-  c.drawString(
-      margem,
-      y,
-      "evidências fotográficas anexadas: verifique no sistema os arquivos"
-      " salvos.",
-  )
-
-  y -= 90
-  c.setStrokeColorRGB(0.5, 0.5, 0.5)
-  c.setLineWidth(1)
-  c.line(margem, y, largura / 2 - 20, y)
-  c.line(largura / 2 + 20, y, largura - margem, y)
-  y -= 15
-  c.setFont("Helvetica", 9)
-  c.setFillColorRGB(0.2, 0.2, 0.2)
-  c.drawString(margem, y, "assinatura do encarregado vistoriador")
-  c.drawString(largura / 2 + 20, y, "assinatura do operador / motorista")
-
-  c.save()
-  buffer.seek(0)
-  return buffer
-
-
 def init_db():
   conn = sqlite3.connect("frota_profissional.db", check_same_thread=False)
   cursor = conn.cursor()
@@ -616,7 +419,7 @@ except Exception:
 if "usuario_logado" not in st.session_state:
   st.session_state["usuario_logado"] = None
 
-# PERSISTÊNCIA INTELIGENTE DE SESSÃO NA OBRA (Salva o usuário ativo no navegador/query params para não deslogar ao atualizar)
+# PERSISTÊNCIA INTELIGENTE DE SESSÃO NA OBRA
 try:
   if st.session_state["usuario_logado"] is None:
     qp = st.query_params
@@ -795,7 +598,8 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
               )
               conn.commit()
               st.success(
-                  "✅ Conta cadastrada com sucesso! O acesso completo será liberado assim que o pagamento/aprovação for confirmado pela administração."
+                  "✅ Conta cadastrada com sucesso! O acesso completo será"
+                  " liberado assim que aprovado pela administração."
               )
             except Exception as e:
               st.error(f"⚠️ erro ao cadastrar (e-mail já cadastrado?): {e}")
@@ -1042,51 +846,20 @@ if menu == "📊 visão geral":
       )
 
   if not df_veiculos.empty:
-    if modo_admin_liberado:
-      with st.expander(
-          "⚙️ [ADMIN] Configurar Posição e Ordem Padrão das Colunas (Frota)"
-      ):
-        cols_disp = list(df_veiculos.columns)
-        nova_ordem_str = st.text_input(
-            "Digite a ordem exata das colunas separadas por vírgula:",
-            value=",".join(cols_disp),
-            key="cfg_col_veiculos",
-        )
-        if st.button("💾 Salvar e Atualizar Ordem para Todos"):
-          cursor.execute(
-              "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
-              " VALUES ('veiculos', ?)",
-              (nova_ordem_str,),
-          )
-          conn.commit()
-          st.success("✅ Ordem salva com sucesso para todos os colaboradores!")
-          st.rerun()
-
     exibir_tabela_padronizada(df_veiculos, "veiculos")
   else:
     st.info("nenhum equipamento cadastrado na frota.")
 
 elif menu == "🚜 cadastro de equipamentos":
   st.title("🚜 cadastro completo de equipamentos e frota")
-  if not status_usuario_ativo and not modo_admin_liberado:
-    st.warning(
-        "🔒 **Acesso restrito:** sua conta está inativa. Você pode visualizar"
-        " os dados abaixo, mas o cadastro de novos itens está desativado."
-    )
   with st.form("form_frota", clear_on_submit=False):
     col1, col2 = st.columns(2)
     with col1:
       tag_prefixo = st.text_input("tag / prefixo (ex: EQ-001 / BET-12)")
-      categoria_equipamento = st.text_input(
-          "categoria do equipamento (ex: Linha Amarela, Linha Marrom, Linha"
-          " Branca...)"
-      )
-      tipo_equipamento = st.text_input(
-          "tipo de equipamento (ex: Caminhão Betoneira, Escavadeira, Pá"
-          " Carregadeira...)"
-      )
-      marca = st.text_input("marca (ex: Volvo, Mercedes-Benz, Scania)")
-      modelo = st.text_input("modelo (ex: FMX 420, Atego 2430)")
+      categoria_equipamento = st.text_input("categoria do equipamento")
+      tipo_equipamento = st.text_input("tipo de equipamento")
+      marca = st.text_input("marca")
+      modelo = st.text_input("modelo")
       ano = st.number_input(
           "ano de fabricação", min_value=1950, value=2024, step=1
       )
@@ -1094,7 +867,7 @@ elif menu == "🚜 cadastro de equipamentos":
       renavam = st.text_input("número do renavam")
     with col2:
       placa = st.text_input("placa do veículo")
-      crv = st.text_input("número do crv (certificado de registro)")
+      crv = st.text_input("número do crv")
       cor = st.text_input("cor principal")
       combustivel = st.selectbox(
           "tipo de combustível",
@@ -1111,89 +884,43 @@ elif menu == "🚜 cadastro de equipamentos":
       )
 
     btn_cad_eq = st.form_submit_button("cadastrar equipamento completo")
-    if btn_cad_eq:
-      if not status_usuario_ativo and not modo_admin_liberado:
-        st.error(
-            "⚠️ Conta inativa: você não tem permissão para cadastrar novos"
-            " equipamentos."
-        )
-      elif modelo:
-        tag_final = (
-            tag_prefixo.upper()
-            if tag_prefixo and tag_prefixo.strip()
-            else "EQ-00" + str(datetime.now().microsecond)[:3]
-        )
-        cat_final = (
-            categoria_equipamento.strip()
-            if categoria_equipamento and categoria_equipamento.strip()
-            else "Geral"
-        )
-        tipo_final = (
-            tipo_equipamento.strip()
-            if tipo_equipamento and tipo_equipamento.strip()
-            else "Equipamento"
-        )
-        cursor.execute(
-            "INSERT INTO veiculos (tag_prefixo, categoria_equipamento,"
-            " tipo_equipamento, marca, modelo, ano, chassi, renavam, placa, crv,"
-            " cor, combustivel, empresa, operador_condutor, horimetro_km,"
-            " status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (
-                tag_final,
-                cat_final,
-                tipo_final,
-                marca,
-                modelo,
-                int(ano),
-                chassi.upper(),
-                renavam,
-                placa.upper(),
-                crv,
-                cor,
-                combustivel,
-                empresa,
-                operador_condutor,
-                int(horimetro_km),
-                status,
-            ),
-        )
-        conn.commit()
-        st.success(
-            f"✅ Equipamento '{tag_final}' cadastrado com ficha técnica"
-            " completa!"
-        )
-        st.rerun()
-      else:
-        st.error("⚠️ Preencha ao menos o modelo do equipamento.")
+    if btn_cad_eq and modelo:
+      tag_final = (
+          tag_prefixo.upper()
+          if tag_prefixo and tag_prefixo.strip()
+          else "EQ-00" + str(datetime.now().microsecond)[:3]
+      )
+      cursor.execute(
+          "INSERT INTO veiculos (tag_prefixo, categoria_equipamento,"
+          " tipo_equipamento, marca, modelo, ano, chassi, renavam, placa, crv,"
+          " cor, combustivel, empresa, operador_condutor, horimetro_km,"
+          " status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          (
+              tag_final,
+              categoria_equipamento,
+              tipo_equipamento,
+              marca,
+              modelo,
+              int(ano),
+              chassi.upper(),
+              renavam,
+              placa.upper(),
+              crv,
+              cor,
+              combustivel,
+              empresa,
+              operador_condutor,
+              int(horimetro_km),
+              status,
+          ),
+      )
+      conn.commit()
+      st.success(f"✅ Equipamento '{tag_final}' cadastrado com sucesso!")
+      st.rerun()
 
   df_f = pd.read_sql("SELECT * FROM veiculos", conn)
   if not df_f.empty:
     exibir_tabela_padronizada(df_f, "cad_veiculos")
-
-    st.markdown("---")
-    st.markdown("### 🗑️ Remover Equipamento Duplicado ou Errado")
-    with st.form("form_excluir_veiculo"):
-      veiculos_map = {
-          f"ID #{r['id']} - Tag: {r.get('tag_prefixo', '-')} | Modelo:"
-          f" {r.get('modelo', '-')} | Placa: {r.get('placa', '-')}": r["id"]
-          for _, r in df_f.iterrows()
-      }
-      sel_veiculo_excluir = st.selectbox(
-          "Selecione o equipamento para excluir permanentemente:",
-          list(veiculos_map.keys()),
-      )
-      btn_conf_excluir = st.form_submit_button(
-          "🗑️ Excluir Equipamento Selecionado"
-      )
-
-      if btn_conf_excluir:
-        id_para_apagar = veiculos_map[sel_veiculo_excluir]
-        cursor.execute("DELETE FROM veiculos WHERE id = ?", (id_para_apagar,))
-        conn.commit()
-        st.success(
-            f"✅ Equipamento #{id_para_apagar} excluído com sucesso da frota!"
-        )
-        st.rerun()
 
 elif menu == "⛽ abastecimentos & combustível":
   st.title("⛽ controle de abastecimento e combustível")
@@ -1204,10 +931,9 @@ elif menu == "⛽ abastecimentos & combustível":
   with st.form("form_comb"):
     c1, c2 = st.columns(2)
     with c1:
-      if tags_comb:
-        eq_comb = st.selectbox("equipamento / tag", tags_comb)
-      else:
-        eq_comb = st.text_input("equipamento / tag (manual)")
+      eq_comb = st.selectbox(
+          "equipamento / tag", tags_comb if tags_comb else ["MANUAL"]
+      )
       litros = st.number_input("litros", min_value=0.1, value=100.0)
       val_tot = st.number_input("valor total (r$)", min_value=0.0, value=600.0)
     with c2:
@@ -1232,7 +958,7 @@ elif menu == "⛽ abastecimentos & combustível":
           ),
       )
       conn.commit()
-      st.success("✅ abastecimento registrado com sucesso!")
+      st.success("✅ abastecimento registrado!")
       st.rerun()
 
   df_c = pd.read_sql("SELECT * FROM combustivel", conn)
@@ -1248,10 +974,9 @@ elif menu == "🏗️ mobilização / desmobilização":
   with st.form("form_mob"):
     c1, c2 = st.columns(2)
     with c1:
-      if tags_mob:
-        eq_mob = st.selectbox("equipamento / tag", tags_mob)
-      else:
-        eq_mob = st.text_input("equipamento / tag (manual)")
+      eq_mob = st.selectbox(
+          "equipamento / tag", tags_mob if tags_mob else ["MANUAL"]
+      )
       tipo_mov = st.selectbox(
           "movimentação",
           ["mobilização (envio)", "desmobilização (retorno)", "remanejamento"],
@@ -1267,7 +992,6 @@ elif menu == "🏗️ mobilização / desmobilização":
         type=["png", "jpg", "jpeg"],
         accept_multiple_files=True,
     )
-
     btn_cad_mob = st.form_submit_button("registrar movimentação")
     if btn_cad_mob:
       caminhos_fotos = []
@@ -1298,7 +1022,7 @@ elif menu == "🏗️ mobilização / desmobilização":
           ),
       )
       conn.commit()
-      st.success("✅ movimentação registrada com sucesso!")
+      st.success("✅ movimentação registrada!")
       st.rerun()
 
   df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
@@ -1316,32 +1040,21 @@ elif menu == "🛠️ ordens de serviço (os)":
   with st.form("form_abertura_os", clear_on_submit=True):
     c1, c2 = st.columns(2)
     with c1:
-      if tags_disponiveis:
-        tag_os = st.selectbox("tag / prefixo do equipamento", tags_disponiveis)
-      else:
-        tag_os = st.text_input("tag / prefixo do equipamento (manual)")
+      tag_os = st.selectbox(
+          "tag / prefixo", tags_disponiveis if tags_disponiveis else ["GERAL"]
+      )
       tipo_manut = st.selectbox(
-          "tipo de manutenção",
-          ["preventiva", "corretiva", "preditiva", "revisão geral"],
+          "tipo", ["preventiva", "corretiva", "preditiva", "revisão geral"]
       )
-      horimetro_ab = st.text_input("horímetro / km na abertura")
-      origem_f = st.selectbox(
-          "origem da falha", ["falha na operação", "falha na máquina"]
-      )
+      horimetro_ab = st.text_input("horímetro / km")
+      origem_f = st.selectbox("origem", ["operação", "máquina"])
     with c2:
-      data_ab = st.date_input("data de abertura", value=datetime.now().date())
-      hora_ab = st.text_input(
-          "horário de abertura", value=datetime.now().strftime("%H:%M")
-      )
-      desc_prob = st.text_area(
-          "descrição do problema apresentado pelo motorista"
-      )
+      data_ab = st.date_input("data", value=datetime.now().date())
+      hora_ab = st.text_input("hora", value=datetime.now().strftime("%H:%M"))
+      desc_prob = st.text_area("descrição do problema")
 
     btn_abrir_os = st.form_submit_button("abrir nova os")
     if btn_abrir_os:
-      tag_final_os = (
-          str(tag_os).upper() if tag_os and str(tag_os).strip() else "EQ-GERAL"
-      )
       cursor.execute(
           "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao,"
           " horimetro_km_manut, origem_falha, descricao_problema,"
@@ -1349,7 +1062,7 @@ elif menu == "🛠️ ordens de serviço (os)":
           " mao_de_obra) VALUES (?, ?, ?, ?, ?, ?, ?, 'aberta', 0.0, 0.0,"
           " 0.0)",
           (
-              tag_final_os,
+              str(tag_os).upper(),
               tipo_manut,
               horimetro_ab,
               origem_f,
@@ -1359,10 +1072,9 @@ elif menu == "🛠️ ordens de serviço (os)":
           ),
       )
       conn.commit()
-      st.success("✅ os aberta com sucesso!")
+      st.success("✅ OS aberta com sucesso!")
       st.rerun()
 
-  st.divider()
   df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
   if not df_os.empty:
     exibir_tabela_padronizada(df_os, "manutencoes")
@@ -1372,21 +1084,20 @@ elif menu == "🔩 peças e ferramentas":
   with st.form("form_pecas"):
     c1, c2 = st.columns(2)
     with c1:
-      nome_i = st.text_input("nome da peça ou ferramenta")
+      nome_i = st.text_input("nome da peça")
       cat = st.text_input("categoria")
     with c2:
       qtd = st.number_input("quantidade", min_value=1, value=1)
       v_unit = st.number_input("valor unitário (r$)", min_value=0.0)
     btn_cad_peca = st.form_submit_button("adicionar peça")
     if btn_cad_peca:
-      cat_final = cat.strip() if cat and cat.strip() else "Geral"
       cursor.execute(
           "INSERT INTO pecas (nome_item, categoria, quantidade,"
           " valor_unitario) VALUES (?, ?, ?, ?)",
-          (nome_i, cat_final, qtd, v_unit),
+          (nome_i, cat.strip() if cat else "Geral", qtd, v_unit),
       )
       conn.commit()
-      st.success("✅ peça cadastrada com sucesso!")
+      st.success("✅ Peça adicionada!")
       st.rerun()
 
   df_p = pd.read_sql("SELECT * FROM pecas", conn)
@@ -1413,7 +1124,7 @@ elif menu == "👥 gestão de clientes":
           (nome_c, emp, tel, doc, em, end),
       )
       conn.commit()
-      st.success("✅ cliente salvo com sucesso!")
+      st.success("✅ Cliente salvo!")
       st.rerun()
 
   df_cli = pd.read_sql("SELECT * FROM clientes", conn)
@@ -1421,50 +1132,119 @@ elif menu == "👥 gestão de clientes":
     exibir_tabela_padronizada(df_cli, "clientes")
 
 elif menu == "💬 chat tabalmix pro & rede":
-  st.title("💬 Chat Tabalmix Pro & Chamada Interna")
+  st.title("💬 Central Pro de Chamadas e Chat em Tempo Real")
   st.markdown(
-      "Comunicação unificada e **Chamada de Vídeo Direta** dentro do"
-      " sistema."
+      "Comunicação corporativa avançada com **chamada interativa** e alertas"
+      " sonoros automáticos para a equipe na obra."
   )
 
-  # BOTÃO DIRETO E VISÍVEL DE CHAMADA DE VÍDEO NATIVA
-  with st.expander("🎥 ABRIR CÂMARA DE VÍDEO / ÁUDIO NA TELA", expanded=True):
+  # CENTRAL DE CHAMADA COM ALARME SONORO E VIBRAÇÃO EM TEMPO REAL
+  with st.expander(
+      "📞 CENTRAL DE CHAMADAS E VÍDEO AO VIVO (TOQUE & ALARME)", expanded=True
+  ):
     st.markdown(
-        "Ligue a câmara diretamente no seu telemóvel para falar com a equipe:"
+        "Utilize a central para iniciar chamadas diretas com som de toque e"
+        " câmara integrada:"
     )
     st.components.v1.html(
         """
-        <div style="background: #0f172a; border-radius: 16px; padding: 15px; text-align: center; color: white; font-family: sans-serif;">
-            <video id="localVideo" autoplay playsinline muted style="width: 100%; max-height: 220px; border-radius: 12px; background: #1e293b; border: 2px solid #059669; object-fit: cover; margin-bottom: 10px;"></video>
-            <div>
-                <button onclick="ligarCamera()" style="background: #059669; color: white; border: none; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🟢 Ligar Câmara</button>
-                <button onclick="desligarCamera()" style="background: #dc2626; color: white; border: none; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px; margin-left: 10px;">🔴 Desligar</button>
+        <div style="background: #0f172a; border-radius: 16px; padding: 20px; text-align: center; color: white; font-family: 'Plus Jakarta Sans', sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+            <div id="callStatus" style="background: #1e293b; border: 1px solid #334155; padding: 12px; border-radius: 10px; margin-bottom: 15px; font-weight: bold; color: #38bdf8;">
+                📲 Central Pronta. Clique em "Tocar Alarme de Chamada" para testar o toque/vibração ou inicie a câmara.
+            </div>
+            
+            <video id="localVideo" autoplay playsinline muted style="width: 100%; max-height: 220px; border-radius: 12px; background: #1e293b; border: 2px solid #059669; object-fit: cover; margin-bottom: 12px;"></video>
+            
+            <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                <button onclick="tocarAlarmeChamada()" style="background: #f59e0b; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🔔 Tocar Toque de Chamada</button>
+                <button onclick="ligarCamera()" style="background: #059669; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🟢 Atender / Ligar Câmara</button>
+                <button onclick="desligarCamera()" style="background: #dc2626; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🔴 Recusar / Desligar</button>
             </div>
         </div>
         <script>
         let localStream = null;
+        let audioCtx = null;
+
+        function tocarAlarmeChamada() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                // Simula toque de chamada telefônica (beep duplo repetido)
+                let now = audioCtx.currentTime;
+                for (let i = 0; i < 4; i++) {
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, now + (i * 0.8));
+                    gain.gain.setValueAtTime(0.2, now + (i * 0.8));
+                    gain.gain.exponentialRampToValueAtTime(0.00001, now + (i * 0.8) + 0.4);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + (i * 0.8));
+                    osc.stop(now + (i * 0.8) + 0.4);
+                }
+                if (navigator.vibrate) {
+                    navigator.vibrate([500, 300, 500, 300]);
+                }
+                document.getElementById('callStatus').innerText = "📞 A receber chamada entrante! Toque e vibração ativados.";
+            } catch(e) {
+                console.log("Erro ao reproduzir áudio:", e);
+            }
+        }
+
         async function ligarCamera() {
             try {
                 localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 document.getElementById('localVideo').srcObject = localStream;
+                document.getElementById('callStatus').innerText = "🟢 Chamada de vídeo ativa com sucesso!";
             } catch (err) {
                 alert("Erro ao aceder à câmara: " + err);
             }
         }
+
         function desligarCamera() {
             if (localStream) {
                 localStream.getTracks().forEach(track => track.stop());
                 document.getElementById('localVideo').srcObject = null;
             }
+            document.getElementById('callStatus').innerText = "🔴 Chamada encerrada ou recusada.";
         }
         </script>
         """,
-        height=310,
+        height=370,
     )
 
   st.markdown("---")
-  if "sala_chat_ativa" not in st.session_state:
-    st.session_state["sala_chat_ativa"] = "Geral (Equipe)"
+  st.markdown("#### 🗨️ Histórico de Mensagens da Equipe na Obra")
+
+  df_msgs = pd.read_sql(
+      "SELECT * FROM chat_interno ORDER BY id DESC LIMIT 25", conn
+  )
+  if not df_msgs.empty:
+    for _, row_m in df_msgs.iterrows():
+      st.markdown(
+          f"""
+            <div style="background: #ffffff; border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; border: 1px solid #e2e8f0; box-shadow: 0 3px 10px rgba(0,0,0,0.02);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <b style="color: #047857; font-size: 12.5px;">👤 {row_m['remetente']}</b>
+                    <span style="font-size: 10px; color: #64748b;">{row_m['data_envio']}</span>
+                </div>
+                <div style="font-size: 14px; color: #0f172a; white-space: pre-wrap; line-height: 1.4;">{row_m['mensagem']}</div>
+            </div>
+        """,
+          unsafe_allow_html=True,
+      )
+      if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
+        with open(row_m["arquivo_path"], "rb") as f_down:
+          st.download_button(
+              label=f"📥 Baixar anexo: {row_m['arquivo_nome']}",
+              data=f_down.read(),
+              file_name=row_m["arquivo_nome"],
+              key=f"dl_chat_arq_{row_m['id']}",
+          )
+  else:
+    st.info("Nenhuma mensagem registrada no chat ainda.")
 
   remetente_atual = (
       usuario_atual["apelido"]
@@ -1473,46 +1253,48 @@ elif menu == "💬 chat tabalmix pro & rede":
   )
   cargo_atual = usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
 
-  st.markdown(f"#### 🗨️ Conversa Ativa: `{st.session_state['sala_chat_ativa']}`")
-  df_msgs = pd.read_sql(
-      "SELECT * FROM chat_interno WHERE destinatario = 'Geral (Equipe)'"
-      " ORDER BY id DESC LIMIT 20",
-      conn,
-  )
-  if not df_msgs.empty:
-    for _, row_m in df_msgs.iterrows():
-      st.markdown(
-          f"""
-            <div style="background: #f8fafc; border-radius: 10px; padding: 10px; margin-bottom: 8px; border: 1px solid #cbd5e1;">
-                <b style="color: #047857; font-size: 12px;">{row_m['remetente']}</b><br>
-                <span style="font-size: 13.5px; color: #0f172a;">{row_m['mensagem']}</span>
-            </div>
-        """,
-          unsafe_allow_html=True,
-      )
+  with st.form("form_chat_melhorado", clear_on_submit=True):
+    msg_sala_txt = st.text_input("Escreva sua mensagem corporativa...")
+    file_sala_up = st.file_uploader(
+        "Anexar arquivo ou foto (opcional)",
+        type=["png", "jpg", "jpeg", "pdf", "docx", "xlsx"],
+    )
+    btn_enviar_chat = st.form_submit_button("➤ Enviar Mensagem")
 
-  with st.form("form_chat_sala_principal", clear_on_submit=True):
-    msg_sala_txt = st.text_input("Escreva sua mensagem...")
-    btn_enviar_sala_pro = st.form_submit_button("Enviar Mensagem")
-    if btn_enviar_sala_pro and msg_sala_txt.strip():
-      data_env_s = datetime.now().strftime("%d/%m às %H:%M")
-      cursor.execute(
-          "INSERT INTO chat_interno (remetente, destinatario, cargo,"
-          " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
-          " ?, ?, ?, ?, ?)",
-          (
-              f"{remetente_atual} ({cargo_atual})",
-              "Geral (Equipe)",
-              cargo_atual,
-              msg_sala_txt,
-              "",
-              "",
-              data_env_s,
-          ),
-      )
-      conn.commit()
-      st.success("✅ Mensagem enviada!")
-      st.rerun()
+    if btn_enviar_chat:
+      if not msg_sala_txt.strip() and not file_sala_up:
+        st.warning("⚠️ Digite uma mensagem ou anexe um arquivo.")
+      else:
+        path_s = ""
+        nome_s = ""
+        if file_sala_up is not None:
+          os.makedirs("chat_documentos", exist_ok=True)
+          nome_s = file_sala_up.name
+          path_s = (
+              "chat_documentos/"
+              f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nome_s}"
+          )
+          with open(path_s, "wb") as f_out_s:
+            f_out_s.write(file_sala_up.getbuffer())
+
+        data_env_s = datetime.now().strftime("%d/%m às %H:%M")
+        cursor.execute(
+            "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+            " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
+            " ?, ?, ?, ?, ?)",
+            (
+                f"{remetente_atual} ({cargo_atual})",
+                "Geral (Equipe)",
+                cargo_atual,
+                msg_sala_txt,
+                path_s,
+                nome_s,
+                data_env_s,
+            ),
+        )
+        conn.commit()
+        st.success("✅ Mensagem enviada com sucesso!")
+        st.rerun()
 
 elif menu == "🔍 consulta / busca geral":
   st.title("🔍 consulta e histórico completo do equipamento")
