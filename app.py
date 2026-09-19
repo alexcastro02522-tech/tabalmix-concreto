@@ -1611,59 +1611,58 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     else:
       st.info("Nenhuma chave gerada ainda.")
 
-  with tab_gerar_users := st.container():
-    with tab_gerenciar_users:
-      st.markdown("### 👥 Gerenciamento de Colaboradores & Planos")
-      df_users = pd.read_sql("SELECT * FROM usuarios_sistema", conn)
-      if not df_users.empty:
-        exibir_tabela_padronizada(df_users, "usuarios_sistema")
+  with tab_gerenciar_users:
+    st.markdown("### 👥 Gerenciamento de Colaboradores & Planos")
+    df_users = pd.read_sql("SELECT * FROM usuarios_sistema", conn)
+    if not df_users.empty:
+      exibir_tabela_padronizada(df_users, "usuarios_sistema")
 
-        st.markdown("---")
-        st.markdown("### ✍️ Atualizar Cargo ou Plano de um Colaborador")
-        lista_emails_users = df_users["email"].tolist()
-        colab_selecionado = st.selectbox(
-            "Selecione o colaborador pelo e-mail",
-            lista_emails_users,
-            key="sel_colab_usr",
+      st.markdown("---")
+      st.markdown("### ✍️ Atualizar Cargo ou Plano de um Colaborador")
+      lista_emails_users = df_users["email"].tolist()
+      colab_selecionado = st.selectbox(
+          "Selecione o colaborador pelo e-mail",
+          lista_emails_users,
+          key="sel_colab_usr",
+      )
+
+      with st.form("form_editar_colaborador_admin"):
+        novo_cargo_adm = st.selectbox(
+            "Novo Cargo / Função",
+            [
+                "Diretoria / Gestão",
+                "Engenheiro / Gestor de Obra",
+                "Mecânico / Oficina",
+                "Operador / Motorista / Campo",
+            ],
+            key="adm_novo_cargo",
+        )
+        novo_status_adm = st.selectbox(
+            "Status da Conta", ["Ativo", "Inativo"], key="adm_novo_status"
+        )
+        nova_modalidade_adm = st.selectbox(
+            "Modalidade de Plano",
+            ["Plano Mensal (30 dias)", "Plano Anual (365 dias)"],
+            key="adm_nova_mod",
+        )
+        btn_atualizar_adm = st.form_submit_button(
+            "💾 Salvar Alterações do Colaborador"
         )
 
-        with st.form("form_editar_colaborador_admin"):
-          novo_cargo_adm = st.selectbox(
-              "Novo Cargo / Função",
-              [
-                  "Diretoria / Gestão",
-                  "Engenheiro / Gestor de Obra",
-                  "Mecânico / Oficina",
-                  "Operador / Motorista / Campo",
-              ],
-              key="adm_novo_cargo",
+        if btn_atualizar_adm:
+          novo_plano_str = f"{novo_cargo_adm} — {nova_modalidade_adm}"
+          cursor.execute(
+              "UPDATE usuarios_sistema SET cargo_setor = ?, status_assinatura"
+              " = ?, plano_atual = ? WHERE email = ?",
+              (
+                  novo_cargo_adm,
+                  novo_status_adm,
+                  novo_plano_str,
+                  colab_selecionado,
+              ),
           )
-          novo_status_adm = st.selectbox(
-              "Status da Conta", ["Ativo", "Inativo"], key="adm_novo_status"
+          conn.commit()
+          st.success(
+              f"✅ Colaborador **{colab_selecionado}** atualizado com sucesso!"
           )
-          nova_modalidade_adm = st.selectbox(
-              "Modalidade de Plano",
-              ["Plano Mensal (30 dias)", "Plano Anual (365 dias)"],
-              key="adm_nova_mod",
-          )
-          btn_atualizar_adm = st.form_submit_button(
-              "💾 Salvar Alterações do Colaborador"
-          )
-
-          if btn_atualizar_adm:
-            novo_plano_str = f"{novo_cargo_adm} — {nova_modalidade_adm}"
-            cursor.execute(
-                "UPDATE usuarios_sistema SET cargo_setor = ?, status_assinatura"
-                " = ?, plano_atual = ? WHERE email = ?",
-                (
-                    novo_cargo_adm,
-                    novo_status_adm,
-                    novo_plano_str,
-                    colab_selecionado,
-                ),
-            )
-            conn.commit()
-            st.success(
-                f"✅ Colaborador **{colab_selecionado}** atualizado com sucesso!"
-            )
-            st.rerun()
+          st.rerun()
