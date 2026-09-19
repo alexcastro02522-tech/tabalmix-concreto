@@ -41,7 +41,7 @@ st.markdown(
         background: transparent !important;
     }
     .block-container {
-        padding-top: 1.5rem !important;
+        padding-top: 1rem !important;
         padding-bottom: 3rem !important;
         max-width: 100% !important;
     }
@@ -97,26 +97,6 @@ st.markdown(
         box-shadow: 0 6px 16px rgba(5, 150, 105, 0.3);
         transition: all 0.25s ease-in-out;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
-    }
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 6px;
-        background-color: #e2e8f0;
-        padding: 6px;
-        border-radius: 14px;
-        flex-wrap: wrap;
-    }
-    .stTabs [data-baseweb="tab"] {
-        height: 42px;
-        border-radius: 10px;
-        color: #334155;
-        font-weight: 600;
-        font-size: 13px;
-        border: none !important;
-    }
-    .stTabs [aria-selected="true"] {
-        background-color: #ffffff !important;
-        color: #047857 !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
     </style>
 """,
@@ -444,17 +424,21 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           unsafe_allow_html=True,
       )
 
-    tab_pin, tab_login, tab_cadastro, tab_chave, tab_recuperar = st.tabs([
-        "🔐 PIN",
-        "🔑 Entrar",
-        "📝 Cadastrar",
-        "🎟️ Resgatar",
-        "🔄 Recuperar",
-    ])
+    # MENU DE ACESSO LIMPO EM SELECTBOX (Perfeito para telemóveis - sem cortes!)
+    escolha_modo_login = st.selectbox(
+        "🛠️ Escolha a opção de acesso:",
+        [
+            "📝 Criar Novo Cadastro",
+            "🔑 Entrar com E-mail e Senha",
+            "🔐 Acesso Rápido com PIN",
+            "🎟️ Ativar com Chave Corporativa",
+            "🔄 Recuperar Senha",
+        ],
+    )
 
-    with tab_pin:
+    if escolha_modo_login == "🔐 Acesso Rápido com PIN":
       with st.form("form_pin"):
-        st.markdown("### 🔐 Acesso Rápido com PIN")
+        st.markdown("### 🔐 Acesso Rápido com PIN da Obra")
         email_pin = st.text_input("E-mail corporativo")
         pin_dig = st.text_input(
             "PIN numérico (4 dígitos)", max_chars=4, type="password"
@@ -496,7 +480,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           else:
             st.error("⚠️ E-mail ou PIN inválidos.")
 
-    with tab_login:
+    elif escolha_modo_login == "🔑 Entrar com E-mail e Senha":
       with st.form("form_login"):
         st.markdown("### 🔑 Entrar na Conta")
         email_login = st.text_input("E-mail corporativo")
@@ -550,7 +534,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           else:
             st.error("⚠️ E-mail ou senha incorretos.")
 
-    with tab_cadastro:
+    elif escolha_modo_login == "📝 Criar Novo Cadastro":
       with st.form("form_novo_cadastro"):
         st.markdown("### 📝 Criar Novo Cadastro na Obra")
         c_nome = st.text_input("Nome Completo")
@@ -673,7 +657,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
         else:
           st.error("⚠️ SDK do Mercado Pago não configurado.")
 
-    with tab_chave:
+    elif escolha_modo_login == "🎟️ Ativar com Chave Corporativa":
       with st.form("form_resgatar_chave_login"):
         st.markdown("### 🎟️ Ativar Conta com Chave Corporativa")
         email_resgate = st.text_input("E-mail cadastrado na conta")
@@ -721,14 +705,14 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 conn.commit()
                 st.success(
                     "🎉 **Parabéns! Sua conta foi ativada com sucesso.**"
-                    " Faça login na aba 'Entrar'."
+                    " Altera no menu para 'Entrar' e faz login."
                 )
               else:
                 st.error("⚠️ E-mail não encontrado no sistema.")
           else:
             st.error("⚠️ Chave de ativação inválida.")
 
-    with tab_recuperar:
+    elif escolha_modo_login == "🔄 Recuperar Senha":
       with st.form("form_recuperar"):
         st.markdown("### 🔄 Recuperar Senha")
         rec_email = st.text_input("Digite seu e-mail cadastrado")
