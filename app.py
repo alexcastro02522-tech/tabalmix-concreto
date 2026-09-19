@@ -754,17 +754,15 @@ if usuario_atual and (
 # VERIFICAÇÃO GLOBAL DE CHAMADA PENDENTE EM TEMPO REAL PARA O USUÁRIO LOGADO
 if usuario_atual:
   nome_apelido_atual = usuario_atual["apelido"]
-  cargo_atual_user = usuario_atual["cargo"]
-  # Procuramos por alertas recentes de chamada direcionados a este utilizador ou canal geral
   cursor.execute(
       "SELECT mensagem, data_envio FROM chat_interno WHERE destinatario LIKE ? AND mensagem LIKE '%CHAMADA DE VÍDEO ATIVA%' ORDER BY id DESC LIMIT 1",
       (f"%{nome_apelido_atual}%",),
-  )	
+  )
   chamada_pendente = cursor.fetchone()
   if chamada_pendente:
     st.markdown(
         f"""
-            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 16px 22px; border-radius: 14px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(220,38,38,0.4); display: flex; justify-content: space-between; align-items: center; animation: pulse 1.5s infinite;">
+            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 16px 22px; border-radius: 14px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(220,38,38,0.4); display: flex; justify-content: space-between; align-items: center;">
                 <div>
                     <h3 style="color: white !important; margin: 0; font-size: 17px;">🚨 CHAMADA DE VÍDEO AO VIVO A TOCAR!</h3>
                     <p style="margin: 4px 0 0 0; font-size: 13.5px;">Alguém da diretoria/equipe está a chamar-te em tempo real.</p>
@@ -1497,7 +1495,8 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
     else:
       alvo_selecionado = "Equipe Geral"
 
-    nome_sala_direta = f"TabalmixChamadaDireta_{alvo_selecionado.split()[0]}_2026"
+    # Nome da sala direto e otimizado sem travas de moderação
+    nome_sala_direta = f"TabalmixDirectCall{alvo_selecionado.split()[0]}2026"
 
     if "chamada_ativa" not in st.session_state:
       st.session_state["chamada_ativa"] = False
@@ -1507,7 +1506,6 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
       if st.button("📞 Disparar Chamada e Ligar", key="btn_ligar_integ"):
         st.session_state["chamada_ativa"] = True
 
-        # Registamos o sinal de chamada para notificar em tempo real em qualquer página
         remetente_notif = (
             usuario_atual["apelido"] if usuario_atual else "Administrador"
         )
@@ -1545,9 +1543,10 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
 
     if st.session_state["chamada_ativa"]:
       st.markdown(f"**🟢 Chamada em curso com: {alvo_selecionado}**")
+      # Parâmetros reforçados para saltar moderação e ecrãs publicitários/app
       jitsi_embed_html = f"""
-            <div style="width: 100%; height: 600px; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
-                <iframe src="https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&interfaceConfigOverwrite.MOBILE_APP_PROMO=false" 
+            <div style="width: 100%; height: 600px; border-radius: 16px; overflow: hidden; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                <iframe src="https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false&interfaceConfigOverwrite.MOBILE_APP_PROMO=false" 
                         allow="camera; microphone; fullscreen; display-capture" 
                         style="width: 100%; height: 100%; border: none;">
                 </iframe>
