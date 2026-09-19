@@ -1331,32 +1331,33 @@ elif menu == "👥 gestão de clientes":
 elif menu == "💬 chat tabalmix pro & rede":
   st.title("💬 Central Pro de Mensagens e Rede Interna")
   st.markdown(
-      "Sistema unificado de comunicação: envie mensagens instantâneas e fotos"
-      " da obra em tempo real para toda a equipe."
+      "Sistema unificado de comunicação: escolha o colaborador ativo, envie"
+      " mensagens e faça chamadas de vídeo e voz."
   )
 
-  if usuario_atual:
-    cursor.execute(
-        "SELECT id, apelido, cargo_setor FROM usuarios_sistema WHERE email != ?",
-        (usuario_atual["email"],),
-    )
-  else:
-    cursor.execute("SELECT id, apelido, cargo_setor FROM usuarios_sistema")
-  colegas_db = cursor.fetchall()
-  lista_nomes_colegas = [f"{c[1]} ({c[2]})" for c in colegas_db]
+  cursor.execute(
+      "SELECT id, apelido, cargo_setor FROM usuarios_sistema ORDER BY id DESC"
+  )
+  todos_usuarios_db = cursor.fetchall()
 
   tab_chat_txt, tab_videochat = st.tabs([
-      "💬 Chat Direto & Fotos",
+      "💬 Chat Direto & Escolher Colaborador",
       "📹 Videoconferência & Chamada de Voz",
   ])
 
   with tab_chat_txt:
-    st.markdown("#### 💬 Conversas Diretas & Envio de Fotos da Obra")
+    st.markdown("#### 👥 Selecionar Colaborador Online & Enviar Mensagem")
 
-    destinatario_chat = st.selectbox(
-        "Enviar mensagem/foto para:",
-        ["Geral (Toda a Equipe)"] + lista_nomes_colegas,
-    )
+    if todos_usuarios_db:
+      opcoes_colab = [
+          f"👤 {u[1]} — Cargo: {u[2]} (ID: {u[0]})" for u in todos_usuarios_db
+      ]
+      colab_escolhido_str = st.selectbox(
+          "Escolha o colaborador ou motorista ativo:",
+          ["🌐 Geral (Toda a Equipe)"] + opcoes_colab,
+      )
+    else:
+      colab_escolhido_str = "🌐 Geral (Toda a Equipe)"
 
     df_msgs = pd.read_sql(
         "SELECT * FROM chat_interno ORDER BY id DESC LIMIT 30", conn
@@ -1405,7 +1406,9 @@ elif menu == "💬 chat tabalmix pro & rede":
           "Anexar foto da obra ou documento (opcional)",
           type=["png", "jpg", "jpeg", "pdf", "docx"],
       )
-      btn_enviar_chat = st.form_submit_button("➤ Enviar para o Colega")
+      btn_enviar_chat = st.form_submit_button(
+          "➤ Enviar para o Colaborador Selecionado"
+      )
 
       if btn_enviar_chat:
         if not msg_sala_txt.strip() and not file_sala_up:
@@ -1430,7 +1433,7 @@ elif menu == "💬 chat tabalmix pro & rede":
               " ?, ?, ?, ?, ?)",
               (
                   f"{remetente_atual} ({cargo_atual})",
-                  destinatario_chat,
+                  colab_escolhido_str,
                   cargo_atual,
                   msg_sala_txt,
                   path_s,
@@ -1439,14 +1442,16 @@ elif menu == "💬 chat tabalmix pro & rede":
               ),
           )
           conn.commit()
-          st.success("✅ Mensagem/Foto enviada com sucesso!")
+          st.success(
+              f"✅ Mensagem enviada com sucesso para '{colab_escolhido_str}'!"
+          )
           st.rerun()
 
   with tab_videochat:
     st.markdown("### 📹 Sala de Videoconferência & Chamada de Voz ao Vivo")
     st.markdown(
         "Clica no botão abaixo para abrir a sala segura de vídeo e áudio em"
-        " tempo real com a equipa (compatível com telemóvel e PC):"
+        " tempo real (basta clicares em **'Entrar usando o navegador'**):"
     )
     url_sala_jitsi = (
         "https://meet.jit.si/TabalmixConcretoEnterpriseSalaOficial2026"
@@ -1456,7 +1461,7 @@ elif menu == "💬 chat tabalmix pro & rede":
             <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-radius: 16px; padding: 25px; text-align: center; color: white; box-shadow: 0 10px 25px rgba(5,150,105,0.3); margin-top: 15px;">
                 <h2 style="color: white !important; margin-bottom: 10px;">🔴 Sala de Vídeo e Áudio Ativa</h2>
                 <p style="font-size: 14px; margin-bottom: 20px;">fale diretamente com os operadores, motoristas e engenheiros da obra por voz e câmara.</p>
-                <a href="{url_sala_jitsi}" target="_blank" style="background: white; color: #047857; padding: 12px 28px; border-radius: 12px; font-weight: 800; text-decoration: none; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: inline-block;">🎥 ENTRAR NA VIDEOLLAMADA AGORA</a>
+                <a href="{url_sala_jitsi}" target="_blank" style="background: white; color: #047857; padding: 12px 28px; border-radius: 12px; font-weight: 800; text-decoration: none; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: inline-block;">🎥 ENTRAR NA VIDEOCONFERÊNCIA AGORA</a>
             </div>
         """,
         unsafe_allow_html=True,
@@ -1669,7 +1674,7 @@ elif menu == "⚙️ painel de licença (admin)" and modo_admin_liberado:
         )
         nova_modalidade_adm = st.selectbox(
             "Modalidade de Plano",
-            ["Plano Mensal (30 days)", "Plano Anual (365 days)"],
+            ["Plano Mensal (30 dias)", "Plano Anual (365 dias)"],
             key="adm_nova_mod",
         )
         btn_atualizar_adm = st.form_submit_button(
