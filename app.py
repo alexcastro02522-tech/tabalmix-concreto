@@ -424,7 +424,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           unsafe_allow_html=True,
       )
 
-    # MENU DE ACESSO LIMPO EM SELECTBOX (Perfeito para telemóveis - sem cortes!)
     escolha_modo_login = st.selectbox(
         "🛠️ Escolha a opção de acesso:",
         [
@@ -535,7 +534,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             st.error("⚠️ E-mail ou senha incorretos.")
 
     elif escolha_modo_login == "📝 Criar Novo Cadastro":
-      # Campos fora do formulário para permitir atualização instantânea da tela ao mudar o selectbox de cargo
       st.markdown("### 📝 Criar Novo Cadastro na Obra")
       c_nome = st.text_input("Nome Completo")
       c_apelido = st.text_input("Apelido / Primeiro Nome")
@@ -1268,11 +1266,53 @@ elif menu == "👥 Gestão de Clientes":
     exibir_tabela_padronizada(df_cli, "clientes")
 
 elif menu == "💬 Chat Tabalmix Pro & Rede":
-  st.title("💬 Central Pro de Mensagens & Chamada Direta Pessoal")
   st.markdown(
-      "Sistema em tempo real: escolha o colaborador ativo (como o Hayarya),"
-      " envie mensagens ou inicie uma **Chamada de Vídeo e Voz Direta** para o"
-      " telemóvel dele."
+      """
+        <style>
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 520px;
+            overflow-y: auto;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .msg-card-eu {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+            padding: 14px 18px;
+            border-radius: 16px 16px 4px 16px;
+            max-width: 75%;
+            align-self: flex-end;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
+            margin-left: auto;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .msg-card-outro {
+            background: #ffffff;
+            color: #0f172a;
+            padding: 14px 18px;
+            border-radius: 16px 16px 16px 4px;
+            max-width: 75%;
+            align-self: flex-start;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+            margin-right: auto;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        </style>
+    """,
+      unsafe_allow_html=True,
+  )
+
+  st.title("💬 Central Pro Enterprise — Chat & Live Ops")
+  st.markdown(
+      "Comunicação em tempo real de nível mundial entre a obra, mecânica e"
+      " diretoria."
   )
 
   cursor.execute(
@@ -1281,47 +1321,74 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
   todos_usuarios_db = cursor.fetchall()
 
   tab_chat_txt, tab_videocall = st.tabs([
-      "💬 Chat Direto com Colaborador",
-      "📞 Chamada Direta de Vídeo / Voz ao Vivo",
+      "💬 Canal de Mensagens Live",
+      "📞 Chamada Direta de Vídeo Integrada",
   ])
 
   with tab_chat_txt:
-    st.markdown("#### 👥 Selecionar Colaborador Online")
+    col_f1, col_f2 = st.columns([2, 1])
+    with col_f1:
+      if todos_usuarios_db:
+        opcoes_colab = [
+            f"👤 {u[1]} — Cargo: {u[2]} (ID: {u[0]})" for u in todos_usuarios_db
+        ]
+        colab_escolhido_str = st.selectbox(
+            "Canal / Destinatário:",
+            ["🌐 Canal Geral (Toda a Equipe)"] + opcoes_colab,
+        )
+      else:
+        colab_escolhido_str = "🌐 Canal Geral (Toda a Equipe)"
+    with col_f2:
+      termo_busca_chat = st.text_input(
+          "🔍 Pesquisa Global", placeholder="Ex: pneu, beta..."
+      )
 
-    if todos_usuarios_db:
-      opcoes_colab = [
-          f"👤 {u[1]} — Cargo: {u[2]} (ID: {u[0]})" for u in todos_usuarios_db
-      ]
-      colab_escolhido_str = st.selectbox(
-          "Escolha o colaborador ou motorista ativo:",
-          ["🌐 Geral (Toda a Equipe)"] + opcoes_colab,
+    if termo_busca_chat.strip():
+      df_msgs = pd.read_sql(
+          "SELECT * FROM chat_interno WHERE mensagem LIKE ? ORDER BY id ASC LIMIT"
+          " 50",
+          conn,
+          params=(f"%{termo_busca_chat}%",),
       )
     else:
-      colab_escolhido_str = "🌐 Geral (Toda a Equipe)"
+      df_msgs = pd.read_sql(
+          "SELECT * FROM chat_interno ORDER BY id ASC LIMIT 50", conn
+      )
 
-    df_msgs = pd.read_sql(
-        "SELECT * FROM chat_interno ORDER BY id DESC LIMIT 30", conn
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+
+    remetente_atual = (
+        usuario_atual["apelido"] if usuario_atual else "Administrador Master"
     )
+    cargo_atual = (
+        usuario_atual["cargo"] if usuario_atual else "Diretoria / Gestão"
+    )
+
     if not df_msgs.empty:
       for _, row_m in df_msgs.iterrows():
+        is_eu = remetente_atual in str(row_m["remetente"])
+        estilo_classe = "msg-card-eu" if is_eu else "msg-card-outro"
+        cor_autor = "#d1fae5" if is_eu else "#047857"
+
         st.markdown(
             f"""
-                <div style="background: #ffffff; border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; border: 1px solid #e2e8f0; box-shadow: 0 3px 10px rgba(0,0,0,0.02);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                        <b style="color: #047857; font-size: 12.5px;">👤 {row_m['remetente']} ➔ Para: {row_m['destinatario']}</b>
-                        <span style="font-size: 10px; color: #64748b;">{row_m['data_envio']}</span>
+                    <div class="{estilo_classe}">
+                        <div style="font-size: 11px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
+                            <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
+                            <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
+                        </div>
+                        <div style="font-size: 14px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
                     </div>
-                    <div style="font-size: 14px; color: #0f172a; white-space: pre-wrap; line-height: 1.4;">{row_m['mensagem']}</div>
-                </div>
-            """,
+                """,
             unsafe_allow_html=True,
         )
+
         if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
           if row_m["arquivo_nome"].lower().endswith((".png", ".jpg", ".jpeg")):
             st.image(
                 row_m["arquivo_path"],
-                caption=f"Foto enviada por {row_m['remetente']}",
-                use_column_width=True,
+                caption=f"Mídia de {row_m['remetente']}",
+                width=280,
             )
           with open(row_m["arquivo_path"], "rb") as f_down:
             st.download_button(
@@ -1331,28 +1398,31 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
                 key=f"dl_chat_arq_{row_m['id']}",
             )
     else:
-      st.info("Nenhuma mensagem ou foto enviada no chat ainda.")
+      st.info("Ainda sem mensagens neste canal. Começa a conversa abaixo!")
 
-    remetente_atual = (
-        usuario_atual["apelido"] if usuario_atual else "Administrador Master"
-    )
-    cargo_atual = (
-        usuario_atual["cargo"] if usuario_atual else "Diretoria / Gestão"
-    )
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    with st.form("form_chat_direto", clear_on_submit=True):
-      msg_sala_txt = st.text_input("Escreva sua mensagem...")
-      file_sala_up = st.file_uploader(
-          "Anexar foto da obra ou documento (opcional)",
-          type=["png", "jpg", "jpeg", "pdf", "docx"],
-      )
+    with st.form("form_chat_direto_pro", clear_on_submit=True):
+      col_msg1, col_msg2 = st.columns([3, 1])
+      with col_msg1:
+        msg_sala_txt = st.text_input(
+            "Escreve a tua mensagem operacional...",
+            placeholder="Mensagem segura para a equipa...",
+        )
+      with col_msg2:
+        file_sala_up = st.file_uploader(
+            "Anexar Mídia",
+            type=["png", "jpg", "jpeg", "pdf", "docx"],
+            label_visibility="collapsed",
+        )
+
       btn_enviar_chat = st.form_submit_button(
-          "➤ Enviar para o Colaborador Selecionado"
+          "🚀 Enviar Mensagem Instantânea"
       )
 
       if btn_enviar_chat:
         if not msg_sala_txt.strip() and not file_sala_up:
-          st.warning("⚠️ Digite uma mensagem ou anexe uma foto.")
+          st.warning("⚠️ Escreve uma mensagem ou anexa um arquivo.")
         else:
           path_s = ""
           nome_s = ""
@@ -1366,7 +1436,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             with open(path_s, "wb") as f_out_s:
               f_out_s.write(file_sala_up.getbuffer())
 
-          data_env_s = datetime.now().strftime("%d/%m às %H:%M")
+          data_env_s = datetime.now().strftime("%H:%M — %d/%m")
           cursor.execute(
               "INSERT INTO chat_interno (remetente, destinatario, cargo,"
               " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
@@ -1382,9 +1452,6 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
               ),
           )
           conn.commit()
-          st.success(
-              f"✅ Mensagem enviada com sucesso para '{colab_escolhido_str}'!"
-          )
           st.rerun()
 
   with tab_videocall:
@@ -1392,32 +1459,53 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         "### 📞 Central de Chamada Direta Pessoal (Vídeo e Voz em Tempo Real)"
     )
     st.markdown(
-        "Seleciona o colaborador (ex: Hayarya) para gerar a chamada dedicada e"
-        " tocar no dispositivo dele:"
+        "Seleciona o colaborador (ex: Hayarya) para iniciar a chamada integrada"
+        " diretamente na tela:"
     )
 
     if todos_usuarios_db:
       alvos_chamada = [f"{u[1]} ({u[2]})" for u in todos_usuarios_db]
       alvo_selecionado = st.selectbox(
-          "Quem vai receber a chamada ao vivo?", alvos_chamada
+          "Quem vai receber a chamada ao vivo?",
+          alvos_chamada,
+          key="sel_alvo_video",
       )
     else:
       alvo_selecionado = "Equipe Geral"
 
     nome_sala_direta = f"TabalmixChamadaDireta_{alvo_selecionado.split()[0]}_2026"
-    link_chamada_direta = f"https://meet.jit.si/{nome_sala_direta}"
 
-    st.markdown(
-        f"""
-            <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-radius: 18px; padding: 30px; text-align: center; color: white; box-shadow: 0 15px 35px rgba(5,150,105,0.35); margin-top: 15px;">
-                <h2 style="color: white !important; margin-bottom: 8px;">🚨 A CHAMADA ESTÁ PRONTA PARA TOCAR</h2>
-                <p style="font-size: 15px; margin-bottom: 8px;"><b>Destinatário:</b> {alvo_selecionado}</p>
-                <p style="font-size: 13.5px; margin-bottom: 22px; color: #e2e8f0;">O telemóvel ou notebook de {alvo_selecionado} irá receber o sinal em tempo real assim que clicares abaixo:</p>
-                <a href="{link_chamada_direta}" target="_blank" style="background: white; color: #047857; padding: 14px 32px; border-radius: 14px; font-weight: 800; text-decoration: none; font-size: 16px; box-shadow: 0 6px 18px rgba(0,0,0,0.2); display: inline-block;">📞 LIGAR / ATENDER VÍDEO AO VIVO AGORA</a>
+    if "chamada_ativa" not in st.session_state:
+      st.session_state["chamada_ativa"] = False
+
+    col_b1, col_b2 = st.columns(2)
+    with col_b1:
+      if st.button(
+          "📞 Iniciar Chamada Integrada na Tela", key="btn_ligar_integ"
+      ):
+        st.session_state["chamada_ativa"] = True
+        st.rerun()
+    with col_b2:
+      if st.button("🔴 Desligar / Fechar Chamada", key="btn_desligar_integ"):
+        st.session_state["chamada_ativa"] = False
+        st.rerun()
+
+    if st.session_state["chamada_ativa"]:
+      st.markdown(f"**🟢 Chamada em curso com: {alvo_selecionado}**")
+      jitsi_embed_html = f"""
+            <div style="width: 100%; height: 600px; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                <iframe src="https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false" 
+                        allow="camera; microphone; fullscreen; display-capture" 
+                        style="width: 100%; height: 100%; border: none;">
+                </iframe>
             </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        """
+      st.components.v1.html(jitsi_embed_html, height=620)
+    else:
+      st.info(
+          "💡 Clica em 'Iniciar Chamada Integrada na Tela' para abrir o vídeo"
+          " diretamente aqui."
+      )
 
 elif menu == "🔍 Consulta / Busca Geral":
   st.title("🔍 Consulta e Histórico Completo do Equipamento")
