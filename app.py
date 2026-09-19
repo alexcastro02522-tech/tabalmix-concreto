@@ -833,15 +833,10 @@ def exibir_tabela_padronizada(df, nome_tabela):
     if cols_finais:
       df = df[cols_finais]
 
-  # PAINEL DA DIRETORIA PARA GERIR COLUNAS E EXCLUIR REGISTOS
   if is_gestao_ou_admin:
     with st.expander(
         f"⚙️ [DIRETORIA] Gerir Colunas e Registos ({nome_tabela})", expanded=False
     ):
-      st.markdown(
-          "**Desmarca as colunas que queres excluir da visualização para"
-          " todos os dispositivos:**"
-      )
       colunas_selecionadas_pelo_admin = st.multiselect(
           "Colunas ativas:",
           options=cols_atuais,
@@ -853,8 +848,7 @@ def exibir_tabela_padronizada(df, nome_tabela):
           key=f"sel_cols_diretoria_{nome_tabela}",
       )
       if st.button(
-          "💾 Salvar Colunas (Aplicar em Todos os Dispositivos)",
-          key=f"btn_salvar_cols_{nome_tabela}",
+          "💾 Salvar Colunas", key=f"btn_salvar_cols_{nome_tabela}"
       ):
         if colunas_selecionadas_pelo_admin:
           ordem_str = ",".join(colunas_selecionadas_pelo_admin)
@@ -864,10 +858,7 @@ def exibir_tabela_padronizada(df, nome_tabela):
               (nome_tabela, ordem_str),
           )
           conn.commit()
-          st.success(
-              "✅ Configuração de colunas salva com sucesso para todos os"
-              " dispositivos!"
-          )
+          st.success("✅ Configuração de colunas salva com sucesso!")
           st.rerun()
         else:
           st.warning("⚠️ Selecione pelo menos uma coluna.")
@@ -875,7 +866,7 @@ def exibir_tabela_padronizada(df, nome_tabela):
       if "id" in df.columns:
         st.markdown("---")
         id_para_excluir = st.selectbox(
-            "Ou seleciona o ID de um registo para excluir da tabela:",
+            "Seleciona o ID exato para excluir:",
             df["id"].tolist(),
             key=f"sel_exc_diretoria_{nome_tabela}",
         )
@@ -1176,7 +1167,11 @@ elif menu == "🏗️ mobilização / desmobilização":
       eq_mob = st.text_input("equipamento / tag (ex: EQ-001)")
       tipo_mov = st.selectbox(
           "movimentação",
-          ["mobilização (envio)", "desmobilização (retorno)", "remanejamento"],
+          [
+              "mobilização (envio)",
+              "desmobilização (retorno)",
+              "remanejamento",
+          ],
       )
       destino = st.text_input("obra / destino-origem")
     with c2:
@@ -1226,74 +1221,6 @@ elif menu == "🏗️ mobilização / desmobilização":
       conn.commit()
       st.success("✅ movimentação registrada!")
       st.rerun()
-
-  st.markdown("---")
-  # PAINEL CLARO E DESTACADO PARA EDITAR O MOTORISTA E RESPONSÁVEL DA OBRA
-  st.markdown(
-      "### ✏️ [DIRETORIA] Editar Motorista / Responsável da Mobilização"
-  )
-  df_mobs_ed = pd.read_sql("SELECT * FROM mobilizacoes", conn)
-  if not df_mobs_ed.empty:
-    id_mob_sel = st.selectbox(
-        "Selecione o ID da Mobilização que deseja editar:",
-        df_mobs_ed["id"].tolist(),
-    )
-    mob_atual_row = df_mobs_ed[df_mobs_ed["id"] == id_mob_sel].iloc[0]
-
-    novo_resp_ed = st.text_input(
-        "Novo Responsável / Motorista:",
-        value=str(mob_atual_row["responsavel"]),
-        key="inp_novo_resp",
-    )
-    novo_status_mov_ed = st.selectbox(
-        "Novo Status / Movimento:",
-        [
-            "mobilização (envio)",
-            "desmobilização (retorno)",
-            "remanejamento",
-            "Cancelado / Paralisado",
-        ],
-        key="sel_novo_stat",
-    )
-    motivo_alteracao_ed = st.text_input(
-        "Motivo da Alteração / Substituição (Obrigatório para Auditoria):",
-        key="inp_motivo_alt",
-    )
-
-    if st.button("💾 Salvar Alteração do Motorista", key="btn_salvar_edicao_mob"):
-      if not motivo_alteracao_ed.strip():
-        st.error(
-            "⚠️ Por favor, informe o motivo da alteração para registrar no"
-            " histórico de auditoria."
-        )
-      else:
-        historico_antigo = (
-            str(mob_atual_row["historico_edicoes"])
-            if mob_atual_row["historico_edicoes"]
-            else ""
-        )
-        novo_registro = (
-            f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Alterado motorista"
-            f" para: {novo_resp_ed} | Tipo: {novo_status_mov_ed} | Motivo:"
-            f" {motivo_alteracao_ed}"
-        )
-        historico_atualizado = historico_antigo + novo_registro
-
-        cursor.execute(
-            "UPDATE mobilizacoes SET responsavel = ?, tipo_movimento = ?,"
-            " historico_edicoes = ? WHERE id = ?",
-            (
-                novo_resp_ed,
-                novo_status_mov_ed,
-                historico_atualizado,
-                int(id_mob_sel),
-            ),
-        )
-        conn.commit()
-        st.success(
-            "✅ Motorista e dados da mobilização atualizados com sucesso!"
-        )
-        st.rerun()
 
   df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
   if not df_mobs.empty:
@@ -1418,9 +1345,12 @@ elif menu == "💬 chat tabalmix pro & rede":
   colegas_db = cursor.fetchall()
   lista_nomes_colegas = [f"{c[1]} ({c[2]})" for c in colegas_db]
 
-  tab_chat_dir = st.tabs(["💬 Chat Direto & Fotos da Obra"])[0]
+  tab_chat_txt, tab_videochat = st.tabs([
+      "💬 Chat Direto & Fotos",
+      "📹 Videoconferência & Chamada de Voz",
+  ])
 
-  with tab_chat_dir:
+  with tab_chat_txt:
     st.markdown("#### 💬 Conversas Diretas & Envio de Fotos da Obra")
 
     destinatario_chat = st.selectbox(
@@ -1511,6 +1441,26 @@ elif menu == "💬 chat tabalmix pro & rede":
           conn.commit()
           st.success("✅ Mensagem/Foto enviada com sucesso!")
           st.rerun()
+
+  with tab_videochat:
+    st.markdown("### 📹 Sala de Videoconferência & Chamada de Voz ao Vivo")
+    st.markdown(
+        "Clica no botão abaixo para abrir a sala segura de vídeo e áudio em"
+        " tempo real com a equipa (compatível com telemóvel e PC):"
+    )
+    url_sala_jitsi = (
+        "https://meet.jit.si/TabalmixConcretoEnterpriseSalaOficial2026"
+    )
+    st.markdown(
+        f"""
+            <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-radius: 16px; padding: 25px; text-align: center; color: white; box-shadow: 0 10px 25px rgba(5,150,105,0.3); margin-top: 15px;">
+                <h2 style="color: white !important; margin-bottom: 10px;">🔴 Sala de Vídeo e Áudio Ativa</h2>
+                <p style="font-size: 14px; margin-bottom: 20px;">fale diretamente com os operadores, motoristas e engenheiros da obra por voz e câmara.</p>
+                <a href="{url_sala_jitsi}" target="_blank" style="background: white; color: #047857; padding: 12px 28px; border-radius: 12px; font-weight: 800; text-decoration: none; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: inline-block;">🎥 ENTRAR NA VIDEOLLAMADA AGORA</a>
+            </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 elif menu == "🔍 consulta / busca geral":
   st.title("🔍 consulta e histórico completo do equipamento")
@@ -1719,7 +1669,7 @@ elif menu == "⚙️ painel de licença (admin)" and modo_admin_liberado:
         )
         nova_modalidade_adm = st.selectbox(
             "Modalidade de Plano",
-            ["Plano Mensal (30 dias)", "Plano Anual (365 dias)"],
+            ["Plano Mensal (30 days)", "Plano Anual (365 days)"],
             key="adm_nova_mod",
         )
         btn_atualizar_adm = st.form_submit_button(
