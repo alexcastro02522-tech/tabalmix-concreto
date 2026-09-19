@@ -827,21 +827,24 @@ def exibir_tabela_padronizada(df, nome_tabela):
   res_ordem = cursor.fetchone()
   cols_atuais = list(df.columns)
 
-  # Se houver configuração salva, aplica exatamente as colunas que o administrador salvou para aparecerem
   if res_ordem and res_ordem[0]:
     cols_salvas = res_ordem[0].split(",")
+    # Mantém apenas as colunas que ainda existem e não foram excluídas pelo administrador
     cols_finais = [c for c in cols_salvas if c in cols_atuais]
     if cols_finais:
       df = df[cols_finais]
 
-  # PAINEL EXCLUSIVO PARA O ADMINISTRADOR / GESTOR CONFIGURAR E SALVAR EXATAMENTE O QUE QUER VER
+  # PAINEL DA DIRETORIA PARA ESCOLHER QUAIS COLUNAS MANTER/EXCLUIR E SALVAR PARA TODOS
   if is_gestao_ou_admin:
     with st.expander(
-        f"⚙️ [DIRETORIA] Escolher e Salvar Colunas Visíveis ({nome_tabela})",
-        expanded=False,
+        f"⚙️ [DIRETORIA] Gerir Colunas e Registos ({nome_tabela})", expanded=False
     ):
+      st.markdown(
+          "**Seleciona abaixo exatamente quais colunas queres que apareçam"
+          " (desmarca as que queres excluir da visualização para todos):**"
+      )
       colunas_selecionadas_pelo_admin = st.multiselect(
-          "Selecione apenas as colunas que deseja ver e salvar no ecrã:",
+          "Colunas ativas:",
           options=cols_atuais,
           default=(
               cols_finais
@@ -851,7 +854,8 @@ def exibir_tabela_padronizada(df, nome_tabela):
           key=f"sel_cols_diretoria_{nome_tabela}",
       )
       if st.button(
-          "💾 Salvar Colunas para Todos", key=f"btn_salvar_cols_{nome_tabela}"
+          "💾 Salvar Colunas (Aplicar em Todos os Dispositivos)",
+          key=f"btn_salvar_cols_{nome_tabela}",
       ):
         if colunas_selecionadas_pelo_admin:
           ordem_str = ",".join(colunas_selecionadas_pelo_admin)
@@ -862,8 +866,8 @@ def exibir_tabela_padronizada(df, nome_tabela):
           )
           conn.commit()
           st.success(
-              "✅ Colunas salvas com sucesso! Apenas estas colunas aparecem"
-              " agora para todos."
+              "✅ Configuração de colunas salva com sucesso! Os outros"
+              " dispositivos verão apenas estas colunas."
           )
           st.rerun()
         else:
@@ -872,7 +876,7 @@ def exibir_tabela_padronizada(df, nome_tabela):
       if "id" in df.columns:
         st.markdown("---")
         id_para_excluir = st.selectbox(
-            "Ou selecione o ID de um registo para excluir:",
+            "Ou seleciona o ID de um registo para excluir da tabela:",
             df["id"].tolist(),
             key=f"sel_exc_diretoria_{nome_tabela}",
         )
@@ -913,8 +917,8 @@ def exibir_tabela_padronizada(df, nome_tabela):
             st.success("✅ Registo excluído com sucesso!")
             st.rerun()
 
-  # Exibição limpa da tabela configurada (sem os três pontinhos nativos confusos)
-  st.dataframe(df, use_container_width=True, hide_index=True)
+  # TABELA LIMPA E EXCLUSIVA (sem os três pontinhos nativos)
+  st.dataframe(df, use_container_width=True, hide_index=True, column_config={})
 
 
 with st.sidebar:
