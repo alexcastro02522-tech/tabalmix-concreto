@@ -396,7 +396,7 @@ def init_db():
 conn = init_db()
 cursor = conn.cursor()
 
-# NOVA CHAVE SECRETA DE ADMINISTRADOR (O link antigo ?admin=1 deixa de funcionar na hora)
+# CHAVE SECRETA DE ADMINISTRADOR
 modo_admin_liberado = False
 try:
   query_params = st.query_params
@@ -449,7 +449,14 @@ try:
 except Exception:
   pass
 
-# FORÇA LOGIN INDIVIDUAL SE NÃO ESTIVER NO LINK SECRETO DE ADMIN
+# VERIFICA SE É PERFIL DE GESTÃO / DIRETORIA
+is_gestao_ou_admin = modo_admin_liberado
+if st.session_state["usuario_logado"]:
+  cargo_colab = str(st.session_state["usuario_logado"].get("cargo", ""))
+  if "Diretoria" in cargo_colab or "Gestão" in cargo_colab:
+    is_gestao_ou_admin = True
+
+# FORÇA LOGIN INDIVIDUAL SE NÃO ESTIVER AUTENTICADO
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
   col_l1, col_l2, col_l3 = st.columns([0.15, 3.7, 0.15])
   with col_l2:
@@ -552,20 +559,45 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
         c_nome = st.text_input("nome completo")
         c_apelido = st.text_input("primeiro nome ou apelido de guerra")
         c_cargo = st.selectbox(
-            "cargo / plano na empresa",
+            "cargo / função na empresa",
             [
                 "Diretoria / Gestão",
-                "Segurança do Trabalho (SST)",
                 "Engenheiro / Gestor de Obra",
                 "Mecânico / Oficina",
-                "Operador / Motorista",
-                "Servente / Pedreiro / Campo",
+                "Operador / Motorista / Campo",
             ],
         )
+
+        # Exibição dinâmica do valor sugerido com base na função escolhida
+        if "Diretoria" in c_cargo:
+          sugestao_preco = (
+              "💎 Master Concreto & Diretoria — Mensal: R$ 299,90 | Anual: R$"
+              " 2.999,00"
+          )
+        elif "Engenheiro" in c_cargo:
+          sugestao_preco = (
+              "🏗️ Engenharia & Obra Pro — Mensal: R$ 189,90 | Anual: R$ 1.899,00"
+          )
+        elif "Mecânico" in c_cargo:
+          sugestao_preco = (
+              "🛠️ Oficina & Mecânica X — Mensal: R$ 119,90 | Anual: R$ 1.199,00"
+          )
+        else:
+          sugestao_preco = (
+              "🚜 Operacional Campo & Frota — Mensal: R$ 69,90 | Anual: R$"
+              " 699,00"
+          )
+
+        st.info(f"💡 **Plano Sugerido para a Função:**\n\n{sugestao_preco}")
+
         c_cpf = st.text_input("cpf")
         c_email = st.text_input("e-mail corporativo de login")
         c_senha = st.text_input("criar senha", type="password")
         c_cel = st.text_input("celular / whatsapp")
+        c_vigencia = st.selectbox(
+            "modalidade de vigência",
+            ["Plano Mensal (30 dias)", "Plano Anual (365 dias)"],
+        )
         btn_cadastrar = st.form_submit_button("cadastrar e solicitar liberação")
 
         if btn_cadastrar:
@@ -575,18 +607,20 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 if c_apelido and c_apelido.strip() and c_apelido != "None"
                 else c_nome.split()[0]
             )
+            plano_completo_str = f"{c_cargo} — {c_vigencia}"
             try:
               cursor.execute(
                   "INSERT INTO usuarios_sistema (nome_completo, cpf, email,"
                   " senha, celular_seguranca, status_assinatura, plano_atual,"
                   " data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?,"
-                  " 'Inativo', 'Aguardando Pagamento/Liberação', ?, ?, ?)",
+                  " 'Inativo', ?, ?, ?, ?)",
                   (
                       c_nome,
                       c_cpf,
                       c_email,
                       c_senha,
                       c_cel,
+                      plano_completo_str,
                       datetime.now().strftime("%Y-%m-%d %H:%M"),
                       apelido_final,
                       c_cargo,
@@ -766,23 +800,24 @@ with st.sidebar:
       st.rerun()
   st.markdown("---")
 
-menu = st.sidebar.radio(
-    "navegação",
-    [
-        "📊 visão geral",
-        "🚜 cadastro de equipamentos",
-        "⛽ abastecimentos & combustível",
-        "🏗️ mobilização / desmobilização",
-        "🛠️ ordens de serviço (os)",
-        "🔩 peças e ferramentas",
-        "👥 gestão de clientes",
-        "💬 chat tabalmix pro & rede",
-        "🔍 consulta / busca geral",
-        "⚙️ meu perfil / dados",
-        "⚙️ painel de licença (admin)",
-    ],
-    label_visibility="collapsed",
-)
+# Lista de menus (O painel administrativo financeiro/licença aparece apenas para o Admin Master)
+lista_menus = [
+    "📊 visão geral",
+    "🚜 cadastro de equipamentos",
+    "⛽ abastecimentos & combustível",
+    "🏗️ mobilização / desmobilização",
+    "🛠️ ordens de serviço (os)",
+    "🔩 peças e ferramentas",
+    "👥 gestão de clientes",
+    "💬 chat tabalmix pro & rede",
+    "🔍 consulta / busca geral",
+    "⚙️ meu perfil / dados",
+]
+
+if modo_admin_liberado:
+  lista_menus.append("⚙️ painel de licença (admin)")
+
+menu = st.sidebar.radio("navegação", lista_menus, label_visibility="collapsed")
 
 if menu == "📊 visão geral":
   st.title("🏗️ painel executivo e indicadores de frota")
@@ -913,6 +948,38 @@ elif menu == "🚜 cadastro de equipamentos":
       conn.commit()
       st.success(f"✅ Equipamento '{tag_final}' cadastrado com sucesso!")
       st.rerun()
+
+  if is_gestao_ou_admin:
+    st.markdown("---")
+    st.markdown(
+        "🛠️ **Painel de Gestão e Limpeza de Equipamentos (Acesso Exclusivo:"
+        " Gestão/Diretoria)**"
+    )
+    df_f_adm = pd.read_sql("SELECT * FROM veiculos", conn)
+    if not df_f_adm.empty:
+      id_para_excluir = st.selectbox(
+          "Selecione o ID do equipamento para excluir ou duplicado:",
+          df_f_adm["id"].tolist(),
+      )
+      col_exc1, col_exc2 = st.columns(2)
+      with col_exc1:
+        if st.button("🗑️ Excluir Equipamento Selecionado"):
+          cursor.execute(
+              "DELETE FROM veiculos WHERE id = ?", (id_para_excluir,)
+          )
+          conn.commit()
+          st.success("✅ Equipamento removido com sucesso!")
+          st.rerun()
+      with col_exc2:
+        if st.button("🧹 Limpar Registros Duplicados (Automática)"):
+          cursor.execute("""
+                        DELETE FROM veiculos WHERE id NOT IN (
+                            SELECT MIN(id) FROM veiculos GROUP BY tag_prefixo
+                        )
+                    """)
+          conn.commit()
+          st.success("✅ Registros duplicados limpos com sucesso!")
+          st.rerun()
 
   df_f = pd.read_sql("SELECT * FROM veiculos", conn)
   if not df_f.empty:
@@ -1071,6 +1138,25 @@ elif menu == "🛠️ ordens de serviço (os)":
       st.success("✅ OS aberta com sucesso!")
       st.rerun()
 
+  if is_gestao_ou_admin:
+    st.markdown("---")
+    st.markdown(
+        "🛠️ **Painel de Gestão e Exclusão de Ordens de Serviço (Acesso Exclusivo:"
+        " Gestão/Diretoria)**"
+    )
+    df_os_adm = pd.read_sql("SELECT * FROM manutencoes", conn)
+    if not df_os_adm.empty:
+      id_os_excluir = st.selectbox(
+          "Selecione o ID da OS para excluir ou duplicada:",
+          df_os_adm["id"].tolist(),
+          key="sel_os_exc",
+      )
+      if st.button("🗑️ Excluir Ordem de Serviço Selecionada"):
+        cursor.execute("DELETE FROM manutencoes WHERE id = ?", (id_os_excluir,))
+        conn.commit()
+        st.success("✅ OS removida com sucesso!")
+        st.rerun()
+
   df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
   if not df_os.empty:
     exibir_tabela_padronizada(df_os, "manutencoes")
@@ -1135,7 +1221,6 @@ elif menu == "💬 chat tabalmix pro & rede":
       " canteiro de obras."
   )
 
-  # Garante tabela de chamadas ativa
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS chamadas_p2p (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1148,7 +1233,6 @@ elif menu == "💬 chat tabalmix pro & rede":
     """)
   conn.commit()
 
-  # Buscar lista de colegas cadastrados para contato direto
   cursor.execute(
       "SELECT id, apelido, cargo_setor FROM usuarios_sistema WHERE email != ?",
       (usuario_atual["email"],),
@@ -1156,7 +1240,6 @@ elif menu == "💬 chat tabalmix pro & rede":
   colegas_db = cursor.fetchall()
   lista_nomes_colegas = [f"{c[1]} ({c[2]})" for c in colegas_db]
 
-  # Verifica se há alguma chamada pendente para o usuário logado atual
   apelido_atual = usuario_atual["apelido"]
   cursor.execute(
       "SELECT id, chamador, status FROM chamadas_p2p WHERE receptor LIKE ? AND"
@@ -1205,7 +1288,6 @@ elif menu == "💬 chat tabalmix pro & rede":
             " alarme vai tocar no dispositivo dela."
         )
 
-      # CENTRAL DE CHAMADA COM ALARME SONORO E VÍDEO P2P INTEGRADO
       st.components.v1.html(
           """
             <div style="background: #0f172a; border-radius: 16px; padding: 20px; text-align: center; color: white; font-family: 'Plus Jakarta Sans', sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
@@ -1393,12 +1475,67 @@ elif menu == "⚙️ meu perfil / dados":
     user_id_ativo = usuario_atual.get("id")
     cursor.execute(
         "SELECT nome_completo, cpf, email, celular_seguranca, apelido,"
-        " cargo_setor, pin_rapido FROM usuarios_sistema WHERE id = ?",
+        " cargo_setor, pin_rapido, status_assinatura, plano_atual,"
+        " data_cadastro FROM usuarios_sistema WHERE id = ?",
         (user_id_ativo,),
     )
     dados_db = cursor.fetchone()
     if dados_db:
-      n_comp, n_cpf, n_email, n_cel, n_apelido, n_cargo, n_pin = dados_db
+      (
+          n_comp,
+          n_cpf,
+          n_email,
+          n_cel,
+          n_apelido,
+          n_cargo,
+          n_pin,
+          st_assinatura,
+          plano_atual,
+          dt_cad,
+      ) = dados_db
+
+      cargo_str = str(n_cargo) if n_cargo else "Operacional"
+      if "Diretoria" in cargo_str or "Gestão" in cargo_str:
+        nome_plano_comercial = "💎 Master Concreto & Diretoria"
+        valor_mensal_ref = "R$ 299,90 / mês"
+        valor_anual_ref = "R$ 2.999,00 / ano"
+      elif "Engenheiro" in cargo_str:
+        nome_plano_comercial = "🏗️ Engenharia & Obra Pro"
+        valor_mensal_ref = "R$ 189,90 / mês"
+        valor_anual_ref = "R$ 1.899,00 / ano"
+      elif "Mecânico" in cargo_str:
+        nome_plano_comercial = "🛠️ Oficina & Mecânica X"
+        valor_mensal_ref = "R$ 119,90 / mês"
+        valor_anual_ref = "R$ 1.199,00 / ano"
+      else:
+        nome_plano_comercial = "🚜 Operacional Campo & Frota"
+        valor_mensal_ref = "R$ 69,90 / mês"
+        valor_anual_ref = "R$ 699,00 / ano"
+
+      dias_restantes = "Ativo"
+      try:
+        if dt_cad:
+          data_inicio = datetime.strptime(dt_cad[:10], "%Y-%m-%d")
+          dias_decorridos = (datetime.now() - data_inicio).days
+          limite_dias = 365 if "Anual" in str(plano_atual) else 30
+          dias_restantes = max(0, limite_dias - dias_decorridos)
+      except Exception:
+        dias_restantes = "30"
+
+      st.markdown(
+          f"""
+                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
+                    <h3 style="margin-top: 0; color: #047857; font-size: 18px;">💳 Licença e Categoria de Acesso na Obra</h3>
+                    <p style="margin: 6px 0; font-size: 14px;"><b>Perfil / Cargo:</b> {n_cargo}</p>
+                    <p style="margin: 6px 0; font-size: 14px;"><b>Plano Atribuído:</b> <span style="color: #059669; font-weight: bold;">{nome_plano_comercial}</span></p>
+                    <p style="margin: 6px 0; font-size: 14px;"><b>Valores de Referência:</b> Mensal ({valor_mensal_ref}) | Anual ({valor_anual_ref})</p>
+                    <p style="margin: 6px 0; font-size: 14px;"><b>Modalidade Atual:</b> {plano_atual if plano_atual else 'Plano Mensal'}</p>
+                    <p style="margin: 6px 0; font-size: 14px;"><b>Dias Restantes para Renovação:</b> <span style="color: #2563eb; font-weight: bold; font-size: 16px;">{dias_restantes} dias</span></p>
+                </div>
+            """,
+          unsafe_allow_html=True,
+      )
+
       with st.form("form_atualizar_meu_perfil"):
         novo_nome = st.text_input("Nome Completo", value=n_comp or "")
         novo_apelido = st.text_input("Apelido de Guerra", value=n_apelido or "")
@@ -1414,8 +1551,57 @@ elif menu == "⚙️ meu perfil / dados":
           st.success("✅ Perfil atualizado com sucesso!")
           st.rerun()
 
-elif menu == "⚙️ painel de licença (admin)":
-  st.title("⚙️ painel administrativo de colaboradores")
+elif menu == "⚙️ painel de licença (admin)" and modo_admin_liberado:
+  st.title("⚙️ Painel Administrativo de Colaboradores & Licenças")
+  st.markdown(
+      "Aqui podes gerenciar os cadastros, aprovar acessos e alterar o cargo ou"
+      " plano de qualquer colaborador da obra a qualquer momento."
+  )
+
   df_users = pd.read_sql("SELECT * FROM usuarios_sistema", conn)
   if not df_users.empty:
     exibir_tabela_padronizada(df_users, "usuarios_sistema")
+
+    st.markdown("---")
+    st.markdown("### ✍️ Atualizar Cargo / Função ou Plano de um Colaborador")
+    lista_emails_users = df_users["email"].tolist()
+    colab_selecionado = st.selectbox(
+        "Selecione o colaborador pelo e-mail", lista_emails_users
+    )
+
+    with st.form("form_editar_colaborador_admin"):
+      novo_cargo_adm = st.selectbox(
+          "Novo Cargo / Função",
+          [
+              "Diretoria / Gestão",
+              "Engenheiro / Gestor de Obra",
+              "Mecânico / Oficina",
+              "Operador / Motorista / Campo",
+          ],
+      )
+      novo_status_adm = st.selectbox("Status da Conta", ["Ativo", "Inativo"])
+      nova_modalidade_adm = st.selectbox(
+          "Modalidade de Plano",
+          ["Plano Mensal (30 dias)", "Plano Anual (365 dias)"],
+      )
+      btn_atualizar_adm = st.form_submit_button(
+          "💾 Salvar Alterações do Colaborador"
+      )
+
+      if btn_atualizar_adm:
+        novo_plano_str = f"{novo_cargo_adm} — {nova_modalidade_adm}"
+        cursor.execute(
+            "UPDATE usuarios_sistema SET cargo_setor = ?, status_assinatura ="
+            " ?, plano_atual = ? WHERE email = ?",
+            (
+                novo_cargo_adm,
+                novo_status_adm,
+                novo_plano_str,
+                colab_selecionado,
+            ),
+        )
+        conn.commit()
+        st.success(
+            f"✅ Colaborador **{colab_selecionado}** atualizado com sucesso!"
+        )
+        st.rerun()
