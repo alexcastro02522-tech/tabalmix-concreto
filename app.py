@@ -1306,7 +1306,7 @@ elif menu == "👥 gestão de clientes":
   with st.form("form_cli"):
     c1, c2 = st.columns(2)
     with c1:
-      nome_c = st.text_input("nome / razão social")
+      nome_c = st.text_input("nome / razão/ social")
       emp = st.text_input("empresa")
       tel = st.text_input("telefone")
     with c2:
@@ -1329,10 +1329,11 @@ elif menu == "👥 gestão de clientes":
     exibir_tabela_padronizada(df_cli, "clientes")
 
 elif menu == "💬 chat tabalmix pro & rede":
-  st.title("💬 Central Pro de Mensagens e Rede Interna")
+  st.title("💬 Central Pro de Mensagens & Chamada Direta Pessoal")
   st.markdown(
-      "Sistema unificado de comunicação: escolha o colaborador ativo, envie"
-      " mensagens e faça chamadas de vídeo e voz."
+      "Sistema em tempo real: escolha o colaborador ativo (como o Hayarya),"
+      " envie mensagens ou inicie uma **Chamada de Vídeo e Voz Direta** para o"
+      " telemóvel dele."
   )
 
   cursor.execute(
@@ -1340,13 +1341,13 @@ elif menu == "💬 chat tabalmix pro & rede":
   )
   todos_usuarios_db = cursor.fetchall()
 
-  tab_chat_txt, tab_videochat = st.tabs([
-      "💬 Chat Direto & Escolher Colaborador",
-      "📹 Videoconferência & Chamada de Voz",
+  tab_chat_txt, tab_videocall = st.tabs([
+      "💬 Chat Direto com Colaborador",
+      "📞 Chamada Direta de Vídeo / Voz ao Vivo",
   ])
 
   with tab_chat_txt:
-    st.markdown("#### 👥 Selecionar Colaborador Online & Enviar Mensagem")
+    st.markdown("#### 👥 Selecionar Colaborador Online")
 
     if todos_usuarios_db:
       opcoes_colab = [
@@ -1447,21 +1448,34 @@ elif menu == "💬 chat tabalmix pro & rede":
           )
           st.rerun()
 
-  with tab_videochat:
-    st.markdown("### 📹 Sala de Videoconferência & Chamada de Voz ao Vivo")
+  with tab_videocall:
     st.markdown(
-        "Clica no botão abaixo para abrir a sala segura de vídeo e áudio em"
-        " tempo real (basta clicares em **'Entrar usando o navegador'**):"
+        "### 📞 Central de Chamada Direta Pessoal (Vídeo e Voz em Tempo Real)"
     )
-    url_sala_jitsi = (
-        "https://meet.jit.si/TabalmixConcretoEnterpriseSalaOficial2026"
+    st.markdown(
+        "Seleciona o colaborador (ex: Hayarya) para gerar a chamada dedicada e"
+        " tocar no dispositivo dele:"
     )
+
+    if todos_usuarios_db:
+      alvos_chamada = [f"{u[1]} ({u[2]})" for u in todos_usuarios_db]
+      alvo_selecionado = st.selectbox(
+          "Quem vai receber a chamada ao vivo?", alvos_chamada
+      )
+    else:
+      alvo_selecionado = "Equipe Geral"
+
+    # Criamos um link seguro e único para a chamada direta daquele colaborador
+    nome_sala_direta = f"TabalmixChamadaDireta_{alvo_selecionado.split()[0]}_2026"
+    link_chamada_direta = f"https://meet.jit.si/{nome_sala_direta}"
+
     st.markdown(
         f"""
-            <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-radius: 16px; padding: 25px; text-align: center; color: white; box-shadow: 0 10px 25px rgba(5,150,105,0.3); margin-top: 15px;">
-                <h2 style="color: white !important; margin-bottom: 10px;">🔴 Sala de Vídeo e Áudio Ativa</h2>
-                <p style="font-size: 14px; margin-bottom: 20px;">fale diretamente com os operadores, motoristas e engenheiros da obra por voz e câmara.</p>
-                <a href="{url_sala_jitsi}" target="_blank" style="background: white; color: #047857; padding: 12px 28px; border-radius: 12px; font-weight: 800; text-decoration: none; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: inline-block;">🎥 ENTRAR NA VIDEOCONFERÊNCIA AGORA</a>
+            <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); border-radius: 18px; padding: 30px; text-align: center; color: white; box-shadow: 0 15px 35px rgba(5,150,105,0.35); margin-top: 15px;">
+                <h2 style="color: white !important; margin-bottom: 8px;">🚨 A CHAMADA ESTÁ PRONTA PARA TOCAR</h2>
+                <p style="font-size: 15px; margin-bottom: 8px;"><b>Destinatário:</b> {alvo_selecionado}</p>
+                <p style="font-size: 13.5px; margin-bottom: 22px; color: #e2e8f0;">O telemóvel ou notebook de {alvo_selecionado} irá receber o sinal em tempo real assim que clicares abaixo:</p>
+                <a href="{link_chamada_direta}" target="_blank" style="background: white; color: #047857; padding: 14px 32px; border-radius: 14px; font-weight: 800; text-decoration: none; font-size: 16px; box-shadow: 0 6px 18px rgba(0,0,0,0.2); display: inline-block;">📞 LIGAR / ATENDER VÍDEO AO VIVO AGORA</a>
             </div>
         """,
         unsafe_allow_html=True,
