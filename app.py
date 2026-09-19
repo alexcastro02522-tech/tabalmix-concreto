@@ -23,7 +23,7 @@ try:
 except Exception:
   sdk_mp = None
 
-# Configuração da Página com Menu Adaptado para Celular e Computador
+# Configuração da Página
 st.set_page_config(
     page_title="Tabalmix Concreto - Enterprise Fleet & Operations Pro X",
     page_icon="🚀",
@@ -31,7 +31,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL RESPONSIVA (OTIMIZADA PARA COMPUTADOR E TELEMÓVEL)
+# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE ORIGINAL
 st.markdown(
     """
     <style>
@@ -41,15 +41,14 @@ st.markdown(
         background: transparent !important;
     }
     .block-container {
-        padding-top: 1.5rem !important;
+        padding-top: 2rem !important;
         padding-bottom: 3rem !important;
         max-width: 100% !important;
     }
     
-    /* Garantir visibilidade total e fluidez em telemóveis */
     [data-testid="stSidebar"] {
-        min-width: 290px !important;
-        width: 290px !important;
+        min-width: 310px !important;
+        width: 310px !important;
         background: #f8fafc !important;
         border-right: 1px solid #e2e8f0;
     }
@@ -68,13 +67,11 @@ st.markdown(
         letter-spacing: -0.8px;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
-    
-    /* Botões de navegação e rádio visíveis e fáceis de tocar em touchscreens */
     [data-testid="stSidebar"] .stRadio label {
         color: #334155 !important;
         font-weight: 600;
-        font-size: 14px;
-        padding: 12px 16px;
+        font-size: 13.5px;
+        padding: 11px 16px;
         border-radius: 12px;
         background: #ffffff !important;
         margin-bottom: 8px;
@@ -89,15 +86,13 @@ st.markdown(
         transform: translateX(4px);
         box-shadow: 0 4px 12px rgba(5,150,105,0.08);
     }
-    
     div[data-testid="stMetric"] {
         background: #ffffff !important;
         border: 1px solid #e2e8f0 !important;
         border-left: 5px solid #059669 !important;
-        padding: 16px !important;
+        padding: 18px !important;
         border-radius: 16px !important;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
-        margin-bottom: 10px;
     }
     div[data-testid="stMetric"] label {
         color: #64748b !important;
@@ -108,11 +103,9 @@ st.markdown(
     }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
         color: #0f172a !important;
-        font-size: 24px !important;
+        font-size: 26px !important;
         font-weight: 800 !important;
     }
-    
-    /* Inputs amigáveis para toque no telemóvel */
     div.stTextInput > div > div > input, 
     div.stNumberInput > div > div > input, 
     div.stSelectbox > div > div > div,
@@ -122,7 +115,7 @@ st.markdown(
         color: #0f172a !important;
         border: 1px solid #cbd5e1 !important;
         border-radius: 12px !important;
-        min-height: 46px !important;
+        min-height: 44px !important;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
     div.stTextInput > div > div > input:focus, 
@@ -131,24 +124,22 @@ st.markdown(
         border-color: #059669 !important;
         box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15) !important;
     }
-    
     div[data-testid="stDataFrame"], .stDataFrame {
         background-color: #ffffff !important;
         border-radius: 16px;
-        padding: 12px;
+        padding: 16px;
         border: 1px solid #e2e8f0;
         box-shadow: 0 10px 30px -5px rgba(0,0,0,0.04);
     }
-    
     .stButton button {
         background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
         color: white !important;
         font-weight: 700;
         border-radius: 12px;
         border: none;
-        padding: 0.7rem 1.8rem;
+        padding: 0.65rem 1.8rem;
         box-shadow: 0 6px 16px rgba(5, 150, 105, 0.3);
-        width: 100%;
+        transition: all 0.25s ease-in-out;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
     .stButton button:hover {
@@ -156,20 +147,18 @@ st.markdown(
         box-shadow: 0 8px 22px rgba(5, 150, 105, 0.45);
         transform: translateY(-2px);
     }
-    
     .stTabs [data-baseweb="tab-list"] {
-        gap: 6px;
+        gap: 8px;
         background-color: #e2e8f0;
         padding: 6px;
         border-radius: 14px;
-        flex-wrap: wrap;
     }
     .stTabs [data-baseweb="tab"] {
         height: 40px;
         border-radius: 10px;
         color: #334155;
         font-weight: 600;
-        font-size: 12.5px;
+        font-size: 13px;
         border: none !important;
     }
     .stTabs [aria-selected="true"] {
@@ -467,22 +456,22 @@ if st.session_state["usuario_logado"]:
     is_gestao_ou_admin = True
 
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
-  col_l1, col_l2, col_l3 = st.columns([0.05, 3.9, 0.05])
+  col_l1, col_l2, col_l3 = st.columns([0.15, 3.7, 0.15])
   with col_l2:
     try:
       with open("caminhoes.jpg", "rb") as image_file:
         encoded_logo_login = base64.b64encode(image_file.read()).decode()
       st.markdown(
           f"""
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 24px; padding: 30px; text-align: center; box-shadow: 0 25px 50px rgba(5,150,105,0.25); margin-top: 10px; margin-bottom: 20px; color: white;">
-                    <div style="border-radius: 16px; overflow: hidden; max-height: 120px; border: 3px solid rgba(255,255,255,0.8); margin-bottom: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
-                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 115px; object-fit: cover; display: block;">
+                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 24px; padding: 35px; text-align: center; box-shadow: 0 25px 50px rgba(5,150,105,0.25); margin-top: 15px; margin-bottom: 25px; color: white;">
+                    <div style="border-radius: 16px; overflow: hidden; max-height: 130px; border: 3px solid rgba(255,255,255,0.8); margin-bottom: 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 125px; object-fit: cover; display: block;">
                     </div>
-                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; padding: 4px 16px; margin-bottom: 10px;">
+                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; padding: 4px 18px; margin-bottom: 12px;">
                         <span style="color: white; font-size: 11px; font-weight: 800; letter-spacing: 1.5px;">🛡️ PLATAFORMA ENTERPRISE CERTIFICADA</span>
                     </div>
-                    <h1 style="color: white !important; margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.8px;">tabalmix concreto</h1>
-                    <p style="color: #e2e8f0; font-size: 12px; margin: 6px 0 2px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">sistema inteligente de frotas, obras e oficina pro</p>
+                    <h1 style="color: white !important; margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.8px;">tabalmix concreto</h1>
+                    <p style="color: #e2e8f0; font-size: 12.5px; margin: 6px 0 2px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">sistema inteligente de frotas, obras e oficina pro</p>
                     <p style="color: #cbd5e1; font-size: 10px; margin: 0; font-style: italic;">powered by castro tech</p>
                 </div>
             """,
@@ -491,12 +480,12 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     except Exception:
       st.markdown(
           """
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 24px; padding: 30px; text-align: center; box-shadow: 0 25px 50px rgba(5,150,105,0.25); margin-top: 10px; margin-bottom: 20px; color: white;">
-                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; padding: 4px 16px; margin-bottom: 10px;">
+                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 24px; padding: 35px; text-align: center; box-shadow: 0 25px 50px rgba(5,150,105,0.25); margin-top: 15px; margin-bottom: 25px; color: white;">
+                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; padding: 4px 18px; margin-bottom: 12px;">
                         <span style="color: white; font-size: 11px; font-weight: 800; letter-spacing: 1.5px;">🛡️ PLATAFORMA ENTERPRISE CERTIFICADA</span>
                     </div>
-                    <h1 style="color: white !important; margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.8px;">tabalmix concreto</h1>
-                    <p style="color: #e2e8f0; font-size: 12px; margin: 6px 0 2px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">sistema inteligente de frotas, obras e oficina pro</p>
+                    <h1 style="color: white !important; margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.8px;">tabalmix concreto</h1>
+                    <p style="color: #e2e8f0; font-size: 12.5px; margin: 6px 0 2px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">sistema inteligente de frotas, obras e oficina pro</p>
                     <p style="color: #cbd5e1; font-size: 10px; margin: 0; font-style: italic;">powered by castro tech</p>
                 </div>
             """,
@@ -838,41 +827,94 @@ def exibir_tabela_padronizada(df, nome_tabela):
   res_ordem = cursor.fetchone()
   cols_atuais = list(df.columns)
 
+  # Se houver configuração salva, aplica exatamente as colunas que o administrador salvou para aparecerem
   if res_ordem and res_ordem[0]:
     cols_salvas = res_ordem[0].split(",")
     cols_finais = [c for c in cols_salvas if c in cols_atuais]
-    for c in cols_atuais:
-      if c not in cols_finais:
-        cols_finais.append(c)
-    df = df[cols_finais]
+    if cols_finais:
+      df = df[cols_finais]
 
-  st.dataframe(df, use_container_width=True, hide_index=True)
-
+  # PAINEL EXCLUSIVO PARA O ADMINISTRADOR / GESTOR CONFIGURAR E SALVAR EXATAMENTE O QUE QUER VER
   if is_gestao_ou_admin:
     with st.expander(
-        f"⚙️ [DIRETORIA] Configurar Ordem Padrão das Colunas ({nome_tabela})"
+        f"⚙️ [DIRETORIA] Escolher e Salvar Colunas Visíveis ({nome_tabela})",
+        expanded=False,
     ):
-      novas_cols = st.multiselect(
-          "Selecione e ordene as colunas que devem aparecer para toda a"
-          " equipe:",
-          options=list(df.columns),
-          default=list(df.columns),
-          key=f"mult_col_{nome_tabela}",
+      colunas_selecionadas_pelo_admin = st.multiselect(
+          "Selecione apenas as colunas que deseja ver e salvar no ecrã:",
+          options=cols_atuais,
+          default=(
+              cols_finais
+              if "cols_finais" in locals() and cols_finais
+              else cols_atuais
+          ),
+          key=f"sel_cols_diretoria_{nome_tabela}",
       )
       if st.button(
-          "💾 Salvar Padrão para Todos", key=f"btn_save_col_{nome_tabela}"
+          "💾 Salvar Colunas para Todos", key=f"btn_salvar_cols_{nome_tabela}"
       ):
-        ordem_str = ",".join(novas_cols)
-        cursor.execute(
-            "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
-            " VALUES (?, ?)",
-            (nome_tabela, ordem_str),
+        if colunas_selecionadas_pelo_admin:
+          ordem_str = ",".join(colunas_selecionadas_pelo_admin)
+          cursor.execute(
+              "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
+              " VALUES (?, ?)",
+              (nome_tabela, ordem_str),
+          )
+          conn.commit()
+          st.success(
+              "✅ Colunas salvas com sucesso! Apenas estas colunas aparecem"
+              " agora para todos."
+          )
+          st.rerun()
+        else:
+          st.warning("⚠️ Selecione pelo menos uma coluna.")
+
+      if "id" in df.columns:
+        st.markdown("---")
+        id_para_excluir = st.selectbox(
+            "Ou selecione o ID de um registo para excluir:",
+            df["id"].tolist(),
+            key=f"sel_exc_diretoria_{nome_tabela}",
         )
-        conn.commit()
-        st.success(
-            "✅ Ordem de colunas salva e fixada para toda a equipe na obra!"
-        )
-        st.rerun()
+        if st.button(
+            "🗑️ Excluir Registo Selecionado",
+            key=f"btn_exc_diretoria_{nome_tabela}",
+        ):
+          tabela_sql = (
+              "veiculos"
+              if "veiculo" in nome_tabela.lower() or nome_tabela == "veiculos"
+              else (
+                  "manutencoes"
+                  if "manutencao" in nome_tabela.lower()
+                  else (
+                      "mobilizacoes"
+                      if "mobilizacao" in nome_tabela.lower()
+                      else (
+                          "combustivel"
+                          if "combustivel" in nome_tabela.lower()
+                          else (
+                              "pecas"
+                              if "peca" in nome_tabela.lower()
+                              else (
+                                  "clientes"
+                                  if "cliente" in nome_tabela.lower()
+                                  else ""
+                              )
+                          )
+                      )
+                  )
+              )
+          )
+          if tabela_sql:
+            cursor.execute(
+                f"DELETE FROM {tabela_sql} WHERE id = ?", (id_para_excluir,)
+            )
+            conn.commit()
+            st.success("✅ Registo excluído com sucesso!")
+            st.rerun()
+
+  # Exibição limpa da tabela configurada (sem os três pontinhos nativos confusos)
+  st.dataframe(df, use_container_width=True, hide_index=True)
 
 
 with st.sidebar:
@@ -1077,38 +1119,6 @@ elif menu == "🚜 cadastro de equipamentos":
       st.success(f"✅ Equipamento '{tag_final}' cadastrado com sucesso!")
       st.rerun()
 
-  if is_gestao_ou_admin:
-    st.markdown("---")
-    st.markdown(
-        "🛠️ **Painel de Gestão e Limpeza de Equipamentos (Acesso Exclusivo:"
-        " Gestão/Diretoria)**"
-    )
-    df_f_adm = pd.read_sql("SELECT * FROM veiculos", conn)
-    if not df_f_adm.empty:
-      id_para_excluir = st.selectbox(
-          "Selecione o ID do equipamento para excluir ou duplicado:",
-          df_f_adm["id"].tolist(),
-      )
-      col_exc1, col_exc2 = st.columns(2)
-      with col_exc1:
-        if st.button("🗑️ Excluir Equipamento Selecionado"):
-          cursor.execute(
-              "DELETE FROM veiculos WHERE id = ?", (id_para_excluir,)
-          )
-          conn.commit()
-          st.success("✅ Equipamento removido com sucesso!")
-          st.rerun()
-      with col_exc2:
-        if st.button("🧹 Limpar Registros Duplicados (Automática)"):
-          cursor.execute("""
-                        DELETE FROM veiculos WHERE id NOT IN (
-                            SELECT MIN(id) FROM veiculos GROUP BY tag_prefixo
-                        )
-                    """)
-          conn.commit()
-          st.success("✅ Registros duplicados limpos com sucesso!")
-          st.rerun()
-
   df_f = pd.read_sql("SELECT * FROM veiculos", conn)
   if not df_f.empty:
     exibir_tabela_padronizada(df_f, "veiculos")
@@ -1216,9 +1226,7 @@ elif menu == "🏗️ mobilização / desmobilização":
       st.rerun()
 
   st.markdown("---")
-  st.markdown(
-      "### ✏️ Editar Mobilização / Alterar Motorista ou Motivo de Cancelamento"
-  )
+  st.markdown("### ✏️ Editar Mobilização / Alterar Motorista")
   df_mobs_ed = pd.read_sql("SELECT * FROM mobilizacoes", conn)
   if not df_mobs_ed.empty:
     id_mob_sel = st.selectbox(
@@ -1293,7 +1301,7 @@ elif menu == "🛠️ ordens de serviço (os)":
       df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
   )
 
-  st.markdown("### 🟢 abertura de nova os (etapa 1)")
+  st.markdown("### 🟢 abertura de nova os")
   with st.form("form_abertura_os", clear_on_submit=True):
     c1, c2 = st.columns(2)
     with c1:
@@ -1331,25 +1339,6 @@ elif menu == "🛠️ ordens de serviço (os)":
       conn.commit()
       st.success("✅ OS aberta com sucesso!")
       st.rerun()
-
-  if is_gestao_ou_admin:
-    st.markdown("---")
-    st.markdown(
-        "🛠️ **Painel de Gestão e Exclusão de Ordens de Serviço (Acesso Exclusivo:"
-        " Gestão/Diretoria)**"
-    )
-    df_os_adm = pd.read_sql("SELECT * FROM manutencoes", conn)
-    if not df_os_adm.empty:
-      id_os_excluir = st.selectbox(
-          "Selecione o ID da OS para excluir ou duplicada:",
-          df_os_adm["id"].tolist(),
-          key="sel_os_exc",
-      )
-      if st.button("🗑️ Excluir Ordem de Serviço Selecionada"):
-        cursor.execute("DELETE FROM manutencoes WHERE id = ?", (id_os_excluir,))
-        conn.commit()
-        st.success("✅ OS removida com sucesso!")
-        st.rerun()
 
   df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
   if not df_os.empty:
