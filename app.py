@@ -18,6 +18,7 @@ import streamlit as st
 MERCADO_PAGO_ACCESS_TOKEN = (
     "APP_USR-7480302560366070-091611-1118388bbc787e8f88ea1da583096dbc-2919829212"
 )
+sdk_mp = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
 
 # Configuração da Página com Menu Fixo Expandido
 st.set_page_config(
@@ -260,7 +261,7 @@ def init_db():
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS veiculos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tag_prefixo TEXT, categoria_equipamento TEXT, tipo_equipamento TEXT,
+            tag_prefixo TEXT, numero_patrimonio TEXT, categoria_equipamento TEXT, tipo_equipamento TEXT,
             marca TEXT, modelo TEXT, ano INTEGER, chassi TEXT, renavam TEXT,
             placa TEXT, crv TEXT, cor TEXT, combustivel TEXT, empresa TEXT,
             operador_condutor TEXT, horimetro_km INTEGER, status TEXT, data_entrada TEXT, observacoes TEXT
@@ -268,6 +269,7 @@ def init_db():
     """)
 
   for col_sql in [
+      "ALTER TABLE veiculos ADD COLUMN numero_patrimonio TEXT",
       "ALTER TABLE veiculos ADD COLUMN categoria_equipamento TEXT",
       "ALTER TABLE veiculos ADD COLUMN tipo_equipamento TEXT",
       "ALTER TABLE veiculos ADD COLUMN chassi TEXT",
@@ -310,10 +312,14 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             equipamento TEXT, tipo_movimento TEXT, destino_origem TEXT,
             responsavel TEXT, data TEXT, horimetro_km_mov TEXT,
-            motivo_condicao TEXT, observacao TEXT, foto_checklist TEXT
+            motivo_condicao TEXT, observacao TEXT, foto_checklist TEXT,
+            historico_edicoes TEXT
         )
     """)
-  for col_mob in ["ALTER TABLE mobilizacoes ADD COLUMN foto_checklist TEXT"]:
+  for col_mob in [
+      "ALTER TABLE mobilizacoes ADD COLUMN foto_checklist TEXT",
+      "ALTER TABLE mobilizacoes ADD COLUMN historico_edicoes TEXT",
+  ]:
     try:
       cursor.execute(col_mob)
     except Exception:
@@ -378,7 +384,6 @@ def init_db():
         )
     """)
 
-  # Tabela para Chaves de Ativação (Licenças Pré-pagas)
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS chaves_licenca (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -464,14 +469,12 @@ try:
 except Exception:
   pass
 
-# VERIFICA SE É PERFIL DE GESTÃO / DIRETORIA
 is_gestao_ou_admin = modo_admin_liberado
 if st.session_state["usuario_logado"]:
   cargo_colab = str(st.session_state["usuario_logado"].get("cargo", ""))
   if "Diretoria" in cargo_colab or "Gestão" in cargo_colab:
     is_gestao_ou_admin = True
 
-# FORÇA LOGIN INDIVIDUAL SE NÃO ESTIVER AUTENTICADO
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
   col_l1, col_l2, col_l3 = st.columns([0.15, 3.7, 0.15])
   with col_l2:
@@ -509,13 +512,58 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           unsafe_allow_html=True,
       )
 
-    tab_login, tab_cadastro, tab_chave, tab_recuperar, tab_pin = st.tabs([
+    # PIN RÁPIDO AGORA É A PRIMEIRA ABA
+    tab_pin, tab_login, tab_cadastro, tab_chave, tab_recuperar = st.tabs([
+        "🔐 pin rápido",
         "🔑 entrar",
         "📝 cadastrar",
         "🎟️ resgatar chave",
         "🔄 recuperar",
-        "🔐 pin",
     ])
+
+    with tab_pin:
+      with st.form("form_pin"):
+        st.markdown("### 🔐 Acesso Rápido com PIN da Obra")
+        email_pin = st.text_input("e-mail da conta corporativa")
+        pin_dig = st.text_input(
+            "pin numérico (4 dígitos)", max_chars=4, type="password"
+        )
+        btn_pin_sub = st.form_submit_button("entrar com pin")
+        if btn_pin_sub:
+          cursor.execute(
+              "SELECT * FROM usuarios_sistema WHERE email = ? AND pin_rapido ="
+              " ?",
+              (email_pin, pin_dig),
+          )
+          user_pin = cursor.fetchone()
+          if user_pin:
+            st.session_state["usuario_logado"] = {
+                "id": user_pin[0],
+                "nome": user_pin[1],
+                "cpf": user_pin[2],
+                "email": user_pin[3],
+                "status": user_pin[6],
+                "apelido": (
+                    user_pin[9]
+                    if len(user_pin) > 9 and user_pin[9] != "None"
+                    else user_pin[1].split()[0]
+                ),
+                "cargo": (
+                    user_pin[10]
+                    if len(user_pin) > 10
+                    and user_pin[10]
+                    and user_pin[10] != "None"
+                    else "Colaborador"
+                ),
+            }
+            try:
+              st.query_params["user_id"] = str(user_pin[0])
+            except Exception:
+              pass
+            st.success("✅ login por pin validado!")
+            st.rerun()
+          else:
+            st.error("⚠️ e-mail ou pin inválidos.")
 
     with tab_login:
       with st.form("form_login"):
@@ -550,7 +598,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 "status": user_data[6],
                 "apelido": (
                     user_data[9]
-                    if len(user_data) > 9 and user_data[9] and user_data[9] != "None"
+                    if len(user_data) > 9 and user_data[9] != "None"
                     else user_data[1].split()[0]
                 ),
                 "cargo": (
@@ -589,19 +637,23 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
               "💎 Master Concreto & Diretoria — Mensal: R$ 299,90 | Anual: R$"
               " 2.999,00"
           )
+          valor_num = 299.90
         elif "Engenheiro" in c_cargo:
           sugestao_preco = (
               "🏗️ Engenharia & Obra Pro — Mensal: R$ 189,90 | Anual: R$ 1.899,00"
           )
+          valor_num = 189.90
         elif "Mecânico" in c_cargo:
           sugestao_preco = (
               "🛠️ Oficina & Mecânica X — Mensal: R$ 119,90 | Anual: R$ 1.199,00"
           )
+          valor_num = 119.90
         else:
           sugestao_preco = (
               "🚜 Operacional Campo & Frota — Mensal: R$ 69,90 | Anual: R$"
               " 699,00"
           )
+          valor_num = 69.90
 
         st.info(f"💡 **Plano Sugerido para a Função:**\n\n{sugestao_preco}")
 
@@ -613,7 +665,9 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             "modalidade de vigência",
             ["Plano Mensal (30 dias)", "Plano Anual (365 dias)"],
         )
-        btn_cadastrar = st.form_submit_button("cadastrar e solicitar liberação")
+        btn_cadastrar = st.form_submit_button(
+            "cadastrar e prosseguir para pagamento (Pix/Cartão)"
+        )
 
         if btn_cadastrar:
           if c_nome and c_email and c_senha:
@@ -643,19 +697,49 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
               )
               conn.commit()
               st.success(
-                  "✅ Conta cadastrada com sucesso! Insira sua chave de"
-                  " ativação na aba ao lado ou aguarde aprovação."
+                  "✅ Conta cadastrada! Podes efetuar o pagamento via Pix/Cartão"
+                  " abaixo ou inserir uma chave de ativação."
               )
             except Exception as e:
               st.error(f"⚠️ erro ao cadastrar (e-mail já cadastrado?): {e}")
           else:
             st.error("⚠️ preencha os campos obrigatórios.")
 
+      st.markdown("---")
+      st.markdown("### 💳 Pagamento Automático (Pix ou Cartão via Mercado Pago)")
+      if st.button("Gerar Pagamento Mercado Pago"):
+        try:
+          preference_data = {
+              "items": [{
+                  "title": f"Assinatura Tabalmix Concreto",
+                  "quantity": 1,
+                  "unit_price": float(
+                      valor_num if "valor_num" in locals() else 69.90
+                  ),
+              }],
+              "back_urls": {
+                  "success": "https://tabalmix-concreto.streamlit.app/",
+                  "failure": "https://tabalmix-concreto.streamlit.app/",
+              },
+          }
+          preference_response = sdk_mp.preference().create(preference_data)
+          link_pagamento = preference_response["response"].get(
+              "init_point", "#"
+          )
+          st.markdown(
+              f"🔗 **[Clique aqui para abrir o checkout seguro do Mercado"
+              f" Pago]({link_pagamento})**",
+              unsafe_allow_html=True,
+          )
+        except Exception as ex:
+          st.error(
+              f"⚠️ Erro ao gerar pagamento automático: {ex}. Podes usar uma"
+              " chave de ativação."
+          )
+
     with tab_chave:
       with st.form("form_resgatar_chave_login"):
-        st.markdown(
-            "### 🎟️ Ativar Conta com Chave Corporativa"
-        )
+        st.markdown("### 🎟️ Ativar Conta com Chave Corporativa")
         email_resgate = st.text_input("e-mail cadastrado na conta")
         chave_digitada = st.text_input(
             "chave de ativação (ex: TABALMIX-XXXX-XXXX)"
@@ -726,49 +810,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           else:
             st.error("⚠️ e-mail não encontrado.")
 
-    with tab_pin:
-      with st.form("form_pin"):
-        email_pin = st.text_input("e-mail da conta corporativa")
-        pin_dig = st.text_input(
-            "pin numérico (4 dígitos)", max_chars=4, type="password"
-        )
-        btn_pin_sub = st.form_submit_button("entrar com pin")
-        if btn_pin_sub:
-          cursor.execute(
-              "SELECT * FROM usuarios_sistema WHERE email = ? AND pin_rapido ="
-              " ?",
-              (email_pin, pin_dig),
-          )
-          user_pin = cursor.fetchone()
-          if user_pin:
-            st.session_state["usuario_logado"] = {
-                "id": user_pin[0],
-                "nome": user_pin[1],
-                "cpf": user_pin[2],
-                "email": user_pin[3],
-                "status": user_pin[6],
-                "apelido": (
-                    user_pin[9]
-                    if len(user_pin) > 9 and user_pin[9] != "None"
-                    else user_pin[1].split()[0]
-                ),
-                "cargo": (
-                    user_pin[10]
-                    if len(user_pin) > 10
-                    and user_pin[10]
-                    and user_pin[10] != "None"
-                    else "Colaborador"
-                ),
-            }
-            try:
-              st.query_params["user_id"] = str(user_pin[0])
-            except Exception:
-              pass
-            st.success("✅ login por pin validado!")
-            st.rerun()
-          else:
-            st.error("⚠️ e-mail ou pin inválidos.")
-
   st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
@@ -813,6 +854,33 @@ def exibir_tabela_padronizada(df, nome_tabela):
     df = df[cols_finais]
 
   st.dataframe(df, use_container_width=True, hide_index=True)
+
+  # CONFIGURAÇÃO DE COLUNAS FIXAS RESTRITA EXCLUSIVAMENTE À DIRETORIA / GESTÃO
+  if is_gestao_ou_admin:
+    with st.expander(
+        f"⚙️ [DIRETORIA] Configurar Ordem Padrão das Colunas ({nome_tabela})"
+    ):
+      novas_cols = st.multiselect(
+          "Selecione e ordene as colunas que devem aparecer para toda a"
+          " equipe:",
+          options=list(df.columns),
+          default=list(df.columns),
+          key=f"mult_col_{nome_tabela}",
+      )
+      if st.button(
+          "💾 Salvar Padrão para Todos", key=f"btn_save_col_{nome_tabela}"
+      ):
+        ordem_str = ",".join(novas_cols)
+        cursor.execute(
+            "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
+            " VALUES (?, ?)",
+            (nome_tabela, ordem_str),
+        )
+        conn.commit()
+        st.success(
+            "✅ Ordem de colunas salva e fixada para toda a equipe na obra!"
+        )
+        st.rerun()
 
 
 with st.sidebar:
@@ -861,7 +929,8 @@ with st.sidebar:
     )
     if not status_usuario_ativo:
       st.warning(
-          "⚠️ **conta inativa / aguardando liberação:** insira uma chave de ativação válida para liberar o acesso."
+          "⚠️ **conta inativa:** insira uma chave de ativação válida ou efetue"
+          " o pagamento para liberar o acesso."
       )
     if st.button("🚪 encerrar sessão"):
       st.session_state["usuario_logado"] = None
@@ -872,7 +941,6 @@ with st.sidebar:
       st.rerun()
   st.markdown("---")
 
-# Lista de menus (Painel administrativo de licenças e chaves visível apenas para o Admin Master)
 lista_menus = [
     "📊 visão geral",
     "🚜 cadastro de equipamentos",
@@ -959,6 +1027,7 @@ elif menu == "🚜 cadastro de equipamentos":
     col1, col2 = st.columns(2)
     with col1:
       tag_prefixo = st.text_input("tag / prefixo (ex: EQ-001 / BET-12)")
+      numero_patrimonio = st.text_input("número de patrimônio")
       categoria_equipamento = st.text_input("categoria do equipamento")
       tipo_equipamento = st.text_input("tipo de equipamento")
       marca = st.text_input("marca")
@@ -967,8 +1036,8 @@ elif menu == "🚜 cadastro de equipamentos":
           "ano de fabricação", min_value=1950, value=2024, step=1
       )
       chassi = st.text_input("número do chassi")
-      renavam = st.text_input("número do renavam")
     with col2:
+      renavam = st.text_input("número do renavam")
       placa = st.text_input("placa do veículo")
       crv = st.text_input("número do crv")
       cor = st.text_input("cor principal")
@@ -994,12 +1063,14 @@ elif menu == "🚜 cadastro de equipamentos":
           else "EQ-00" + str(datetime.now().microsecond)[:3]
       )
       cursor.execute(
-          "INSERT INTO veiculos (tag_prefixo, categoria_equipamento,"
-          " tipo_equipamento, marca, modelo, ano, chassi, renavam, placa, crv,"
-          " cor, combustivel, empresa, operador_condutor, horimetro_km,"
-          " status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          "INSERT INTO veiculos (tag_prefixo, numero_patrimonio,"
+          " categoria_equipamento, tipo_equipamento, marca, modelo, ano, chassi,"
+          " renavam, placa, crv, cor, combustivel, empresa, operador_condutor,"
+          " horimetro_km, status, data_entrada) VALUES (?, ?, ?, ?, ?, ?, ?, ?,"
+          " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
           (
               tag_final,
+              numero_patrimonio,
               categoria_equipamento,
               tipo_equipamento,
               marca,
@@ -1015,6 +1086,7 @@ elif menu == "🚜 cadastro de equipamentos":
               operador_condutor,
               int(horimetro_km),
               status,
+              datetime.now().strftime("%Y-%m-%d"),
           ),
       )
       conn.commit()
@@ -1055,7 +1127,7 @@ elif menu == "🚜 cadastro de equipamentos":
 
   df_f = pd.read_sql("SELECT * FROM veiculos", conn)
   if not df_f.empty:
-    exibir_tabela_padronizada(df_f, "cad_veiculos")
+    exibir_tabela_padronizada(df_f, "veiculos")
 
 elif menu == "⛽ abastecimentos & combustível":
   st.title("⛽ controle de abastecimento e combustível")
@@ -1118,7 +1190,7 @@ elif menu == "🏗️ mobilização / desmobilização":
       )
       destino = st.text_input("obra / destino-origem")
     with c2:
-      resp = st.text_input("responsável")
+      resp = st.text_input("responsável / motorista")
       dt_mob = st.date_input("data")
       obs = st.text_input("observação")
 
@@ -1142,10 +1214,14 @@ elif menu == "🏗️ mobilização / desmobilização":
           caminhos_fotos.append(nome_f)
 
       paths_str = "|".join(caminhos_fotos)
+      hist_inicial = (
+          f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Criado por"
+          f" {resp} — Destino: {destino}"
+      )
       cursor.execute(
           "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
-          " destino_origem, responsavel, data, observacao, foto_checklist)"
-          " VALUES (?, ?, ?, ?, ?, ?, ?)",
+          " destino_origem, responsavel, data, observacao, foto_checklist,"
+          " historico_edicoes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
           (
               str(eq_mob).upper(),
               tipo_mov,
@@ -1154,11 +1230,78 @@ elif menu == "🏗️ mobilização / desmobilização":
               str(dt_mob),
               obs,
               paths_str,
+              hist_inicial,
           ),
       )
       conn.commit()
       st.success("✅ movimentação registrada!")
       st.rerun()
+
+  st.markdown("---")
+  st.markdown(
+      "### ✏️ Editar Mobilização / Alterar Motorista ou Motivo de Cancelamento"
+  )
+  df_mobs_ed = pd.read_sql("SELECT * FROM mobilizacoes", conn)
+  if not df_mobs_ed.empty:
+    id_mob_sel = st.selectbox(
+        "Selecione o ID da Mobilização para Editar:", df_mobs_ed["id"].tolist()
+    )
+    mob_atual_row = df_mobs_ed[df_mobs_ed["id"] == id_mob_sel].iloc[0]
+
+    with st.form("form_editar_mobilizacao"):
+      novo_resp = st.text_input(
+          "Novo Responsável / Motorista",
+          value=str(mob_atual_row["responsavel"]),
+      )
+      novo_status_mov = st.selectbox(
+          "Novo Status / Movimento",
+          [
+              "mobilização (envio)",
+              "desmobilização (retorno)",
+              "remanejamento",
+              "Cancelado / Paralisado",
+          ],
+      )
+      motivo_alteracao = st.text_input(
+          "Motivo da Alteração / Substituição (Obrigatório para Auditoria)"
+      )
+      btn_salvar_ed_mob = st.form_submit_button("💾 Salvar Alteração na Obra")
+
+      if btn_salvar_ed_mob:
+        if not motivo_alteracao.strip():
+          st.error(
+              "⚠️ Por favor, informe o motivo da alteração para registrar no"
+              " histórico de auditoria."
+          )
+        else:
+          historico_antigo = (
+              str(mob_atual_row["historico_edicoes"])
+              if mob_atual_row["historico_edicoes"]
+              else ""
+          )
+          novo_registro = (
+              f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Alterado para"
+              f" Resp: {novo_resp} | Tipo: {novo_status_mov} | Motivo:"
+              f" {motivo_alteracao}"
+          )
+          historico_atualizado = historico_antigo + novo_registro
+
+          cursor.execute(
+              "UPDATE mobilizacoes SET responsavel = ?, tipo_movimento = ?,"
+              " historico_edicoes = ? WHERE id = ?",
+              (
+                  novo_resp,
+                  novo_status_mov,
+                  historico_atualizado,
+                  int(id_mob_sel),
+              ),
+          )
+          conn.commit()
+          st.success(
+              "✅ Mobilização atualizada com sucesso e registrada no histórico"
+              " de auditoria!"
+          )
+          st.rerun()
 
   df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
   if not df_mobs.empty:
@@ -1288,9 +1431,8 @@ elif menu == "👥 gestão de clientes":
 elif menu == "💬 chat tabalmix pro & rede":
   st.title("💬 Central Pro de Chamadas P2P e Rede Interna")
   st.markdown(
-      "Sistema unificado de comunicação: ligue diretamente por vídeo/áudio ou"
-      " envie mensagens e fotos em tempo real para qualquer colega ativo no"
-      " canteiro de obras."
+      "Sistema unificado de comunicação: ligue diretamente por vídeo/áudio com"
+      " servidores STUN integrados ou envie mensagens em tempo real."
   )
 
   cursor.execute("""
@@ -1305,14 +1447,19 @@ elif menu == "💬 chat tabalmix pro & rede":
     """)
   conn.commit()
 
-  cursor.execute(
-      "SELECT id, apelido, cargo_setor FROM usuarios_sistema WHERE email != ?",
-      (usuario_atual["email"],),
-  )
+  if usuario_atual:
+    cursor.execute(
+        "SELECT id, apelido, cargo_setor FROM usuarios_sistema WHERE email != ?",
+        (usuario_atual["email"],),
+    )
+  else:
+    cursor.execute("SELECT id, apelido, cargo_setor FROM usuarios_sistema")
   colegas_db = cursor.fetchall()
   lista_nomes_colegas = [f"{c[1]} ({c[2]})" for c in colegas_db]
 
-  apelido_atual = usuario_atual["apelido"]
+  apelido_atual = (
+      usuario_atual["apelido"] if usuario_atual else "Administrador Master"
+  )
   cursor.execute(
       "SELECT id, chamador, status FROM chamadas_p2p WHERE receptor LIKE ? AND"
       " status = 'chamando' ORDER BY id DESC LIMIT 1",
@@ -1331,7 +1478,7 @@ elif menu == "💬 chat tabalmix pro & rede":
   )
 
   with tab_chamadas_dir:
-    st.markdown("#### 📞 Iniciar Chamada Direta com Colega na Obra")
+    st.markdown("#### 📞 Iniciar Chamada Direta com Servidor STUN")
     if lista_nomes_colegas:
       col_sel_c, col_btn_c = st.columns([2, 1])
       with col_sel_c:
@@ -1344,15 +1491,15 @@ elif menu == "💬 chat tabalmix pro & rede":
 
       if iniciar_chamada_btn:
         data_h = datetime.now().strftime("%d/%m %H:%M")
+        remetente_chamada = (
+            f"{usuario_atual['apelido']} ({usuario_atual['cargo']})"
+            if usuario_atual
+            else "Administrador Master (Diretoria)"
+        )
         cursor.execute(
             "INSERT INTO chamadas_p2p (chamador, receptor, tipo_midia, status,"
             " data_hora) VALUES (?, ?, ?, 'chamando', ?)",
-            (
-                f"{usuario_atual['apelido']} ({usuario_atual['cargo']})",
-                colega_escolhido,
-                "Vídeo/Áudio",
-                data_h,
-            ),
+            (remetente_chamada, colega_escolhido, "Vídeo/Áudio", data_h),
         )
         conn.commit()
         st.success(
@@ -1360,11 +1507,12 @@ elif menu == "💬 chat tabalmix pro & rede":
             " alarme vai tocar no dispositivo dela."
         )
 
+      # COMPONENTE P2P COM STUN SERVERS CONFIGURADOS PARA VÍDEO E ÁUDIO
       st.components.v1.html(
           """
             <div style="background: #0f172a; border-radius: 16px; padding: 20px; text-align: center; color: white; font-family: 'Plus Jakarta Sans', sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
                 <div id="callStatus" style="background: #1e293b; border: 1px solid #334155; padding: 12px; border-radius: 10px; margin-bottom: 15px; font-weight: bold; color: #38bdf8;">
-                    📲 Central P2P Pronta. Clique em "Tocar Alarme" ou "Atender / Vídeo".
+                    📲 Central P2P Ativa (STUN Google Configurado). Clique em "Atender / Vídeo".
                 </div>
                 
                 <video id="localVideo" autoplay playsinline muted style="width: 100%; max-height: 220px; border-radius: 12px; background: #1e293b; border: 2px solid #059669; object-fit: cover; margin-bottom: 12px;"></video>
@@ -1378,6 +1526,13 @@ elif menu == "💬 chat tabalmix pro & rede":
             <script>
             let localStream = null;
             let audioCtx = null;
+            
+            const rtcConfig = {
+                iceServers: [
+                    { urls: 'stun:stun.l.google.com:19302' },
+                    { urls: 'stun:stun1.l.google.com:19302' }
+                ]
+            };
 
             function tocarAlarme() {
                 try {
@@ -1385,22 +1540,22 @@ elif menu == "💬 chat tabalmix pro & rede":
                         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                     }
                     let now = audioCtx.currentTime;
-                    for (let i = 0; i < 6; i++) {
+                    for (let i = 0; i < 8; i++) {
                         let osc = audioCtx.createOscillator();
                         let gain = audioCtx.createGain();
                         osc.type = 'sine';
-                        osc.frequency.setValueAtTime(520, now + (i * 0.7));
-                        gain.gain.setValueAtTime(0.3, now + (i * 0.7));
-                        gain.gain.exponentialRampToValueAtTime(0.00001, now + (i * 0.7) + 0.35);
+                        osc.frequency.setValueAtTime(600, now + (i * 0.5));
+                        gain.gain.setValueAtTime(0.4, now + (i * 0.5));
+                        gain.gain.exponentialRampToValueAtTime(0.00001, now + (i * 0.5) + 0.25);
                         osc.connect(gain);
                         gain.connect(audioCtx.destination);
-                        osc.start(now + (i * 0.7));
-                        osc.stop(now + (i * 0.7) + 0.35);
+                        osc.start(now + (i * 0.5));
+                        osc.stop(now + (i * 0.5) + 0.25);
                     }
                     if (navigator.vibrate) {
-                        navigator.vibrate([600, 300, 600, 300, 600]);
+                        navigator.vibrate([800, 300, 800, 300, 800]);
                     }
-                    document.getElementById('callStatus').innerText = "📞 A tocar sinal de chamada no canteiro de obras!";
+                    document.getElementById('callStatus').innerText = "📞 A tocar sinal de alarme no canteiro de obras!";
                 } catch(e) {
                     console.log("Erro áudio:", e);
                 }
@@ -1410,9 +1565,13 @@ elif menu == "💬 chat tabalmix pro & rede":
                 try {
                     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                     document.getElementById('localVideo').srcObject = localStream;
-                    document.getElementById('callStatus').innerText = "🟢 Chamada de vídeo P2P ativa e conectada!";
+                    
+                    let pc = new RTCPeerConnection(rtcConfig);
+                    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+                    
+                    document.getElementById('callStatus').innerText = "🟢 Vídeo e Áudio P2P conectados via STUN!";
                 } catch (err) {
-                    alert("Erro ao aceder câmara: Verifique as permissões do telemóvel. " + err);
+                    alert("Erro ao aceder câmara ou microfone: Verifique as permissões do telemóvel. " + err);
                 }
             }
 
@@ -1476,11 +1635,11 @@ elif menu == "💬 chat tabalmix pro & rede":
       st.info("Nenhuma mensagem ou foto enviada no chat ainda.")
 
     remetente_atual = (
-        usuario_atual["apelido"]
-        if usuario_atual
-        else ("Administrador" if modo_admin_liberado else "Colaborador")
+        usuario_atual["apelido"] if usuario_atual else "Administrador Master"
     )
-    cargo_atual = usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
+    cargo_atual = (
+        usuario_atual["cargo"] if usuario_atual else "Diretoria / Gestão"
+    )
 
     with st.form("form_chat_direto", clear_on_submit=True):
       msg_sala_txt = st.text_input("Escreva sua mensagem...")
@@ -1622,6 +1781,11 @@ elif menu == "⚙️ meu perfil / dados":
           conn.commit()
           st.success("✅ Perfil atualizado com sucesso!")
           st.rerun()
+  else:
+    st.info(
+        "🔓 Estás logado como Administrador Master. As tuas credenciais de"
+        " gestão são geridas pelo link de acesso seguro."
+    )
 
 elif menu == "⚙️ painel de licença (admin)" and modo_admin_liberado:
   st.title("⚙️ Painel Administrativo de Chaves & Licenças Corporativas")
