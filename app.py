@@ -751,6 +751,30 @@ if usuario_atual and (
 ):
   usuario_atual["cargo"] = "Colaborador"
 
+# VERIFICAÇÃO GLOBAL DE CHAMADA PENDENTE EM TEMPO REAL PARA O USUÁRIO LOGADO
+if usuario_atual:
+  nome_apelido_atual = usuario_atual["apelido"]
+  cargo_atual_user = usuario_atual["cargo"]
+  # Procuramos por alertas recentes de chamada direcionados a este utilizador ou canal geral
+  cursor.execute(
+      "SELECT mensagem, data_envio FROM chat_interno WHERE destinatario LIKE ? AND mensagem LIKE '%CHAMADA DE VÍDEO ATIVA%' ORDER BY id DESC LIMIT 1",
+      (f"%{nome_apelido_atual}%",),
+  )	
+  chamada_pendente = cursor.fetchone()
+  if chamada_pendente:
+    st.markdown(
+        f"""
+            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 16px 22px; border-radius: 14px; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(220,38,38,0.4); display: flex; justify-content: space-between; align-items: center; animation: pulse 1.5s infinite;">
+                <div>
+                    <h3 style="color: white !important; margin: 0; font-size: 17px;">🚨 CHAMADA DE VÍDEO AO VIVO A TOCAR!</h3>
+                    <p style="margin: 4px 0 0 0; font-size: 13.5px;">Alguém da diretoria/equipe está a chamar-te em tempo real.</p>
+                </div>
+                <a href="?p=chat" target="_self" style="background: white; color: #991b1b; padding: 10px 20px; border-radius: 10px; font-weight: 800; text-decoration: none; font-size: 14px;">Atender na Central de Chat</a>
+            </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
 def exibir_tabela_padronizada(df, nome_tabela):
   if df.empty:
@@ -1459,8 +1483,8 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         "### 📞 Central de Chamada Direta Pessoal (Vídeo e Voz em Tempo Real)"
     )
     st.markdown(
-        "Seleciona o colaborador (ex: Hayarya) para iniciar a chamada integrada"
-        " diretamente na tela:"
+        "Seleciona o colaborador (ex: Hayarya) para iniciar a chamada e"
+        " notificar o dispositivo dele em tempo real:"
     )
 
     if todos_usuarios_db:
@@ -1480,10 +1504,39 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
 
     col_b1, col_b2 = st.columns(2)
     with col_b1:
-      if st.button(
-          "📞 Iniciar Chamada Integrada na Tela", key="btn_ligar_integ"
-      ):
+      if st.button("📞 Disparar Chamada e Ligar", key="btn_ligar_integ"):
         st.session_state["chamada_ativa"] = True
+
+        # Registamos o sinal de chamada para notificar em tempo real em qualquer página
+        remetente_notif = (
+            usuario_atual["apelido"] if usuario_atual else "Administrador"
+        )
+        msg_alerta_chamada = (
+            f"🚨 **CHAMADA DE VÍDEO ATIVA:** {remetente_notif} está a chamar-te"
+            " para uma reunião ao vivo!"
+        )
+        data_env_notif = datetime.now().strftime("%H:%M — %d/%m")
+
+        try:
+          cursor.execute(
+              "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+              " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
+              " ?, ?, ?, ?, ?)",
+              (
+                  "SISTEMA LIVE",
+                  alvo_selecionado,
+                  "Alerta",
+                  msg_alerta_chamada,
+                  "",
+                  "",
+                  data_env_notif,
+              ),
+          )
+          conn.commit()
+        except Exception:
+          pass
+
+        st.success(f"Sinal de chamada enviado para {alvo_selecionado}!")
         st.rerun()
     with col_b2:
       if st.button("🔴 Desligar / Fechar Chamada", key="btn_desligar_integ"):
@@ -1494,7 +1547,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
       st.markdown(f"**🟢 Chamada em curso com: {alvo_selecionado}**")
       jitsi_embed_html = f"""
             <div style="width: 100%; height: 600px; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
-                <iframe src="https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false" 
+                <iframe src="https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&interfaceConfigOverwrite.MOBILE_APP_PROMO=false" 
                         allow="camera; microphone; fullscreen; display-capture" 
                         style="width: 100%; height: 100%; border: none;">
                 </iframe>
@@ -1503,8 +1556,8 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
       st.components.v1.html(jitsi_embed_html, height=620)
     else:
       st.info(
-          "💡 Clica em 'Iniciar Chamada Integrada na Tela' para abrir o vídeo"
-          " diretamente aqui."
+          "💡 Clica em 'Disparar Chamada e Ligar' para abrir o vídeo e"
+          " notificar o colaborador instantaneamente."
       )
 
 elif menu == "🔍 Consulta / Busca Geral":
