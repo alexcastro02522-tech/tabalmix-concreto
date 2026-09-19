@@ -829,19 +829,18 @@ def exibir_tabela_padronizada(df, nome_tabela):
 
   if res_ordem and res_ordem[0]:
     cols_salvas = res_ordem[0].split(",")
-    # Mantém apenas as colunas que ainda existem e não foram excluídas pelo administrador
     cols_finais = [c for c in cols_salvas if c in cols_atuais]
     if cols_finais:
       df = df[cols_finais]
 
-  # PAINEL DA DIRETORIA PARA ESCOLHER QUAIS COLUNAS MANTER/EXCLUIR E SALVAR PARA TODOS
+  # PAINEL DA DIRETORIA PARA GERIR COLUNAS E EXCLUIR REGISTOS
   if is_gestao_ou_admin:
     with st.expander(
         f"⚙️ [DIRETORIA] Gerir Colunas e Registos ({nome_tabela})", expanded=False
     ):
       st.markdown(
-          "**Seleciona abaixo exatamente quais colunas queres que apareçam"
-          " (desmarca as que queres excluir da visualização para todos):**"
+          "**Desmarca as colunas que queres excluir da visualização para"
+          " todos os dispositivos:**"
       )
       colunas_selecionadas_pelo_admin = st.multiselect(
           "Colunas ativas:",
@@ -866,8 +865,8 @@ def exibir_tabela_padronizada(df, nome_tabela):
           )
           conn.commit()
           st.success(
-              "✅ Configuração de colunas salva com sucesso! Os outros"
-              " dispositivos verão apenas estas colunas."
+              "✅ Configuração de colunas salva com sucesso para todos os"
+              " dispositivos!"
           )
           st.rerun()
         else:
@@ -917,7 +916,6 @@ def exibir_tabela_padronizada(df, nome_tabela):
             st.success("✅ Registo excluído com sucesso!")
             st.rerun()
 
-  # TABELA LIMPA E EXCLUSIVA (sem os três pontinhos nativos)
   st.dataframe(df, use_container_width=True, hide_index=True, column_config={})
 
 
@@ -1230,21 +1228,25 @@ elif menu == "🏗️ mobilização / desmobilização":
       st.rerun()
 
   st.markdown("---")
-  st.markdown("### ✏️ Editar Mobilização / Alterar Motorista")
+  # PAINEL CLARO E DESTACADO PARA EDITAR O MOTORISTA E RESPONSÁVEL DA OBRA
+  st.markdown(
+      "### ✏️ [DIRETORIA] Editar Motorista / Responsável da Mobilização"
+  )
   df_mobs_ed = pd.read_sql("SELECT * FROM mobilizacoes", conn)
   if not df_mobs_ed.empty:
     id_mob_sel = st.selectbox(
-        "Selecione o ID da Mobilização para Editar:", df_mobs_ed["id"].tolist()
+        "Selecione o ID da Mobilização que deseja editar:",
+        df_mobs_ed["id"].tolist(),
     )
     mob_atual_row = df_mobs_ed[df_mobs_ed["id"] == id_mob_sel].iloc[0]
 
     novo_resp_ed = st.text_input(
-        "Novo Responsável / Motorista",
+        "Novo Responsável / Motorista:",
         value=str(mob_atual_row["responsavel"]),
         key="inp_novo_resp",
     )
     novo_status_mov_ed = st.selectbox(
-        "Novo Status / Movimento",
+        "Novo Status / Movimento:",
         [
             "mobilização (envio)",
             "desmobilização (retorno)",
@@ -1254,11 +1256,11 @@ elif menu == "🏗️ mobilização / desmobilização":
         key="sel_novo_stat",
     )
     motivo_alteracao_ed = st.text_input(
-        "Motivo da Alteração / Substituição (Obrigatório para Auditoria)",
+        "Motivo da Alteração / Substituição (Obrigatório para Auditoria):",
         key="inp_motivo_alt",
     )
 
-    if st.button("💾 Salvar Alteração na Obra", key="btn_salvar_edicao_mob"):
+    if st.button("💾 Salvar Alteração do Motorista", key="btn_salvar_edicao_mob"):
       if not motivo_alteracao_ed.strip():
         st.error(
             "⚠️ Por favor, informe o motivo da alteração para registrar no"
@@ -1271,8 +1273,8 @@ elif menu == "🏗️ mobilização / desmobilização":
             else ""
         )
         novo_registro = (
-            f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Alterado para"
-            f" Resp: {novo_resp_ed} | Tipo: {novo_status_mov_ed} | Motivo:"
+            f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Alterado motorista"
+            f" para: {novo_resp_ed} | Tipo: {novo_status_mov_ed} | Motivo:"
             f" {motivo_alteracao_ed}"
         )
         historico_atualizado = historico_antigo + novo_registro
@@ -1289,8 +1291,7 @@ elif menu == "🏗️ mobilização / desmobilização":
         )
         conn.commit()
         st.success(
-            "✅ Mobilização atualizada com sucesso e registrada no histórico"
-            " de auditoria!"
+            "✅ Motorista e dados da mobilização atualizados com sucesso!"
         )
         st.rerun()
 
