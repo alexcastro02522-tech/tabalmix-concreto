@@ -751,7 +751,7 @@ if usuario_atual and (
 ):
   usuario_atual["cargo"] = "Colaborador"
 
-# VERIFICAÇÃO GLOBAL DE CHAMADA PENDENTE COM AUTO-REFRESH EM TEMPO REAL NO SMARTPHONE DELA
+# VERIFICAÇÃO GLOBAL DE CHAMADA PENDENTE COM AUTO-REFRESH CONTÍNUO (200% TEMPO REAL NO SMARTPHONE DELA)
 if usuario_atual:
   nome_apelido_atual = usuario_atual["apelido"]
   cursor.execute(
@@ -762,18 +762,30 @@ if usuario_atual:
   if chamada_pendente:
     st.markdown(
         f"""
-            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 18px 24px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 15px 35px rgba(220,38,38,0.5); display: flex; justify-content: space-between; align-items: center; animation: pulse 1s infinite;">
+            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 20px 26px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 15px 35px rgba(220,38,38,0.6); display: flex; justify-content: space-between; align-items: center; animation: pulse 1s infinite;">
                 <div>
-                    <h3 style="color: white !important; margin: 0; font-size: 18px;">🚨 CHAMADA DE VÍDEO A TOCAR AGORA!</h3>
-                    <p style="margin: 4px 0 0 0; font-size: 14px;">Alguém está a chamar-te em tempo real para uma reunião ao vivo.</p>
+                    <h3 style="color: white !important; margin: 0; font-size: 19px;">🚨 CHAMADA DE VÍDEO A TOCAR AGORA!</h3>
+                    <p style="margin: 4px 0 0 0; font-size: 14.5px;">Alguém está a chamar-te em tempo real para uma reunião ao vivo.</p>
                 </div>
                 <a href="?p=chat" target="_self" style="background: white; color: #991b1b; padding: 12px 24px; border-radius: 12px; font-weight: 800; text-decoration: none; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">ATENDER CHAMADA</a>
             </div>
             <script>
-                // Força o smartphone dela a atualizar a página automaticamente a cada 4 segundos para tocar na hora
+                // Script de nível 200%: recarrega o smartphone dela automaticamente a cada 3 segundos para tocar na hora exata
                 setTimeout(function(){
                     window.location.reload();
-                }, 4000);
+                }, 3000);
+            </script>
+        """,
+        unsafe_allow_html=True,
+    )
+  else:
+    # Mesmo sem chamada ativa, mantém um refresh passivo a cada 8 segundos para garantir que o aviso salte mal seja disparado
+    st.markdown(
+        """
+            <script>
+                setTimeout(function(){
+                    window.location.reload();
+                }, 8000);
             </script>
         """,
         unsafe_allow_html=True,
