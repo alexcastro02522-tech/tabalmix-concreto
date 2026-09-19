@@ -4,7 +4,9 @@ import csv
 import glob
 import io
 import os
+import random
 import sqlite3
+import string
 import urllib.parse
 import mercadopago
 import pandas as pd
@@ -376,6 +378,19 @@ def init_db():
         )
     """)
 
+  # Tabela para Chaves de Ativação (Licenças Pré-pagas)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chaves_licenca (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            codigo_chave TEXT UNIQUE,
+            cargo_atribuido TEXT,
+            modalidade TEXT,
+            status_uso TEXT,
+            usado_por TEXT,
+            data_criacao TEXT
+        )
+    """)
+
   try:
     cursor.execute(
         "UPDATE usuarios_sistema SET apelido = 'Colaborador' WHERE apelido IS"
@@ -494,11 +509,12 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           unsafe_allow_html=True,
       )
 
-    tab_login, tab_cadastro, tab_recuperar, tab_pin = st.tabs([
-        "🔑 entrar na conta",
-        "📝 cadastrar colaborador",
-        "🔄 recuperar senha",
-        "🔐 pin rápido (obra)",
+    tab_login, tab_cadastro, tab_chave, tab_recuperar, tab_pin = st.tabs([
+        "🔑 entrar",
+        "📝 cadastrar",
+        "🎟️ resgatar chave",
+        "🔄 recuperar",
+        "🔐 pin",
     ])
 
     with tab_login:
@@ -568,7 +584,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             ],
         )
 
-        # Exibição dinâmica do valor sugerido com base na função escolhida
         if "Diretoria" in c_cargo:
           sugestao_preco = (
               "💎 Master Concreto & Diretoria — Mensal: R$ 299,90 | Anual: R$"
@@ -628,13 +643,70 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
               )
               conn.commit()
               st.success(
-                  "✅ Conta cadastrada com sucesso! O acesso completo será"
-                  " liberado assim que aprovado pela administração."
+                  "✅ Conta cadastrada com sucesso! Insira sua chave de"
+                  " ativação na aba ao lado ou aguarde aprovação."
               )
             except Exception as e:
               st.error(f"⚠️ erro ao cadastrar (e-mail já cadastrado?): {e}")
           else:
             st.error("⚠️ preencha os campos obrigatórios.")
+
+    with tab_chave:
+      with st.form("form_resgatar_chave_login"):
+        st.markdown(
+            "### 🎟️ Ativar Conta com Chave Corporativa"
+        )
+        email_resgate = st.text_input("e-mail cadastrado na conta")
+        chave_digitada = st.text_input(
+            "chave de ativação (ex: TABALMIX-XXXX-XXXX)"
+        )
+        btn_ativar_chave = st.form_submit_button("ativar acesso com chave")
+
+        if btn_ativar_chave:
+          cursor.execute(
+              "SELECT id, cargo_atribuido, modalidade, status_uso FROM"
+              " chaves_licenca WHERE codigo_chave = ?",
+              (chave_digitada.strip(),),
+          )
+          chave_db = cursor.fetchone()
+          if chave_db:
+            id_c, cargo_c, mod_c, status_c = chave_db
+            if status_c == "Utilizada":
+              st.warning("⚠️ Esta chave já foi utilizada por outro usuário.")
+            else:
+              cursor.execute(
+                  "SELECT id FROM usuarios_sistema WHERE email = ?",
+                  (email_resgate.strip(),),
+              )
+              user_db = cursor.fetchone()
+              if user_db:
+                id_u = user_db[0]
+                plano_final = f"{cargo_c} — {mod_c}"
+                cursor.execute(
+                    "UPDATE usuarios_sistema SET status_assinatura = 'Ativo',"
+                    " cargo_setor = ?, plano_atual = ?, data_cadastro = ? WHERE"
+                    " id = ?",
+                    (
+                        cargo_c,
+                        plano_final,
+                        datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        id_u,
+                    ),
+                )
+                cursor.execute(
+                    "UPDATE chaves_licenca SET status_uso = 'Utilizada',"
+                    " usado_por = ? WHERE id = ?",
+                    (email_resgate.strip(), id_c),
+                )
+                conn.commit()
+                st.success(
+                    "🎉 **Parabéns! Sua conta foi ativada com sucesso.**"
+                    " Faça login na aba 'entrar'."
+                )
+              else:
+                st.error("⚠️ E-mail não encontrado no sistema. Faça o cadastro primeiro.")
+          else:
+            st.error("⚠️ Chave de ativação inválida.")
 
     with tab_recuperar:
       with st.form("form_recuperar"):
@@ -789,7 +861,7 @@ with st.sidebar:
     )
     if not status_usuario_ativo:
       st.warning(
-          "⚠️ **conta inativa / aguardando liberação:** modo de prestígio (leitura) habilitado."
+          "⚠️ **conta inativa / aguardando liberação:** insira uma chave de ativação válida para liberar o acesso."
       )
     if st.button("🚪 encerrar sessão"):
       st.session_state["usuario_logado"] = None
@@ -800,7 +872,7 @@ with st.sidebar:
       st.rerun()
   st.markdown("---")
 
-# Lista de menus (O painel administrativo financeiro/licença aparece apenas para o Admin Master)
+# Lista de menus (Painel administrativo de licenças e chaves visível apenas para o Admin Master)
 lista_menus = [
     "📊 visão geral",
     "🚜 cadastro de equipamentos",
@@ -1552,26 +1624,26 @@ elif menu == "⚙️ meu perfil / dados":
           st.rerun()
 
 elif menu == "⚙️ painel de licença (admin)" and modo_admin_liberado:
-  st.title("⚙️ Painel Administrativo de Colaboradores & Licenças")
+  st.title("⚙️ Painel Administrativo de Chaves & Licenças Corporativas")
   st.markdown(
-      "Aqui podes gerenciar os cadastros, aprovar acessos e alterar o cargo ou"
-      " plano de qualquer colaborador da obra a qualquer momento."
+      "Gere chaves de ativação em lote para a empresa ou gerencie os acessos"
+      " dos colaboradores."
   )
 
-  df_users = pd.read_sql("SELECT * FROM usuarios_sistema", conn)
-  if not df_users.empty:
-    exibir_tabela_padronizada(df_users, "usuarios_sistema")
+  tab_gerar_chaves, tab_ver_chaves, tab_gerenciar_users = st.tabs([
+      "🎟️ Gerar Chaves em Lote",
+      "📋 Chaves Geradas",
+      "👥 Gerenciar Colaboradores",
+  ])
 
-    st.markdown("---")
-    st.markdown("### ✍️ Atualizar Cargo / Função ou Plano de um Colaborador")
-    lista_emails_users = df_users["email"].tolist()
-    colab_selecionado = st.selectbox(
-        "Selecione o colaborador pelo e-mail", lista_emails_users
-    )
-
-    with st.form("form_editar_colaborador_admin"):
-      novo_cargo_adm = st.selectbox(
-          "Novo Cargo / Função",
+  with tab_gerar_chaves:
+    with st.form("form_gerar_chaves_lote"):
+      st.markdown("### 🔑 Gerador de Chaves de Ativação")
+      qtd_chaves = st.number_input(
+          "Quantidade de chaves a gerar", min_value=1, max_value=50, value=5
+      )
+      cargo_chave = st.selectbox(
+          "Cargo / Função associada à chave",
           [
               "Diretoria / Gestão",
               "Engenheiro / Gestor de Obra",
@@ -1579,29 +1651,103 @@ elif menu == "⚙️ painel de licença (admin)" and modo_admin_liberado:
               "Operador / Motorista / Campo",
           ],
       )
-      novo_status_adm = st.selectbox("Status da Conta", ["Ativo", "Inativo"])
-      nova_modalidade_adm = st.selectbox(
-          "Modalidade de Plano",
+      modalidade_chave = st.selectbox(
+          "Modalidade da Licença",
           ["Plano Mensal (30 dias)", "Plano Anual (365 dias)"],
       )
-      btn_atualizar_adm = st.form_submit_button(
-          "💾 Salvar Alterações do Colaborador"
-      )
+      btn_gerar_lote = st.form_submit_button("🚀 Gerar Lote de Chaves")
 
-      if btn_atualizar_adm:
-        novo_plano_str = f"{novo_cargo_adm} — {nova_modalidade_adm}"
-        cursor.execute(
-            "UPDATE usuarios_sistema SET cargo_setor = ?, status_assinatura ="
-            " ?, plano_atual = ? WHERE email = ?",
-            (
-                novo_cargo_adm,
-                novo_status_adm,
-                novo_plano_str,
-                colab_selecionado,
-            ),
-        )
+      if btn_gerar_lote:
+        chaves_criadas = []
+        for _ in range(int(qtd_chaves)):
+          parte1 = "".join(
+              random.choices(string.ascii_uppercase + string.digits, k=4)
+          )
+          parte2 = "".join(
+              random.choices(string.ascii_uppercase + string.digits, k=4)
+          )
+          codigo = f"TABALMIX-{parte1}-{parte2}"
+          try:
+            cursor.execute(
+                "INSERT INTO chaves_licenca (codigo_chave, cargo_atribuido,"
+                " modalidade, status_uso, usado_por, data_criacao) VALUES (?,"
+                " ?, ?, 'Disponível', 'N/A', ?)",
+                (
+                    codigo,
+                    cargo_chave,
+                    modalidade_chave,
+                    datetime.now().strftime("%Y-%m-%d %H:%M"),
+                ),
+            )
+            chaves_criadas.append(codigo)
+          except Exception:
+            pass
         conn.commit()
         st.success(
-            f"✅ Colaborador **{colab_selecionado}** atualizado com sucesso!"
+            f"✅ {len(chaves_criadas)} chaves geradas com sucesso! Veja na aba"
+            " 'Chaves Geradas'."
         )
-        st.rerun()
+
+  with tab_ver_chaves:
+    st.markdown("### 📋 Relatório de Chaves de Ativação")
+    df_chaves = pd.read_sql("SELECT * FROM chaves_licenca", conn)
+    if not df_chaves.empty:
+      exibir_tabela_padronizada(df_chaves, "chaves_licenca")
+    else:
+      st.info("Nenhuma chave gerada ainda.")
+
+  with tab_gerenciar_users:
+    st.markdown("### 👥 Gerenciamento de Colaboradores & Planos")
+    df_users = pd.read_sql("SELECT * FROM usuarios_sistema", conn)
+    if not df_users.empty:
+      exibir_tabela_padronizada(df_users, "usuarios_sistema")
+
+      st.markdown("---")
+      st.markdown("### ✍️ Atualizar Cargo ou Plano de um Colaborador")
+      lista_emails_users = df_users["email"].tolist()
+      colab_selecionado = st.selectbox(
+          "Selecione o colaborador pelo e-mail",
+          lista_emails_users,
+          key="sel_colab_usr",
+      )
+
+      with st.form("form_editar_colaborador_admin"):
+        novo_cargo_adm = st.selectbox(
+            "Novo Cargo / Função",
+            [
+                "Diretoria / Gestão",
+                "Engenheiro / Gestor de Obra",
+                "Mecânico / Oficina",
+                "Operador / Motorista / Campo",
+            ],
+            key="adm_novo_cargo",
+        )
+        novo_status_adm = st.selectbox(
+            "Status da Conta", ["Ativo", "Inativo"], key="adm_novo_status"
+        )
+        nova_modalidade_adm = st.selectbox(
+            "Modalidade de Plano",
+            ["Plano Mensal (30 dias)", "Plano Anual (365 dias)"],
+            key="adm_nova_mod",
+        )
+        btn_atualizar_adm = st.form_submit_button(
+            "💾 Salvar Alterações do Colaborador"
+        )
+
+        if btn_atualizar_adm:
+          novo_plano_str = f"{novo_cargo_adm} — {nova_modalidade_adm}"
+          cursor.execute(
+              "UPDATE usuarios_sistema SET cargo_setor = ?, status_assinatura"
+              " = ?, plano_atual = ? WHERE email = ?",
+              (
+                  novo_cargo_adm,
+                  novo_status_adm,
+                  novo_plano_str,
+                  colab_selecionado,
+              ),
+          )
+          conn.commit()
+          st.success(
+              f"✅ Colaborador **{colab_selecionado}** atualizado com sucesso!"
+          )
+          st.rerun()
