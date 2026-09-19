@@ -18,9 +18,12 @@ import streamlit as st
 MERCADO_PAGO_ACCESS_TOKEN = (
     "APP_USR-7480302560366070-091611-1118388bbc787e8f88ea1da583096dbc-2919829212"
 )
-sdk_mp = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+try:
+  sdk_mp = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+except Exception:
+  sdk_mp = None
 
-# Configuração da Página com Menu Fixo Expandido
+# Configuração da Página com Menu Adaptado para Celular e Computador
 st.set_page_config(
     page_title="Tabalmix Concreto - Enterprise Fleet & Operations Pro X",
     page_icon="🚀",
@@ -28,7 +31,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE ORIGINAL
+# ESTILIZAÇÃO VISUAL RESPONSIVA (OTIMIZADA PARA COMPUTADOR E TELEMÓVEL)
 st.markdown(
     """
     <style>
@@ -38,14 +41,15 @@ st.markdown(
         background: transparent !important;
     }
     .block-container {
-        padding-top: 2rem !important;
+        padding-top: 1.5rem !important;
         padding-bottom: 3rem !important;
         max-width: 100% !important;
     }
     
+    /* Garantir visibilidade total e fluidez em telemóveis */
     [data-testid="stSidebar"] {
-        min-width: 320px !important;
-        width: 320px !important;
+        min-width: 290px !important;
+        width: 290px !important;
         background: #f8fafc !important;
         border-right: 1px solid #e2e8f0;
     }
@@ -64,11 +68,13 @@ st.markdown(
         letter-spacing: -0.8px;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
+    
+    /* Botões de navegação e rádio visíveis e fáceis de tocar em touchscreens */
     [data-testid="stSidebar"] .stRadio label {
         color: #334155 !important;
         font-weight: 600;
-        font-size: 13.5px;
-        padding: 11px 16px;
+        font-size: 14px;
+        padding: 12px 16px;
         border-radius: 12px;
         background: #ffffff !important;
         margin-bottom: 8px;
@@ -83,18 +89,15 @@ st.markdown(
         transform: translateX(4px);
         box-shadow: 0 4px 12px rgba(5,150,105,0.08);
     }
+    
     div[data-testid="stMetric"] {
         background: #ffffff !important;
         border: 1px solid #e2e8f0 !important;
         border-left: 5px solid #059669 !important;
-        padding: 18px !important;
+        padding: 16px !important;
         border-radius: 16px !important;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
-        transition: transform 0.2s ease;
-    }
-    div[data-testid="stMetric"]:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08);
+        margin-bottom: 10px;
     }
     div[data-testid="stMetric"] label {
         color: #64748b !important;
@@ -105,9 +108,11 @@ st.markdown(
     }
     div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
         color: #0f172a !important;
-        font-size: 26px !important;
+        font-size: 24px !important;
         font-weight: 800 !important;
     }
+    
+    /* Inputs amigáveis para toque no telemóvel */
     div.stTextInput > div > div > input, 
     div.stNumberInput > div > div > input, 
     div.stSelectbox > div > div > div,
@@ -117,7 +122,7 @@ st.markdown(
         color: #0f172a !important;
         border: 1px solid #cbd5e1 !important;
         border-radius: 12px !important;
-        min-height: 44px !important;
+        min-height: 46px !important;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
     div.stTextInput > div > div > input:focus, 
@@ -126,26 +131,24 @@ st.markdown(
         border-color: #059669 !important;
         box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15) !important;
     }
-    div[data-baseweb="menu"], ul[data-baseweb="menu"], li[data-baseweb="option"] {
-        background-color: #ffffff !important;
-        color: #0f172a !important;
-    }
+    
     div[data-testid="stDataFrame"], .stDataFrame {
         background-color: #ffffff !important;
         border-radius: 16px;
-        padding: 16px;
+        padding: 12px;
         border: 1px solid #e2e8f0;
         box-shadow: 0 10px 30px -5px rgba(0,0,0,0.04);
     }
+    
     .stButton button {
         background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
         color: white !important;
         font-weight: 700;
         border-radius: 12px;
         border: none;
-        padding: 0.65rem 1.8rem;
+        padding: 0.7rem 1.8rem;
         box-shadow: 0 6px 16px rgba(5, 150, 105, 0.3);
-        transition: all 0.25s ease-in-out;
+        width: 100%;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
     .stButton button:hover {
@@ -153,18 +156,20 @@ st.markdown(
         box-shadow: 0 8px 22px rgba(5, 150, 105, 0.45);
         transform: translateY(-2px);
     }
+    
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
+        gap: 6px;
         background-color: #e2e8f0;
         padding: 6px;
         border-radius: 14px;
+        flex-wrap: wrap;
     }
     .stTabs [data-baseweb="tab"] {
         height: 40px;
         border-radius: 10px;
         color: #334155;
         font-weight: 600;
-        font-size: 13px;
+        font-size: 12.5px;
         border: none !important;
     }
     .stTabs [aria-selected="true"] {
@@ -261,24 +266,21 @@ def init_db():
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS veiculos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tag_prefixo TEXT, numero_patrimonio TEXT, categoria_equipamento TEXT, tipo_equipamento TEXT,
+            tag_prefixo TEXT, categoria_equipamento TEXT,
             marca TEXT, modelo TEXT, ano INTEGER, chassi TEXT, renavam TEXT,
             placa TEXT, crv TEXT, cor TEXT, combustivel TEXT, empresa TEXT,
-            operador_condutor TEXT, horimetro_km INTEGER, status TEXT, data_entrada TEXT, observacoes TEXT
+            horimetro_km INTEGER, status TEXT
         )
     """)
 
   for col_sql in [
-      "ALTER TABLE veiculos ADD COLUMN numero_patrimonio TEXT",
       "ALTER TABLE veiculos ADD COLUMN categoria_equipamento TEXT",
-      "ALTER TABLE veiculos ADD COLUMN tipo_equipamento TEXT",
       "ALTER TABLE veiculos ADD COLUMN chassi TEXT",
       "ALTER TABLE veiculos ADD COLUMN renavam TEXT",
       "ALTER TABLE veiculos ADD COLUMN crv TEXT",
       "ALTER TABLE veiculos ADD COLUMN cor TEXT",
       "ALTER TABLE veiculos ADD COLUMN combustivel TEXT",
       "ALTER TABLE veiculos ADD COLUMN empresa TEXT",
-      "ALTER TABLE veiculos ADD COLUMN operador_condutor TEXT",
   ]:
     try:
       cursor.execute(col_sql)
@@ -374,17 +376,6 @@ def init_db():
       pass
 
   cursor.execute("""
-        CREATE TABLE IF NOT EXISTS chamadas_p2p (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            chamador TEXT,
-            receptor TEXT,
-            tipo_midia TEXT,
-            status TEXT,
-            data_hora TEXT
-        )
-    """)
-
-  cursor.execute("""
         CREATE TABLE IF NOT EXISTS chaves_licenca (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             codigo_chave TEXT UNIQUE,
@@ -476,22 +467,22 @@ if st.session_state["usuario_logado"]:
     is_gestao_ou_admin = True
 
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
-  col_l1, col_l2, col_l3 = st.columns([0.15, 3.7, 0.15])
+  col_l1, col_l2, col_l3 = st.columns([0.05, 3.9, 0.05])
   with col_l2:
     try:
       with open("caminhoes.jpg", "rb") as image_file:
         encoded_logo_login = base64.b64encode(image_file.read()).decode()
       st.markdown(
           f"""
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 24px; padding: 35px; text-align: center; box-shadow: 0 25px 50px rgba(5,150,105,0.25); margin-top: 15px; margin-bottom: 25px; color: white;">
-                    <div style="border-radius: 16px; overflow: hidden; max-height: 130px; border: 3px solid rgba(255,255,255,0.8); margin-bottom: 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
-                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 125px; object-fit: cover; display: block;">
+                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 24px; padding: 30px; text-align: center; box-shadow: 0 25px 50px rgba(5,150,105,0.25); margin-top: 10px; margin-bottom: 20px; color: white;">
+                    <div style="border-radius: 16px; overflow: hidden; max-height: 120px; border: 3px solid rgba(255,255,255,0.8); margin-bottom: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 115px; object-fit: cover; display: block;">
                     </div>
-                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; padding: 4px 18px; margin-bottom: 12px;">
+                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; padding: 4px 16px; margin-bottom: 10px;">
                         <span style="color: white; font-size: 11px; font-weight: 800; letter-spacing: 1.5px;">🛡️ PLATAFORMA ENTERPRISE CERTIFICADA</span>
                     </div>
-                    <h1 style="color: white !important; margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.8px;">tabalmix concreto</h1>
-                    <p style="color: #e2e8f0; font-size: 12.5px; margin: 6px 0 2px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">sistema inteligente de frotas, obras e oficina pro</p>
+                    <h1 style="color: white !important; margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.8px;">tabalmix concreto</h1>
+                    <p style="color: #e2e8f0; font-size: 12px; margin: 6px 0 2px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">sistema inteligente de frotas, obras e oficina pro</p>
                     <p style="color: #cbd5e1; font-size: 10px; margin: 0; font-style: italic;">powered by castro tech</p>
                 </div>
             """,
@@ -500,24 +491,23 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     except Exception:
       st.markdown(
           """
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 24px; padding: 35px; text-align: center; box-shadow: 0 25px 50px rgba(5,150,105,0.25); margin-top: 15px; margin-bottom: 25px; color: white;">
-                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; padding: 4px 18px; margin-bottom: 12px;">
+                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 24px; padding: 30px; text-align: center; box-shadow: 0 25px 50px rgba(5,150,105,0.25); margin-top: 10px; margin-bottom: 20px; color: white;">
+                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; padding: 4px 16px; margin-bottom: 10px;">
                         <span style="color: white; font-size: 11px; font-weight: 800; letter-spacing: 1.5px;">🛡️ PLATAFORMA ENTERPRISE CERTIFICADA</span>
                     </div>
-                    <h1 style="color: white !important; margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.8px;">tabalmix concreto</h1>
-                    <p style="color: #e2e8f0; font-size: 12.5px; margin: 6px 0 2px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">sistema inteligente de frotas, obras e oficina pro</p>
+                    <h1 style="color: white !important; margin: 0; font-size: 26px; font-weight: 900; letter-spacing: -0.8px;">tabalmix concreto</h1>
+                    <p style="color: #e2e8f0; font-size: 12px; margin: 6px 0 2px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">sistema inteligente de frotas, obras e oficina pro</p>
                     <p style="color: #cbd5e1; font-size: 10px; margin: 0; font-style: italic;">powered by castro tech</p>
                 </div>
             """,
           unsafe_allow_html=True,
       )
 
-    # PIN RÁPIDO AGORA É A PRIMEIRA ABA
     tab_pin, tab_login, tab_cadastro, tab_chave, tab_recuperar = st.tabs([
         "🔐 pin rápido",
         "🔑 entrar",
         "📝 cadastrar",
-        "🎟️ resgatar chave",
+        "🎟️ resgatar",
         "🔄 recuperar",
     ])
 
@@ -666,7 +656,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             ["Plano Mensal (30 dias)", "Plano Anual (365 dias)"],
         )
         btn_cadastrar = st.form_submit_button(
-            "cadastrar e prosseguir para pagamento (Pix/Cartão)"
+            "cadastrar e prosseguir para pagamento"
         )
 
         if btn_cadastrar:
@@ -697,7 +687,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
               )
               conn.commit()
               st.success(
-                  "✅ Conta cadastrada! Podes efetuar o pagamento via Pix/Cartão"
+                  "✅ Conta cadastrada com sucesso! Podes efetuar o pagamento"
                   " abaixo ou inserir uma chave de ativação."
               )
             except Exception as e:
@@ -708,34 +698,37 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
       st.markdown("---")
       st.markdown("### 💳 Pagamento Automático (Pix ou Cartão via Mercado Pago)")
       if st.button("Gerar Pagamento Mercado Pago"):
-        try:
-          preference_data = {
-              "items": [{
-                  "title": f"Assinatura Tabalmix Concreto",
-                  "quantity": 1,
-                  "unit_price": float(
-                      valor_num if "valor_num" in locals() else 69.90
-                  ),
-              }],
-              "back_urls": {
-                  "success": "https://tabalmix-concreto.streamlit.app/",
-                  "failure": "https://tabalmix-concreto.streamlit.app/",
-              },
-          }
-          preference_response = sdk_mp.preference().create(preference_data)
-          link_pagamento = preference_response["response"].get(
-              "init_point", "#"
-          )
-          st.markdown(
-              f"🔗 **[Clique aqui para abrir o checkout seguro do Mercado"
-              f" Pago]({link_pagamento})**",
-              unsafe_allow_html=True,
-          )
-        except Exception as ex:
-          st.error(
-              f"⚠️ Erro ao gerar pagamento automático: {ex}. Podes usar uma"
-              " chave de ativação."
-          )
+        if sdk_mp:
+          try:
+            preference_data = {
+                "items": [{
+                    "title": "Assinatura Tabalmix Concreto",
+                    "quantity": 1,
+                    "unit_price": float(
+                        valor_num if "valor_num" in locals() else 69.90
+                    ),
+                }],
+                "back_urls": {
+                    "success": "https://tabalmix-concreto.streamlit.app/",
+                    "failure": "https://tabalmix-concreto.streamlit.app/",
+                },
+            }
+            preference_response = sdk_mp.preference().create(preference_data)
+            link_pagamento = preference_response["response"].get(
+                "init_point", "#"
+            )
+            st.markdown(
+                f"🔗 **[Clique aqui para abrir o checkout seguro do Mercado"
+                f" Pago]({link_pagamento})**",
+                unsafe_allow_html=True,
+            )
+          except Exception as ex:
+            st.error(
+                f"⚠️ Erro ao gerar link de pagamento: {ex}. Podes usar uma"
+                " chave de ativação."
+            )
+        else:
+          st.error("⚠️ SDK do Mercado Pago não configurado.")
 
     with tab_chave:
       with st.form("form_resgatar_chave_login"):
@@ -788,7 +781,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                     " Faça login na aba 'entrar'."
                 )
               else:
-                st.error("⚠️ E-mail não encontrado no sistema. Faça o cadastro primeiro.")
+                st.error("⚠️ E-mail não encontrado no sistema.")
           else:
             st.error("⚠️ Chave de ativação inválida.")
 
@@ -855,7 +848,6 @@ def exibir_tabela_padronizada(df, nome_tabela):
 
   st.dataframe(df, use_container_width=True, hide_index=True)
 
-  # CONFIGURAÇÃO DE COLUNAS FIXAS RESTRITA EXCLUSIVAMENTE À DIRETORIA / GESTÃO
   if is_gestao_ou_admin:
     with st.expander(
         f"⚙️ [DIRETORIA] Configurar Ordem Padrão das Colunas ({nome_tabela})"
@@ -930,7 +922,7 @@ with st.sidebar:
     if not status_usuario_ativo:
       st.warning(
           "⚠️ **conta inativa:** insira uma chave de ativação válida ou efetue"
-          " o pagamento para liberar o acesso."
+          " o pagamento."
       )
     if st.button("🚪 encerrar sessão"):
       st.session_state["usuario_logado"] = None
@@ -1022,22 +1014,20 @@ if menu == "📊 visão geral":
     st.info("nenhum equipamento cadastrado na frota.")
 
 elif menu == "🚜 cadastro de equipamentos":
-  st.title("🚜 cadastro completo de equipamentos e frota")
+  st.title("🚜 cadastro limpo de equipamentos e frota")
   with st.form("form_frota", clear_on_submit=False):
     col1, col2 = st.columns(2)
     with col1:
       tag_prefixo = st.text_input("tag / prefixo (ex: EQ-001 / BET-12)")
-      numero_patrimonio = st.text_input("número de patrimônio")
       categoria_equipamento = st.text_input("categoria do equipamento")
-      tipo_equipamento = st.text_input("tipo de equipamento")
       marca = st.text_input("marca")
       modelo = st.text_input("modelo")
       ano = st.number_input(
           "ano de fabricação", min_value=1950, value=2024, step=1
       )
       chassi = st.text_input("número do chassi")
-    with col2:
       renavam = st.text_input("número do renavam")
+    with col2:
       placa = st.text_input("placa do veículo")
       crv = st.text_input("número do crv")
       cor = st.text_input("cor principal")
@@ -1046,7 +1036,6 @@ elif menu == "🚜 cadastro de equipamentos":
           ["Diesel S10", "Diesel S500", "Gasolina", "Flex", "Elétrico"],
       )
       empresa = st.text_input("empresa / filial responsável")
-      operador_condutor = st.text_input("operador / motorista responsável")
       horimetro_km = st.number_input(
           "horímetro ou km inicial", min_value=0, value=15000, step=100
       )
@@ -1055,7 +1044,7 @@ elif menu == "🚜 cadastro de equipamentos":
           ["Ativo", "Em Manutenção", "Parado", "Mobilizado"],
       )
 
-    btn_cad_eq = st.form_submit_button("cadastrar equipamento completo")
+    btn_cad_eq = st.form_submit_button("cadastrar equipamento limpo")
     if btn_cad_eq and modelo:
       tag_final = (
           tag_prefixo.upper()
@@ -1063,16 +1052,13 @@ elif menu == "🚜 cadastro de equipamentos":
           else "EQ-00" + str(datetime.now().microsecond)[:3]
       )
       cursor.execute(
-          "INSERT INTO veiculos (tag_prefixo, numero_patrimonio,"
-          " categoria_equipamento, tipo_equipamento, marca, modelo, ano, chassi,"
-          " renavam, placa, crv, cor, combustivel, empresa, operador_condutor,"
-          " horimetro_km, status, data_entrada) VALUES (?, ?, ?, ?, ?, ?, ?, ?,"
-          " ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          "INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca,"
+          " modelo, ano, chassi, renavam, placa, crv, cor, combustivel,"
+          " empresa, horimetro_km, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,"
+          " ?, ?, ?, ?, ?)",
           (
               tag_final,
-              numero_patrimonio,
               categoria_equipamento,
-              tipo_equipamento,
               marca,
               modelo,
               int(ano),
@@ -1083,10 +1069,8 @@ elif menu == "🚜 cadastro de equipamentos":
               cor,
               combustivel,
               empresa,
-              operador_condutor,
               int(horimetro_km),
               status,
-              datetime.now().strftime("%Y-%m-%d"),
           ),
       )
       conn.commit()
@@ -1174,16 +1158,10 @@ elif menu == "⛽ abastecimentos & combustível":
 
 elif menu == "🏗️ mobilização / desmobilização":
   st.title("🏗️ mobilização e desmobilização de obras")
-  df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
-  tags_mob = (
-      df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
-  )
   with st.form("form_mob"):
     c1, c2 = st.columns(2)
     with c1:
-      eq_mob = st.selectbox(
-          "equipamento / tag", tags_mob if tags_mob else ["MANUAL"]
-      )
+      eq_mob = st.text_input("equipamento / tag (ex: EQ-001)")
       tipo_mov = st.selectbox(
           "movimentação",
           ["mobilização (envio)", "desmobilização (retorno)", "remanejamento"],
@@ -1248,60 +1226,61 @@ elif menu == "🏗️ mobilização / desmobilização":
     )
     mob_atual_row = df_mobs_ed[df_mobs_ed["id"] == id_mob_sel].iloc[0]
 
-    with st.form("form_editar_mobilizacao"):
-      novo_resp = st.text_input(
-          "Novo Responsável / Motorista",
-          value=str(mob_atual_row["responsavel"]),
-      )
-      novo_status_mov = st.selectbox(
-          "Novo Status / Movimento",
-          [
-              "mobilização (envio)",
-              "desmobilização (retorno)",
-              "remanejamento",
-              "Cancelado / Paralisado",
-          ],
-      )
-      motivo_alteracao = st.text_input(
-          "Motivo da Alteração / Substituição (Obrigatório para Auditoria)"
-      )
-      btn_salvar_ed_mob = st.form_submit_button("💾 Salvar Alteração na Obra")
+    novo_resp_ed = st.text_input(
+        "Novo Responsável / Motorista",
+        value=str(mob_atual_row["responsavel"]),
+        key="inp_novo_resp",
+    )
+    novo_status_mov_ed = st.selectbox(
+        "Novo Status / Movimento",
+        [
+            "mobilização (envio)",
+            "desmobilização (retorno)",
+            "remanejamento",
+            "Cancelado / Paralisado",
+        ],
+        key="sel_novo_stat",
+    )
+    motivo_alteracao_ed = st.text_input(
+        "Motivo da Alteração / Substituição (Obrigatório para Auditoria)",
+        key="inp_motivo_alt",
+    )
 
-      if btn_salvar_ed_mob:
-        if not motivo_alteracao.strip():
-          st.error(
-              "⚠️ Por favor, informe o motivo da alteração para registrar no"
-              " histórico de auditoria."
-          )
-        else:
-          historico_antigo = (
-              str(mob_atual_row["historico_edicoes"])
-              if mob_atual_row["historico_edicoes"]
-              else ""
-          )
-          novo_registro = (
-              f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Alterado para"
-              f" Resp: {novo_resp} | Tipo: {novo_status_mov} | Motivo:"
-              f" {motivo_alteracao}"
-          )
-          historico_atualizado = historico_antigo + novo_registro
+    if st.button("💾 Salvar Alteração na Obra", key="btn_salvar_edicao_mob"):
+      if not motivo_alteracao_ed.strip():
+        st.error(
+            "⚠️ Por favor, informe o motivo da alteração para registrar no"
+            " histórico de auditoria."
+        )
+      else:
+        historico_antigo = (
+            str(mob_atual_row["historico_edicoes"])
+            if mob_atual_row["historico_edicoes"]
+            else ""
+        )
+        novo_registro = (
+            f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Alterado para"
+            f" Resp: {novo_resp_ed} | Tipo: {novo_status_mov_ed} | Motivo:"
+            f" {motivo_alteracao_ed}"
+        )
+        historico_atualizado = historico_antigo + novo_registro
 
-          cursor.execute(
-              "UPDATE mobilizacoes SET responsavel = ?, tipo_movimento = ?,"
-              " historico_edicoes = ? WHERE id = ?",
-              (
-                  novo_resp,
-                  novo_status_mov,
-                  historico_atualizado,
-                  int(id_mob_sel),
-              ),
-          )
-          conn.commit()
-          st.success(
-              "✅ Mobilização atualizada com sucesso e registrada no histórico"
-              " de auditoria!"
-          )
-          st.rerun()
+        cursor.execute(
+            "UPDATE mobilizacoes SET responsavel = ?, tipo_movimento = ?,"
+            " historico_edicoes = ? WHERE id = ?",
+            (
+                novo_resp_ed,
+                novo_status_mov_ed,
+                historico_atualizado,
+                int(id_mob_sel),
+            ),
+        )
+        conn.commit()
+        st.success(
+            "✅ Mobilização atualizada com sucesso e registrada no histórico"
+            " de auditoria!"
+        )
+        st.rerun()
 
   df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
   if not df_mobs.empty:
@@ -1429,23 +1408,11 @@ elif menu == "👥 gestão de clientes":
     exibir_tabela_padronizada(df_cli, "clientes")
 
 elif menu == "💬 chat tabalmix pro & rede":
-  st.title("💬 Central Pro de Chamadas P2P e Rede Interna")
+  st.title("💬 Central Pro de Mensagens e Rede Interna")
   st.markdown(
-      "Sistema unificado de comunicação: ligue diretamente por vídeo/áudio com"
-      " servidores STUN integrados ou envie mensagens em tempo real."
+      "Sistema unificado de comunicação: envie mensagens instantâneas e fotos"
+      " da obra em tempo real para toda a equipe."
   )
-
-  cursor.execute("""
-        CREATE TABLE IF NOT EXISTS chamadas_p2p (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            chamador TEXT,
-            receptor TEXT,
-            tipo_midia TEXT,
-            status TEXT,
-            data_hora TEXT
-        )
-    """)
-  conn.commit()
 
   if usuario_atual:
     cursor.execute(
@@ -1457,140 +1424,7 @@ elif menu == "💬 chat tabalmix pro & rede":
   colegas_db = cursor.fetchall()
   lista_nomes_colegas = [f"{c[1]} ({c[2]})" for c in colegas_db]
 
-  apelido_atual = (
-      usuario_atual["apelido"] if usuario_atual else "Administrador Master"
-  )
-  cursor.execute(
-      "SELECT id, chamador, status FROM chamadas_p2p WHERE receptor LIKE ? AND"
-      " status = 'chamando' ORDER BY id DESC LIMIT 1",
-      (f"%{apelido_atual}%",),
-  )
-  chamada_recebida = cursor.fetchone()
-
-  if chamada_recebida:
-    st.warning(
-        f"🚨 **CHAMADA ENTRANTE DE: {chamada_recebida[1]}!** O seu telemóvel"
-        " está a tocar."
-    )
-
-  tab_chamadas_dir, tab_chat_dir = st.tabs(
-      ["📞 Chamadas Diretas (P2P / Vídeo)", "💬 Chat Direto & Fotos da Obra"]
-  )
-
-  with tab_chamadas_dir:
-    st.markdown("#### 📞 Iniciar Chamada Direta com Servidor STUN")
-    if lista_nomes_colegas:
-      col_sel_c, col_btn_c = st.columns([2, 1])
-      with col_sel_c:
-        colega_escolhido = st.selectbox(
-            "Selecionar colega para ligar", lista_nomes_colegas
-        )
-      with col_btn_c:
-        st.markdown("<br>", unsafe_allow_html=True)
-        iniciar_chamada_btn = st.button("🚀 Disparar Chamada")
-
-      if iniciar_chamada_btn:
-        data_h = datetime.now().strftime("%d/%m %H:%M")
-        remetente_chamada = (
-            f"{usuario_atual['apelido']} ({usuario_atual['cargo']})"
-            if usuario_atual
-            else "Administrador Master (Diretoria)"
-        )
-        cursor.execute(
-            "INSERT INTO chamadas_p2p (chamador, receptor, tipo_midia, status,"
-            " data_hora) VALUES (?, ?, ?, 'chamando', ?)",
-            (remetente_chamada, colega_escolhido, "Vídeo/Áudio", data_h),
-        )
-        conn.commit()
-        st.success(
-            f"📞 Chamada disparada para **{colega_escolhido}** com sucesso! O"
-            " alarme vai tocar no dispositivo dela."
-        )
-
-      # COMPONENTE P2P COM STUN SERVERS CONFIGURADOS PARA VÍDEO E ÁUDIO
-      st.components.v1.html(
-          """
-            <div style="background: #0f172a; border-radius: 16px; padding: 20px; text-align: center; color: white; font-family: 'Plus Jakarta Sans', sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
-                <div id="callStatus" style="background: #1e293b; border: 1px solid #334155; padding: 12px; border-radius: 10px; margin-bottom: 15px; font-weight: bold; color: #38bdf8;">
-                    📲 Central P2P Ativa (STUN Google Configurado). Clique em "Atender / Vídeo".
-                </div>
-                
-                <video id="localVideo" autoplay playsinline muted style="width: 100%; max-height: 220px; border-radius: 12px; background: #1e293b; border: 2px solid #059669; object-fit: cover; margin-bottom: 12px;"></video>
-                
-                <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
-                    <button onclick="tocarAlarme()" style="background: #f59e0b; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🔔 Tocar Alarme</button>
-                    <button onclick="atenderChamada()" style="background: #059669; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🟢 Atender / Vídeo</button>
-                    <button onclick="desligarChamada()" style="background: #dc2626; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🔴 Desligar</button>
-                </div>
-            </div>
-            <script>
-            let localStream = null;
-            let audioCtx = null;
-            
-            const rtcConfig = {
-                iceServers: [
-                    { urls: 'stun:stun.l.google.com:19302' },
-                    { urls: 'stun:stun1.l.google.com:19302' }
-                ]
-            };
-
-            function tocarAlarme() {
-                try {
-                    if (!audioCtx) {
-                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    }
-                    let now = audioCtx.currentTime;
-                    for (let i = 0; i < 8; i++) {
-                        let osc = audioCtx.createOscillator();
-                        let gain = audioCtx.createGain();
-                        osc.type = 'sine';
-                        osc.frequency.setValueAtTime(600, now + (i * 0.5));
-                        gain.gain.setValueAtTime(0.4, now + (i * 0.5));
-                        gain.gain.exponentialRampToValueAtTime(0.00001, now + (i * 0.5) + 0.25);
-                        osc.connect(gain);
-                        gain.connect(audioCtx.destination);
-                        osc.start(now + (i * 0.5));
-                        osc.stop(now + (i * 0.5) + 0.25);
-                    }
-                    if (navigator.vibrate) {
-                        navigator.vibrate([800, 300, 800, 300, 800]);
-                    }
-                    document.getElementById('callStatus').innerText = "📞 A tocar sinal de alarme no canteiro de obras!";
-                } catch(e) {
-                    console.log("Erro áudio:", e);
-                }
-            }
-
-            async function atenderChamada() {
-                try {
-                    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                    document.getElementById('localVideo').srcObject = localStream;
-                    
-                    let pc = new RTCPeerConnection(rtcConfig);
-                    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
-                    
-                    document.getElementById('callStatus').innerText = "🟢 Vídeo e Áudio P2P conectados via STUN!";
-                } catch (err) {
-                    alert("Erro ao aceder câmara ou microfone: Verifique as permissões do telemóvel. " + err);
-                }
-            }
-
-            function desligarChamada() {
-                if (localStream) {
-                    localStream.getTracks().forEach(track => track.stop());
-                    document.getElementById('localVideo').srcObject = null;
-                }
-                document.getElementById('callStatus').innerText = "🔴 Chamada encerrada.";
-            }
-            </script>
-            """,
-          height=370,
-      )
-    else:
-      st.info(
-          "Nenhum outro colega cadastrado no sistema para chamadas diretas"
-          " ainda."
-      )
+  tab_chat_dir = st.tabs(["💬 Chat Direto & Fotos da Obra"])[0]
 
   with tab_chat_dir:
     st.markdown("#### 💬 Conversas Diretas & Envio de Fotos da Obra")
