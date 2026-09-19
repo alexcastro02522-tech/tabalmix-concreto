@@ -396,24 +396,27 @@ def init_db():
 conn = init_db()
 cursor = conn.cursor()
 
+# NOVA CHAVE SECRETA DE ADMINISTRADOR (O link antigo ?admin=1 deixa de funcionar na hora)
 modo_admin_liberado = False
 try:
   query_params = st.query_params
   if (
-      query_params.get("admin") == "1"
-      or query_params.get("admin") == ["1"]
-      or str(query_params).find("admin=1") != -1
+      query_params.get("admin") == "tabalmix_master_2026"
+      or query_params.get("admin") == ["tabalmix_master_2026"]
+      or str(query_params).find("admin=tabalmix_master_2026") != -1
   ):
     modo_admin_liberado = True
+  else:
+    modo_admin_liberado = False
 except Exception:
-  pass
+  modo_admin_liberado = False
 
 if "usuario_logado" not in st.session_state:
   st.session_state["usuario_logado"] = None
 
 # PERSISTÊNCIA INTELIGENTE DE SESSÃO NA OBRA
 try:
-  if st.session_state["usuario_logado"] is None:
+  if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     qp = st.query_params
     saved_user_id = qp.get("user_id")
     if saved_user_id:
@@ -446,6 +449,7 @@ try:
 except Exception:
   pass
 
+# FORÇA LOGIN INDIVIDUAL SE NÃO ESTIVER NO LINK SECRETO DE ADMIN
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
   col_l1, col_l2, col_l3 = st.columns([0.15, 3.7, 0.15])
   with col_l2:
@@ -1131,6 +1135,19 @@ elif menu == "💬 chat tabalmix pro & rede":
       " canteiro de obras."
   )
 
+  # Garante tabela de chamadas ativa
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chamadas_p2p (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            chamador TEXT,
+            receptor TEXT,
+            tipo_midia TEXT,
+            status TEXT,
+            data_hora TEXT
+        )
+    """)
+  conn.commit()
+
   # Buscar lista de colegas cadastrados para contato direto
   cursor.execute(
       "SELECT id, apelido, cargo_setor FROM usuarios_sistema WHERE email != ?",
@@ -1138,6 +1155,21 @@ elif menu == "💬 chat tabalmix pro & rede":
   )
   colegas_db = cursor.fetchall()
   lista_nomes_colegas = [f"{c[1]} ({c[2]})" for c in colegas_db]
+
+  # Verifica se há alguma chamada pendente para o usuário logado atual
+  apelido_atual = usuario_atual["apelido"]
+  cursor.execute(
+      "SELECT id, chamador, status FROM chamadas_p2p WHERE receptor LIKE ? AND"
+      " status = 'chamando' ORDER BY id DESC LIMIT 1",
+      (f"%{apelido_atual}%",),
+  )
+  chamada_recebida = cursor.fetchone()
+
+  if chamada_recebida:
+    st.warning(
+        f"🚨 **CHAMADA ENTRANTE DE: {chamada_recebida[1]}!** O seu telemóvel"
+        " está a tocar."
+    )
 
   tab_chamadas_dir, tab_chat_dir = st.tabs(
       ["📞 Chamadas Diretas (P2P / Vídeo)", "💬 Chat Direto & Fotos da Obra"]
@@ -1156,9 +1188,21 @@ elif menu == "💬 chat tabalmix pro & rede":
         iniciar_chamada_btn = st.button("🚀 Disparar Chamada")
 
       if iniciar_chamada_btn:
+        data_h = datetime.now().strftime("%d/%m %H:%M")
+        cursor.execute(
+            "INSERT INTO chamadas_p2p (chamador, receptor, tipo_midia, status,"
+            " data_hora) VALUES (?, ?, ?, 'chamando', ?)",
+            (
+                f"{usuario_atual['apelido']} ({usuario_atual['cargo']})",
+                colega_escolhido,
+                "Vídeo/Áudio",
+                data_h,
+            ),
+        )
+        conn.commit()
         st.success(
-            f"📞 Chamada iniciada para **{colega_escolhido}**. O alarme e a"
-            " câmara foram ativados!"
+            f"📞 Chamada disparada para **{colega_escolhido}** com sucesso! O"
+            " alarme vai tocar no dispositivo dela."
         )
 
       # CENTRAL DE CHAMADA COM ALARME SONORO E VÍDEO P2P INTEGRADO
@@ -1166,7 +1210,7 @@ elif menu == "💬 chat tabalmix pro & rede":
           """
             <div style="background: #0f172a; border-radius: 16px; padding: 20px; text-align: center; color: white; font-family: 'Plus Jakarta Sans', sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
                 <div id="callStatus" style="background: #1e293b; border: 1px solid #334155; padding: 12px; border-radius: 10px; margin-bottom: 15px; font-weight: bold; color: #38bdf8;">
-                    📲 Central de Chamada P2P Pronta. Toque em "Ligar / Atender" para iniciar.
+                    📲 Central P2P Pronta. Clique em "Tocar Alarme" ou "Atender / Vídeo".
                 </div>
                 
                 <video id="localVideo" autoplay playsinline muted style="width: 100%; max-height: 220px; border-radius: 12px; background: #1e293b; border: 2px solid #059669; object-fit: cover; margin-bottom: 12px;"></video>
@@ -1187,7 +1231,7 @@ elif menu == "💬 chat tabalmix pro & rede":
                         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                     }
                     let now = audioCtx.currentTime;
-                    for (let i = 0; i < 5; i++) {
+                    for (let i = 0; i < 6; i++) {
                         let osc = audioCtx.createOscillator();
                         let gain = audioCtx.createGain();
                         osc.type = 'sine';
@@ -1200,7 +1244,7 @@ elif menu == "💬 chat tabalmix pro & rede":
                         osc.stop(now + (i * 0.7) + 0.35);
                     }
                     if (navigator.vibrate) {
-                        navigator.vibrate([500, 250, 500, 250, 500]);
+                        navigator.vibrate([600, 300, 600, 300, 600]);
                     }
                     document.getElementById('callStatus').innerText = "📞 A tocar sinal de chamada no canteiro de obras!";
                 } catch(e) {
@@ -1212,9 +1256,9 @@ elif menu == "💬 chat tabalmix pro & rede":
                 try {
                     localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                     document.getElementById('localVideo').srcObject = localStream;
-                    document.getElementById('callStatus').innerText = "🟢 Chamada de vídeo P2P ativa!";
+                    document.getElementById('callStatus').innerText = "🟢 Chamada de vídeo P2P ativa e conectada!";
                 } catch (err) {
-                    alert("Erro ao aceder câmara: " + err);
+                    alert("Erro ao aceder câmara: Verifique as permissões do telemóvel. " + err);
                 }
             }
 
@@ -1261,7 +1305,6 @@ elif menu == "💬 chat tabalmix pro & rede":
             unsafe_allow_html=True,
         )
         if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
-          # Se for imagem, mostra pré-visualização direta
           if row_m["arquivo_nome"].lower().endswith((".png", ".jpg", ".jpeg")):
             st.image(
                 row_m["arquivo_path"],
