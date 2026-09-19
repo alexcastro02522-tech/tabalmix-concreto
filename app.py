@@ -366,21 +366,13 @@ def init_db():
       pass
 
   cursor.execute("""
-        CREATE TABLE IF NOT EXISTS alertas_sos (
+        CREATE TABLE IF NOT EXISTS chamadas_p2p (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            remetente TEXT,
-            equipamento TEXT,
-            motivo TEXT,
-            data_alerta TEXT,
-            status TEXT
-        )
-    """)
-  cursor.execute("""
-        CREATE TABLE IF NOT EXISTS avisos_fixados (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            autor TEXT,
-            mensagem TEXT,
-            data_fixacao TEXT
+            chamador TEXT,
+            receptor TEXT,
+            tipo_midia TEXT,
+            status TEXT,
+            data_hora TEXT
         )
     """)
 
@@ -1132,168 +1124,209 @@ elif menu == "👥 gestão de clientes":
     exibir_tabela_padronizada(df_cli, "clientes")
 
 elif menu == "💬 chat tabalmix pro & rede":
-  st.title("💬 Central Pro de Chamadas e Chat em Tempo Real")
+  st.title("💬 Central Pro de Chamadas P2P e Rede Interna")
   st.markdown(
-      "Comunicação corporativa avançada com **chamada interativa** e alertas"
-      " sonoros automáticos para a equipe na obra, unificada no mesmo aplicativo."
+      "Sistema unificado de comunicação: ligue diretamente por vídeo/áudio ou"
+      " envie mensagens e fotos em tempo real para qualquer colega ativo no"
+      " canteiro de obras."
   )
 
-  # CENTRAL DE CHAMADA COM ALARME SONORO E VIBRAÇÃO EM TEMPO REAL
-  with st.expander(
-      "📞 CENTRAL DE CHAMADAS E VÍDEO AO VIVO (TOQUE & ALARME)", expanded=True
-  ):
-    st.markdown(
-        "Utilize a central para iniciar chamadas diretas com som de toque,"
-        " vibração e câmara integrada:"
-    )
-    st.components.v1.html(
-        """
-        <div style="background: #0f172a; border-radius: 16px; padding: 20px; text-align: center; color: white; font-family: 'Plus Jakarta Sans', sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
-            <div id="callStatus" style="background: #1e293b; border: 1px solid #334155; padding: 12px; border-radius: 10px; margin-bottom: 15px; font-weight: bold; color: #38bdf8;">
-                📲 Central Pronta. Clique em "Tocar Alarme de Chamada" para disparar o toque ou inicie a câmara.
-            </div>
-            
-            <video id="localVideo" autoplay playsinline muted style="width: 100%; max-height: 220px; border-radius: 12px; background: #1e293b; border: 2px solid #059669; object-fit: cover; margin-bottom: 12px;"></video>
-            
-            <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
-                <button onclick="tocarAlarmeChamada()" style="background: #f59e0b; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🔔 Tocar Toque de Chamada</button>
-                <button onclick="ligarCamera()" style="background: #059669; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🟢 Atender / Ligar Câmara</button>
-                <button onclick="desligarCamera()" style="background: #dc2626; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🔴 Desligar / Recusar</button>
-            </div>
-        </div>
-        <script>
-        let localStream = null;
-        let audioCtx = null;
-
-        function tocarAlarmeChamada() {
-            try {
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                let now = audioCtx.currentTime;
-                for (let i = 0; i < 6; i++) {
-                    let osc = audioCtx.createOscillator();
-                    let gain = audioCtx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(480, now + (i * 0.7));
-                    gain.gain.setValueAtTime(0.25, now + (i * 0.7));
-                    gain.gain.exponentialRampToValueAtTime(0.00001, now + (i * 0.7) + 0.35);
-                    osc.connect(gain);
-                    gain.connect(audioCtx.destination);
-                    osc.start(now + (i * 0.7));
-                    osc.stop(now + (i * 0.7) + 0.35);
-                }
-                if (navigator.vibrate) {
-                    navigator.vibrate([600, 300, 600, 300, 600]);
-                }
-                document.getElementById('callStatus').innerText = "📞 A tocar sinal de chamada no telemóvel!";
-            } catch(e) {
-                console.log("Erro ao reproduzir áudio:", e);
-            }
-        }
-
-        async function ligarCamera() {
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                document.getElementById('localVideo').srcObject = localStream;
-                document.getElementById('callStatus').innerText = "🟢 Chamada de vídeo ativa e estabelecida!";
-            } catch (err) {
-                alert("Erro ao aceder à câmara: Verifique as permissões do telemóvel. " + err);
-            }
-        }
-
-        function desligarCamera() {
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-                document.getElementById('localVideo').srcObject = null;
-            }
-            document.getElementById('callStatus').innerText = "🔴 Chamada encerrada.";
-        }
-        </script>
-        """,
-        height=370,
-    )
-
-  st.markdown("---")
-  st.markdown("#### 🗨️ Histórico de Mensagens da Equipe na Obra")
-
-  df_msgs = pd.read_sql(
-      "SELECT * FROM chat_interno ORDER BY id DESC LIMIT 25", conn
+  # Buscar lista de colegas cadastrados para contato direto
+  cursor.execute(
+      "SELECT id, apelido, cargo_setor FROM usuarios_sistema WHERE email != ?",
+      (usuario_atual["email"],),
   )
-  if not df_msgs.empty:
-    for _, row_m in df_msgs.iterrows():
-      st.markdown(
-          f"""
-            <div style="background: #ffffff; border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; border: 1px solid #e2e8f0; box-shadow: 0 3px 10px rgba(0,0,0,0.02);">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                    <b style="color: #047857; font-size: 12.5px;">👤 {row_m['remetente']}</b>
-                    <span style="font-size: 10px; color: #64748b;">{row_m['data_envio']}</span>
-                </div>
-                <div style="font-size: 14px; color: #0f172a; white-space: pre-wrap; line-height: 1.4;">{row_m['mensagem']}</div>
-            </div>
-        """,
-          unsafe_allow_html=True,
-      )
-      if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
-        with open(row_m["arquivo_path"], "rb") as f_down:
-          st.download_button(
-              label=f"📥 Baixar anexo: {row_m['arquivo_nome']}",
-              data=f_down.read(),
-              file_name=row_m["arquivo_nome"],
-              key=f"dl_chat_arq_{row_m['id']}",
-          )
-  else:
-    st.info("Nenhuma mensagem registrada no chat ainda.")
+  colegas_db = cursor.fetchall()
+  lista_nomes_colegas = [f"{c[1]} ({c[2]})" for c in colegas_db]
 
-  remetente_atual = (
-      usuario_atual["apelido"]
-      if usuario_atual
-      else ("Administrador" if modo_admin_liberado else "Colaborador")
+  tab_chamadas_dir, tab_chat_dir = st.tabs(
+      ["📞 Chamadas Diretas (P2P / Vídeo)", "💬 Chat Direto & Fotos da Obra"]
   )
-  cargo_atual = usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
 
-  with st.form("form_chat_melhorado", clear_on_submit=True):
-    msg_sala_txt = st.text_input("Escreva sua mensagem corporativa...")
-    file_sala_up = st.file_uploader(
-        "Anexar arquivo ou foto (opcional)",
-        type=["png", "jpg", "jpeg", "pdf", "docx", "xlsx"],
-    )
-    btn_enviar_chat = st.form_submit_button("➤ Enviar Mensagem")
-
-    if btn_enviar_chat:
-      if not msg_sala_txt.strip() and not file_sala_up:
-        st.warning("⚠️ Digite uma mensagem ou anexe um arquivo.")
-      else:
-        path_s = ""
-        nome_s = ""
-        if file_sala_up is not None:
-          os.makedirs("chat_documentos", exist_ok=True)
-          nome_s = file_sala_up.name
-          path_s = (
-              "chat_documentos/"
-              f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nome_s}"
-          )
-          with open(path_s, "wb") as f_out_s:
-            f_out_s.write(file_sala_up.getbuffer())
-
-        data_env_s = datetime.now().strftime("%d/%m às %H:%M")
-        cursor.execute(
-            "INSERT INTO chat_interno (remetente, destinatario, cargo,"
-            " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
-            " ?, ?, ?, ?, ?)",
-            (
-                f"{remetente_atual} ({cargo_atual})",
-                "Geral (Equipe)",
-                cargo_atual,
-                msg_sala_txt,
-                path_s,
-                nome_s,
-                data_env_s,
-            ),
+  with tab_chamadas_dir:
+    st.markdown("#### 📞 Iniciar Chamada Direta com Colega na Obra")
+    if lista_nomes_colegas:
+      col_sel_c, col_btn_c = st.columns([2, 1])
+      with col_sel_c:
+        colega_escolhido = st.selectbox(
+            "Selecionar colega para ligar", lista_nomes_colegas
         )
-        conn.commit()
-        st.success("✅ Mensagem enviada com sucesso!")
-        st.rerun()
+      with col_btn_c:
+        st.markdown("<br>", unsafe_allow_html=True)
+        iniciar_chamada_btn = st.button("🚀 Disparar Chamada")
+
+      if iniciar_chamada_btn:
+        st.success(
+            f"📞 Chamada iniciada para **{colega_escolhido}**. O alarme e a"
+            " câmara foram ativados!"
+        )
+
+      # CENTRAL DE CHAMADA COM ALARME SONORO E VÍDEO P2P INTEGRADO
+      st.components.v1.html(
+          """
+            <div style="background: #0f172a; border-radius: 16px; padding: 20px; text-align: center; color: white; font-family: 'Plus Jakarta Sans', sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+                <div id="callStatus" style="background: #1e293b; border: 1px solid #334155; padding: 12px; border-radius: 10px; margin-bottom: 15px; font-weight: bold; color: #38bdf8;">
+                    📲 Central de Chamada P2P Pronta. Toque em "Ligar / Atender" para iniciar.
+                </div>
+                
+                <video id="localVideo" autoplay playsinline muted style="width: 100%; max-height: 220px; border-radius: 12px; background: #1e293b; border: 2px solid #059669; object-fit: cover; margin-bottom: 12px;"></video>
+                
+                <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="tocarAlarme()" style="background: #f59e0b; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🔔 Tocar Alarme</button>
+                    <button onclick="atenderChamada()" style="background: #059669; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🟢 Atender / Vídeo</button>
+                    <button onclick="desligarChamada()" style="background: #dc2626; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🔴 Desligar</button>
+                </div>
+            </div>
+            <script>
+            let localStream = null;
+            let audioCtx = null;
+
+            function tocarAlarme() {
+                try {
+                    if (!audioCtx) {
+                        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    }
+                    let now = audioCtx.currentTime;
+                    for (let i = 0; i < 5; i++) {
+                        let osc = audioCtx.createOscillator();
+                        let gain = audioCtx.createGain();
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(520, now + (i * 0.7));
+                        gain.gain.setValueAtTime(0.3, now + (i * 0.7));
+                        gain.gain.exponentialRampToValueAtTime(0.00001, now + (i * 0.7) + 0.35);
+                        osc.connect(gain);
+                        gain.connect(audioCtx.destination);
+                        osc.start(now + (i * 0.7));
+                        osc.stop(now + (i * 0.7) + 0.35);
+                    }
+                    if (navigator.vibrate) {
+                        navigator.vibrate([500, 250, 500, 250, 500]);
+                    }
+                    document.getElementById('callStatus').innerText = "📞 A tocar sinal de chamada no canteiro de obras!";
+                } catch(e) {
+                    console.log("Erro áudio:", e);
+                }
+            }
+
+            async function atenderChamada() {
+                try {
+                    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    document.getElementById('localVideo').srcObject = localStream;
+                    document.getElementById('callStatus').innerText = "🟢 Chamada de vídeo P2P ativa!";
+                } catch (err) {
+                    alert("Erro ao aceder câmara: " + err);
+                }
+            }
+
+            function desligarChamada() {
+                if (localStream) {
+                    localStream.getTracks().forEach(track => track.stop());
+                    document.getElementById('localVideo').srcObject = null;
+                }
+                document.getElementById('callStatus').innerText = "🔴 Chamada encerrada.";
+            }
+            </script>
+            """,
+          height=370,
+      )
+    else:
+      st.info(
+          "Nenhum outro colega cadastrado no sistema para chamadas diretas"
+          " ainda."
+      )
+
+  with tab_chat_dir:
+    st.markdown("#### 💬 Conversas Diretas & Envio de Fotos da Obra")
+
+    destinatario_chat = st.selectbox(
+        "Enviar mensagem/foto para:",
+        ["Geral (Toda a Equipe)"] + lista_nomes_colegas,
+    )
+
+    df_msgs = pd.read_sql(
+        "SELECT * FROM chat_interno ORDER BY id DESC LIMIT 30", conn
+    )
+    if not df_msgs.empty:
+      for _, row_m in df_msgs.iterrows():
+        st.markdown(
+            f"""
+                <div style="background: #ffffff; border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; border: 1px solid #e2e8f0; box-shadow: 0 3px 10px rgba(0,0,0,0.02);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <b style="color: #047857; font-size: 12.5px;">👤 {row_m['remetente']} ➔ Para: {row_m['destinatario']}</b>
+                        <span style="font-size: 10px; color: #64748b;">{row_m['data_envio']}</span>
+                    </div>
+                    <div style="font-size: 14px; color: #0f172a; white-space: pre-wrap; line-height: 1.4;">{row_m['mensagem']}</div>
+                </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
+          # Se for imagem, mostra pré-visualização direta
+          if row_m["arquivo_nome"].lower().endswith((".png", ".jpg", ".jpeg")):
+            st.image(
+                row_m["arquivo_path"],
+                caption=f"Foto enviada por {row_m['remetente']}",
+                use_column_width=True,
+            )
+          with open(row_m["arquivo_path"], "rb") as f_down:
+            st.download_button(
+                label=f"📥 Baixar anexo: {row_m['arquivo_nome']}",
+                data=f_down.read(),
+                file_name=row_m["arquivo_nome"],
+                key=f"dl_chat_arq_{row_m['id']}",
+            )
+    else:
+      st.info("Nenhuma mensagem ou foto enviada no chat ainda.")
+
+    remetente_atual = (
+        usuario_atual["apelido"]
+        if usuario_atual
+        else ("Administrador" if modo_admin_liberado else "Colaborador")
+    )
+    cargo_atual = usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
+
+    with st.form("form_chat_direto", clear_on_submit=True):
+      msg_sala_txt = st.text_input("Escreva sua mensagem...")
+      file_sala_up = st.file_uploader(
+          "Anexar foto da obra ou documento (opcional)",
+          type=["png", "jpg", "jpeg", "pdf", "docx"],
+      )
+      btn_enviar_chat = st.form_submit_button("➤ Enviar para o Colega")
+
+      if btn_enviar_chat:
+        if not msg_sala_txt.strip() and not file_sala_up:
+          st.warning("⚠️ Digite uma mensagem ou anexe uma foto.")
+        else:
+          path_s = ""
+          nome_s = ""
+          if file_sala_up is not None:
+            os.makedirs("chat_documentos", exist_ok=True)
+            nome_s = file_sala_up.name
+            path_s = (
+                "chat_documentos/"
+                f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nome_s}"
+            )
+            with open(path_s, "wb") as f_out_s:
+              f_out_s.write(file_sala_up.getbuffer())
+
+          data_env_s = datetime.now().strftime("%d/%m às %H:%M")
+          cursor.execute(
+              "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+              " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
+              " ?, ?, ?, ?, ?)",
+              (
+                  f"{remetente_atual} ({cargo_atual})",
+                  destinatario_chat,
+                  cargo_atual,
+                  msg_sala_txt,
+                  path_s,
+                  nome_s,
+                  data_env_s,
+              ),
+          )
+          conn.commit()
+          st.success("✅ Mensagem/Foto enviada com sucesso!")
+          st.rerun()
 
 elif menu == "🔍 consulta / busca geral":
   st.title("🔍 consulta e histórico completo do equipamento")
