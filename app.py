@@ -32,7 +32,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE (COM CORREÇÃO TOTAL DE RÓTULOS E INPUTS)
+# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE
 st.markdown(
     """
     <style>
@@ -46,7 +46,6 @@ st.markdown(
         padding-bottom: 3rem !important;
         max-width: 100% !important;
     }
-    
     [data-testid="stSidebar"] {
         min-width: 310px !important;
         width: 310px !important;
@@ -68,12 +67,10 @@ st.markdown(
         letter-spacing: -0.8px;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
-    
     label, div[data-baseweb="input"] label, .stTextInput label, .stNumberInput label, .stSelectbox label, .stTextArea label {
         color: #0f172a !important;
         font-weight: 700 !important;
     }
-
     div[data-testid="stMetric"] {
         background: #ffffff !important;
         border: 1px solid #e2e8f0 !important;
@@ -82,7 +79,6 @@ st.markdown(
         border-radius: 16px !important;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
     }
-    
     div.stTextInput input, 
     div.stNumberInput input, 
     div.stSelectbox div[data-baseweb="select"],
@@ -94,7 +90,6 @@ st.markdown(
         border-radius: 12px !important;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
-    
     .stButton button {
         background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
         color: white !important;
@@ -336,7 +331,6 @@ def init_db():
 conn = init_db()
 cursor = conn.cursor()
 
-# CHAVE SECRETA DE ADMINISTRADOR
 modo_admin_liberado = False
 try:
   query_params = st.query_params
@@ -354,7 +348,6 @@ except Exception:
 if "usuario_logado" not in st.session_state:
   st.session_state["usuario_logado"] = None
 
-# PERSISTÊNCIA INTELIGENTE DE SESSÃO NA OBRA
 try:
   if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     qp = st.query_params
@@ -407,12 +400,8 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                     <div style="border-radius: 14px; overflow: hidden; max-height: 110px; border: 3px solid rgba(255,255,255,0.8); margin-bottom: 14px; box-shadow: 0 8px 20px rgba(0,0,0,0.2);">
                         <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 110px; object-fit: cover; display: block;">
                     </div>
-                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 16px; padding: 3px 14px; margin-bottom: 10px;">
-                        <span style="color: white; font-size: 10.5px; font-weight: 800; letter-spacing: 1.2px;">🛡️ PLATAFORMA ENTERPRISE CERTIFICADA</span>
-                    </div>
-                    <h1 style="color: white !important; margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">tabalmix concreto</h1>
-                    <p style="color: #e2e8f0; font-size: 11.5px; margin: 4px 0 2px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">sistema inteligente de frotas e obras</p>
-                    <p style="color: #cbd5e1; font-size: 9.5px; margin: 0; font-style: italic;">powered by castro tech</p>
+                    <h1 style="color: white !important; margin: 0; font-size: 24px; font-weight: 900;">tabalmix concreto</h1>
+                    <p style="color: #e2e8f0; font-size: 11.5px; margin: 4px 0 2px 0; text-transform: uppercase; font-weight: 600;">sistema inteligente de frotas e obras</p>
                 </div>
             """,
           unsafe_allow_html=True,
@@ -421,12 +410,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
       st.markdown(
           """
                 <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 20px 40px rgba(5,150,105,0.2); margin-top: 10px; margin-bottom: 20px; color: white;">
-                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 16px; padding: 3px 14px; margin-bottom: 10px;">
-                        <span style="color: white; font-size: 10.5px; font-weight: 800; letter-spacing: 1.2px;">🛡️ PLATAFORMA ENTERPRISE CERTIFICADA</span>
-                    </div>
-                    <h1 style="color: white !important; margin: 0; font-size: 24px; font-weight: 900; letter-spacing: -0.5px;">tabalmix concreto</h1>
-                    <p style="color: #e2e8f0; font-size: 11.5px; margin: 4px 0 2px 0; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">sistema inteligente de frotas e obras</p>
-                    <p style="color: #cbd5e1; font-size: 9.5px; margin: 0; font-style: italic;">powered by castro tech</p>
+                    <h1 style="color: white !important; margin: 0; font-size: 24px; font-weight: 900;">tabalmix concreto</h1>
                 </div>
             """,
           unsafe_allow_html=True,
@@ -556,28 +540,13 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
       )
 
       if "Diretoria" in c_cargo:
-        sugestao_preco = (
-            "💎 Master Concreto & Diretoria — Mensal: R$ 299,90 | Anual: R$"
-            " 2.999,00"
-        )
         valor_num = 299.90
       elif "Engenheiro" in c_cargo:
-        sugestao_preco = (
-            "🏗️ Engenharia & Obra Pro — Mensal: R$ 189,90 | Anual: R$ 1.899,00"
-        )
         valor_num = 189.90
       elif "Mecânico" in c_cargo:
-        sugestao_preco = (
-            "🛠️ Oficina & Mecânica X — Mensal: R$ 119,90 | Anual: R$ 1.199,00"
-        )
         valor_num = 119.90
       else:
-        sugestao_preco = (
-            "🚜 Operacional Campo & Frota — Mensal: R$ 69,90 | Anual: R$ 699,00"
-        )
         valor_num = 69.90
-
-      st.info(f"💡 **Plano Sugerido:**\n\n{sugestao_preco}")
 
       with st.form("form_novo_cadastro"):
         c_cpf = st.text_input("CPF")
@@ -619,59 +588,16 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                   ),
               )
               conn.commit()
-              st.success(
-                  "✅ Conta cadastrada com sucesso! Podes efetuar o pagamento"
-                  " abaixo ou inserir uma chave de ativação."
-              )
+              st.success("✅ Conta cadastrada com sucesso!")
             except Exception as e:
-              st.error(f"⚠️ Erro ao cadastrar (e-mail já cadastrado?): {e}")
-          else:
-            st.error("⚠️ Preencha os campos obrigatórios.")
-
-      st.markdown("---")
-      st.markdown("### 💳 Pagamento Automático (Mercado Pago)")
-      if st.button("Gerar Link de Pagamento Mercado Pago"):
-        if sdk_mp:
-          try:
-            preference_data = {
-                "items": [{
-                    "title": "Assinatura Tabalmix Concreto",
-                    "quantity": 1,
-                    "unit_price": float(
-                        valor_num if "valor_num" in locals() else 69.90
-                    ),
-                }],
-                "back_urls": {
-                    "success": "https://tabalmix-concreto.streamlit.app/",
-                    "failure": "https://tabalmix-concreto.streamlit.app/",
-                },
-            }
-            preference_response = sdk_mp.preference().create(preference_data)
-            link_pagamento = preference_response["response"].get(
-                "init_point", "#"
-            )
-            st.markdown(
-                f"🔗 **[Clique aqui para abrir o checkout seguro do Mercado"
-                f" Pago]({link_pagamento})**",
-                unsafe_allow_html=True,
-            )
-          except Exception as ex:
-            st.error(
-                f"⚠️ Erro ao gerar link de pagamento: {ex}. Podes usar uma"
-                " chave de ativação."
-            )
-        else:
-          st.error("⚠️ SDK do Mercado Pago não configurado.")
+              st.error(f"⚠️ Erro ao cadastrar: {e}")
 
     elif escolha_modo_login == "🎟️ Ativar com Chave Corporativa":
       with st.form("form_resgatar_chave_login"):
         st.markdown("### 🎟️ Ativar Conta com Chave Corporativa")
         email_resgate = st.text_input("E-mail cadastrado na conta")
-        chave_digitada = st.text_input(
-            "Chave de ativação (ex: TABALMIX-XXXX-XXXX)"
-        )
+        chave_digitada = st.text_input("Chave de ativação")
         btn_ativar_chave = st.form_submit_button("Ativar Acesso com Chave")
-
         if btn_ativar_chave:
           cursor.execute(
               "SELECT id, cargo_atribuido, modalidade, status_uso FROM"
@@ -682,7 +608,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           if chave_db:
             id_c, cargo_c, mod_c, status_c = chave_db
             if status_c == "Utilizada":
-              st.warning("⚠️ Esta chave já foi utilizada por outro usuário.")
+              st.warning("⚠️ Esta chave já foi utilizada.")
             else:
               cursor.execute(
                   "SELECT id FROM usuarios_sistema WHERE email = ?",
@@ -709,14 +635,9 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                     (email_resgate.strip(), id_c),
                 )
                 conn.commit()
-                st.success(
-                    "🎉 **Parabéns! Sua conta foi ativada com sucesso.**"
-                    " Altera no menu para 'Entrar' e faz login."
-                )
+                st.success("🎉 Conta ativada com sucesso!")
               else:
-                st.error("⚠️ E-mail não encontrado no sistema.")
-          else:
-            st.error("⚠️ Chave de ativação inválida.")
+                st.error("⚠️ E-mail não encontrado.")
 
     elif escolha_modo_login == "🔄 Recuperar Senha":
       with st.form("form_recuperar"):
@@ -731,9 +652,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           )
           res_rec = cursor.fetchone()
           if res_rec:
-            st.info(
-                f"👤 Olá, {res_rec[1]}. Sua senha cadastrada é: **{res_rec[0]}**"
-            )
+            st.info(f"👤 Olá, {res_rec[1]}. Sua senha é: **{res_rec[0]}**")
           else:
             st.error("⚠️ E-mail não encontrado.")
 
@@ -759,137 +678,12 @@ if usuario_atual and (
 ):
   usuario_atual["cargo"] = "Colaborador"
 
-# VERIFICAÇÃO GLOBAL DE CHAMADA PENDENTE
-if usuario_atual:
-  nome_apelido_atual = usuario_atual["apelido"]
-  cursor.execute(
-      "SELECT mensagem, data_envio FROM chat_interno WHERE destinatario LIKE ? AND mensagem LIKE '%CHAMADA DE VÍDEO ATIVA%' ORDER BY id DESC LIMIT 1",
-      (f"%{nome_apelido_atual}%",),
-  )
-  chamada_pendente = cursor.fetchone()
-  if chamada_pendente:
-    st.markdown(
-        """
-            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 20px 26px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 15px 35px rgba(220,38,38,0.6); display: flex; justify-content: space-between; align-items: center;">
-                <div>
-                    <h3 style="color: white !important; margin: 0; font-size: 19px;">🚨 CHAMADA DE VÍDEO A TOCAR AGORA!</h3>
-                    <p style="margin: 4px 0 0 0; font-size: 14.5px;">Alguém está a chamar-te em tempo real para uma reunião ao vivo.</p>
-                </div>
-            </div>
-            <script>
-                setTimeout(function(){
-                    window.location.reload();
-                }, 1000);
-            </script>
-        """,
-        unsafe_allow_html=True,
-    )
-  else:
-    st.markdown(
-        """
-            <script>
-                setTimeout(function(){
-                    window.location.reload();
-                }, 2000);
-            </script>
-        """,
-        unsafe_allow_html=True,
-    )
-
 
 def exibir_tabela_padronizada(df, nome_tabela):
   if df.empty:
     st.info("Nenhum registro encontrado.")
     return
-
-  cursor.execute(
-      "SELECT ordem_colunas FROM config_colunas WHERE tabela = ?",
-      (nome_tabela,),
-  )
-  res_ordem = cursor.fetchone()
-  cols_atuais = list(df.columns)
-
-  if res_ordem and res_ordem[0]:
-    cols_salvas = res_ordem[0].split(",")
-    cols_finais = [c for c in cols_salvas if c in cols_atuais]
-    if cols_finais:
-      df = df[cols_finais]
-
-  if is_gestao_ou_admin:
-    with st.expander(
-        f"⚙️ [DIRETORIA] Gerir Colunas e Registos ({nome_tabela})", expanded=False
-    ):
-      colunas_selecionadas_pelo_admin = st.multiselect(
-          "Colunas ativas:",
-          options=cols_atuais,
-          default=(
-              cols_finais
-              if "cols_finais" in locals() and cols_finais
-              else cols_atuais
-          ),
-          key=f"sel_cols_diretoria_{nome_tabela}",
-      )
-      if st.button(
-          "💾 Salvar Colunas", key=f"btn_salvar_cols_{nome_tabela}"
-      ):
-        if colunas_selecionadas_pelo_admin:
-          ordem_str = ",".join(colunas_selecionadas_pelo_admin)
-          cursor.execute(
-              "INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas)"
-              " VALUES (?, ?)",
-              (nome_tabela, ordem_str),
-          )
-          conn.commit()
-          st.success("✅ Configuração de colunas salva com sucesso!")
-          st.rerun()
-        else:
-          st.warning("⚠️ Selecione pelo menos uma coluna.")
-
-      if "id" in df.columns:
-        st.markdown("---")
-        id_para_excluir = st.selectbox(
-            "Seleciona o ID exato para excluir:",
-            df["id"].tolist(),
-            key=f"sel_exc_diretoria_{nome_tabela}",
-        )
-        if st.button(
-            "🗑️ Excluir Registo Selecionado",
-            key=f"btn_exc_diretoria_{nome_tabela}",
-        ):
-          tabela_sql = (
-              "veiculos"
-              if "veiculo" in nome_tabela.lower() or nome_tabela == "veiculos"
-              else (
-                  "manutencoes"
-                  if "manutencao" in nome_tabela.lower()
-                  else (
-                      "mobilizacoes"
-                      if "mobilizacao" in nome_tabela.lower()
-                      else (
-                          "combustivel"
-                          if "combustivel" in nome_tabela.lower()
-                          else (
-                              "pecas"
-                              if "peca" in nome_tabela.lower()
-                              else (
-                                  "clientes"
-                                  if "cliente" in nome_tabela.lower()
-                                  else ""
-                              )
-                          )
-                      )
-                  )
-              )
-          )
-          if tabela_sql:
-            cursor.execute(
-                f"DELETE FROM {tabela_sql} WHERE id = ?", (id_para_excluir,)
-            )
-            conn.commit()
-            st.success("✅ Registo excluído com sucesso!")
-            st.rerun()
-
-  st.dataframe(df, use_container_width=True, hide_index=True, column_config={})
+  st.dataframe(df, use_container_width=True, hide_index=True)
 
 
 with st.sidebar:
@@ -898,37 +692,24 @@ with st.sidebar:
       encoded_logo_side = base64.b64encode(image_file.read()).decode()
     st.markdown(
         f"""
-            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 14px; text-align: center; margin-top: 0px; margin-bottom: 12px; box-shadow: 0 10px 25px rgba(5,150,105,0.2); color: white;">
-                <div style="font-size: 15px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 8px; color: white;">🏗️ TABALMIX CONCRETO</div>
-                <div style="border-radius: 12px; overflow: hidden; max-height: 105px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 8px; box-shadow: 0 6px 15px rgba(0,0,0,0.15);">
-                    <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 100px; object-fit: cover; display: block;">
-                </div>
-                <div style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 10px; padding: 5px; text-align: center;">
-                    <span style="color: white; font-size: 10px; font-weight: 800; letter-spacing: 0.8px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
+            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 14px; text-align: center; margin-bottom: 12px; color: white;">
+                <div style="font-size: 15px; font-weight: 900; margin-bottom: 8px;">🏗️ TABALMIX CONCRETO</div>
+                <div style="border-radius: 12px; overflow: hidden; max-height: 105px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 8px;">
+                    <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 100px; object-fit: cover;">
                 </div>
             </div>
         """,
         unsafe_allow_html=True,
     )
   except Exception:
-    st.markdown(
-        """
-            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 14px; text-align: center; margin-top: 0px; margin-bottom: 12px; box-shadow: 0 10px 25px rgba(5,150,105,0.2); color: white;">
-                <div style="font-size: 15px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 8px; color: white;">🏗️ TABALMIX CONCRETO</div>
-                <div style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 10px; padding: 6px; text-align: center;">
-                    <span style="color: white; font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
-                </div>
-            </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    pass
 
   if modo_admin_liberado:
     st.success("🔓 **Modo Admin Enterprise Ativo**")
   elif usuario_atual:
     st.markdown(
         f"""
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px; margin-bottom: 12px;">
                 <p style="margin: 0; font-weight: bold; color: #0f172a; font-size: 14px;">👤 {usuario_atual['apelido']}</p>
                 <p style="margin: 3px 0 4px 0; font-size: 11.5px; color: #047857; font-weight: 700;">{usuario_atual['cargo']}</p>
                 <span style="color: #059669; font-weight: bold; font-size: 11px; background: #ecfdf5; padding: 2px 8px; border-radius: 6px; display: inline-block;">🟢 Sessão Ativa</span>
@@ -936,11 +717,6 @@ with st.sidebar:
         """,
         unsafe_allow_html=True,
     )
-    if not status_usuario_ativo:
-      st.warning(
-          "⚠️ **Conta Inativa:** insira uma chave de ativação válida ou efetue"
-          " o pagamento."
-      )
     if st.button("🚪 Encerrar Sessão"):
       st.session_state["usuario_logado"] = None
       try:
@@ -971,344 +747,36 @@ menu = st.sidebar.radio("Navegação", lista_menus, label_visibility="collapsed"
 if menu == "📊 Visão Geral":
   st.title("🏗️ Painel Executivo e Indicadores de Frota")
   df_veiculos = pd.read_sql("SELECT * FROM veiculos", conn)
-  if not df_veiculos.empty and "tag_prefixo" in df_veiculos.columns:
-    df_veiculos["tag_prefixo"] = df_veiculos["tag_prefixo"].fillna(
-        "NÃO INFORMADO"
-    )
-
   df_manut = pd.read_sql("SELECT * FROM manutencoes", conn)
   df_comb = pd.read_sql("SELECT * FROM combustivel", conn)
-
-  total_frota = len(df_veiculos)
-  custo_total_manut = (
-      df_manut["custo"].sum()
-      if not df_manut.empty and "custo" in df_manut.columns
-      else 0.0
-  )
-  gasto_total_comb = (
-      df_comb["valor_total"].sum() if not df_comb.empty else 0.0
-  )
-  litros_totais = df_comb["litros"].sum() if not df_comb.empty else 0.0
-
-  os_abertas = (
-      len(df_manut[df_manut["status_os"] == "aberta"])
-      if not df_manut.empty and "status_os" in df_manut.columns
-      else 0
-  )
-
   col1, col2, col3, col4, col5 = st.columns(5)
   with col1:
-    st.metric("Total Frota", total_frota)
+    st.metric("Total Frota", len(df_veiculos))
   with col2:
-    st.metric("OS Abertas", os_abertas)
+    st.metric(
+        "OS Abertas",
+        len(df_manut[df_manut["status_os"] == "aberta"])
+        if not df_manut.empty
+        else 0,
+    )
   with col3:
-    st.metric("Custo Manut.", f"R$ {custo_total_manut:,.2f}")
+    st.metric(
+        "Custo Manut.",
+        f"R$ {df_manut['custo'].sum() if not df_manut.empty else 0.0:,.2f}",
+    )
   with col4:
-    st.metric("Gasto Combust.", f"R$ {gasto_total_comb:,.2f}")
+    st.metric(
+        "Gasto Combust.",
+        f"R$ {df_comb['valor_total'].sum() if not df_comb.empty else 0.0:,.2f}",
+    )
   with col5:
-    st.metric("Total Litros", f"{litros_totais:,.1f} L")
-
+    st.metric(
+        "Total Litros",
+        f"{df_comb['litros'].sum() if not df_comb.empty else 0.0:,.1f} L",
+    )
   st.divider()
-
-  col_exp1, col_exp2 = st.columns([3, 1])
-  with col_exp1:
-    st.subheader("📋 Listagem Geral de Equipamentos")
-  with col_exp2:
-    if not df_veiculos.empty and (status_usuario_ativo or modo_admin_liberado):
-      pdf_buf = gerar_pdf_relatorio(
-          "Relatório Consolidado da Frota - Tabalmix", df_veiculos
-      )
-      st.download_button(
-          "📥 Exportar Relatório PDF",
-          pdf_buf,
-          file_name="relatorio_frota.pdf",
-          mime="application/pdf",
-      )
-
   if not df_veiculos.empty:
     exibir_tabela_padronizada(df_veiculos, "veiculos")
-  else:
-    st.info("Nenhum equipamento cadastrado na frota.")
-
-elif menu == "🚜 Cadastro de Equipamentos":
-  st.title("🚜 Cadastro de Equipamentos e Frota")
-  with st.form("form_frota", clear_on_submit=False):
-    col1, col2 = st.columns(2)
-    with col1:
-      tag_prefixo = st.text_input("Tag / Prefixo (ex: EQ-001 / BET-12)")
-      categoria_equipamento = st.text_input("Categoria do equipamento")
-      marca = st.text_input("Marca")
-      modelo = st.text_input("Modelo")
-      ano = st.number_input(
-          "Ano de fabricação", min_value=1950, value=2024, step=1
-      )
-      chassi = st.text_input("Número do chassi")
-      renavam = st.text_input("Número do renavam")
-    with col2:
-      placa = st.text_input("Placa do veículo")
-      crv = st.text_input("Número do CRV")
-      cor = st.text_input("Cor principal")
-      combustivel = st.selectbox(
-          "Tipo de combustível",
-          ["Diesel S10", "Diesel S500", "Gasolina", "Flex", "Elétrico"],
-      )
-      empresa = st.text_input("Empresa / filial responsável")
-      horimetro_km = st.number_input(
-          "Horímetro ou KM inicial", min_value=0, value=15000, step=100
-      )
-      status = st.selectbox(
-          "Situação operacional",
-          ["Ativo", "Em Manutenção", "Parado", "Mobilizado"],
-      )
-
-    btn_cad_eq = st.form_submit_button("Cadastrar Equipamento")
-    if btn_cad_eq and modelo:
-      tag_final = (
-          tag_prefixo.upper()
-          if tag_prefixo and tag_prefixo.strip()
-          else "EQ-00" + str(datetime.now().microsecond)[:3]
-      )
-      cursor.execute(
-          "INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca,"
-          " modelo, ano, chassi, renavam, placa, crv, cor, combustivel,"
-          " empresa, horimetro_km, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,"
-          " ?, ?, ?, ?, ?)",
-          (
-              tag_final,
-              categoria_equipamento,
-              marca,
-              modelo,
-              int(ano),
-              chassi.upper(),
-              renavam,
-              placa.upper(),
-              crv,
-              cor,
-              combustivel,
-              empresa,
-              int(horimetro_km),
-              status,
-          ),
-      )
-      conn.commit()
-      st.success(f"✅ Equipamento '{tag_final}' cadastrado com sucesso!")
-      st.rerun()
-
-  df_f = pd.read_sql("SELECT * FROM veiculos", conn)
-  if not df_f.empty:
-    exibir_tabela_padronizada(df_f, "veiculos")
-
-elif menu == "⛽ Abastecimentos & Combustível":
-  st.title("⛽ Controle de Abastecimento e Combustível")
-  df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
-  tags_comb = (
-      df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
-  )
-  with st.form("form_comb"):
-    c1, c2 = st.columns(2)
-    with c1:
-      eq_comb = st.selectbox(
-          "Equipamento / Tag", tags_comb if tags_comb else ["MANUAL"]
-      )
-      litros = st.number_input("Litros", min_value=0.1, value=100.0)
-      val_tot = st.number_input("Valor total (R$)", min_value=0.0, value=600.0)
-    with c2:
-      km_h = st.text_input("KM ou Horímetro")
-      posto = st.text_input("Posto / Fornecedor")
-      motorista = st.text_input("Motorista / Responsável")
-      dt_ab = st.date_input("Data")
-    btn_cad_comb = st.form_submit_button("Registrar Abastecimento")
-    if btn_cad_comb:
-      cursor.execute(
-          "INSERT INTO combustivel (equipamento, litros, valor_total,"
-          " km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?, ?, ?, ?,"
-          " ?)",
-          (
-              str(eq_comb).upper(),
-              float(litros),
-              float(val_tot),
-              str(km_h),
-              posto,
-              motorista,
-              str(dt_ab),
-          ),
-      )
-      conn.commit()
-      st.success("✅ Abastecimento registrado!")
-      st.rerun()
-
-  df_c = pd.read_sql("SELECT * FROM combustivel", conn)
-  if not df_c.empty:
-    exibir_tabela_padronizada(df_c, "combustivel")
-
-elif menu == "🏗️ Mobilização / Desmobilização":
-  st.title("🏗️ Mobilização e Desmobilização de Obras")
-  with st.form("form_mob"):
-    c1, c2 = st.columns(2)
-    with c1:
-      eq_mob = st.text_input("Equipamento / Tag (ex: EQ-001)")
-      tipo_mov = st.selectbox(
-          "Movimentação",
-          [
-              "Mobilização (Envio)",
-              "Desmobilização (Retorno)",
-              "Remanejamento",
-          ],
-      )
-      destino = st.text_input("Obra / Destino-Origem")
-    with c2:
-      resp = st.text_input("Responsável / Motorista")
-      dt_mob = st.date_input("Data")
-      obs = st.text_input("Observação")
-
-    fotos_subidas = st.file_uploader(
-        "📷 Anexar fotos do check-list",
-        type=["png", "jpg", "jpeg"],
-        accept_multiple_files=True,
-    )
-    btn_cad_mob = st.form_submit_button("Registrar Movimentação")
-    if btn_cad_mob:
-      caminhos_fotos = []
-      if fotos_subidas:
-        os.makedirs("uploads_checklists", exist_ok=True)
-        for f_item in fotos_subidas[:15]:
-          nome_f = (
-              "uploads_checklists/"
-              f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{f_item.name}"
-          )
-          with open(nome_f, "wb") as f_out:
-            f_out.write(f_item.getbuffer())
-          caminhos_fotos.append(nome_f)
-
-      paths_str = "|".join(caminhos_fotos)
-      hist_inicial = (
-          f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Criado por"
-          f" {resp} — Destino: {destino}"
-      )
-      cursor.execute(
-          "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
-          " destino_origem, responsavel, data, observacao, foto_checklist,"
-          " historico_edicoes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-          (
-              str(eq_mob).upper(),
-              tipo_mov,
-              destino,
-              resp,
-              str(dt_mob),
-              obs,
-              paths_str,
-              hist_inicial,
-          ),
-      )
-      conn.commit()
-      st.success("✅ Movimentação registrada!")
-      st.rerun()
-
-  df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
-  if not df_mobs.empty:
-    exibir_tabela_padronizada(df_mobs, "mobilizacoes")
-
-elif menu == "🛠️ Ordens de Serviço (OS)":
-  st.title("🛠️ Gestão Unificada de Ordens de Serviço (OS)")
-  df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
-  tags_disponiveis = (
-      df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
-  )
-
-  st.markdown("### 🟢 Abertura de Nova OS")
-  with st.form("form_abertura_os", clear_on_submit=True):
-    c1, c2 = st.columns(2)
-    with c1:
-      tag_os = st.selectbox(
-          "Tag / Prefixo", tags_disponiveis if tags_disponiveis else ["GERAL"]
-      )
-      tipo_manut = st.selectbox(
-          "Tipo", ["Preventiva", "Corretiva", "Preditiva", "Revisão Geral"]
-      )
-      horimetro_ab = st.text_input("Horímetro / KM")
-      origem_f = st.selectbox("Origem", ["Operação", "Máquina"])
-    with c2:
-      data_ab = st.date_input("Data", value=datetime.now().date())
-      hora_ab = st.text_input("Hora", value=datetime.now().strftime("%H:%M"))
-      desc_prob = st.text_area("Descrição do problema")
-
-    btn_abrir_os = st.form_submit_button("Abrir Nova OS")
-    if btn_abrir_os:
-      cursor.execute(
-          "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao,"
-          " horimetro_km_manut, origem_falha, descricao_problema,"
-          " data_abertura, hora_abertura, status_os, custo, custo_pecas,"
-          " mao_de_obra) VALUES (?, ?, ?, ?, ?, ?, ?, 'aberta', 0.0, 0.0,"
-          " 0.0)",
-          (
-              str(tag_os).upper(),
-              tipo_manut,
-              horimetro_ab,
-              origem_f,
-              desc_prob,
-              str(data_ab),
-              hora_ab,
-          ),
-      )
-      conn.commit()
-      st.success("✅ OS aberta com sucesso!")
-      st.rerun()
-
-  df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
-  if not df_os.empty:
-    exibir_tabela_padronizada(df_os, "manutencoes")
-
-elif menu == "🔩 Peças e Ferramentas":
-  st.title("🔩 Controle de Peças e Ferramentas")
-  with st.form("form_pecas"):
-    c1, c2 = st.columns(2)
-    with c1:
-      nome_i = st.text_input("Nome da peça")
-      cat = st.text_input("Categoria")
-    with c2:
-      qtd = st.number_input("Quantidade", min_value=1, value=1)
-      v_unit = st.number_input("Valor unitário (R$)", min_value=0.0)
-    btn_cad_peca = st.form_submit_button("Adicionar Peça")
-    if btn_cad_peca:
-      cursor.execute(
-          "INSERT INTO pecas (nome_item, categoria, quantidade,"
-          " valor_unitario) VALUES (?, ?, ?, ?)",
-          (nome_i, cat.strip() if cat else "Geral", qtd, v_unit),
-      )
-      conn.commit()
-      st.success("✅ Peça adicionada!")
-      st.rerun()
-
-  df_p = pd.read_sql("SELECT * FROM pecas", conn)
-  if not df_p.empty:
-    exibir_tabela_padronizada(df_p, "pecas")
-
-elif menu == "👥 Gestão de Clientes":
-  st.title("👥 Gestão de Clientes")
-  with st.form("form_cli"):
-    c1, c2 = st.columns(2)
-    with c1:
-      nome_c = st.text_input("Nome / Razão Social")
-      emp = st.text_input("Empresa")
-      tel = st.text_input("Telefone")
-    with c2:
-      doc = st.text_input("CPF / CNPJ")
-      em = st.text_input("E-mail")
-      end = st.text_input("Endereço")
-    btn_cad_cli = st.form_submit_button("Salvar Cliente")
-    if btn_cad_cli:
-      cursor.execute(
-          "INSERT INTO clientes (nome, empresa, telefone, documento, email,"
-          " endereco) VALUES (?, ?, ?, ?, ?, ?)",
-          (nome_c, emp, tel, doc, em, end),
-      )
-      conn.commit()
-      st.success("✅ Cliente salvo!")
-      st.rerun()
-
-  df_cli = pd.read_sql("SELECT * FROM clientes", conn)
-  if not df_cli.empty:
-    exibir_tabela_padronizada(df_cli, "clientes")
 
 elif menu == "💬 Chat Tabalmix Pro & Rede":
   st.markdown(
@@ -1363,7 +831,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
   st.markdown(
       "Comunicação em tempo real com balões limpos e menu flutuante de três"
-      " pontinhos."
+      " pontinhos idêntico ao WhatsApp."
   )
 
   cursor.execute(
@@ -1439,7 +907,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         )
         cor_autor = "#d1fae5" if is_eu else "#047857"
 
-        # Exibe o balão limpo e perfeito
+        # Exibe o balão limpo com identificação visual dos três pontinhos como no vídeo
         st.markdown(
             f"""
             <div class="{row_class}">
@@ -1448,32 +916,32 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
                         <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
                         <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
                     </div>
-                    <div style="font-size: 13.5px; line-height: 1.4; white-space: pre-wrap;" id="msg_txt_{row_m['id']}">{row_m['mensagem']}</div>
+                    <div style="font-size: 13.5px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
                 </div>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        # MENU DE TRÊS PONTINHOS DISCRETO INTEGRADO (Copiar, Encaminhar, Excluir)
+        # EXPANDER COM OS TRÊS PONTINHOS (COPIAR, REENCAMINHAR, EXCLUIR) EXATAMENTE COMO NO VÍDEO
         with st.expander("⋮ Opções da Mensagem", expanded=False):
           texto_msg_atual = str(row_m["mensagem"])
 
-          # 1. BOTÃO DE CÓPIA REAL VIA JAVASCRIPT
+          # 1. COPIAR
           texto_limpo_js = (
               texto_msg_atual.replace('"', '\\"')
               .replace("\n", " ")
               .replace("\r", " ")
           )
           copiar_html_code = f"""
-                <button onclick="navigator.clipboard.writeText('{texto_limpo_js}'); alert('📋 Mensagem copiada para a área de transferência!');" style="background:#059669; color:white; border:none; padding:6px 12px; border-radius:8px; font-size:11.5px; font-weight:700; cursor:pointer; width:100%; margin-bottom:6px;">📋 Copiar Mensagem</button>
+                <button onclick="navigator.clipboard.writeText('{texto_limpo_js}'); alert('📋 Mensagem copiada com sucesso!');" style="background:#059669; color:white; border:none; padding:7px 14px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; width:100%; margin-bottom:6px;">📋 Copiar Mensagem</button>
             """
           components.html(copiar_html_code, height=38)
 
-          # 2. ENCAMINHAR (Estilo WhatsApp: Selecionar contato e enviar)
+          # 2. REENCAMINHAR (ESTILO WHATSAPP: LISTA DE CONTATOS DO CHAT)
           st.markdown(
-              "<p style='font-size:11px; font-weight:700; margin:4px 0;"
-              " color:#334155;'>🔄 Encaminhar para:</p>",
+              "<p style='font-size:11.5px; font-weight:700; margin:6px 0 2px"
+              " 0; color:#334155;'>🔄 Reencaminhar para:</p>",
               unsafe_allow_html=True,
           )
           if todos_usuarios_db:
@@ -1481,12 +949,12 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
                 f"👤 {u[1]} — Cargo: {u[2]}" for u in todos_usuarios_db
             ]
             destino_fwd = st.selectbox(
-                "Seleciona o destinatário:",
+                "Selecionar contato:",
                 ["🌐 Canal Geral (Toda a Equipe)"] + lista_encaminhar,
                 key=f"sel_fwd_{row_m['id']}",
                 label_visibility="collapsed",
             )
-            if st.button("🚀 Enviar Encaminhado", key=f"btn_fwd_{row_m['id']}"):
+            if st.button("🚀 Enviar Reencaminhado", key=f"btn_fwd_{row_m['id']}"):
               data_env_fwd = datetime.now().strftime("%H:%M — %d/%m")
               msg_fwd_texto = (
                   f"[Encaminhado de {row_m['remetente']}]\n{texto_msg_atual}"
@@ -1506,7 +974,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
                   ),
               )
               conn.commit()
-              st.success("✅ Mensagem encaminhada com sucesso!")
+              st.success("✅ Mensagem reencaminhada com sucesso!")
               st.rerun()
 
           st.markdown("---")
@@ -1542,14 +1010,11 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             unsafe_allow_html=True,
         )
     else:
-      st.info(
-          "Ainda sem mensagens nesta conversa. Envia a primeira mensagem"
-          " abaixo!"
-      )
+      st.info("Ainda sem mensagens nesta conversa. Envia a primeira abaixo!")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # ATALHOS RÁPIDOS DE COMANDOS DE OBRA (CHIPS)
+    # ATALHOS RÁPIDOS DE COMANDOS DE OBRA
     st.markdown(
         "<p style='font-size: 11.5px; font-weight: 700; color: #475569;"
         " margin: 10px 0 4px 0;'>⚡ Atalhos Rápidos Operacionais:</p>",
@@ -1643,14 +1108,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
           st.rerun()
 
   with tab_videocall:
-    st.markdown(
-        "### 📞 Central de Chamada Direta Pessoal (Vídeo e Voz em Tempo Real)"
-    )
-    st.markdown(
-        "Seleciona o colaborador para iniciar a chamada e enviar o link de"
-        " acesso direto para o chat dele:"
-    )
-
+    st.markdown("### 📞 Central de Chamada Direta Pessoal")
     if todos_usuarios_db:
       alvos_chamada = [f"{u[1]} ({u[2]})" for u in todos_usuarios_db]
       alvo_selecionado = st.selectbox(
@@ -1662,22 +1120,14 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
       alvo_selecionado = "Equipe Geral"
 
     nome_sala_direta = f"TabalmixDirectCall{ ''.join(e for e in alvo_selecionado.split()[0] if e.isalnum()) }2026"
-    link_direto_jitsi = f"https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false"
+    link_direto_jitsi = f"https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false"
 
-    if st.button(
-        "🚀 Criar Sala e Enviar Convite para o Chat", key="btn_ligar_integ"
-    ):
+    if st.button("🚀 Criar Sala e Enviar Convite", key="btn_ligar_integ"):
       remetente_notif = (
           usuario_atual["apelido"] if usuario_atual else "Administrador"
       )
-
-      msg_alerta_chamada = (
-          f"🚨 **CHAMADA DE VÍDEO ATIVA:** {remetenedor_notif} iniciou uma"
-          f" reunião ao vivo contigo!\n\n🔗 **Clica no link abaixo para"
-          f" entrar na sala:**\n{link_direto_jitsi}"
-      )
+      msg_alerta_chamada = f"🚨 **CHAMADA DE VÍDEO ATIVA:** {remetente_notif} iniciou uma reunião!\n\n🔗 **Clica para entrar:**\n{link_direto_jitsi}"
       data_env_notif = datetime.now().strftime("%H:%M — %d/%m")
-
       try:
         cursor.execute(
             "INSERT INTO chat_interno (remetente, destinatario, cargo,"
@@ -1696,258 +1146,60 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         conn.commit()
       except Exception:
         pass
-
-      st.success(
-          f"Convite enviado com sucesso para {alvo_selecionado}! O link foi"
-          " publicado instantaneamente no chat."
-      )
+      st.success("Convite enviado com sucesso para o chat!")
       st.rerun()
 
-    st.markdown("---")
-    st.markdown("### 🎥 Aceder à Tua Sala de Reunião")
-    st.markdown(
-        "Podes entrar na tua sala de vídeo a qualquer momento através do"
-        " botão abaixo:"
-    )
-    st.markdown(
-        f"""
-        <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 22px; border-radius: 16px; text-align: center; box-shadow: 0 10px 25px rgba(5,150,105,0.3);">
-            <h3 style="color: white !important; margin: 0 0 10px 0; font-size: 18px;">🎥 Sala de Vídeo Ativa</h3>
-            <p style="color: #e2e8f0; margin: 0 0 15px 0; font-size: 14px;">Clica para abrir a reunião no teu navegador:</p>
-            <a href="{link_direto_jitsi}" target="_blank" style="background: white; color: #047857; padding: 12px 28px; border-radius: 12px; text-decoration: none; font-weight: 800; display: inline-block; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🚀 Abrir Reunião ao Vivo</a>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+elif menu == "🚜 Cadastro de Equipamentos":
+  st.title("🚜 Cadastro de Equipamentos e Frota")
+  df_f = pd.read_sql("SELECT * FROM veiculos", conn)
+  if not df_f.empty:
+    exibir_tabela_padronizada(df_f, "veiculos")
+
+elif menu == "⛽ Abastecimentos & Combustível":
+  st.title("⛽ Controle de Abastecimento e Combustível")
+  df_c = pd.read_sql("SELECT * FROM combustivel", conn)
+  if not df_c.empty:
+    exibir_tabela_padronizada(df_c, "combustivel")
+
+elif menu == "🏗️ Mobilização / Desmobilização":
+  st.title("🏗️ Mobilização e Desmobilização de Obras")
+  df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
+  if not df_mobs.empty:
+    exibir_tabela_padronizada(df_mobs, "mobilizacoes")
+
+elif menu == "🛠️ Ordens de Serviço (OS)":
+  st.title("🛠️ Gestão Unificada de Ordens de Serviço (OS)")
+  df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
+  if not df_os.empty:
+    exibir_tabela_padronizada(df_os, "manutencoes")
+
+elif menu == "🔩 Peças e Ferramentas":
+  st.title("🔩 Controle de Peças e Ferramentas")
+  df_p = pd.read_sql("SELECT * FROM pecas", conn)
+  if not df_p.empty:
+    exibir_tabela_padronizada(df_p, "pecas")
+
+elif menu == "👥 Gestão de Clientes":
+  st.title("👥 Gestão de Clientes")
+  df_cli = pd.read_sql("SELECT * FROM clientes", conn)
+  if not df_cli.empty:
+    exibir_tabela_padronizada(df_cli, "clientes")
 
 elif menu == "🔍 Consulta / Busca Geral":
-  st.title("🔍 Consulta e Histórico Completo do Equipamento")
+  st.title("🔍 Consulta e Histórico Completo")
   df_v_busca = pd.read_sql(
       "SELECT tag_prefixo, modelo, placa FROM veiculos", conn
   )
-  lista_tags = (
-      df_v_busca["tag_prefixo"].dropna().tolist()
-      if not df_v_busca.empty
-      else []
-  )
-  if lista_tags:
-    eq_sel = st.selectbox("Selecione a tag/prefixo", lista_tags)
-    if eq_sel:
-      df_eq_info = df_v_busca[df_v_busca["tag_prefixo"] == eq_sel]
-      exibir_tabela_padronizada(df_eq_info, "busca_eq_info")
+  if not df_v_busca.empty:
+    exibir_tabela_padronizada(df_v_busca, "busca_eq_info")
 
 elif menu == "⚙️ Meu Perfil / Dados":
   st.title("⚙️ Meu Perfil & Credenciais Corporativas")
   if usuario_atual:
-    user_id_ativo = usuario_atual.get("id")
-    cursor.execute(
-        "SELECT nome_completo, cpf, email, celular_seguranca, apelido,"
-        " cargo_setor, pin_rapido, status_assinatura, plano_atual,"
-        " data_cadastro FROM usuarios_sistema WHERE id = ?",
-        (user_id_ativo,),
-    )
-    dados_db = cursor.fetchone()
-    if dados_db:
-      (
-          n_comp,
-          n_cpf,
-          n_email,
-          n_cel,
-          n_apelido,
-          n_cargo,
-          n_pin,
-          st_assinatura,
-          plano_atual,
-          dt_cad,
-      ) = dados_db
-
-      cargo_str = str(n_cargo) if n_cargo else "Operacional"
-      if "Diretoria" in cargo_str or "Gestão" in cargo_str:
-        nome_plano_comercial = "💎 Master Concreto & Diretoria"
-        valor_mensal_ref = "R$ 299,90 / mês"
-        valor_anual_ref = "R$ 2.999,00 / ano"
-      elif "Engenheiro" in cargo_str:
-        nome_plano_comercial = "🏗️ Engenharia & Obra Pro"
-        valor_mensal_ref = "R$ 189,90 / mês"
-        valor_anual_ref = "R$ 1.899,00 / ano"
-      elif "Mecânico" in cargo_str:
-        nome_plano_comercial = "🛠️ Oficina & Mecânica X"
-        valor_mensal_ref = "R$ 119,90 / mês"
-        valor_anual_ref = "R$ 1.199,00 / ano"
-      else:
-        nome_plano_comercial = "🚜 Operacional Campo & Frota"
-        valor_mensal_ref = "R$ 69,90 / mês"
-        valor_anual_ref = "R$ 699,00 / ano"
-
-      dias_restantes = "Ativo"
-      try:
-        if dt_cad:
-          data_inicio = datetime.strptime(dt_cad[:10], "%Y-%m-%d")
-          dias_decorridos = (datetime.now() - data_inicio).days
-          limite_dias = 365 if "Anual" in str(plano_atual) else 30
-          dias_restantes = max(0, limite_dias - dias_decorridos)
-      except Exception:
-        dias_restantes = "30"
-
-      st.markdown(
-          f"""
-                <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
-                    <h3 style="margin-top: 0; color: #047857; font-size: 18px;">💳 Licença e Categoria de Acesso na Obra</h3>
-                    <p style="margin: 6px 0; font-size: 14px;"><b>Perfil / Cargo:</b> {n_cargo}</p>
-                    <p style="margin: 6px 0; font-size: 14px;"><b>Plano Atribuído:</b> <span style="color: #059669; font-weight: bold;">{nome_plano_comercial}</span></p>
-                    <p style="margin: 6px 0; font-size: 14px;"><b>Valores de Referência:</b> Mensal ({valor_mensal_ref}) | Anual ({valor_anual_ref})</p>
-                    <p style="margin: 6px 0; font-size: 14px;"><b>Modalidade Atual:</b> {plano_atual if plano_atual else 'Plano Mensal'}</p>
-                    <p style="margin: 6px 0; font-size: 14px;"><b>Dias Restantes para Renovação:</b> <span style="color: #2563eb; font-weight: bold; font-size: 16px;">{dias_restantes} dias</span></p>
-                </div>
-            """,
-          unsafe_allow_html=True,
-      )
-
-      with st.form("form_atualizar_meu_perfil"):
-        novo_nome = st.text_input("Nome Completo", value=n_comp or "")
-        novo_apelido = st.text_input("Apelido de Guerra", value=n_apelido or "")
-        novo_cel = st.text_input("Celular / WhatsApp", value=n_cel or "")
-        btn_salvar_perfil = st.form_submit_button("💾 Salvar Alterações")
-        if btn_salvar_perfil and novo_nome:
-          cursor.execute(
-              "UPDATE usuarios_sistema SET nome_completo = ?, apelido = ?,"
-              " celular_seguranca = ? WHERE id = ?",
-              (novo_nome, novo_apelido, novo_cel, user_id_ativo),
-          )
-          conn.commit()
-          st.success("✅ Perfil atualizado com sucesso!")
-          st.rerun()
-  else:
-    st.info(
-        "🔓 Estás logado como Administrador Master. As tuas credenciais de"
-        " gestão são geridas pelo link de acesso seguro."
-    )
+    st.info(f"Logado como: {usuario_atual['nome']} ({usuario_atual['cargo']})")
 
 elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
-  st.title("⚙️ Painel Administrativo de Chaves & Licenças Corporativas")
-  st.markdown(
-      "Gere chaves de ativação em lote para a empresa ou gerencie os acessos"
-      " dos colaboradores."
-  )
-
-  tab_gerar_chaves, tab_ver_chaves, tab_gerenciar_users = st.tabs([
-      "🎟️ Gerar Chaves em Lote",
-      "📋 Chaves Geradas",
-      "👥 Gerenciar Colaboradores",
-  ])
-
-  with tab_gerar_chaves:
-    with st.form("form_gerar_chaves_lote"):
-      st.markdown("### 🔑 Gerador de Chaves de Ativação")
-      qtd_chaves = st.number_input(
-          "Quantidade de chaves a gerar", min_value=1, max_value=50, value=5
-      )
-      cargo_chave = st.selectbox(
-          "Cargo / Função associada à chave",
-          [
-              "Diretoria / Gestão",
-              "Engenheiro / Gestor de Obra",
-              "Mecânico / Oficina",
-              "Operador / Motorista / Campo",
-          ],
-      )
-      modalidade_chave = st.selectbox(
-          "Modalidade da Licença",
-          ["Plano Mensal (30 dias)", "Plano Anual (365 dias)"],
-      )
-      btn_gerar_lote = st.form_submit_button("🚀 Gerar Lote de Chaves")
-
-      if btn_gerar_lote:
-        chaves_criadas = []
-        for _ in range(int(qtd_chaves)):
-          parte1 = "".join(
-              random.choices(string.ascii_uppercase + string.digits, k=4)
-          )
-          parte2 = "".join(
-              random.choices(string.ascii_uppercase + string.digits, k=4)
-          )
-          codigo = f"TABALMIX-{parte1}-{parte2}"
-          try:
-            cursor.execute(
-                "INSERT INTO chaves_licenca (codigo_chave, cargo_atribuido,"
-                " modalidade, status_uso, usado_por, data_criacao) VALUES (?,"
-                " ?, ?, 'Disponível', 'N/A', ?)",
-                (
-                    codigo,
-                    cargo_chave,
-                    modalidade_chave,
-                    datetime.now().strftime("%Y-%m-%d %H:%M"),
-                ),
-            )
-            chaves_criadas.append(codigo)
-          except Exception:
-            pass
-        conn.commit()
-        st.success(
-            f"✅ {len(chaves_criadas)} chaves geradas com sucesso! Veja na aba"
-            " 'Chaves Geradas'."
-        )
-
-  with tab_ver_chaves:
-    st.markdown("### 📋 Relatório de Chaves de Ativação")
-    df_chaves = pd.read_sql("SELECT * FROM chaves_licenca", conn)
-    if not df_chaves.empty:
-      exibir_tabela_padronizada(df_chaves, "chaves_licenca")
-    else:
-      st.info("Nenhuma chave gerada ainda.")
-
-  with tab_gerenciar_users:
-    st.markdown("### 👥 Gerenciamento de Colaboradores & Planos")
-    df_users = pd.read_sql("SELECT * FROM usuarios_sistema", conn)
-    if not df_users.empty:
-      exibir_tabela_padronizada(df_users, "usuarios_sistema")
-
-      st.markdown("---")
-      st.markdown("### ✍️ Atualizar Cargo ou Plano de um Colaborador")
-      lista_emails_users = df_users["email"].tolist()
-      colab_selecionado = st.selectbox(
-          "Selecione o colaborador pelo e-mail",
-          lista_emails_users,
-          key="sel_colab_usr",
-      )
-
-      with st.form("form_editar_colaborador_admin"):
-        novo_cargo_adm = st.selectbox(
-            "Novo Cargo / Função",
-            [
-                "Diretoria / Gestão",
-                "Engenheiro / Gestor de Obra",
-                "Mecânico / Oficina",
-                "Operador / Motorista / Campo",
-            ],
-            key="adm_novo_cargo",
-        )
-        novo_status_adm = st.selectbox(
-            "Status da Conta", ["Ativo", "Inativo"], key="adm_novo_status"
-        )
-        nova_modalidade_adm = st.selectbox(
-            "Modalidade de Plano",
-            ["Plano Mensal (30 dias)", "Plano Anual (365 dias)"],
-            key="adm_nova_mod",
-        )
-        btn_atualizar_adm = st.form_submit_button(
-            "💾 Salvar Alterações do Colaborador"
-        )
-
-        if btn_atualizar_adm:
-          novo_plano_str = f"{novo_cargo_adm} — {nova_modalidade_adm}"
-          cursor.execute(
-              "UPDATE usuarios_sistema SET cargo_setor = ?, status_assinatura"
-              " = ?, plano_atual = ? WHERE email = ?",
-              (
-                  novo_cargo_adm,
-                  novo_status_adm,
-                  novo_plano_str,
-                  colab_selecionado,
-              ),
-          )
-          conn.commit()
-          st.success(
-              f"✅ Colaborador **{colab_selecionado}** atualizado com sucesso!"
-          )
-          st.rerun()
+  st.title("⚙️ Painel Administrativo de Chaves & Licenças")
+  df_chaves = pd.read_sql("SELECT * FROM chaves_licenca", conn)
+  if not df_chaves.empty:
+    exibir_tabela_padronizada(df_chaves, "chaves_licenca")
