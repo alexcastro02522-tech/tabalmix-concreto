@@ -846,6 +846,65 @@ elif menu == "🚜 Cadastro de Equipamentos":
         else:
           st.error("⚠️ Preencha pelo menos a Marca e o Modelo.")
 
+elif menu == "⛽ Abastecimentos & Combustível":
+  st.title("⛽ Controle de Abastecimento e Combustível")
+  st.markdown("Registe e gira todos os abastecimentos da frota em campo.")
+
+  tab_c_lista, tab_c_cad = st.tabs([
+      "📋 Histórico de Abastecimentos",
+      "➕ Registar Abastecimento",
+  ])
+
+  with tab_c_lista:
+    df_c = pd.read_sql("SELECT * FROM combustivel ORDER BY id DESC", conn)
+    if not df_c.empty:
+      exibir_tabela_padronizada(df_c, "combustivel")
+      if st.button("📄 Gerar Relatório em PDF de Combustível"):
+        pdf_c = gerar_pdf_relatorio("Relatório de Abastecimento", df_c)
+        st.download_button(
+            label="📥 Baixar PDF Certificado",
+            data=pdf_c,
+            file_name="relatorio_combustivel.pdf",
+            mime="application/pdf",
+        )
+    else:
+      st.info("Nenhum abastecimento registado.")
+
+  with tab_c_cad:
+    with st.form("form_abastecimento_novo"):
+      c_ab1, c_ab2 = st.columns(2)
+      with c_ab1:
+        eq_ab = st.text_input("Equipamento / Prefixo")
+        litros_ab = st.number_input("Quantidade em Litros", value=100.0, step=10.0)
+        valor_ab = st.number_input("Valor Total (R$)", value=600.0, step=50.0)
+      with c_ab2:
+        km_ab = st.text_input("Km ou Horímetro no Posto")
+        posto_ab = st.text_input("Posto / Fornecedor")
+        motorista_ab = st.text_input("Motorista / Responsável")
+
+      btn_salvar_ab = st.form_submit_button("💾 Salvar Abastecimento")
+      if btn_salvar_ab:
+        if eq_ab:
+          cursor.execute(
+              "INSERT INTO combustivel (equipamento, litros, valor_total,"
+              " km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?, ?,"
+              " ?, ?, ?)",
+              (
+                  eq_ab,
+                  litros_ab,
+                  valor_ab,
+                  km_ab,
+                  posto_ab,
+                  motorista_ab,
+                  datetime.now().strftime("%d/%m/%Y %H:%M"),
+              ),
+          )
+          conn.commit()
+          st.success("✅ Abastecimento registado com sucesso!")
+          st.rerun()
+        else:
+          st.error("⚠️ Informe o equipamento.")
+
 elif menu == "🏗️ Mobilização / Desmobilização":
   st.title("🏗️ Gestão de Mobilização e Desmobilização de Obras")
   st.markdown(
@@ -1019,6 +1078,159 @@ elif menu == "🏗️ Mobilização / Desmobilização":
             st.rerun()
     else:
       st.info("Nenhuma mobilização registada para editar.")
+
+elif menu == "🛠️ Ordens de Serviço (OS)":
+  st.title("🛠️ Gestão Unificada de Ordens de Serviço (OS)")
+  st.markdown(
+      "Gira manutenções preventivas, corretivas e custos de oficina mecânica."
+  )
+
+  tab_os_lista, tab_os_cad = st.tabs([
+      "📋 Ordens de Serviço Registadas",
+      "➕ Abrir Nova OS",
+  ])
+
+  with tab_os_lista:
+    df_os = pd.read_sql("SELECT * FROM manutencoes ORDER BY id DESC", conn)
+    if not df_os.empty:
+      exibir_tabela_padronizada(df_os, "manutencoes")
+      if st.button("📄 Gerar Relatório em PDF de OS"):
+        pdf_os = gerar_pdf_relatorio("Relatório de Ordens de Serviço", df_os)
+        st.download_button(
+            label="📥 Baixar PDF Certificado",
+            data=pdf_os,
+            file_name="relatorio_ordens_servico.pdf",
+            mime="application/pdf",
+        )
+    else:
+      st.info("Nenhuma Ordem de Serviço registada.")
+
+  with tab_os_cad:
+    with st.form("form_os_novo"):
+      o1, o2 = st.columns(2)
+      with o1:
+        os_prefixo = st.text_input("Equipamento / Prefixo")
+        os_tipo = st.selectbox(
+            "Tipo de Manutenção",
+            ["Corretiva", "Preventiva", "Revisão Periódica"],
+        )
+        os_prob = st.text_area("Descrição do Problema / Serviço")
+      with o2:
+        os_custo_pecas = st.number_input("Custo de Peças (R$)", value=0.0, step=50.0)
+        os_mao = st.number_input("Mão de Obra (R$)", value=0.0, step=50.0)
+        os_oficina = st.text_input("Oficina / Mecânico Responsável")
+        os_status = st.selectbox("Status da OS", ["aberta", "concluida"])
+
+      btn_salvar_os = st.form_submit_button("💾 Salvar Ordem de Serviço")
+      if btn_salvar_os:
+        if os_prefixo:
+          custo_total_os = os_custo_pecas + os_mao
+          cursor.execute(
+              "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao,"
+              " horimetro_km_manut, origem_falha, descricao_problema,"
+              " data_abertura, hora_abertura, pecas_utilizadas, custo_pecas,"
+              " mao_de_obra, custo, oficina, tecnico_mecanico, data_fechamento,"
+              " hora_fechamento, status_os) VALUES (?, ?, '0', 'Campo', ?, ?,"
+              " '', '', ?, ?, ?, ?, '', '', '', ?)",
+              (
+                  os_prefixo,
+                  os_tipo,
+                  os_prob,
+                  datetime.now().strftime("%d/%m/%Y"),
+                  os_custo_pecas,
+                  os_mao,
+                  custo_total_os,
+                  os_oficina,
+                  os_status,
+              ),
+          )
+          conn.commit()
+          st.success("✅ Ordem de Serviço aberta com sucesso!")
+          st.rerun()
+        else:
+          st.error("⚠️ Informe o equipamento.")
+
+elif menu == "🔩 Peças e Ferramentas":
+  st.title("🔩 Controle de Peças e Ferramentas")
+  st.markdown("Gira o stock de peças e materiais no almoxarifado da obra.")
+
+  tab_p_lista, tab_p_cad = st.tabs([
+      "📋 Stock Atual",
+      "➕ Registar Peça / Item",
+  ])
+
+  with tab_p_lista:
+    df_pecas = pd.read_sql("SELECT * FROM pecas ORDER BY id DESC", conn)
+    if not df_pecas.empty:
+      exibir_tabela_padronizada(df_pecas, "pecas")
+    else:
+      st.info("Nenhuma peça registada no stock.")
+
+  with tab_p_cad:
+    with st.form("form_peca_novo"):
+      p1, p2 = st.columns(2)
+      with p1:
+        p_nome = st.text_input("Nome da Peça / Item")
+        p_cat = st.text_input("Categoria (ex: Filtros, Óleo, Pneus)")
+      with p2:
+        p_qtd = st.number_input("Quantidade em Stock", value=1, step=1)
+        p_val = st.number_input("Valor Unitário (R$)", value=0.0, step=10.0)
+
+      btn_salvar_peca = st.form_submit_button("💾 Adicionar Item ao Stock")
+      if btn_salvar_peca:
+        if p_nome:
+          cursor.execute(
+              "INSERT INTO pecas (nome_item, categoria, quantidade,"
+              " valor_unitario) VALUES (?, ?, ?, ?)",
+              (p_nome, p_cat, int(p_qtd), float(p_val)),
+          )
+          conn.commit()
+          st.success("✅ Peça adicionada ao stock com sucesso!")
+          st.rerun()
+        else:
+          st.error("⚠️ Informe o nome da peça.")
+
+elif menu == "👥 Gestão de Clientes":
+  st.title("👥 Gestão de Clientes e Obras Parceiras")
+  st.markdown("Registo e contacto dos clientes e construtoras atendidas.")
+
+  tab_cli_lista, tab_cli_cad = st.tabs([
+      "📋 Clientes Registados",
+      "➕ Registar Novo Cliente",
+  ])
+
+  with tab_cli_lista:
+    df_cli = pd.read_sql("SELECT * FROM clientes ORDER BY id DESC", conn)
+    if not df_cli.empty:
+      exibir_tabela_padronizada(df_cli, "clientes")
+    else:
+      st.info("Nenhum cliente registado.")
+
+  with tab_cli_cad:
+    with st.form("form_cliente_novo"):
+      cl1, cl2 = st.columns(2)
+      with cl1:
+        c_nome = st.text_input("Nome do Cliente / Responsável")
+        c_emp = st.text_input("Nome da Empresa / Construtora")
+        c_tel = st.text_input("Telefone / WhatsApp")
+      with cl2:
+        c_doc = st.text_input("CPF / CNPJ")
+        c_email = st.text_input("E-mail")
+        c_end = st.text_input("Endereço da Obra")
+
+      btn_salvar_cli = st.form_submit_button("💾 Salvar Cliente")
+      if btn_salvar_cli:
+        if c_nome:
+          cursor.execute(
+              "INSERT INTO clientes (nome, empresa, telefone, documento, email,"
+              " endereco) VALUES (?, ?, ?, ?, ?, ?)",
+              (c_nome, c_emp, c_tel, c_doc, c_email, c_end),
+          )
+          conn.commit()
+          st.success("✅ Cliente registado com sucesso!")
+          st.rerun()
+        else:
+          st.error("⚠️ Informe o nome do cliente.")
 
 elif menu == "💬 Chat Tabalmix Pro & Rede":
   st.markdown(
@@ -1328,30 +1540,6 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
       st.success("Convite enviado com sucesso para o chat!")
       st.rerun()
 
-elif menu == "⛽ Abastecimentos & Combustível":
-  st.title("⛽ Controle de Abastecimento e Combustível")
-  df_c = pd.read_sql("SELECT * FROM combustivel", conn)
-  if not df_c.empty:
-    exibir_tabela_padronizada(df_c, "combustivel")
-
-elif menu == "🛠️ Ordens de Serviço (OS)":
-  st.title("🛠️ Gestão Unificada de Ordens de Serviço (OS)")
-  df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
-  if not df_os.empty:
-    exibir_tabela_padronizada(df_os, "manutencoes")
-
-elif menu == "🔩 Peças e Ferramentas":
-  st.title("🔩 Controle de Peças e Ferramentas")
-  df_p = pd.read_sql("SELECT * FROM pecas", conn)
-  if not df_p.empty:
-    exibir_tabela_padronizada(df_p, "pecas")
-
-elif menu == "👥 Gestão de Clientes":
-  st.title("👥 Gestão de Clientes")
-  df_cli = pd.read_sql("SELECT * FROM clientes", conn)
-  if not df_cli.empty:
-    exibir_tabela_padronizada(df_cli, "clientes")
-
 elif menu == "🔍 Consulta / Busca Geral":
   st.title("🔍 Consulta e Histórico Completo")
   df_v_busca = pd.read_sql(
@@ -1359,6 +1547,8 @@ elif menu == "🔍 Consulta / Busca Geral":
   )
   if not df_v_busca.empty:
     exibir_tabela_padronizada(df_v_busca, "busca_eq_info")
+  else:
+    st.info("Nenhum registo encontrado para consulta.")
 
 elif menu == "⚙️ Meu Perfil / Dados":
   st.title("⚙️ Meu Perfil & Credenciais Corporativas")
