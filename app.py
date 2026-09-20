@@ -1318,38 +1318,42 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             display: flex;
             flex-direction: column;
             gap: 12px;
-            max-height: 520px;
+            max-height: 540px;
             overflow-y: auto;
             padding: 16px;
             background: #f8fafc;
             border-radius: 16px;
             border: 1px solid #e2e8f0;
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
         }
-        .msg-card-eu {
+        .msg-row {
+            display: flex;
+            width: 100%;
+            margin-bottom: 2px;
+        }
+        .msg-row-eu {
+            justify-content: flex-end;
+        }
+        .msg-row-outro {
+            justify-content: flex-start;
+        }
+        .msg-bubble {
+            padding: 12px 16px;
+            border-radius: 14px;
+            max-width: 85%;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            position: relative;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .msg-bubble-eu {
             background: linear-gradient(135deg, #059669 0%, #047857 100%);
             color: white;
-            padding: 14px 18px;
-            border-radius: 16px 16px 4px 16px;
-            max-width: 100%;
-            align-self: flex-end;
-            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
-            margin-left: auto;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            margin-bottom: 4px;
+            border-top-right-radius: 3px;
         }
-        .msg-card-outro {
+        .msg-bubble-outro {
             background: #ffffff;
             color: #0f172a;
-            padding: 14px 18px;
-            border-radius: 16px 16px 16px 4px;
-            max-width: 100%;
-            align-self: flex-start;
             border: 1px solid #e2e8f0;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
-            margin-right: auto;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            margin-bottom: 4px;
+            border-top-left-radius: 3px;
         }
         </style>
     """,
@@ -1358,8 +1362,8 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
 
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
   st.markdown(
-      "Comunicação em tempo real de nível profissional. Conversas privadas"
-      " isoladas, cópia real para telemóvel e atalhos rápidos."
+      "Comunicação em tempo real de nível internacional. Conversas privadas"
+      " isoladas e barra de ferramentas discreta."
   )
 
   cursor.execute(
@@ -1427,46 +1431,48 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
     if not df_msgs.empty:
       for _, row_m in df_msgs.iterrows():
         is_eu = remetente_atual in str(row_m["remetente"])
-        estilo_classe = "msg-card-eu" if is_eu else "msg-card-outro"
+        row_class = "msg-row msg-row-eu" if is_eu else "msg-row msg-row-outro"
+        bubble_class = (
+            "msg-bubble msg-bubble-eu" if is_eu else "msg-bubble msg-bubble-outro"
+        )
         cor_autor = "#d1fae5" if is_eu else "#047857"
 
-        # Colunas paralelas: Balão à esquerda | Ações laterais à direita (fora do balão)
-        col_chat_balao, col_chat_menu_lateral = st.columns([10, 2])
-
-        with col_chat_balao:
-          st.markdown(
-              f"""
-                    <div class="{estilo_classe}">
-                        <div style="font-size: 11px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
-                            <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
-                            <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
-                        </div>
-                        <div style="font-size: 14px; line-height: 1.4; white-space: pre-wrap;" id="msg_txt_{row_m['id']}">{row_m['mensagem']}</div>
+        # Balão com padrão internacional alinhado
+        st.markdown(
+            f"""
+            <div class="{row_class}">
+                <div class="{bubble_class}">
+                    <div style="font-size: 10.5px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 20px;">
+                        <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
+                        <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
                     </div>
-                """,
-              unsafe_allow_html=True,
-          )
+                    <div style="font-size: 13.5px; line-height: 1.4; white-space: pre-wrap;" id="msg_txt_{row_m['id']}">{row_m['mensagem']}</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-        with col_chat_menu_lateral:
-          # Botão Copiar Real via JavaScript
+        # Micro-barra de ações horizontal super discreta logo abaixo (Padrão Internacional)
+        col_espaco, col_btn1, col_btn2 = st.columns([6, 1, 1])
+        with col_btn1:
           texto_limpo_js = (
               str(row_m["mensagem"])
               .replace('"', '\\"')
               .replace("\n", " ")
               .replace("\r", " ")
           )
-          copiar_html_js = f"""
-                    <button onclick="navigator.clipboard.writeText('{texto_limpo_js}'); alert('📋 Texto copiado para a área de transferência!');" style="background:#059669; color:white; border:none; padding:6px 10px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; width:100%; margin-bottom:4px;">📋 Copiar</button>
-                """
-          components.html(copiar_html_js, height=35)
+          copiar_html_min = f"""
+                <button onclick="navigator.clipboard.writeText('{texto_limpo_js}');" title="Copiar" style="background:transparent; color:#64748b; border:1px solid #cbd5e1; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:700; cursor:pointer; width:100%;">📋 Copiar</button>
+            """
+          components.html(copiar_html_min, height=25)
 
-          # Botão Apagar Direto
-          if st.button("🗑️ Apagar", key=f"del_dir_{row_m['id']}"):
+        with col_btn2:
+          if st.button("🗑️", key=f"del_intl_{row_m['id']}"):
             cursor.execute(
                 "DELETE FROM chat_interno WHERE id = ?", (row_m["id"],)
             )
             conn.commit()
-            st.success("Mensagem apagada!")
             st.rerun()
 
         if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
@@ -1474,7 +1480,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             st.image(
                 row_m["arquivo_path"],
                 caption=f"Mídia de {row_m['remetente']}",
-                width=260,
+                width=240,
             )
           with open(row_m["arquivo_path"], "rb") as f_down:
             st.download_button(
@@ -1484,7 +1490,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
                 key=f"dl_chat_arq_{row_m['id']}",
             )
         st.markdown(
-            "<hr style='margin: 4px 0; border: none; border-top: 1px solid"
+            "<hr style='margin: 2px 0; border: none; border-top: 1px solid"
             " #e2e8f0;'>",
             unsafe_allow_html=True,
         )
