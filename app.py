@@ -1330,7 +1330,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             color: white;
             padding: 14px 18px;
             border-radius: 16px 16px 4px 16px;
-            max-width: 80%;
+            max-width: 100%;
             align-self: flex-end;
             box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
             margin-left: auto;
@@ -1342,7 +1342,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             color: #0f172a;
             padding: 14px 18px;
             border-radius: 16px 16px 16px 4px;
-            max-width: 80%;
+            max-width: 100%;
             align-self: flex-start;
             border: 1px solid #e2e8f0;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
@@ -1429,22 +1429,22 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         estilo_classe = "msg-card-eu" if is_eu else "msg-card-outro"
         cor_autor = "#d1fae5" if is_eu else "#047857"
 
-        st.markdown(
-            f"""
-                <div class="{estilo_classe}" style="position: relative;">
-                    <div style="font-size: 11px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
-                        <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
-                        <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
+        # Disposição em colunas paralelas para colocar o menu de três pontinhos alinhado exatamente no topo direito do balão
+        col_msg_balao, col_msg_menu = st.columns([11, 1])
+        with col_msg_balao:
+          st.markdown(
+              f"""
+                    <div class="{estilo_classe}">
+                        <div style="font-size: 11px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
+                            <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
+                            <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
+                        </div>
+                        <div style="font-size: 14px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
                     </div>
-                    <div style="font-size: 14px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
-                </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-        # Menu discreto de três pontinhos perfeitamente posicionado no canto superior direito
-        col_vazio_chat, col_menu_tres_pontos = st.columns([5, 1])
-        with col_menu_tres_pontos:
+                """,
+              unsafe_allow_html=True,
+          )
+        with col_msg_menu:
           menu_tres_pontinhos = st.selectbox(
               "⋮",
               ["⋮", "📋 Copiar", "🔄 Encaminhar", "🗑️ Apagar"],
