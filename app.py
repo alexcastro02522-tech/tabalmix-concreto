@@ -1520,7 +1520,8 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
     else:
       alvo_selecionado = "Equipe Geral"
 
-    nome_sala_direta = f"TabalmixDirectCall{alvo_selecionado.split()[0]}2026"
+    # Nome limpo e único para a sala
+    nome_sala_direta = f"TabalmixDirectCall{ ''.join(e for e in alvo_selecionado.split()[0] if e.isalnum()) }2026"
 
     if "chamada_ativa" not in st.session_state:
       st.session_state["chamada_ativa"] = False
@@ -1569,7 +1570,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
       st.markdown(f"**🟢 Chamada em curso com: {alvo_selecionado}**")
       jitsi_embed_html = f"""
             <div style="width: 100%; height: 600px; border-radius: 16px; overflow: hidden; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
-                <iframe src="https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false&interfaceConfigOverwrite.MOBILE_APP_PROMO=false" 
+                <iframe src="https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&interfaceConfigOverwrite.MOBILE_APP_PROMO=false" 
                         allow="camera; microphone; fullscreen; display-capture" 
                         style="width: 100%; height: 100%; border: none;">
                 </iframe>
