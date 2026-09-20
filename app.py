@@ -895,7 +895,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         )
         cor_autor = "#d1fae5" if is_eu else "#047857"
 
-        # BALÃO DE MENSAGEM LIMPO E ELEGANTE COM OS TRÊS PONTINHOS DISCRETOS NO CABEÇALHO DO BALÃO
+        # BALÃO DE MENSAGEM LIMPO E ELEGANTE COM OS TRÊS PONTINHOS NO CABEÇALHO
         st.markdown(
             f"""
             <div class="{row_class}">
@@ -911,59 +911,62 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             unsafe_allow_html=True,
         )
 
-        # BARRA DE AÇÕES DISCRETA ABAIXO DE CADA MENSAGEM (COPIAR, REENCAMINHAR, APAGAR)
-        c_acao1, c_acao2, c_acao3 = st.columns([1, 2, 1])
-        with c_acao1:
-          texto_limpo_js = (
-              str(row_m["mensagem"])
-              .replace('"', '\\"')
-              .replace("\n", " ")
-              .replace("\r", " ")
-          )
-          copiar_html_min = f"""
-                <button onclick="navigator.clipboard.writeText('{texto_limpo_js}'); alert('📋 Copiado!');" style="background:#059669; color:white; border:none; padding:3px 8px; border-radius:6px; font-size:10px; font-weight:700; cursor:pointer;">📋 Copiar</button>
-            """
-          components.html(copiar_html_min, height=24)
+        # MENU COMPACTO UNIFICADO (EXPANDER LIMPO COM AS 3 OPÇÕES EM LINHA)
+        with st.expander(f"⚙️ Opções da Mensagem #{row_m['id']}", expanded=False):
+          col_m1, col_m2, col_m3 = st.columns([1, 2, 1])
 
-        with c_acao2:
-          if todos_usuarios_db:
-            lista_enc = [f"👤 {u[1]} — Cargo: {u[2]}" for u in todos_usuarios_db]
-            destino_fwd = st.selectbox(
-                "Fwd",
-                ["🌐 Canal Geral"] + lista_enc,
-                key=f"sel_fwd_{row_m['id']}",
-                label_visibility="collapsed",
+          with col_m1:
+            texto_limpo_js = (
+                str(row_m["mensagem"])
+                .replace('"', '\\"')
+                .replace("\n", " ")
+                .replace("\r", " ")
             )
-            if st.button("🔄 Reencaminhar", key=f"btn_fwd_{row_m['id']}"):
-              data_env_fwd = datetime.now().strftime("%H:%M — %d/%m")
-              msg_fwd_texto = (
-                  f"[Encaminhado de {row_m['remetente']}]\n{row_m['mensagem']}"
+            copiar_html_min = f"""
+                    <button onclick="navigator.clipboard.writeText('{texto_limpo_js}'); alert('📋 Copiado!');" style="background:#059669; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; width:100%;">📋 Copiar</button>
+                """
+            components.html(copiar_html_min, height=32)
+
+          with col_m2:
+            if todos_usuarios_db:
+              lista_enc = [
+                  f"👤 {u[1]} — Cargo: {u[2]}" for u in todos_usuarios_db
+              ]
+              destino_fwd = st.selectbox(
+                  "Reencaminhar para:",
+                  ["🌐 Canal Geral"] + lista_enc,
+                  key=f"sel_fwd_{row_m['id']}",
               )
+              if st.button("🚀 Enviar Reencaminhado", key=f"btn_fwd_{row_m['id']}"):
+                data_env_fwd = datetime.now().strftime("%H:%M — %d/%m")
+                msg_fwd_texto = (
+                    f"[Encaminhado de {row_m['remetente']}]\n{row_m['mensagem']}"
+                )
+                cursor.execute(
+                    "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+                    " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES"
+                    " (?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        f"{remetente_atual} ({cargo_atual})",
+                        destino_fwd,
+                        cargo_atual,
+                        msg_fwd_texto,
+                        "",
+                        "",
+                        data_env_fwd,
+                    ),
+                )
+                conn.commit()
+                st.success("✅ Reencaminhado!")
+                st.rerun()
+
+          with col_m3:
+            if st.button("🗑️ Apagar", key=f"del_b_{row_m['id']}"):
               cursor.execute(
-                  "INSERT INTO chat_interno (remetente, destinatario, cargo,"
-                  " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
-                  " ?, ?, ?, ?, ?)",
-                  (
-                      f"{remetente_atual} ({cargo_atual})",
-                      destino_fwd,
-                      cargo_atual,
-                      msg_fwd_texto,
-                      "",
-                      "",
-                      data_env_fwd,
-                  ),
+                  "DELETE FROM chat_interno WHERE id = ?", (row_m["id"],)
               )
               conn.commit()
-              st.success("✅ Reencaminhado!")
               st.rerun()
-
-        with c_acao3:
-          if st.button("🗑️ Apagar", key=f"del_b_{row_m['id']}"):
-            cursor.execute(
-                "DELETE FROM chat_interno WHERE id = ?", (row_m["id"],)
-            )
-            conn.commit()
-            st.rerun()
 
         if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
           if row_m["arquivo_nome"].lower().endswith((".png", ".jpg", ".jpeg")):
@@ -980,7 +983,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
                 key=f"dl_chat_arq_{row_m['id']}",
             )
         st.markdown(
-            "<hr style='margin: 2px 0; border: none; border-top: 1px solid"
+            "<hr style='margin: 4px 0; border: none; border-top: 1px solid"
             " #e2e8f0;'>",
             unsafe_allow_html=True,
         )
