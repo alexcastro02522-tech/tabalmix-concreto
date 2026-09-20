@@ -772,8 +772,8 @@ if menu == "📊 Visão Geral":
 elif menu == "🚜 Cadastro de Equipamentos":
   st.title("🚜 Cadastro de Equipamentos e Frota")
   st.markdown(
-      "Registe novos caminhões, betoneiras ou máquinas e gira a frota da"
-      " empresa."
+      "Registe novos veículos especificando a linha operacional (Linha Amarela,"
+      " Linha Marrom, Concreto, etc.)."
   )
 
   tab_eq_lista, tab_eq_cad = st.tabs([
@@ -795,16 +795,16 @@ elif menu == "🚜 Cadastro de Equipamentos":
       with c_e1:
         f_prefixo = st.text_input("Prefixo / Tag (ex: BET-01)")
         f_cat = st.selectbox(
-            "Categoria",
+            "Linha / Categoria Operacional",
             [
-                "Caminhão Betoneira",
-                "Caminhão Bomba",
-                "Caminhão Carroceria",
-                "Equipamento Estacionario",
+                "🟡 Linha Amarela (Escavadeiras, Pás, Retro)",
+                "🟤 Linha Marrom (Tratores, Estacionários)",
+                "🚚 Linha Concreto (Caminhões Betoneira e Bomba)",
+                "🚛 Linha Branca / Apoio (Carrocerias, Utilitários)",
             ],
         )
-        f_marca = st.text_input("Marca (ex: Mercedes-Benz, Ford)")
-        f_modelo = st.text_input("Modelo (ex: 2423 B, Cargo)")
+        f_marca = st.text_input("Marca (ex: Mercedes-Benz, Ford, Caterpillar)")
+        f_modelo = st.text_input("Modelo (ex: 2423 B, Cargo 2622)")
         f_ano = st.number_input("Ano de Fabricação", value=2020, step=1)
         f_cor = st.text_input("Cor")
       with c_e2:
@@ -841,7 +841,7 @@ elif menu == "🚜 Cadastro de Equipamentos":
               ),
           )
           conn.commit()
-          st.success("✅ Equipamento cadastrado com sucesso!")
+          st.success("✅ Equipamento e linha operacional registados com sucesso!")
           st.rerun()
         else:
           st.error("⚠️ Preencha pelo menos a Marca e o Modelo.")
@@ -849,20 +849,23 @@ elif menu == "🚜 Cadastro de Equipamentos":
 elif menu == "🏗️ Mobilização / Desmobilização":
   st.title("🏗️ Gestão de Mobilização e Desmobilização de Obras")
   st.markdown(
-      "Registe novas movimentações selecionando o veículo da frota e edite os"
-      " registos com justificativa obrigatória."
+      "Registe novas movimentações selecionando o veículo e a respetiva linha"
+      " operacional."
   )
 
-  # Buscar veículos cadastrados para o selectbox
   try:
-    df_veiculos_mob = pd.read_sql("SELECT id, marca, modelo, placa FROM veiculos", conn)
+    df_veiculos_mob = pd.read_sql(
+        "SELECT id, tag_prefixo, categoria_equipamento, marca, modelo, placa FROM"
+        " veiculos",
+        conn,
+    )
   except Exception:
     df_veiculos_mob = pd.DataFrame()
 
   lista_veiculos_opcoes = []
   if not df_veiculos_mob.empty:
     lista_veiculos_opcoes = [
-        f"ID {r['id']} — {r['marca']} {r['modelo']} (Placa: {r['placa'] if r['placa'] else 'N/A'})"
+        f"[{r['categoria_equipamento']}] ID {r['id']} — {r['marca']} {r['modelo']} (Placa: {r['placa'] if r['placa'] else 'N/A'})"
         for _, r in df_veiculos_mob.iterrows()
     ]
   else:
@@ -878,7 +881,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
       c1, c2 = st.columns(2)
       with c1:
         veiculo_escolhido = st.selectbox(
-            "Selecionar Veículo / Equipamento da Frota", lista_veiculos_opcoes
+            "Selecionar Equipamento / Linha da Frota", lista_veiculos_opcoes
         )
         tipo_mov = st.selectbox(
             "Tipo de Movimento",
@@ -949,7 +952,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
       with st.form(f"form_editar_mob_{id_mob_sel}"):
         st.markdown(f"#### Editando Registo ID #{id_mob_sel}")
         e_eq = st.selectbox(
-            "Equipamento / Veículo",
+            "Equipamento / Linha",
             lista_veiculos_opcoes,
             index=0,
         )
