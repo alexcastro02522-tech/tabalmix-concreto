@@ -787,7 +787,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         .msg-row {
             display: flex;
             width: 100%;
-            margin-bottom: 4px;
+            margin-bottom: 2px;
         }
         .msg-row-eu {
             justify-content: flex-end;
@@ -796,9 +796,9 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             justify-content: flex-start;
         }
         .msg-bubble {
-            padding: 14px 24px 14px 18px;
+            padding: 12px 18px;
             border-radius: 16px;
-            max-width: 88%;
+            max-width: 85%;
             font-family: 'Plus Jakarta Sans', sans-serif;
             position: relative;
             box-shadow: 0 3px 10px rgba(0,0,0,0.05);
@@ -820,10 +820,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
   )
 
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
-  st.markdown(
-      "Comunicação em tempo real com balões limpos e menu flutuante integrado"
-      " nos três pontinhos superiores."
-  )
+  st.markdown("Comunicação em tempo real com balões limpos estilo WhatsApp.")
 
   cursor.execute(
       "SELECT id, apelido, cargo_setor FROM usuarios_sistema ORDER BY id DESC"
@@ -898,13 +895,14 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         )
         cor_autor = "#d1fae5" if is_eu else "#047857"
 
+        # BALÃO DE MENSAGEM LIMPO E ELEGANTE COM OS TRÊS PONTINHOS DISCRETOS NO CABEÇALHO DO BALÃO
         st.markdown(
             f"""
             <div class="{row_class}">
                 <div class="{bubble_class}">
-                    <div style="font-size: 10.5px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 20px;">
-                        <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
-                        <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
+                    <div style="font-size: 10px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
+                        <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']} &nbsp; • &nbsp; <b>[⋮]</b></span>
+                        <span style="opacity: 0.8;">{row_m['data_envio']}</span>
                     </div>
                     <div style="font-size: 13.5px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
                 </div>
@@ -913,40 +911,33 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             unsafe_allow_html=True,
         )
 
-        with st.expander(
-            f"⋮ Opções da Mensagem #{row_m['id']}", expanded=False
-        ):
-          texto_msg_atual = str(row_m["mensagem"])
-
+        # BARRA DE AÇÕES DISCRETA ABAIXO DE CADA MENSAGEM (COPIAR, REENCAMINHAR, APAGAR)
+        c_acao1, c_acao2, c_acao3 = st.columns([1, 2, 1])
+        with c_acao1:
           texto_limpo_js = (
-              texto_msg_atual.replace('"', '\\"')
+              str(row_m["mensagem"])
+              .replace('"', '\\"')
               .replace("\n", " ")
               .replace("\r", " ")
           )
-          copiar_html_code = f"""
-                <button onclick="navigator.clipboard.writeText('{texto_limpo_js}'); alert('📋 Mensagem copiada com sucesso!');" style="background:#059669; color:white; border:none; padding:6px 12px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer; width:100%; margin-bottom:4px;">📋 Copiar</button>
+          copiar_html_min = f"""
+                <button onclick="navigator.clipboard.writeText('{texto_limpo_js}'); alert('📋 Copiado!');" style="background:#059669; color:white; border:none; padding:3px 8px; border-radius:6px; font-size:10px; font-weight:700; cursor:pointer;">📋 Copiar</button>
             """
-          components.html(copiar_html_code, height=34)
+          components.html(copiar_html_min, height=24)
 
-          st.markdown(
-              "<p style='font-size:11px; font-weight:700; margin:4px 0 2px 0;"
-              " color:#334155;'>🔄 Reencaminhar:</p>",
-              unsafe_allow_html=True,
-          )
+        with c_acao2:
           if todos_usuarios_db:
-            lista_encaminhar = [
-                f"👤 {u[1]} — Cargo: {u[2]}" for u in todos_usuarios_db
-            ]
+            lista_enc = [f"👤 {u[1]} — Cargo: {u[2]}" for u in todos_usuarios_db]
             destino_fwd = st.selectbox(
-                "Contato",
-                ["🌐 Canal Geral (Toda a Equipe)"] + lista_encaminhar,
+                "Fwd",
+                ["🌐 Canal Geral"] + lista_enc,
                 key=f"sel_fwd_{row_m['id']}",
                 label_visibility="collapsed",
             )
-            if st.button("Enviar FWD", key=f"btn_fwd_{row_m['id']}"):
+            if st.button("🔄 Reencaminhar", key=f"btn_fwd_{row_m['id']}"):
               data_env_fwd = datetime.now().strftime("%H:%M — %d/%m")
               msg_fwd_texto = (
-                  f"[Encaminhado de {row_m['remetente']}]\n{texto_msg_atual}"
+                  f"[Encaminhado de {row_m['remetente']}]\n{row_m['mensagem']}"
               )
               cursor.execute(
                   "INSERT INTO chat_interno (remetente, destinatario, cargo,"
@@ -966,16 +957,12 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
               st.success("✅ Reencaminhado!")
               st.rerun()
 
-          st.markdown("---")
-
-          if st.button(
-              "🗑️ Apagar Mensagem", key=f"del_bubble_{row_m['id']}"
-          ):
+        with c_acao3:
+          if st.button("🗑️ Apagar", key=f"del_b_{row_m['id']}"):
             cursor.execute(
                 "DELETE FROM chat_interno WHERE id = ?", (row_m["id"],)
             )
             conn.commit()
-            st.success("Apagado!")
             st.rerun()
 
         if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
@@ -993,7 +980,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
                 key=f"dl_chat_arq_{row_m['id']}",
             )
         st.markdown(
-            "<hr style='margin: 4px 0; border: none; border-top: 1px solid"
+            "<hr style='margin: 2px 0; border: none; border-top: 1px solid"
             " #e2e8f0;'>",
             unsafe_allow_html=True,
         )
