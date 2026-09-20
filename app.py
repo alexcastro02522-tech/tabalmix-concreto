@@ -1843,7 +1843,7 @@ elif menu == "⚙️ Meu Perfil / Dados":
 elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
   st.title("⚙️ Painel Administrativo de Chaves & Licenças & Gestão de Colunas")
   
-  tab_adm_l1, tab_adm_l2 = st.tabs(["🎟️ Gestão de Licenças", "⚙️ Gestão de Colunas (Ocultar)"])
+  tab_adm_l1, tab_adm_l2 = st.tabs(["🎟️ Gestão de Licenças", "⚙️ Gestão de Colunas (Excluir / Ocultar)"])
   
   with tab_adm_l1:
     df_chaves = pd.read_sql("SELECT * FROM chaves_licenca", conn)
@@ -1853,8 +1853,9 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
       st.info("Nenhuma chave registada.")
 
   with tab_adm_l2:
-    st.markdown("### ⚙️ Ocultar Colunas Indesejadas das Tabelas")
-    tabela_escolhida_ocultar = st.selectbox("Selecione a Tabela:", ["veiculos", "manutencoes", "mobilizacoes", "combustivel", "pecas", "clientes"])
+    st.markdown("### ⚙️ Gestão Executiva de Colunas (Ocultar ou Excluir Permanentemente)")
+    tabela_escolhida_ocultar = st.selectbox("Selecione a Tabela do Banco de Dados:", ["veiculos", "manutencoes", "mobilizacoes", "combustivel", "pecas", "clientes"])
+    
     try:
       df_ex_cols = pd.read_sql(f"SELECT * FROM {tabela_escolhida_ocultar} LIMIT 1", conn)
       todas_cols_tabela = list(df_ex_cols.columns)
@@ -1866,14 +1867,30 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     cols_ja_ocultas = [c.strip() for c in res_oc[0].split(",")] if res_oc and res_oc[0] else []
 
     colunas_para_ocultar = st.multiselect(
-        "Selecione as colunas que deseja ocultar nas tabelas:",
+        "Selecione as colunas que deseja ocultar da visualização:",
         todas_cols_tabela,
         default=[c for c in cols_ja_ocultas if c in todas_cols_tabela]
     )
 
-    if st.button("💾 Salvar Configuração de Colunas"):
+    if st.button("💾 Salvar Configuração de Ocultação"):
       str_ocultas_final = ",".join(colunas_para_ocultar)
       cursor.execute("INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas) VALUES (?, ?)", (tabela_escolhida_ocultar, str_ocultas_final))
       conn.commit()
-      st.success("✅ Configuração de colunas atualizada com sucesso!")
+      st.success("✅ Ocultação de colunas atualizada com sucesso!")
       st.rerun()
+
+    st.markdown("---")
+    st.markdown("🔴 **ZONA DE EXCLUSÃO DE COLUNAS:** Selecione abaixo uma coluna para apagá-la permanentemente do banco de dados (Cuidado: esta ação é irreversível).")
+    
+    col_para_excluir = st.selectbox("Selecione a coluna para excluir da tabela:", [c for c in todas_cols_tabela if c not in ['id']])
+    
+    if st.button("🗑️ Excluir Coluna Selecionada do Banco de Dados"):
+      if col_para_excluir:
+        try:
+          # SQLite não suporta DROP COLUMN direto em versões muito antigas, mas nas atuais sim. Para total segurança, recriamos ou executamos o comando standard:
+          cursor.execute(f"ALTER TABLE {tabela_escolhida_ocultar} DROP COLUMN {col_para_excluir}")
+          conn.commit()
+          st.success(f"✅ Coluna '{col_para_excluir}' excluída com sucesso da tabela '{tabela_escolhida_ocultar}'!")
+          st.rerun()
+        except Exception as e:
+          st.error(f"⚠️ Erro ao excluir coluna: {e}. Nota: Certifique-se de que a versão do SQLite suporta DROP COLUMN.")
