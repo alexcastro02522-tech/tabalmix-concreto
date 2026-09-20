@@ -1506,8 +1506,8 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         "### 📞 Central de Chamada Direta Pessoal (Vídeo e Voz em Tempo Real)"
     )
     st.markdown(
-        "Seleciona o colaborador (ex: Hayarya) para iniciar a chamada e"
-        " notificar o dispositivo dele em tempo real:"
+        "Seleciona o colaborador para iniciar a chamada e notificar o"
+        " dispositivo dele em tempo real:"
     )
 
     if todos_usuarios_db:
@@ -1522,6 +1522,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
 
     # Nome limpo e único para a sala
     nome_sala_direta = f"TabalmixDirectCall{ ''.join(e for e in alvo_selecionado.split()[0] if e.isalnum()) }2026"
+    link_direto_jitsi = f"https://meet.jit.si/{nome_sala_direta}"
 
     if "chamada_ativa" not in st.session_state:
       st.session_state["chamada_ativa"] = False
@@ -1568,15 +1569,27 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
 
     if st.session_state["chamada_ativa"]:
       st.markdown(f"**🟢 Chamada em curso com: {alvo_selecionado}**")
+
+      # Botão de segurança direto para abrir a sala caso o telemóvel exija verificação
+      st.markdown(
+          f"""
+          <div style="background: #ecfdf5; border: 1px solid #059669; padding: 12px; border-radius: 12px; margin-bottom: 12px; text-align: center;">
+              <p style="margin: 0 0 6px 0; color: #065f46; font-weight: 700; font-size: 13.5px;">Se o telemóvel pedir autenticação, clica no botão abaixo:</p>
+              <a href="{link_direto_jitsi}" target="_blank" style="background: #059669; color: white; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: 800; display: inline-block; font-size: 13px;">🔗 Abrir Sala de Vídeo no Navegador</a>
+          </div>
+          """,
+          unsafe_allow_html=True,
+      )
+
       jitsi_embed_html = f"""
-            <div style="width: 100%; height: 600px; border-radius: 16px; overflow: hidden; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
-                <iframe src="https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&interfaceConfigOverwrite.MOBILE_APP_PROMO=false" 
+            <div style="width: 100%; height: 550px; border-radius: 16px; overflow: hidden; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+                <iframe src="{link_direto_jitsi}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.enableWelcomePage=false&interfaceConfigOverwrite.MOBILE_APP_PROMO=false" 
                         allow="camera; microphone; fullscreen; display-capture" 
                         style="width: 100%; height: 100%; border: none;">
                 </iframe>
             </div>
         """
-      st.components.v1.html(jitsi_embed_html, height=620)
+      st.components.v1.html(jitsi_embed_html, height=570)
     else:
       st.info(
           "💡 Clica em 'Disparar Chamada e Ligar' para abrir o vídeo e"
