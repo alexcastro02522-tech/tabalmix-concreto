@@ -707,7 +707,6 @@ def exibir_tabela_padronizada(df, nome_tabela):
     st.info("Nenhum registro encontrado.")
     return
   
-  # Sistema de Gestão e Ocultação de Colunas para o Administrador / Gestor
   try:
     cursor.execute("SELECT ordem_colunas FROM config_colunas WHERE tabela = ?", (nome_tabela,))
     res_conf = cursor.fetchone()
@@ -818,7 +817,6 @@ if menu == "📊 Visão Geral":
 
   st.divider()
 
-  # ESTATÍSTICAS E GRÁFICOS EXECUTIVOS
   st.markdown("### 📈 Estatísticas e Gráficos de Desempenho")
   col_g1, col_g2 = st.columns(2)
 
@@ -867,9 +865,7 @@ if menu == "📊 Visão Geral":
 
 elif menu == "🚜 Cadastro de Equipamentos":
   st.title("🚜 Cadastro de Equipamentos & Vistoria Fotográfica")
-  st.markdown(
-      "Gira a frota, atribua a Linha do Equipamento e execute a vistoria fotográfica completa."
-  )
+  st.markdown("Gira a frota, atribua a Linha do Equipamento e execute a vistoria fotográfica completa.")
 
   tab_eq_lista, tab_eq_cad, tab_eq_foto = st.tabs([
       "📋 Frota Cadastrada",
@@ -916,9 +912,7 @@ elif menu == "🚜 Cadastro de Equipamentos":
         f_chassi = st.text_input("Chassi")
         f_renavam = st.text_input("Renavam")
         f_comb = st.selectbox("Combustível", ["Diesel S10", "Diesel S500", "Gasolina"])
-        f_horimetro = st.number_input(
-            "Km / Horímetro Atual", value=0, step=100
-        )
+        f_horimetro = st.number_input("Km / Horímetro Atual", value=0, step=100)
         f_empresa = st.text_input("Empresa / Filial", value="Tabalmix Concreto")
 
       btn_salvar_eq = st.form_submit_button("💾 Salvar Equipamento na Frota")
@@ -952,10 +946,7 @@ elif menu == "🚜 Cadastro de Equipamentos":
 
   with tab_eq_foto:
     st.markdown("### 📸 Vistoria Fotográfica Completa (Até 15 Ângulos)")
-    st.markdown(
-        "Registe fotos detalhadas (Frente, Verso, Laterais, Rodas, Pneus,"
-        " Motor, Cabine, etc.) para auditoria e controle de danos."
-    )
+    st.markdown("Registe fotos detalhadas (Frente, Verso, Laterais, Rodas, Pneus, Motor, Cabine, etc.) para auditoria e controle de danos.")
 
     try:
       df_veiculos_f = pd.read_sql("SELECT id, marca, modelo, placa FROM veiculos", conn)
@@ -990,15 +981,9 @@ elif menu == "🚜 Cadastro de Equipamentos":
             with open(caminho_foto, "wb") as f_out:
               f_out.write(foto.getbuffer())
 
-          st.success(
-              "✅ Vistoria fotográfica armazenada com sucesso no sistema e"
-              " pronta para auditoria!"
-          )
+          st.success("✅ Vistoria fotográfica armazenada com sucesso no sistema e pronta para auditoria!")
     else:
-      st.info(
-          "Registe primeiro um veículo na aba 'Registar Novo Equipamento' para"
-          " poder realizar a vistoria."
-      )
+      st.info("Registe primeiro um veículo na aba 'Registar Novo Equipamento' para poder realizar a vistoria.")
 
 elif menu == "⛽ Abastecimentos & Combustível":
   st.title("⛽ Controle de Abastecimento e Combustível")
@@ -1073,15 +1058,11 @@ elif menu == "⛽ Abastecimentos & Combustível":
 
 elif menu == "🏗️ Mobilização / Desmobilização":
   st.title("🏗️ Gestão de Mobilização e Desmobilização de Obras")
-  st.markdown(
-      "Registe novas movimentações selecionando o veículo da frota e edite com"
-      " justificativa obrigatória guardada no banco de dados."
-  )
+  st.markdown("Registe novas movimentações selecionando o veículo da frota com até 15 imagens de vistoria e histórico de edições auditável.")
 
   try:
     df_veiculos_mob = pd.read_sql(
-        "SELECT id, tag_prefixo, categoria_equipamento, marca, modelo, placa FROM"
-        " veiculos",
+        "SELECT id, tag_prefixo, marca, modelo, placa FROM veiculos",
         conn,
     )
   except Exception:
@@ -1090,7 +1071,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
   lista_veiculos_opcoes = []
   if not df_veiculos_mob.empty:
     lista_veiculos_opcoes = [
-        f"[{r['categoria_equipamento']}] ID {r['id']} — {r['marca']} {r['modelo']} (Placa: {r['placa'] if r['placa'] else 'N/A'})"
+        f"ID {r['id']} — {r['marca']} {r['modelo']} (Placa: {r['placa'] if r['placa'] else 'N/A'})"
         for _, r in df_veiculos_mob.iterrows()
     ]
   else:
@@ -1106,7 +1087,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
       c1, c2 = st.columns(2)
       with c1:
         veiculo_escolhido = st.selectbox(
-            "Selecionar Equipamento / Linha da Frota", lista_veiculos_opcoes
+            "Selecionar Equipamento da Frota", lista_veiculos_opcoes
         )
         tipo_mov = st.selectbox(
             "Tipo de Movimento",
@@ -1125,15 +1106,33 @@ elif menu == "🏗️ Mobilização / Desmobilização":
         )
         obs = st.text_area("Observações operacionais")
 
+      fotos_mob_enviadas = st.file_uploader(
+          "📸 Vistoria Fotográfica da Movimentação (Anexar até 15 imagens)",
+          type=["png", "jpg", "jpeg"],
+          accept_multiple_files=True,
+      )
+
       btn_cad_mob = st.form_submit_button("💾 Salvar Nova Movimentação")
       if btn_cad_mob:
         if destino and "Nenhum veículo" not in veiculo_escolhido:
+          os.makedirs("vistorias_mobilizacao", exist_ok=True)
+          caminhos_fotos_salvas = []
+          if fotos_mob_enviadas:
+            for idx, foto in enumerate(fotos_mob_enviadas[:15]):
+              nome_f = f"mob_{datetime.now().strftime('%Y%m%d%H%M%S')}_{idx}_{foto.name}"
+              caminho_f = os.path.join("vistorias_mobilizacao", nome_f)
+              with open(caminho_f, "wb") as f_out:
+                f_out.write(foto.getbuffer())
+              caminhos_fotos_salvas.append(caminho_f)
+
+          str_fotos_final = " | ".join(caminhos_fotos_salvas)
           hist_inicial = f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Criado por {resp if resp else 'Operacional'} — Motivo inicial: {motivo_inicial}"
+          
           cursor.execute(
               "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
               " destino_origem, responsavel, data, motivo_condicao, observacao,"
               " foto_checklist, historico_edicoes) VALUES (?, ?, ?, ?, ?, ?, ?,"
-              " '', ?)",
+              " ?, ?)",
               (
                   veiculo_escolhido,
                   tipo_mov,
@@ -1142,19 +1141,15 @@ elif menu == "🏗️ Mobilização / Desmobilização":
                   str(dt_mob),
                   motivo_inicial,
                   obs,
+                  str_fotos_final,
                   hist_inicial,
               ),
           )
           conn.commit()
-          st.success(
-              "✅ Movimentação de mobilização registada com sucesso na base de"
-              " dados!"
-          )
+          st.success("✅ Movimentação de mobilização e vistoria (até 15 fotos) registadas com sucesso!")
           st.rerun()
         else:
-          st.error(
-              "⚠️ Seleciona um veículo válido e preenche o destino/obra."
-          )
+          st.error("⚠️ Seleciona um veículo válido e preenche o destino/obra.")
 
   with tab_edit_mob:
     st.markdown("### ✏️ Editar Informações e Registar Motivo da Alteração")
@@ -1186,7 +1181,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
       with st.form(f"form_editar_mob_{id_mob_sel}"):
         st.markdown(f"#### Editando Registo ID #{id_mob_sel}")
         e_eq = st.selectbox(
-            "Equipamento / Linha",
+            "Equipamento / Frota",
             lista_veiculos_opcoes,
             index=0,
         )
@@ -1218,10 +1213,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
 
         if btn_salvar_edicao:
           if not motivo_alteracao.strip():
-            st.error(
-                "⚠️ O campo 'Motivo da Edição' é obrigatório para guardar na"
-                " base de dados!"
-            )
+            st.error("⚠️ O campo 'Motivo da Edição' é obrigatório para guardar na base de dados!")
           else:
             historico_antigo = (
                 str(reg_atual["historico_edicoes"])
@@ -1246,19 +1238,14 @@ elif menu == "🏗️ Mobilização / Desmobilização":
                 ),
             )
             conn.commit()
-            st.success(
-                "✅ Registo atualizado com sucesso e motivo guardado no"
-                " histórico do banco de dados!"
-            )
+            st.success("✅ Registo atualizado com sucesso e motivo guardado no histórico do banco de dados!")
             st.rerun()
     else:
       st.info("Nenhuma mobilização registada para editar.")
 
 elif menu == "🛠️ Ordens de Serviço (OS)":
   st.title("🛠️ Gestão Unificada de Ordens de Serviço (OS)")
-  st.markdown(
-      "Gira manutenções preventivas, corretivas e custos de oficina mecânica."
-  )
+  st.markdown("Gira manutenções preventivas, corretivas e custos de oficina mecânica.")
 
   tab_os_lista, tab_os_cad = st.tabs([
       "📋 Ordens de Serviço Registadas",
@@ -1793,7 +1780,7 @@ elif menu == "⚙️ Meu Perfil / Dados":
           st.success("✅ Perfil e dados cadastrais atualizados com sucesso!")
           st.rerun()
     else:
-      st.info("Dados de utilizador não encontrados na sessão.")
+      st.info("Data de utilizador não encontrada na sessão.")
   else:
     st.info("Nenhum utilizador logado no momento.")
 
