@@ -1506,88 +1506,80 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         "### 📞 Central de Chamada Direta Pessoal (Vídeo e Voz em Tempo Real)"
     )
     st.markdown(
-        "Seleciona o colaborador para iniciar a chamada e notificar o"
-        " dispositivo dele em tempo real:"
+        "Seleciona o colaborador para iniciar a chamada e enviar o link de"
+        " acesso direto para o chat dele:"
     )
 
     if todos_usuarios_db:
       alvos_chamada = [f"{u[1]} ({u[2]})" for u in todos_usuarios_db]
       alvo_selecionado = st.selectbox(
-          "Quem vai receber a chamada ao vivo?",
+          "Quem vai receber o convite para a reunião?",
           alvos_chamada,
           key="sel_alvo_video",
       )
     else:
       alvo_selecionado = "Equipe Geral"
 
-    # Nome limpo e único para a sala
+    # Nome limpo e único para a sala baseado no destinatário
     nome_sala_direta = f"TabalmixDirectCall{ ''.join(e for e in alvo_selecionado.split()[0] if e.isalnum()) }2026"
     
-    # URL configurada com parâmetro direto para que quem cria a sala entre automaticamente como moderador/anfitrião
-    link_direto_jitsi = f"https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&userInfo.role=moderator"
+    # Link direto para a reunião sem barreiras
+    link_direto_jitsi = f"https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false"
 
-    if "chamada_ativa" not in st.session_state:
-      st.session_state["chamada_ativa"] = False
-
-    col_b1, col_b2 = st.columns(2)
-    with col_b1:
-      if st.button("📞 Disparar Chamada e Ligar", key="btn_ligar_integ"):
-        st.session_state["chamada_ativa"] = True
-
-        remetente_notif = (
-            usuario_atual["apelido"] if usuario_atual else "Administrador"
-        )
-        msg_alerta_chamada = (
-            f"🚨 **CHAMADA DE VÍDEO ATIVA:** {remetente_notif} está a chamar-te"
-            " para uma reunião ao vivo!"
-        )
-        data_env_notif = datetime.now().strftime("%H:%M — %d/%m")
-
-        try:
-          cursor.execute(
-              "INSERT INTO chat_interno (remetente, destinatario, cargo,"
-              " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
-              " ?, ?, ?, ?, ?)",
-              (
-                  "SISTEMA LIVE",
-                  alvo_selecionado,
-                  "Alerta",
-                  msg_alerta_chamada,
-                  "",
-                  "",
-                  data_env_notif,
-              ),
-          )
-          conn.commit()
-        except Exception:
-          pass
-
-        st.success(f"Sinal de chamada enviado para {alvo_selecionado}!")
-        st.rerun()
-    with col_b2:
-      if st.button("🔴 Desligar / Fechar Chamada", key="btn_desligar_integ"):
-        st.session_state["chamada_ativa"] = False
-        st.rerun()
-
-    if st.session_state["chamada_ativa"]:
-      st.markdown(f"**🟢 Chamada em curso com: {alvo_selecionado}**")
-
-      # Botão principal e direto para abrir a chamada sem barreiras no telemóvel como anfitrião automático
-      st.markdown(
-          f"""
-          <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 20px; border-radius: 16px; margin-bottom: 20px; text-align: center; box-shadow: 0 10px 25px rgba(5,150,105,0.3);">
-              <h3 style="color: white !important; margin: 0 0 10px 0; font-size: 18px;">🎥 Sala de Reunião Pronta (Anfitrião Automático)!</h3>
-              <p style="color: #e2e8f0; margin: 0 0 15px 0; font-size: 14px;">Clica no botão abaixo para entrar diretamente na chamada de vídeo como dono da sala:</p>
-              <a href="{link_direto_jitsi}" target="_blank" style="background: white; color: #047857; padding: 12px 28px; border-radius: 12px; text-decoration: none; font-weight: 800; display: inline-block; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🚀 Entrar na Reunião ao Vivo</a>
-          </div>
-          """,
-          unsafe_allow_html=True,
+    if st.button("🚀 Criar Sala e Enviar Convite para o Chat", key="btn_ligar_integ"):
+      remetente_notif = (
+          usuario_atual["apelido"] if usuario_atual else "Administrador"
       )
-    else:
-      st.info(
-          "💡 Clica em 'Disparar Chamada e Ligar' para gerar o link e notificar"
-          " o colaborador instantaneamente."
+      
+      # Mensagem estruturada com o botão de acesso direto para o chat
+      msg_alerta_chamada = (
+          f"🚨 **CHAMADA DE VÍDEO ATIVA:** {remetente_notif} iniciou uma"
+          f" reunião ao vivo contigo!\n\n🔗 **Clica no link abaixo para"
+          f" entrar na sala:**\n{link_direto_jitsi}"
       )
+      data_env_notif = datetime.now().strftime("%H:%M — %d/%m")
+
+      try:
+        cursor.execute(
+            "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+            " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
+            " ?, ?, ?, ?, ?)",
+            (
+                f"{remetente_notif} (Diretoria)",
+                alvo_selecionado,
+                "Alerta",
+                msg_alerta_chamada,
+                "",
+                "",
+                data_env_notif,
+            ),
+        )
+        conn.commit()
+      except Exception:
+        pass
+
+      st.success(
+          f"Convite enviado com sucesso para {alvo_selecionado}! Vai ao"
+          " 'Canal de Mensagens Live' ou usa o botão abaixo para entrar."
+      )
+      st.rerun()
+
+    st.markdown("---")
+    st.markdown("### 🎥 Aceder à Tua Sala de Reunião")
+    st.markdown(
+        "Podes entrar na tua sala de vídeo a qualquer momento através do"
+        " botão abaixo:"
+    )
+    st.markdown(
+        f"""
+        <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 22px; border-radius: 16px; text-align: center; box-shadow: 0 10px 25px rgba(5,150,105,0.3);">
+            <h3 style="color: white !important; margin: 0 0 10px 0; font-size: 18px;">🎥 Sala de Vídeo Ativa</h3>
+            <p style="color: #e2e8f0; margin: 0 0 15px 0; font-size: 14px;">Clica para abrir a reunião no teu navegador:</p>
+            <a href="{link_direto_jitsi}" target="_blank" style="background: white; color: #047857; padding: 12px 28px; border-radius: 12px; text-decoration: none; font-weight: 800; display: inline-block; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🚀 Abrir Reunião ao Vivo</a>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 elif menu == "🔍 Consulta / Busca Geral":
   st.title("🔍 Consulta e Histórico Completo do Equipamento")
