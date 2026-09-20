@@ -760,7 +760,7 @@ if usuario_atual and (
 ):
   usuario_atual["cargo"] = "Colaborador"
 
-# VERIFICAÇÃO GLOBAL DE CHAMADA PENDENTE (DEVIDAMENTE POSICIONADA APÓS USUARIO_ATUAL)
+# VERIFICAÇÃO GLOBAL DE CHAMADA PENDENTE (ATUALIZADA PARA 1 SEGUNDO)
 if usuario_atual:
   nome_apelido_atual = usuario_atual["apelido"]
   cursor.execute(
@@ -781,7 +781,7 @@ if usuario_atual:
             <script>
                 setTimeout(function(){
                     window.location.reload();
-                }, 3000);
+                }, 1000);
             </script>
         """,
         unsafe_allow_html=True,
@@ -792,7 +792,7 @@ if usuario_atual:
             <script>
                 setTimeout(function(){
                     window.location.reload();
-                }, 8000);
+                }, 1000);
             </script>
         """,
         unsafe_allow_html=True,
@@ -1522,7 +1522,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
 
     # Nome limpo e único para a sala
     nome_sala_direta = f"TabalmixDirectCall{ ''.join(e for e in alvo_selecionado.split()[0] if e.isalnum()) }2026"
-    link_direto_jitsi = f"https://meet.jit.si/{nome_sala_direta}"
+    link_direto_jitsi = f"https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false"
 
     if "chamada_ativa" not in st.session_state:
       st.session_state["chamada_ativa"] = False
@@ -1570,30 +1570,21 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
     if st.session_state["chamada_ativa"]:
       st.markdown(f"**🟢 Chamada em curso com: {alvo_selecionado}**")
 
-      # Botão de segurança direto para abrir a sala caso o telemóvel exija verificação
+      # Botão principal e direto para abrir a chamada sem barreiras no telemóvel
       st.markdown(
           f"""
-          <div style="background: #ecfdf5; border: 1px solid #059669; padding: 12px; border-radius: 12px; margin-bottom: 12px; text-align: center;">
-              <p style="margin: 0 0 6px 0; color: #065f46; font-weight: 700; font-size: 13.5px;">Se o telemóvel pedir autenticação, clica no botão abaixo:</p>
-              <a href="{link_direto_jitsi}" target="_blank" style="background: #059669; color: white; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: 800; display: inline-block; font-size: 13px;">🔗 Abrir Sala de Vídeo no Navegador</a>
+          <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 20px; border-radius: 16px; margin-bottom: 20px; text-align: center; box-shadow: 0 10px 25px rgba(5,150,105,0.3);">
+              <h3 style="color: white !important; margin: 0 0 10px 0; font-size: 18px;">🎥 Sala de Reunião Pronta!</h3>
+              <p style="color: #e2e8f0; margin: 0 0 15px 0; font-size: 14px;">Clica no botão abaixo para entrar diretamente na chamada de vídeo com segurança:</p>
+              <a href="{link_direto_jitsi}" target="_blank" style="background: white; color: #047857; padding: 12px 28px; border-radius: 12px; text-decoration: none; font-weight: 800; display: inline-block; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🚀 Entrar na Reunião ao Vivo</a>
           </div>
           """,
           unsafe_allow_html=True,
       )
-
-      jitsi_embed_html = f"""
-            <div style="width: 100%; height: 550px; border-radius: 16px; overflow: hidden; background: #000; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
-                <iframe src="{link_direto_jitsi}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false&config.enableWelcomePage=false&interfaceConfigOverwrite.MOBILE_APP_PROMO=false" 
-                        allow="camera; microphone; fullscreen; display-capture" 
-                        style="width: 100%; height: 100%; border: none;">
-                </iframe>
-            </div>
-        """
-      st.components.v1.html(jitsi_embed_html, height=570)
     else:
       st.info(
-          "💡 Clica em 'Disparar Chamada e Ligar' para abrir o vídeo e"
-          " notificar o colaborador instantaneamente."
+          "💡 Clica em 'Disparar Chamada e Ligar' para gerar o link e notificar"
+          " o colaborador instantaneamente."
       )
 
 elif menu == "🔍 Consulta / Busca Geral":
