@@ -539,15 +539,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           ],
       )
 
-      if "Diretoria" in c_cargo:
-        valor_num = 299.90
-      elif "Engenheiro" in c_cargo:
-        valor_num = 189.90
-      elif "Mecânico" in c_cargo:
-        valor_num = 119.90
-      else:
-        valor_num = 69.90
-
       with st.form("form_novo_cadastro"):
         c_cpf = st.text_input("CPF")
         c_email = st.text_input("E-mail corporativo de login")
@@ -805,7 +796,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             justify-content: flex-start;
         }
         .msg-bubble {
-            padding: 14px 18px;
+            padding: 14px 24px 14px 18px;
             border-radius: 16px;
             max-width: 88%;
             font-family: 'Plus Jakarta Sans', sans-serif;
@@ -830,8 +821,8 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
 
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
   st.markdown(
-      "Comunicação em tempo real com balões limpos e menu flutuante de três"
-      " pontinhos idêntico ao WhatsApp."
+      "Comunicação em tempo real com balões limpos e menu flutuante integrado"
+      " nos três pontinhos superiores."
   )
 
   cursor.execute(
@@ -907,7 +898,6 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         )
         cor_autor = "#d1fae5" if is_eu else "#047857"
 
-        # Exibe o balão limpo com identificação visual dos três pontinhos como no vídeo
         st.markdown(
             f"""
             <div class="{row_class}">
@@ -923,25 +913,24 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             unsafe_allow_html=True,
         )
 
-        # EXPANDER COM OS TRÊS PONTINHOS (COPIAR, REENCAMINHAR, EXCLUIR) EXATAMENTE COMO NO VÍDEO
-        with st.expander("⋮ Opções da Mensagem", expanded=False):
+        with st.expander(
+            f"⋮ Opções da Mensagem #{row_m['id']}", expanded=False
+        ):
           texto_msg_atual = str(row_m["mensagem"])
 
-          # 1. COPIAR
           texto_limpo_js = (
               texto_msg_atual.replace('"', '\\"')
               .replace("\n", " ")
               .replace("\r", " ")
           )
           copiar_html_code = f"""
-                <button onclick="navigator.clipboard.writeText('{texto_limpo_js}'); alert('📋 Mensagem copiada com sucesso!');" style="background:#059669; color:white; border:none; padding:7px 14px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; width:100%; margin-bottom:6px;">📋 Copiar Mensagem</button>
+                <button onclick="navigator.clipboard.writeText('{texto_limpo_js}'); alert('📋 Mensagem copiada com sucesso!');" style="background:#059669; color:white; border:none; padding:6px 12px; border-radius:6px; font-size:11.5px; font-weight:700; cursor:pointer; width:100%; margin-bottom:4px;">📋 Copiar</button>
             """
-          components.html(copiar_html_code, height=38)
+          components.html(copiar_html_code, height=34)
 
-          # 2. REENCAMINHAR (ESTILO WHATSAPP: LISTA DE CONTATOS DO CHAT)
           st.markdown(
-              "<p style='font-size:11.5px; font-weight:700; margin:6px 0 2px"
-              " 0; color:#334155;'>🔄 Reencaminhar para:</p>",
+              "<p style='font-size:11px; font-weight:700; margin:4px 0 2px 0;"
+              " color:#334155;'>🔄 Reencaminhar:</p>",
               unsafe_allow_html=True,
           )
           if todos_usuarios_db:
@@ -949,12 +938,12 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
                 f"👤 {u[1]} — Cargo: {u[2]}" for u in todos_usuarios_db
             ]
             destino_fwd = st.selectbox(
-                "Selecionar contato:",
+                "Contato",
                 ["🌐 Canal Geral (Toda a Equipe)"] + lista_encaminhar,
                 key=f"sel_fwd_{row_m['id']}",
                 label_visibility="collapsed",
             )
-            if st.button("🚀 Enviar Reencaminhado", key=f"btn_fwd_{row_m['id']}"):
+            if st.button("Enviar FWD", key=f"btn_fwd_{row_m['id']}"):
               data_env_fwd = datetime.now().strftime("%H:%M — %d/%m")
               msg_fwd_texto = (
                   f"[Encaminhado de {row_m['remetente']}]\n{texto_msg_atual}"
@@ -974,20 +963,19 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
                   ),
               )
               conn.commit()
-              st.success("✅ Mensagem reencaminhada com sucesso!")
+              st.success("✅ Reencaminhado!")
               st.rerun()
 
           st.markdown("---")
 
-          # 3. EXCLUIR MENSAGEM
           if st.button(
-              "🗑️ Excluir esta Mensagem", key=f"del_bubble_{row_m['id']}"
+              "🗑️ Apagar Mensagem", key=f"del_bubble_{row_m['id']}"
           ):
             cursor.execute(
                 "DELETE FROM chat_interno WHERE id = ?", (row_m["id"],)
             )
             conn.commit()
-            st.success("Mensagem excluída!")
+            st.success("Apagado!")
             st.rerun()
 
         if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
@@ -1014,7 +1002,6 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # ATALHOS RÁPIDOS DE COMANDOS DE OBRA
     st.markdown(
         "<p style='font-size: 11.5px; font-weight: 700; color: #475569;"
         " margin: 10px 0 4px 0;'>⚡ Atalhos Rápidos Operacionais:</p>",
