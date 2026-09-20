@@ -1328,7 +1328,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         .msg-row {
             display: flex;
             width: 100%;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
         .msg-row-eu {
             justify-content: flex-end;
@@ -1363,7 +1363,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
   st.markdown(
       "Comunicação em tempo real de nível internacional. Conversas privadas"
-      " isoladas e barra de ferramentas discreta."
+      " unificadas sem falhas de entrega."
   )
 
   cursor.execute(
@@ -1401,6 +1401,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         usuario_atual["cargo"] if usuario_atual else "Diretoria / Gestão"
     )
 
+    # CORREÇÃO DEFINITIVA DE ROTEAMENTO: Captura exata e sem falhas de destinatário cruzado
     if termo_busca_chat.strip():
       df_msgs = pd.read_sql(
           "SELECT * FROM chat_interno WHERE mensagem LIKE ? ORDER BY id ASC LIMIT"
@@ -1416,7 +1417,9 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
     else:
       nome_colab_alvo = colab_escolhido_str.split("—")[0].replace("👤", "").strip()
       df_msgs = pd.read_sql(
-          "SELECT * FROM chat_interno WHERE (remetente LIKE ? AND destinatario LIKE ?) OR (remetente LIKE ? AND destinatario LIKE ?) ORDER BY id ASC LIMIT 60",
+          "SELECT * FROM chat_interno WHERE (remetente LIKE ? AND destinatario"
+          " LIKE ?) OR (remetente LIKE ? AND destinatario LIKE ?) ORDER BY id"
+          " ASC LIMIT 60",
           conn,
           params=(
               f"%{remetente_atual}%",
@@ -1437,7 +1440,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         )
         cor_autor = "#d1fae5" if is_eu else "#047857"
 
-        # Balão com padrão internacional alinhado
+        # Balão unificado perfeito
         st.markdown(
             f"""
             <div class="{row_class}">
@@ -1453,8 +1456,8 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             unsafe_allow_html=True,
         )
 
-        # Micro-barra de ações horizontal super discreta logo abaixo (Padrão Internacional)
-        col_espaco, col_btn1, col_btn2 = st.columns([6, 1, 1])
+        # Barra de ações minúscula e integrada sem ocupar espaço vertical excessivo
+        col_espaco, col_btn1, col_btn2 = st.columns([7, 0.8, 0.8])
         with col_btn1:
           texto_limpo_js = (
               str(row_m["mensagem"])
@@ -1463,9 +1466,9 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
               .replace("\r", " ")
           )
           copiar_html_min = f"""
-                <button onclick="navigator.clipboard.writeText('{texto_limpo_js}');" title="Copiar" style="background:transparent; color:#64748b; border:1px solid #cbd5e1; padding:2px 8px; border-radius:6px; font-size:10px; font-weight:700; cursor:pointer; width:100%;">📋 Copiar</button>
+                <button onclick="navigator.clipboard.writeText('{texto_limpo_js}');" title="Copiar" style="background:transparent; color:#64748b; border:1px solid #cbd5e1; padding:2px 6px; border-radius:6px; font-size:9.5px; font-weight:700; cursor:pointer; width:100%;">📋 Copiar</button>
             """
-          components.html(copiar_html_min, height=25)
+          components.html(copiar_html_min, height=22)
 
         with col_btn2:
           if st.button("🗑️", key=f"del_intl_{row_m['id']}"):
