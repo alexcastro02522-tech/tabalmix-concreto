@@ -313,6 +313,14 @@ def init_db():
             ordem_colunas TEXT
         )
     """)
+  
+  # Limpa qualquer configuração incorreta anterior para evitar sumir colunas
+  try:
+    cursor.execute("DELETE FROM config_colunas WHERE tabela = 'veiculos'")
+    conn.commit()
+  except Exception:
+    pass
+
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_interno (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1780,7 +1788,7 @@ elif menu == "⚙️ Meu Perfil / Dados":
           st.success("✅ Perfil e dados cadastrais atualizados com sucesso!")
           st.rerun()
     else:
-      st.info("Data de utilizador não encontrada na sessão.")
+      st.info("Dados de utilizador não encontrados na sessão.")
   else:
     st.info("Nenhum utilizador logado no momento.")
 
