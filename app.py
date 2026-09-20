@@ -504,11 +504,12 @@ elif menu == "🚜 Cadastro de Equipamentos":
   st.title("🚜 Cadastro de Equipamentos & Vistoria Fotográfica")
   st.markdown("Gira a frota, atribua a Linha do Equipamento e execute a vistoria fotográfica completa.")
 
-  tab_eq_lista, tab_eq_cad, tab_eq_edit, tab_eq_foto = st.tabs([
+  tab_eq_lista, tab_eq_cad, tab_eq_edit, tab_eq_foto, tab_eq_config = st.tabs([
       "📋 Frota Cadastrada",
       "➕ Registar Novo Equipamento",
       "✏️ Editar Frota & Histórico",
-      "📸 Vistoria Fotográfica (Até 15 Imagens)",
+      "📸 Vistoria Fotográfica",
+      "⚙️ Editar Colunas (Sistema)",
   ])
 
   with tab_eq_lista:
@@ -668,58 +669,70 @@ elif menu == "🚜 Cadastro de Equipamentos":
     else:
       st.info("Registe primeiro um veículo na aba 'Registar Novo Equipamento'.")
 
+  with tab_eq_config:
+    st.markdown("### ⚙️ Selecionar Colunas Visíveis para Todo o Sistema")
+    st.markdown("Marque abaixo **apenas** as colunas que você deseja manter visíveis. As colunas desmarcadas serão excluídas da exibição para você e para todos os outros colaboradores.")
+
+    tabela_escolhida_aba = st.selectbox(
+        "Selecione a Tabela do Sistema para Configurar:",
+        ["veiculos", "manutencoes", "mobilizacoes", "combustivel", "pecas", "clientes"]
+    )
+
+    try:
+      df_cols_aba = pd.read_sql(f"SELECT * FROM {tabela_escolhida_aba} LIMIT 1", conn)
+      todas_cols_sistema = list(df_cols_aba.columns)
+    except Exception:
+      todas_cols_sistema = []
+
+    cursor.execute("SELECT colunas_permitidas FROM config_colunas WHERE tabela = ?", (tabela_escolhida_aba,))
+    res_db_aba = cursor.fetchone()
+
+    if res_db_aba and res_db_aba[0]:
+      cols_salvas_aba = [c.strip() for c in res_db_aba[0].split(",") if c.strip()]
+      def_cols_aba = [c for c in cols_salvas_aba if c in todas_cols_sistema]
+    else:
+      def_cols_aba = todas_cols_sistema
+
+    colunas_mantidas_nova = st.multiselect(
+        "Colunas que ficarão visíveis para a equipe:",
+        todas_cols_sistema,
+        default=def_cols_aba
+    )
+
+    if st.button("💾 Salvar Colunas para o Sistema Inteiro"):
+      if colunas_mantidas_nova:
+        str_cols_final_aba = ",".join(colunas_mantidas_nova)
+        cursor.execute("INSERT OR REPLACE INTO config_colunas (tabela, colunas_permitidas) VALUES (?, ?)", (tabela_escolhida_aba, str_cols_final_aba))
+        conn.commit()
+        st.success(f"✅ Configuração salva! Agora a tabela '{tabela_escolhida_aba}' mostrará apenas as colunas escolhidas para todos os colaboradores.")
+        st.rerun()
+      else:
+        st.warning("⚠️ Selecione pelo menos uma coluna.")
+
 elif menu == "⛽ Abastecimentos & Combustível":
   st.title("⛽ Controle de Abastecimento e Combustível")
-  tab_c_lista, tab_c_cad = st.tabs(["📋 Histórico de Abastecimentos", "➕ Registar Abastecimento"])
-  with tab_c_lista:
-    df_c = pd.read_sql("SELECT * FROM combustivel ORDER BY id DESC", conn)
-    if not df_c.empty:
-      exibir_tabela_padronizada(df_c, "combustivel")
-    else:
-      st.info("Nenhum abastecimento registado.")
-  with tab_c_cad:
-    with st.form("form_abastecimento_novo"):
-      eq_ab = st.text_input("Equipamento / Prefixo")
-      litros_ab = st.number_input("Quantidade em Litros", value=100.0, step=10.0)
-      valor_ab = st.number_input("Valor Total (R$)", value=600.0, step=50.0)
-      btn_salvar_ab = st.form_submit_button("💾 Salvar Abastecimento")
-      if btn_salvar_ab and eq_ab:
-        cursor.execute("INSERT INTO combustivel (equipamento, litros, valor_total, km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?, '0', 'Posto', 'Alex', ?)", (eq_ab, litros_ab, valor_ab, datetime.now().strftime("%d/%m/%Y %H:%M")))
-        conn.commit()
-        st.success("✅ Abastecimento registado!")
-        st.rerun()
+  df_c = pd.read_sql("SELECT * FROM combustivel", conn)
+  exibir_tabela_padronizada(df_c, "combustivel")
 
 elif menu == "🏗️ Mobilização / Desmobilização":
   st.title("🏗️ Gestão de Mobilização e Desmobilização")
-  df_mobs = pd.read_sql("SELECT * FROM mobilizacoes ORDER BY id DESC", conn)
-  if not df_mobs.empty:
-    exibir_tabela_padronizada(df_mobs, "mobilizacoes")
-  else:
-    st.info("Nenhuma mobilização registada.")
+  df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
+  exibir_tabela_padronizada(df_mobs, "mobilizacoes")
 
 elif menu == "🛠️ Ordens de Serviço (OS)":
   st.title("🛠️ Ordens de Serviço (OS)")
-  df_os = pd.read_sql("SELECT * FROM manutencoes ORDER BY id DESC", conn)
-  if not df_os.empty:
-    exibir_tabela_padronizada(df_os, "manutencoes")
-  else:
-    st.info("Nenhuma OS registada.")
+  df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
+  exibir_tabela_padronizada(df_os, "manutencoes")
 
 elif menu == "🔩 Peças e Ferramentas":
   st.title("🔩 Controle de Peças e Ferramentas")
-  df_pecas = pd.read_sql("SELECT * FROM pecas ORDER BY id DESC", conn)
-  if not df_pecas.empty:
-    exibir_tabela_padronizada(df_pecas, "pecas")
-  else:
-    st.info("Nenhuma peça registada.")
+  df_pecas = pd.read_sql("SELECT * FROM pecas", conn)
+  exibir_tabela_padronizada(df_pecas, "pecas")
 
 elif menu == "👥 Gestão de Clientes":
   st.title("👥 Gestão de Clientes")
-  df_cli = pd.read_sql("SELECT * FROM clientes ORDER BY id DESC", conn)
-  if not df_cli.empty:
-    exibir_tabela_padronizada(df_cli, "clientes")
-  else:
-    st.info("Nenhum cliente registado.")
+  df_cli = pd.read_sql("SELECT * FROM clientes", conn)
+  exibir_tabela_padronizada(df_cli, "clientes")
 
 elif menu == "💬 Chat Tabalmix Pro & Rede":
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
@@ -735,42 +748,7 @@ elif menu == "⚙️ Meu Perfil / Dados":
   st.info("Painel de perfil ativo.")
 
 elif menu == "⚙️ Painel de Licença (Admin)":
-  st.title("⚙️ Painel Administrativo Master & Seleção de Colunas")
-  st.markdown("Escolha abaixo quais colunas você deseja **manter visíveis** no sistema. As colunas desmarcadas desaparecerão automaticamente para você e para todos os colaboradores.")
-  
-  tabela_config = st.selectbox(
-      "Selecione a Tabela para Configurar as Colunas:",
-      ["veiculos", "manutencoes", "mobilizacoes", "combustivel", "pecas", "clientes"]
-  )
-  
-  try:
-    df_temp_cols = pd.read_sql(f"SELECT * FROM {tabela_config} LIMIT 1", conn)
-    todas_colunas = list(df_temp_cols.columns)
-  except Exception:
-    todas_colunas = []
-    
-  # Busca colunas salvas anteriormente ou usa todas como padrão
-  cursor.execute("SELECT colunas_permitidas FROM config_colunas WHERE tabela = ?", (tabela_config,))
-  res_config_db = cursor.fetchone()
-  
-  if res_config_db and res_config_db[0]:
-    colunas_ja_salvas = [c.strip() for c in res_config_db[0].split(",") if c.strip()]
-    colunas_default = [c for c in colunas_ja_salvas if c in todas_colunas]
-  else:
-    colunas_default = todas_colunas
-
-  colunas_mantidas_escolha = st.multiselect(
-      "Selecione APENAS as colunas que deseja MANTER (as demais serão excluídas da exibição para todos):",
-      todas_colunas,
-      default=colunas_default
-  )
-
-  if st.button("💾 Salvar e Aplicar Colunas para Todo o Sistema"):
-    if colunas_mantidas_escolha:
-      str_colunas_final = ",".join(colunas_mantidas_escolha)
-      cursor.execute("INSERT OR REPLACE INTO config_colunas (tabela, colunas_permitidas) VALUES (?, ?)", (tabela_config, str_colunas_final))
-      conn.commit()
-      st.success(f"✅ Configuração salva com sucesso! Agora a tabela '{tabela_config}' exibirá apenas as colunas selecionadas para todos os colaboradores no sistema.")
-      st.rerun()
-    else:
-      st.warning("⚠️ Você precisa selecionar pelo menos uma coluna para manter.")
+  st.title("⚙️ Painel Administrativo Master")
+  st.markdown("Painel de licenças e chaves corporativas do sistema.")
+  df_chaves = pd.read_sql("SELECT * FROM chaves_licenca", conn)
+  exibir_tabela_padronizada(df_chaves, "chaves_licenca")
