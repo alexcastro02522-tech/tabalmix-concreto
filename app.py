@@ -68,7 +68,6 @@ st.markdown(
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
     
-    /* FORÇAR VISIBILIDADE DE TODOS OS RÓTULOS (LABELS) DE INPUTS E FORMULÁRIOS */
     label, div[data-baseweb="input"] label, .stTextInput label, .stNumberInput label, .stSelectbox label, .stTextArea label {
         color: #0f172a !important;
         font-weight: 700 !important;
@@ -83,7 +82,6 @@ st.markdown(
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
     }
     
-    /* CORREÇÃO DEFINITIVA PARA TEXTOS E CAIXAS DE INPUT EM MODO ESCURO MOBILE */
     div.stTextInput input, 
     div.stNumberInput input, 
     div.stSelectbox div[data-baseweb="select"],
@@ -760,7 +758,7 @@ if usuario_atual and (
 ):
   usuario_atual["cargo"] = "Colaborador"
 
-# VERIFICAÇÃO GLOBAL DE CHAMADA PENDENTE (ATUALIZADA PARA 1 SEGUNDO)
+# VERIFICAÇÃO GLOBAL DE CHAMADA PENDENTE
 if usuario_atual:
   nome_apelido_atual = usuario_atual["apelido"]
   cursor.execute(
@@ -776,7 +774,6 @@ if usuario_atual:
                     <h3 style="color: white !important; margin: 0; font-size: 19px;">🚨 CHAMADA DE VÍDEO A TOCAR AGORA!</h3>
                     <p style="margin: 4px 0 0 0; font-size: 14.5px;">Alguém está a chamar-te em tempo real para uma reunião ao vivo.</p>
                 </div>
-                <a href="?p=chat" target="_self" style="background: white; color: #991b1b; padding: 12px 24px; border-radius: 12px; font-weight: 800; text-decoration: none; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">ATENDER CHAMADA</a>
             </div>
             <script>
                 setTimeout(function(){
@@ -792,7 +789,7 @@ if usuario_atual:
             <script>
                 setTimeout(function(){
                     window.location.reload();
-                }, 1000);
+                }, 2000);
             </script>
         """,
         unsafe_allow_html=True,
@@ -1333,23 +1330,25 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             color: white;
             padding: 14px 18px;
             border-radius: 16px 16px 4px 16px;
-            max-width: 75%;
+            max-width: 80%;
             align-self: flex-end;
             box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
             margin-left: auto;
             font-family: 'Plus Jakarta Sans', sans-serif;
+            margin-bottom: 4px;
         }
         .msg-card-outro {
             background: #ffffff;
             color: #0f172a;
             padding: 14px 18px;
             border-radius: 16px 16px 16px 4px;
-            max-width: 75%;
+            max-width: 80%;
             align-self: flex-start;
             border: 1px solid #e2e8f0;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
             margin-right: auto;
             font-family: 'Plus Jakarta Sans', sans-serif;
+            margin-bottom: 4px;
         }
         </style>
     """,
@@ -1358,8 +1357,8 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
 
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
   st.markdown(
-      "Comunicação em tempo real de nível mundial entre a obra, mecânica e"
-      " diretoria."
+      "Comunicação em tempo real. Clica em cima de qualquer mensagem no painel"
+      " abaixo para gerenciar (Apagar, Copiar ou Encaminhar)."
   )
 
   cursor.execute(
@@ -1393,16 +1392,14 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
     if termo_busca_chat.strip():
       df_msgs = pd.read_sql(
           "SELECT * FROM chat_interno WHERE mensagem LIKE ? ORDER BY id ASC LIMIT"
-          " 50",
+          " 60",
           conn,
           params=(f"%{termo_busca_chat}%",),
       )
     else:
       df_msgs = pd.read_sql(
-          "SELECT * FROM chat_interno ORDER BY id ASC LIMIT 50", conn
+          "SELECT * FROM chat_interno ORDER BY id ASC LIMIT 60", conn
       )
-
-    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 
     remetente_atual = (
         usuario_atual["apelido"] if usuario_atual else "Administrador Master"
@@ -1410,6 +1407,78 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
     cargo_atual = (
         usuario_atual["cargo"] if usuario_atual else "Diretoria / Gestão"
     )
+
+    # ESTILO WHATSAPP: Painel Superior de Ação Rápida sob a Mensagem Selecionada
+    if not df_msgs.empty:
+      st.markdown("---")
+      st.markdown(
+          "### 📱 Painel de Opções Estilo WhatsApp (Selecionar Mensagem)"
+      )
+      
+      # Dicionário de mensagens disponíveis para seleção limpa
+      mapa_mensagens = {
+          f"ID [{r['id']}] — {r['remetente']}: {r['mensagem'][:35]}...": r["id"]
+          for _, r in df_msgs.iterrows()
+      }
+      msg_selecionada_label = st.selectbox(
+          "🛠️ Clica ou seleciona a mensagem abaixo para abrir as opções:",
+          list(mapa_mensagens.keys()),
+          key="select_msg_whatsapp_style",
+      )
+      id_msg_escolhida = mapa_mensagens[msg_selecionada_label]
+
+      # Encontrar o conteúdo da mensagem selecionada
+      cursor.execute(
+          "SELECT id, mensagem, remetente FROM chat_interno WHERE id = ?",
+          (id_msg_escolhida,),
+      )
+      detalhe_msg_ativa = cursor.fetchone()
+
+      col_op1, col_op2, col_op3 = st.columns(3)
+      with col_op1:
+        if st.button(
+            "🗑️ Apagar Mensagem", key=f"whatsapp_del_{id_msg_escolhida}"
+        ):
+          cursor.execute(
+              "DELETE FROM chat_interno WHERE id = ?", (id_msg_escolhida,)
+          )
+          conn.commit()
+          st.success("✅ Mensagem apagada com sucesso!")
+          st.rerun()
+      with col_op2:
+        if st.button(
+            "📋 Copiar Texto", key=f"whatsapp_copy_{id_msg_escolhida}"
+        ):
+          st.info(f"Texto copiado:\n\n{detalhe_msg_ativa[1]}")
+      with col_op3:
+        if st.button(
+            "🔄 Encaminhar", key=f"whatsapp_fwd_{id_msg_escolhida}"
+        ):
+          # Insere a mesma mensagem novamente como encaminhada
+          msg_encaminhada = f"[Encaminhado] {detalhe_msg_ativa[1]}"
+          data_env_enc = datetime.now().strftime("%H:%M — %d/%m")
+          cursor.execute(
+              "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+              " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
+              " ?, ?, ?, ?, ?)",
+              (
+                  f"{remetente_atual} ({cargo_atual})",
+                  "🌐 Canal Geral (Toda a Equipe)",
+                  cargo_atual,
+                  msg_encaminhada,
+                  "",
+                  "",
+                  data_env_enc,
+              ),
+          )
+          conn.commit()
+          st.success("✅ Mensagem encaminhada para o Canal Geral!")
+          st.rerun()
+
+      st.markdown("---")
+
+    # EXIBIÇÃO DAS MENSAGENS EM FORMATO LIMPO DE BALÃO
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 
     if not df_msgs.empty:
       for _, row_m in df_msgs.iterrows():
@@ -1421,7 +1490,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             f"""
                     <div class="{estilo_classe}">
                         <div style="font-size: 11px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
-                            <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
+                            <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']} (ID: {row_m['id']})</span>
                             <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
                         </div>
                         <div style="font-size: 14px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
@@ -1520,10 +1589,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
     else:
       alvo_selecionado = "Equipe Geral"
 
-    # Nome limpo e único para a sala baseado no destinatário
     nome_sala_direta = f"TabalmixDirectCall{ ''.join(e for e in alvo_selecionado.split()[0] if e.isalnum()) }2026"
-    
-    # Link direto para a reunião sem barreiras
     link_direto_jitsi = f"https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false"
 
     if st.button("🚀 Criar Sala e Enviar Convite para o Chat", key="btn_ligar_integ"):
@@ -1531,7 +1597,6 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
           usuario_atual["apelido"] if usuario_atual else "Administrador"
       )
       
-      # Mensagem estruturada com o botão de acesso direto para o chat
       msg_alerta_chamada = (
           f"🚨 **CHAMADA DE VÍDEO ATIVA:** {remetente_notif} iniciou uma"
           f" reunião ao vivo contigo!\n\n🔗 **Clica no link abaixo para"
@@ -1559,8 +1624,8 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         pass
 
       st.success(
-          f"Convite enviado com sucesso para {alvo_selecionado}! Vai ao"
-          " 'Canal de Mensagens Live' ou usa o botão abaixo para entrar."
+          f"Convite enviado com sucesso para {alvo_selecionado}! O link foi"
+          " publicado instantaneamente no chat."
       )
       st.rerun()
 
