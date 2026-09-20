@@ -1357,8 +1357,9 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
 
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
   st.markdown(
-      "Comunicação em tempo real. Clica em cima de qualquer mensagem no painel"
-      " abaixo para gerenciar (Apagar, Copiar ou Encaminhar)."
+      "Comunicação em tempo real de nível profissional. Usa os botões"
+      " discretos por baixo de cada mensagem para apagar, copiar ou"
+      " encaminhar instantaneamente."
   )
 
   cursor.execute(
@@ -1408,76 +1409,6 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         usuario_atual["cargo"] if usuario_atual else "Diretoria / Gestão"
     )
 
-    # ESTILO WHATSAPP: Painel Superior de Ação Rápida sob a Mensagem Selecionada
-    if not df_msgs.empty:
-      st.markdown("---")
-      st.markdown(
-          "### 📱 Painel de Opções Estilo WhatsApp (Selecionar Mensagem)"
-      )
-      
-      # Dicionário de mensagens disponíveis para seleção limpa
-      mapa_mensagens = {
-          f"ID [{r['id']}] — {r['remetente']}: {r['mensagem'][:35]}...": r["id"]
-          for _, r in df_msgs.iterrows()
-      }
-      msg_selecionada_label = st.selectbox(
-          "🛠️ Clica ou seleciona a mensagem abaixo para abrir as opções:",
-          list(mapa_mensagens.keys()),
-          key="select_msg_whatsapp_style",
-      )
-      id_msg_escolhida = mapa_mensagens[msg_selecionada_label]
-
-      # Encontrar o conteúdo da mensagem selecionada
-      cursor.execute(
-          "SELECT id, mensagem, remetente FROM chat_interno WHERE id = ?",
-          (id_msg_escolhida,),
-      )
-      detalhe_msg_ativa = cursor.fetchone()
-
-      col_op1, col_op2, col_op3 = st.columns(3)
-      with col_op1:
-        if st.button(
-            "🗑️ Apagar Mensagem", key=f"whatsapp_del_{id_msg_escolhida}"
-        ):
-          cursor.execute(
-              "DELETE FROM chat_interno WHERE id = ?", (id_msg_escolhida,)
-          )
-          conn.commit()
-          st.success("✅ Mensagem apagada com sucesso!")
-          st.rerun()
-      with col_op2:
-        if st.button(
-            "📋 Copiar Texto", key=f"whatsapp_copy_{id_msg_escolhida}"
-        ):
-          st.info(f"Texto copiado:\n\n{detalhe_msg_ativa[1]}")
-      with col_op3:
-        if st.button(
-            "🔄 Encaminhar", key=f"whatsapp_fwd_{id_msg_escolhida}"
-        ):
-          # Insere a mesma mensagem novamente como encaminhada
-          msg_encaminhada = f"[Encaminhado] {detalhe_msg_ativa[1]}"
-          data_env_enc = datetime.now().strftime("%H:%M — %d/%m")
-          cursor.execute(
-              "INSERT INTO chat_interno (remetente, destinatario, cargo,"
-              " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
-              " ?, ?, ?, ?, ?)",
-              (
-                  f"{remetente_atual} ({cargo_atual})",
-                  "🌐 Canal Geral (Toda a Equipe)",
-                  cargo_atual,
-                  msg_encaminhada,
-                  "",
-                  "",
-                  data_env_enc,
-              ),
-          )
-          conn.commit()
-          st.success("✅ Mensagem encaminhada para o Canal Geral!")
-          st.rerun()
-
-      st.markdown("---")
-
-    # EXIBIÇÃO DAS MENSAGENS EM FORMATO LIMPO DE BALÃO
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 
     if not df_msgs.empty:
@@ -1490,7 +1421,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             f"""
                     <div class="{estilo_classe}">
                         <div style="font-size: 11px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
-                            <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']} (ID: {row_m['id']})</span>
+                            <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
                             <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
                         </div>
                         <div style="font-size: 14px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
@@ -1499,20 +1430,55 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             unsafe_allow_html=True,
         )
 
+        # Ações rápidas discretas por baixo de cada balão
+        col_m1, col_m2, col_m3, col_m4 = st.columns([1, 1, 1, 5])
+        with col_m1:
+          if st.button("🗑️", key=f"del_m_{row_m['id']}", help="Apagar mensagem"):
+            cursor.execute(
+                "DELETE FROM chat_interno WHERE id = ?", (row_m["id"],)
+            )
+            conn.commit()
+            st.rerun()
+        with col_m2:
+          if st.button("📋", key=f"copy_m_{row_m['id']}", help="Copiar texto"):
+            st.toast(f"Copiado: {row_m['mensagem']}")
+        with col_m3:
+          if st.button("🔄", key=f"fwd_m_{row_m['id']}", help="Encaminhar"):
+            msg_enc = f"[Encaminhado] {row_m['mensagem']}"
+            cursor.execute(
+                "INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (
+                    f"{remetente_atual} ({cargo_atual})",
+                    "🌐 Canal Geral (Toda a Equipe)",
+                    cargo_atual,
+                    msg_enc,
+                    "",
+                    "",
+                    datetime.now().strftime("%H:%M — %d/%m"),
+                ),
+            )
+            conn.commit()
+            st.rerun()
+
         if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
           if row_m["arquivo_nome"].lower().endswith((".png", ".jpg", ".jpeg")):
             st.image(
                 row_m["arquivo_path"],
                 caption=f"Mídia de {row_m['remetente']}",
-                width=280,
+                width=260,
             )
           with open(row_m["arquivo_path"], "rb") as f_down:
             st.download_button(
-                label=f"📥 Baixar anexo: {row_m['arquivo_nome']}",
+                label=f"📥 Baixar: {row_m['arquivo_nome']}",
                 data=f_down.read(),
                 file_name=row_m["arquivo_nome"],
                 key=f"dl_chat_arq_{row_m['id']}",
             )
+        st.markdown(
+            "<hr style='margin: 4px 0; border: none; border-top: 1px solid"
+            " #e2e8f0;'>",
+            unsafe_allow_html=True,
+        )
     else:
       st.info("Ainda sem mensagens neste canal. Começa a conversa abaixo!")
 
