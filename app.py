@@ -314,7 +314,11 @@ def init_db():
             colunas_permitidas TEXT
         )
     """)
-  
+  try:
+    cursor.execute("ALTER TABLE config_colunas ADD COLUMN colunas_permitidas TEXT")
+  except Exception:
+    pass
+
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_interno (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -472,6 +476,27 @@ if menu == "📊 Visão Geral":
         "Total Litros",
         f"{df_comb['litros'].sum() if not df_comb.empty else 0.0:,.1f} L",
     )
+
+  st.divider()
+
+  st.markdown("### 📈 Estatísticas e Gráficos de Desempenho")
+  col_g1, col_g2 = st.columns(2)
+
+  with col_g1:
+    st.markdown("#### 🛠️ Custo de Manutenção por Tipo")
+    if not df_manut.empty and "tipo_manutencao" in df_manut.columns and "custo" in df_manut.columns:
+      df_custo_tipo = df_manut.groupby("tipo_manutencao")["custo"].sum().reset_index()
+      st.bar_chart(df_custo_tipo.set_index("tipo_manutencao"))
+    else:
+      st.info("Ainda sem dados suficientes para exibir o gráfico de manutenções.")
+
+  with col_g2:
+    st.markdown("#### ⛽ Consumo de Combustível (Litros) por Equipamento")
+    if not df_comb.empty and "equipamento" in df_comb.columns and "litros" in df_comb.columns:
+      df_litros_eq = df_comb.groupby("equipamento")["litros"].sum().reset_index()
+      st.bar_chart(df_litros_eq.set_index("equipamento"))
+    else:
+      st.info("Ainda sem dados suficientes para exibir o gráfico de combustíveis.")
 
   st.divider()
   st.markdown("### 📋 Resumo Geral da Frota em Operação")
@@ -711,32 +736,111 @@ elif menu == "🚜 Cadastro de Equipamentos":
 
 elif menu == "⛽ Abastecimentos & Combustível":
   st.title("⛽ Controle de Abastecimento e Combustível")
-  df_c = pd.read_sql("SELECT * FROM combustivel", conn)
-  exibir_tabela_padronizada(df_c, "combustivel")
+  tab_c_lista, tab_c_cad = st.tabs(["📋 Histórico de Abastecimentos", "➕ Registar Abastecimento"])
+  with tab_c_lista:
+    df_c = pd.read_sql("SELECT * FROM combustivel ORDER BY id DESC", conn)
+    exibir_tabela_padronizada(df_c, "combustivel")
+  with tab_c_cad:
+    with st.form("form_abastecimento_novo"):
+      eq_ab = st.text_input("Equipamento / Prefixo")
+      litros_ab = st.number_input("Quantidade em Litros", value=100.0, step=10.0)
+      valor_ab = st.number_input("Valor Total (R$)", value=600.0, step=50.0)
+      btn_salvar_ab = st.form_submit_button("💾 Salvar Abastecimento")
+      if btn_salvar_ab and eq_ab:
+        cursor.execute("INSERT INTO combustivel (equipamento, litros, valor_total, km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?, '0', 'Posto', 'Alex', ?)", (eq_ab, litros_ab, valor_ab, datetime.now().strftime("%d/%m/%Y %H:%M")))
+        conn.commit()
+        st.success("✅ Abastecimento registado!")
+        st.rerun()
 
 elif menu == "🏗️ Mobilização / Desmobilização":
   st.title("🏗️ Gestão de Mobilização e Desmobilização")
-  df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
+  df_mobs = pd.read_sql("SELECT * FROM mobilizacoes ORDER BY id DESC", conn)
   exibir_tabela_padronizada(df_mobs, "mobilizacoes")
 
 elif menu == "🛠️ Ordens de Serviço (OS)":
   st.title("🛠️ Ordens de Serviço (OS)")
-  df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
+  df_os = pd.read_sql("SELECT * FROM manutencoes ORDER BY id DESC", conn)
   exibir_tabela_padronizada(df_os, "manutencoes")
 
 elif menu == "🔩 Peças e Ferramentas":
   st.title("🔩 Controle de Peças e Ferramentas")
-  df_pecas = pd.read_sql("SELECT * FROM pecas", conn)
+  df_pecas = pd.read_sql("SELECT * FROM pecas ORDER BY id DESC", conn)
   exibir_tabela_padronizada(df_pecas, "pecas")
 
 elif menu == "👥 Gestão de Clientes":
   st.title("👥 Gestão de Clientes")
-  df_cli = pd.read_sql("SELECT * FROM clientes", conn)
+  df_cli = pd.read_sql("SELECT * FROM clientes ORDER BY id DESC", conn)
   exibir_tabela_padronizada(df_cli, "clientes")
 
 elif menu == "💬 Chat Tabalmix Pro & Rede":
+  st.markdown(
+      """
+        <style>
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 540px;
+            overflow-y: auto;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+        }
+        .msg-row {
+            display: flex;
+            width: 100%;
+            margin-bottom: 2px;
+        }
+        .msg-row-eu {
+            justify-content: flex-end;
+        }
+        .msg-row-outro {
+            justify-content: flex-start;
+        }
+        .msg-bubble {
+            padding: 12px 18px;
+            border-radius: 16px;
+            max-width: 85%;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            position: relative;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+        .msg-bubble-eu {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+            border-top-right-radius: 3px;
+        }
+        .msg-bubble-outro {
+            background: #ffffff;
+            color: #0f172a;
+            border: 1px solid #e2e8f0;
+            border-top-left-radius: 3px;
+        }
+        </style>
+    """,
+      unsafe_allow_html=True,
+  )
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
-  st.info("Canal de mensagens ativo.")
+  cursor.execute("SELECT id, apelido, cargo_setor FROM usuarios_sistema ORDER BY id DESC")
+  todos_usuarios_db = cursor.fetchall()
+  df_msgs = pd.read_sql("SELECT * FROM chat_interno ORDER BY id ASC LIMIT 60", conn)
+  
+  st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+  if not df_msgs.empty:
+    for _, row_m in df_msgs.iterrows():
+      st.markdown(f"**{row_m['remetente']}**: {row_m['mensagem']}")
+  else:
+    st.info("Ainda sem mensagens.")
+  st.markdown('</div>', unsafe_allow_html=True)
+
+  with st.form("form_chat_pro", clear_on_submit=True):
+    msg_txt = st.text_input("Escreva sua mensagem...")
+    btn_env = st.form_submit_button("Enviar")
+    if btn_env and msg_txt:
+      cursor.execute("INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, 'Geral', 'Diretoria', ?, '', '', ?)", ("Alex", msg_txt, datetime.now().strftime("%H:%M — %d/%m")))
+      conn.commit()
+      st.rerun()
 
 elif menu == "🔍 Consulta / Busca Geral":
   st.title("🔍 Consulta e Histórico Completo")
@@ -745,10 +849,10 @@ elif menu == "🔍 Consulta / Busca Geral":
 
 elif menu == "⚙️ Meu Perfil / Dados":
   st.title("⚙️ Meu Perfil & Atualização Cadastral")
-  st.info("Painel de perfil ativo.")
+  st.info("Painel de perfil de administrador ativo.")
 
 elif menu == "⚙️ Painel de Licença (Admin)":
   st.title("⚙️ Painel Administrativo Master")
-  st.markdown("Painel de licenças e chaves corporativas do sistema.")
+  st.markdown("Gerenciamento de chaves e licenças corporativas do sistema.")
   df_chaves = pd.read_sql("SELECT * FROM chaves_licenca", conn)
   exibir_tabela_padronizada(df_chaves, "chaves_licenca")
