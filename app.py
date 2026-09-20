@@ -225,7 +225,7 @@ def init_db():
             tag_prefixo TEXT, categoria_equipamento TEXT,
             marca TEXT, modelo TEXT, ano INTEGER, chassi TEXT, renavam TEXT,
             placa TEXT, crv TEXT, cor TEXT, combustivel TEXT, empresa TEXT,
-            horimetro_km INTEGER, status TEXT
+            horimetro_km INTEGER, status TEXT, historico_edicoes TEXT
         )
     """)
 
@@ -237,6 +237,7 @@ def init_db():
       "ALTER TABLE veiculos ADD COLUMN cor TEXT",
       "ALTER TABLE veiculos ADD COLUMN combustivel TEXT",
       "ALTER TABLE veiculos ADD COLUMN empresa TEXT",
+      "ALTER TABLE veiculos ADD COLUMN historico_edicoes TEXT",
   ]:
     try:
       cursor.execute(col_sql)
@@ -314,7 +315,6 @@ def init_db():
         )
     """)
   
-  # Limpa qualquer configuração incorreta anterior para evitar sumir colunas
   try:
     cursor.execute("DELETE FROM config_colunas WHERE tabela = 'veiculos'")
     conn.commit()
@@ -875,9 +875,10 @@ elif menu == "🚜 Cadastro de Equipamentos":
   st.title("🚜 Cadastro de Equipamentos & Vistoria Fotográfica")
   st.markdown("Gira a frota, atribua a Linha do Equipamento e execute a vistoria fotográfica completa.")
 
-  tab_eq_lista, tab_eq_cad, tab_eq_foto = st.tabs([
+  tab_eq_lista, tab_eq_cad, tab_eq_edit, tab_eq_foto = st.tabs([
       "📋 Frota Cadastrada",
       "➕ Registar Novo Equipamento",
+      "✏️ Editar Frota & Histórico",
       "📸 Vistoria Fotográfica (Até 15 Imagens)",
   ])
 
@@ -926,11 +927,12 @@ elif menu == "🚜 Cadastro de Equipamentos":
       btn_salvar_eq = st.form_submit_button("💾 Salvar Equipamento na Frota")
       if btn_salvar_eq:
         if f_marca and f_modelo:
+          hist_cad_inicial = f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Equipamento cadastrado no sistema."
           cursor.execute(
               "INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca,"
               " modelo, ano, chassi, renavam, placa, crv, cor, combustivel,"
-              " empresa, horimetro_km, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?,"
-              " '', ?, ?, ?, ?, 'Ativo')",
+              " empresa, horimetro_km, status, historico_edicoes) VALUES (?, ?, ?, ?, ?, ?, ?, ?,"
+              " '', ?, ?, ?, ?, 'Ativo', ?)",
               (
                   f_prefixo,
                   f_cat,
@@ -944,6 +946,7 @@ elif menu == "🚜 Cadastro de Equipamentos":
                   f_comb,
                   f_empresa,
                   int(f_horimetro),
+                  hist_cad_inicial,
               ),
           )
           conn.commit()
@@ -951,6 +954,57 @@ elif menu == "🚜 Cadastro de Equipamentos":
           st.rerun()
         else:
           st.error("⚠️ Preencha pelo menos a Marca e o Modelo.")
+
+  with tab_eq_edit:
+    st.markdown("### ✏️ Editar Dados da Frota & Justificar Alteração")
+    try:
+      df_veiculos_edit = pd.read_sql("SELECT * FROM veiculos ORDER BY id DESC", conn)
+    except Exception:
+      df_veiculos_edit = pd.DataFrame()
+
+    if not df_veiculos_edit.empty:
+      id_veiculo_sel = st.selectbox(
+          "Selecione o Veículo / Equipamento para editar:",
+          df_veiculos_edit["id"].tolist(),
+          format_func=lambda x: f"ID #{x} — {df_veiculos_edit[df_veiculos_edit['id'] == x]['marca'].values[0]} {df_veiculos_edit[df_veiculos_edit['id'] == x]['modelo'].values[0]} (Placa: {df_veiculos_edit[df_veiculos_edit['id'] == x]['placa'].values[0]})"
+      )
+      veiculo_atual_reg = df_veiculos_edit[df_veiculos_edit["id"] == id_veiculo_sel].iloc[0]
+
+      with st.form(f"form_editar_veiculo_{id_veiculo_sel}"):
+        st.markdown(f"#### Editando Veículo ID #{id_veiculo_sel}")
+        e_pref = st.text_input("Prefixo / Tag", value=str(veiculo_atual_reg["tag_prefixo"]))
+        e_marca = st.text_input("Marca", value=str(veiculo_atual_reg["marca"]))
+        e_modelo = st.text_input("Modelo", value=str(veiculo_atual_reg["modelo"]))
+        e_placa = st.text_input("Placa", value=str(veiculo_atual_reg["placa"]))
+        e_cor = st.text_input("Cor", value=str(veiculo_atual_reg["cor"]))
+        e_km = st.number_input("Km / Horímetro", value=int(veiculo_atual_reg["horimetro_km"]) if pd.notnull(veiculo_atual_reg["horimetro_km"]) else 0, step=100)
+
+        st.markdown("---")
+        st.markdown("🔴 **OBRIGATÓRIO:** Informe abaixo o motivo exato da alteração (Ex: troca de motorista responsável, atualização de placa, correção de quilometragem):")
+        motivo_edicao_veiculo = st.text_input(
+            "Motivo da Atualização / Troca",
+            placeholder="Ex: Motorista anterior desistiu, novo motorista assumiu o veículo..."
+        )
+
+        btn_atualizar_veiculo = st.form_submit_button("💾 Salvar Alterações e Histórico")
+
+        if btn_atualizar_veiculo:
+          if not motivo_edicao_veiculo.strip():
+            st.error("⚠️ O campo 'Motivo da Atualização' é obrigatório para guardar na base de dados!")
+          else:
+            hist_anterior = str(veiculo_atual_reg["historico_edicoes"]) if pd.notnull(veiculo_atual_reg["historico_edicoes"]) else ""
+            novo_item_hist = f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Atualizado por {usuario_atual['apelido'] if usuario_atual else 'Admin'}. Motivo: {motivo_edicao_veiculo}"
+            hist_atualizado_final = hist_anterior + novo_item_hist
+
+            cursor.execute(
+                "UPDATE veiculos SET tag_prefixo = ?, marca = ?, modelo = ?, placa = ?, cor = ?, horimetro_km = ?, historico_edicoes = ? WHERE id = ?",
+                (e_pref, e_marca, e_modelo, e_placa, e_cor, int(e_km), hist_atualizado_final, int(id_veiculo_sel))
+            )
+            conn.commit()
+            st.success("✅ Veículo atualizado com sucesso e motivo guardado no histórico!")
+            st.rerun()
+    else:
+      st.info("Nenhum veículo registado para editar.")
 
   with tab_eq_foto:
     st.markdown("### 📸 Vistoria Fotográfica Completa (Até 15 Ângulos)")
@@ -1267,7 +1321,7 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
       
       col_os1, col_os2 = st.columns(2)
       with col_os1:
-        if st.button("📄 Gerar Relatório em PDF de OS"):
+        if st.button("📄 Gerar Relatório in PDF de OS"):
           pdf_os = gerar_pdf_relatorio("Relatório de Ordens de Serviço", df_os)
           st.download_button(
               label="📥 Baixar PDF Certificado",
