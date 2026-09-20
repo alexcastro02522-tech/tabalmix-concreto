@@ -369,8 +369,6 @@ def init_db():
 conn = init_db()
 cursor = conn.cursor()
 
-# GARANTIA TOTAL DE MODO ADMIN ATIVO PARA O USUÁRIO MASTER
-modo_admin_liberado = True
 if "usuario_logado" not in st.session_state:
   st.session_state["usuario_logado"] = {
       "id": 1,
@@ -385,9 +383,10 @@ if "usuario_logado" not in st.session_state:
 usuario_atual = st.session_state["usuario_logado"]
 status_usuario_ativo = True
 
+
 def exibir_tabela_padronizada(df, nome_tabela):
   if df.empty:
-    st.info("Nenhum registro encontrado.")
+    st.info("Nenhum registo encontrado.")
     return
   
   try:
@@ -410,36 +409,42 @@ with st.sidebar:
       encoded_logo_side = base64.b64encode(image_file.read()).decode()
     st.markdown(
         f"""
-            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 14px; text-align: center; margin-bottom: 12px; color: white;">
-                <div style="font-size: 15px; font-weight: 900; margin-bottom: 8px;">🏗️ TABALMIX CONCRETO</div>
-                <div style="border-radius: 12px; overflow: hidden; max-height: 105px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 8px;">
-                    <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 100px; object-fit: cover;">
+            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 14px; padding: 10px; text-align: center; margin-bottom: 8px; color: white; box-shadow: 0 4px 12px rgba(5,150,105,0.2);">
+                <div style="font-size: 14px; font-weight: 900; margin-bottom: 6px; letter-spacing: -0.5px;">🏗️ TABALMIX CONCRETO</div>
+                <div style="border-radius: 10px; overflow: hidden; max-height: 90px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 6px;">
+                    <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 90px; object-fit: cover;">
                 </div>
+                <div style="font-size: 9.5px; color: #e2e8f0; font-weight: 700; text-transform: uppercase;">⭐ Certificado Oficial | Castro Tech ⭐</div>
             </div>
         """,
         unsafe_allow_html=True,
     )
   except Exception:
-    pass
+    st.markdown(
+        """
+            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 14px; padding: 10px; text-align: center; margin-bottom: 8px; color: white;">
+                <div style="font-size: 14px; font-weight: 900;">🏗️ TABALMIX CONCRETO</div>
+                <div style="font-size: 9.5px; color: #e2e8f0; font-weight: 700;">⭐ Certificado Oficial | Castro Tech ⭐</div>
+            </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-  st.success("🔓 **Modo Admin Master Ativo**")
-  st.markdown("---")
+  lista_menus = [
+      "📊 Visão Geral",
+      "🚜 Cadastro de Equipamentos",
+      "⛽ Abastecimentos & Combustível",
+      "🏗️ Mobilização / Desmobilização",
+      "🛠️ Ordens de Serviço (OS)",
+      "🔩 Peças e Ferramentas",
+      "👥 Gestão de Clientes",
+      "💬 Chat Tabalmix Pro & Rede",
+      "🔍 Consulta / Busca Geral",
+      "⚙️ Meu Perfil / Dados",
+      "⚙️ Painel de Licença (Admin)",
+  ]
 
-lista_menus = [
-    "📊 Visão Geral",
-    "🚜 Cadastro de Equipamentos",
-    "⛽ Abastecimentos & Combustível",
-    "🏗️ Mobilização / Desmobilização",
-    "🛠️ Ordens de Serviço (OS)",
-    "🔩 Peças e Ferramentas",
-    "👥 Gestão de Clientes",
-    "💬 Chat Tabalmix Pro & Rede",
-    "🔍 Consulta / Busca Geral",
-    "⚙️ Meu Perfil / Dados",
-    "⚙️ Painel de Licença (Admin)",
-]
-
-menu = st.sidebar.radio("Navegação", lista_menus, label_visibility="collapsed")
+  menu = st.radio("Navegação", lista_menus, label_visibility="collapsed")
 
 if menu == "📊 Visão Geral":
   st.title("🏗️ Painel Executivo e Indicadores de Frota")
