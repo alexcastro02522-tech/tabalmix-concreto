@@ -315,12 +315,6 @@ def init_db():
         )
     """)
   
-  try:
-    cursor.execute("DELETE FROM config_colunas WHERE tabela = 'veiculos'")
-    conn.commit()
-  except Exception:
-    pass
-
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_interno (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1321,7 +1315,7 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
       
       col_os1, col_os2 = st.columns(2)
       with col_os1:
-        if st.button("📄 Gerar Relatório in PDF de OS"):
+        if st.button("📄 Gerar Relatório em PDF de OS"):
           pdf_os = gerar_pdf_relatorio("Relatório de Ordens de Serviço", df_os)
           st.download_button(
               label="📥 Baixar PDF Certificado",
