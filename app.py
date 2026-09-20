@@ -68,6 +68,7 @@ st.markdown(
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
     
+    /* FORÇAR VISIBILIDADE DE TODOS OS RÓTULOS (LABELS) DE INPUTS E FORMULÁRIOS */
     label, div[data-baseweb="input"] label, .stTextInput label, .stNumberInput label, .stSelectbox label, .stTextArea label {
         color: #0f172a !important;
         font-weight: 700 !important;
@@ -82,6 +83,7 @@ st.markdown(
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
     }
     
+    /* CORREÇÃO DEFINITIVA PARA TEXTOS E CAIXAS DE INPUT EM MODO ESCURO MOBILE */
     div.stTextInput input, 
     div.stNumberInput input, 
     div.stSelectbox div[data-baseweb="select"],
@@ -353,6 +355,7 @@ except Exception:
 if "usuario_logado" not in st.session_state:
   st.session_state["usuario_logado"] = None
 
+# PERSISTÊNCIA INTELIGENTE DE SESSÃO NA OBRA
 try:
   if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     qp = st.query_params
@@ -757,59 +760,43 @@ if usuario_atual and (
 ):
   usuario_atual["cargo"] = "Colaborador"
 
-# VERIFICAÇÃO AUTOMÁTICA DE MENSAGENS COM SOM DE TOQUE E ALERTA GLOBAL
+# VERIFICAÇÃO GLOBAL DE CHAMADA PENDENTE (ATUALIZADA PARA 1 SEGUNDO)
 if usuario_atual:
   nome_apelido_atual = usuario_atual["apelido"]
-  # Conta total de mensagens para detetar se chegou mensagem nova
-  cursor.execute("SELECT COUNT(*), MAX(id) FROM chat_interno")
-  res_chat_stat = cursor.fetchone()
-  total_msgs_db = res_chat_stat[0] if res_chat_stat else 0
-
-  if "ultima_contagem_msgs" not in st.session_state:
-    st.session_state["ultima_contagem_msgs"] = total_msgs_db
-
-  # Se chegou mensagem nova, toca o alarme sonoro automaticamente em qualquer aba
-  if total_msgs_db > st.session_state["ultima_contagem_msgs"]:
-    st.session_state["ultima_contagem_msgs"] = total_msgs_db
-    st.markdown(
-        """
-            <audio autoplay>
-                <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
-            </audio>
-        """,
-        unsafe_allow_html=True,
-    )
-
-  # Alerta flutuante se houver mensagem direta para o utilizador
   cursor.execute(
-      "SELECT remetente, mensagem FROM chat_interno WHERE destinatario LIKE ? ORDER BY id DESC LIMIT 1",
+      "SELECT mensagem, data_envio FROM chat_interno WHERE destinatario LIKE ? AND mensagem LIKE '%CHAMADA DE VÍDEO ATIVA%' ORDER BY id DESC LIMIT 1",
       (f"%{nome_apelido_atual}%",),
   )
-  msg_direta_recente = cursor.fetchone()
-  if msg_direta_recente:
+  chamada_pendente = cursor.fetchone()
+  if chamada_pendente:
     st.markdown(
-        f"""
-            <div style="background: linear-gradient(135deg, #047857 100%, #065f46 0%); color: white; padding: 16px 22px; border-radius: 14px; margin-bottom: 16px; box-shadow: 0 10px 25px rgba(4,120,87,0.4); display: flex; justify-content: space-between; align-items: center;">
+        """
+            <div style="background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%); color: white; padding: 20px 26px; border-radius: 16px; margin-bottom: 20px; box-shadow: 0 15px 35px rgba(220,38,38,0.6); display: flex; justify-content: space-between; align-items: center;">
                 <div>
-                    <h4 style="color: white !important; margin: 0; font-size: 16px;">🚨 NOVA MENSAGEM / CHAMADA DE: {msg_direta_recente[0]}</h4>
-                    <p style="margin: 4px 0 0 0; font-size: 13.5px; opacity: 0.9;">{msg_direta_recente[1][:80]}...</p>
+                    <h3 style="color: white !important; margin: 0; font-size: 19px;">🚨 CHAMADA DE VÍDEO A TOCAR AGORA!</h3>
+                    <p style="margin: 4px 0 0 0; font-size: 14.5px;">Alguém está a chamar-te em tempo real para uma reunião ao vivo.</p>
                 </div>
+                <a href="?p=chat" target="_self" style="background: white; color: #991b1b; padding: 12px 24px; border-radius: 12px; font-weight: 800; text-decoration: none; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">ATENDER CHAMADA</a>
             </div>
+            <script>
+                setTimeout(function(){
+                    window.location.reload();
+                }, 1000);
+            </script>
         """,
         unsafe_allow_html=True,
     )
-
-  # Polling automático a cada 3 segundos para atualizar e tocar
-  st.markdown(
-      """
-        <script>
-            setTimeout(function(){
-                window.location.reload();
-            }, 3000);
-        </script>
-    """,
-      unsafe_allow_html=True,
-  )
+  else:
+    st.markdown(
+        """
+            <script>
+                setTimeout(function(){
+                    window.location.reload();
+                }, 1000);
+            </script>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def exibir_tabela_padronizada(df, nome_tabela):
@@ -973,7 +960,7 @@ lista_menus = [
     "🛠️ Ordens de Serviço (OS)",
     "🔩 Peças e Ferramentas",
     "👥 Gestão de Clientes",
-    "💬 Chat Pro Enterprise & Operações",
+    "💬 Chat Tabalmix Pro & Rede",
     "🔍 Consulta / Busca Geral",
     "⚙️ Meu Perfil / Dados",
 ]
@@ -1325,7 +1312,7 @@ elif menu == "👥 Gestão de Clientes":
   if not df_cli.empty:
     exibir_tabela_padronizada(df_cli, "clientes")
 
-elif menu == "💬 Chat Pro Enterprise & Operações":
+elif menu == "💬 Chat Tabalmix Pro & Rede":
   st.markdown(
       """
         <style>
@@ -1346,184 +1333,253 @@ elif menu == "💬 Chat Pro Enterprise & Operações":
             color: white;
             padding: 14px 18px;
             border-radius: 16px 16px 4px 16px;
-            max-width: 80%;
+            max-width: 75%;
             align-self: flex-end;
             box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
             margin-left: auto;
             font-family: 'Plus Jakarta Sans', sans-serif;
-            margin-bottom: 8px;
         }
         .msg-card-outro {
             background: #ffffff;
             color: #0f172a;
             padding: 14px 18px;
             border-radius: 16px 16px 16px 4px;
-            max-width: 80%;
+            max-width: 75%;
             align-self: flex-start;
             border: 1px solid #e2e8f0;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
             margin-right: auto;
             font-family: 'Plus Jakarta Sans', sans-serif;
-            margin-bottom: 8px;
         }
         </style>
     """,
       unsafe_allow_html=True,
   )
 
-  st.title("💬 Chat Pro Enterprise — Operações & Mensagens")
+  st.title("💬 Central Pro Enterprise — Chat & Live Ops")
   st.markdown(
-      "Sistema de mensagens em tempo real da obra. Podes copiar, partilhar ou"
-      " excluir qualquer mensagem instantaneamente."
+      "Comunicação em tempo real de nível mundial entre a obra, mecânica e"
+      " diretoria."
   )
 
   cursor.execute(
       "SELECT id, apelido, cargo_setor FROM usuarios_sistema ORDER BY id DESC"
   )
-  todos_users_chat = cursor.fetchall()
+  todos_usuarios_db = cursor.fetchall()
 
-  col_f1, col_f2 = st.columns([2, 1])
-  with col_f1:
-    if todos_users_chat:
-      opcoes_dest = [
-          f"🌐 Canal Geral (Toda a Equipe)"
-      ] + [f"👤 {u[1]} ({u[2]})" for u in todos_users_chat]
-      destinatario_escolhido = st.selectbox(
-          "Canal / Destinatário da Mensagem:", opcoes_dest
+  tab_chat_txt, tab_videocall = st.tabs([
+      "💬 Canal de Mensagens Live",
+      "📞 Chamada Direta de Vídeo Integrada",
+  ])
+
+  with tab_chat_txt:
+    col_f1, col_f2 = st.columns([2, 1])
+    with col_f1:
+      if todos_usuarios_db:
+        opcoes_colab = [
+            f"👤 {u[1]} — Cargo: {u[2]} (ID: {u[0]})" for u in todos_usuarios_db
+        ]
+        colab_escolhido_str = st.selectbox(
+            "Canal / Destinatário:",
+            ["🌐 Canal Geral (Toda a Equipe)"] + opcoes_colab,
+        )
+      else:
+        colab_escolhido_str = "🌐 Canal Geral (Toda a Equipe)"
+    with col_f2:
+      termo_busca_chat = st.text_input(
+          "🔍 Pesquisa Global", placeholder="Ex: pneu, beta..."
+      )
+
+    if termo_busca_chat.strip():
+      df_msgs = pd.read_sql(
+          "SELECT * FROM chat_interno WHERE mensagem LIKE ? ORDER BY id ASC LIMIT"
+          " 50",
+          conn,
+          params=(f"%{termo_busca_chat}%",),
       )
     else:
-      destinatario_escolhido = "🌐 Canal Geral (Toda a Equipe)"
-  with col_f2:
-    termo_busca_chat = st.text_input(
-        "🔍 Pesquisa no Chat", placeholder="Filtrar conversas..."
+      df_msgs = pd.read_sql(
+          "SELECT * FROM chat_interno ORDER BY id ASC LIMIT 50", conn
+      )
+
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+
+    remetente_atual = (
+        usuario_atual["apelido"] if usuario_atual else "Administrador Master"
+    )
+    cargo_atual = (
+        usuario_atual["cargo"] if usuario_atual else "Diretoria / Gestão"
     )
 
-  if termo_busca_chat.strip():
-    df_msgs = pd.read_sql(
-        "SELECT * FROM chat_interno WHERE mensagem LIKE ? ORDER BY id ASC LIMIT"
-        " 60",
-        conn,
-        params=(f"%{termo_busca_chat}%",),
-    )
-  else:
-    df_msgs = pd.read_sql(
-        "SELECT * FROM chat_interno ORDER BY id ASC LIMIT 60", conn
-    )
+    if not df_msgs.empty:
+      for _, row_m in df_msgs.iterrows():
+        is_eu = remetente_atual in str(row_m["remetente"])
+        estilo_classe = "msg-card-eu" if is_eu else "msg-card-outro"
+        cor_autor = "#d1fae5" if is_eu else "#047857"
 
-  st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-
-  remetente_atual = (
-      usuario_atual["apelido"] if usuario_atual else "Administrador Master"
-  )
-  cargo_atual = (
-      usuario_atual["cargo"] if usuario_atual else "Diretoria / Gestão"
-  )
-
-  if not df_msgs.empty:
-    for _, row_m in df_msgs.iterrows():
-      is_eu = remetente_atual in str(row_m["remetente"])
-      estilo_classe = "msg-card-eu" if is_eu else "msg-card-outro"
-      cor_autor = "#d1fae5" if is_eu else "#047857"
-
-      st.markdown(
-          f"""
-                <div class="{estilo_classe}">
-                    <div style="font-size: 11px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
-                        <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
-                        <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
+        st.markdown(
+            f"""
+                    <div class="{estilo_classe}">
+                        <div style="font-size: 11px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
+                            <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
+                            <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
+                        </div>
+                        <div style="font-size: 14px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
                     </div>
-                    <div style="font-size: 14px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
-                </div>
-            """,
-          unsafe_allow_html=True,
+                """,
+            unsafe_allow_html=True,
+        )
+
+        if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
+          if row_m["arquivo_nome"].lower().endswith((".png", ".jpg", ".jpeg")):
+            st.image(
+                row_m["arquivo_path"],
+                caption=f"Mídia de {row_m['remetente']}",
+                width=280,
+            )
+          with open(row_m["arquivo_path"], "rb") as f_down:
+            st.download_button(
+                label=f"📥 Baixar anexo: {row_m['arquivo_nome']}",
+                data=f_down.read(),
+                file_name=row_m["arquivo_nome"],
+                key=f"dl_chat_arq_{row_m['id']}",
+            )
+    else:
+      st.info("Ainda sem mensagens neste canal. Começa a conversa abaixo!")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    with st.form("form_chat_direto_pro", clear_on_submit=True):
+      col_msg1, col_msg2 = st.columns([3, 1])
+      with col_msg1:
+        msg_sala_txt = st.text_input(
+            "Escreve a tua mensagem operacional...",
+            placeholder="Mensagem segura para a equipa...",
+        )
+      with col_msg2:
+        file_sala_up = st.file_uploader(
+            "Anexar Mídia",
+            type=["png", "jpg", "jpeg", "pdf", "docx"],
+            label_visibility="collapsed",
+        )
+
+      btn_enviar_chat = st.form_submit_button(
+          "🚀 Enviar Mensagem Instantânea"
       )
 
-      col_a1, col_a2, col_a3 = st.columns([2, 2, 6])
-      with col_a1:
-        if st.button(
-            "🗑️ Excluir", key=f"btn_del_msg_{row_m['id']}", help="Excluir esta mensagem"
-        ):
-          cursor.execute(
-              "DELETE FROM chat_interno WHERE id = ?", (row_m["id"],)
-          )
-          conn.commit()
-          st.success("Mensagem excluída!")
-          st.rerun()
-      with col_a2:
-        if st.button(
-            "📋 Copiar", key=f"btn_copiar_msg_{row_m['id']}", help="Copiar conteúdo"
-        ):
-          st.code(row_m["mensagem"], language="")
+      if btn_enviar_chat:
+        if not msg_sala_txt.strip() and not file_sala_up:
+          st.warning("⚠️ Escreve uma mensagem ou anexa um arquivo.")
+        else:
+          path_s = ""
+          nome_s = ""
+          if file_sala_up is not None:
+            os.makedirs("chat_documentos", exist_ok=True)
+            nome_s = file_sala_up.name
+            path_s = (
+                "chat_documentos/"
+                f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nome_s}"
+            )
+            with open(path_s, "wb") as f_out_s:
+              f_out_s.write(file_sala_up.getbuffer())
 
-      if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
-        if row_m["arquivo_nome"].lower().endswith((".png", ".jpg", ".jpeg")):
-          st.image(
-              row_m["arquivo_path"],
-              caption=f"Mídia de {row_m['remetente']}",
-              width=280,
-          )
-        with open(row_m["arquivo_path"], "rb") as f_down:
-          st.download_button(
-              label=f"📥 Baixar anexo: {row_m['arquivo_nome']}",
-              data=f_down.read(),
-              file_name=row_m["arquivo_nome"],
-              key=f"dl_chat_arq_{row_m['id']}",
-          )
-      st.markdown("---")
-  else:
-    st.info("Ainda sem mensagens no chat. Envia a primeira mensagem abaixo!")
-
-  st.markdown("</div>", unsafe_allow_html=True)
-
-  with st.form("form_chat_pro_envio", clear_on_submit=True):
-    col_env1, col_env2 = st.columns([3, 1])
-    with col_env1:
-      texto_msg_input = st.text_input(
-          "Escreve a tua mensagem operacional...",
-          placeholder="Digita aqui para a equipa...",
-      )
-    with col_env2:
-      arquivo_msg_up = st.file_uploader(
-          "Anexar Arquivo",
-          type=["png", "jpg", "jpeg", "pdf", "docx"],
-          label_visibility="collapsed",
-      )
-
-    btn_enviar_msg_chat = st.form_submit_button("🚀 Enviar Mensagem Instantânea")
-
-    if btn_enviar_msg_chat:
-      if not texto_msg_input.strip() and not arquivo_msg_up:
-        st.warning("⚠️ Escreve uma mensagem ou anexa um arquivo.")
-      else:
-        path_arquivo = ""
-        nome_arquivo = ""
-        if arquivo_msg_up is not None:
-          os.makedirs("chat_documentos", exist_ok=True)
-          nome_arquivo = arquivo_msg_up.name
-          path_arquivo = (
-              "chat_documentos/"
-              f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nome_arquivo}"
-          )
-          with open(path_arquivo, "wb") as f_out_a:
-            f_out_a.write(arquivo_msg_up.getbuffer())
-
-          data_envio_msg = datetime.now().strftime("%H:%M — %d/%m")
+          data_env_s = datetime.now().strftime("%H:%M — %d/%m")
           cursor.execute(
               "INSERT INTO chat_interno (remetente, destinatario, cargo,"
               " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
               " ?, ?, ?, ?, ?)",
               (
                   f"{remetente_atual} ({cargo_atual})",
-                  destinatario_escolhido,
+                  colab_escolhido_str,
                   cargo_atual,
-                  texto_msg_input,
-                  path_arquivo,
-                  nome_arquivo,
-                  data_envio_msg,
+                  msg_sala_txt,
+                  path_s,
+                  nome_s,
+                  data_env_s,
               ),
           )
           conn.commit()
           st.rerun()
+
+  with tab_videocall:
+    st.markdown(
+        "### 📞 Central de Chamada Direta Pessoal (Vídeo e Voz em Tempo Real)"
+    )
+    st.markdown(
+        "Seleciona o colaborador para iniciar a chamada e enviar o link de"
+        " acesso direto para o chat dele:"
+    )
+
+    if todos_usuarios_db:
+      alvos_chamada = [f"{u[1]} ({u[2]})" for u in todos_usuarios_db]
+      alvo_selecionado = st.selectbox(
+          "Quem vai receber o convite para a reunião?",
+          alvos_chamada,
+          key="sel_alvo_video",
+      )
+    else:
+      alvo_selecionado = "Equipe Geral"
+
+    # Nome limpo e único para a sala baseado no destinatário
+    nome_sala_direta = f"TabalmixDirectCall{ ''.join(e for e in alvo_selecionado.split()[0] if e.isalnum()) }2026"
+    
+    # Link direto para a reunião sem barreiras
+    link_direto_jitsi = f"https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false"
+
+    if st.button("🚀 Criar Sala e Enviar Convite para o Chat", key="btn_ligar_integ"):
+      remetente_notif = (
+          usuario_atual["apelido"] if usuario_atual else "Administrador"
+      )
+      
+      # Mensagem estruturada com o botão de acesso direto para o chat
+      msg_alerta_chamada = (
+          f"🚨 **CHAMADA DE VÍDEO ATIVA:** {remetente_notif} iniciou uma"
+          f" reunião ao vivo contigo!\n\n🔗 **Clica no link abaixo para"
+          f" entrar na sala:**\n{link_direto_jitsi}"
+      )
+      data_env_notif = datetime.now().strftime("%H:%M — %d/%m")
+
+      try:
+        cursor.execute(
+            "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+            " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
+            " ?, ?, ?, ?, ?)",
+            (
+                f"{remetente_notif} (Diretoria)",
+                alvo_selecionado,
+                "Alerta",
+                msg_alerta_chamada,
+                "",
+                "",
+                data_env_notif,
+            ),
+        )
+        conn.commit()
+      except Exception:
+        pass
+
+      st.success(
+          f"Convite enviado com sucesso para {alvo_selecionado}! Vai ao"
+          " 'Canal de Mensagens Live' ou usa o botão abaixo para entrar."
+      )
+      st.rerun()
+
+    st.markdown("---")
+    st.markdown("### 🎥 Aceder à Tua Sala de Reunião")
+    st.markdown(
+        "Podes entrar na tua sala de vídeo a qualquer momento através do"
+        " botão abaixo:"
+    )
+    st.markdown(
+        f"""
+        <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 22px; border-radius: 16px; text-align: center; box-shadow: 0 10px 25px rgba(5,150,105,0.3);">
+            <h3 style="color: white !important; margin: 0 0 10px 0; font-size: 18px;">🎥 Sala de Vídeo Ativa</h3>
+            <p style="color: #e2e8f0; margin: 0 0 15px 0; font-size: 14px;">Clica para abrir a reunião no teu navegador:</p>
+            <a href="{link_direto_jitsi}" target="_blank" style="background: white; color: #047857; padding: 12px 28px; border-radius: 12px; text-decoration: none; font-weight: 800; display: inline-block; font-size: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">🚀 Abrir Reunião ao Vivo</a>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 elif menu == "🔍 Consulta / Busca Geral":
   st.title("🔍 Consulta e Histórico Completo do Equipamento")
