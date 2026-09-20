@@ -1330,7 +1330,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             color: white;
             padding: 14px 18px;
             border-radius: 16px 16px 4px 16px;
-            max-width: 100%;
+            max-width: 80%;
             align-self: flex-end;
             box-shadow: 0 4px 12px rgba(5, 150, 105, 0.15);
             margin-left: auto;
@@ -1342,7 +1342,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             color: #0f172a;
             padding: 14px 18px;
             border-radius: 16px 16px 16px 4px;
-            max-width: 100%;
+            max-width: 80%;
             align-self: flex-start;
             border: 1px solid #e2e8f0;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
@@ -1358,7 +1358,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
   st.markdown(
       "Comunicação em tempo real de nível profissional. Conversas privadas"
-      " isoladas e menu de três pontinhos delicado no canto."
+      " isoladas e menu de opções discreto."
   )
 
   cursor.execute(
@@ -1429,55 +1429,52 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         estilo_classe = "msg-card-eu" if is_eu else "msg-card-outro"
         cor_autor = "#d1fae5" if is_eu else "#047857"
 
-        # Disposição em colunas paralelas para colocar o menu de três pontinhos alinhado exatamente no topo direito do balão
-        col_msg_balao, col_msg_menu = st.columns([11, 1])
-        with col_msg_balao:
-          st.markdown(
-              f"""
-                    <div class="{estilo_classe}">
-                        <div style="font-size: 11px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
-                            <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
-                            <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
-                        </div>
-                        <div style="font-size: 14px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
+        # Balão da mensagem
+        st.markdown(
+            f"""
+                <div class="{estilo_classe}">
+                    <div style="font-size: 11px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
+                        <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
+                        <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
                     </div>
-                """,
-              unsafe_allow_html=True,
-          )
-        with col_msg_menu:
-          menu_tres_pontinhos = st.selectbox(
-              "⋮",
-              ["⋮", "📋 Copiar", "🔄 Encaminhar", "🗑️ Apagar"],
-              key=f"opt_menu_{row_m['id']}",
-              label_visibility="collapsed",
-          )
+                    <div style="font-size: 14px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
+                </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-          if menu_tres_pontinhos == "🗑️ Apagar":
-            cursor.execute(
-                "DELETE FROM chat_interno WHERE id = ?", (row_m["id"],)
-            )
-            conn.commit()
-            st.success("Mensagem apagada!")
-            st.rerun()
-          elif menu_tres_pontinhos == "📋 Copiar":
-            st.info(f"📋 Copiado: {row_m['mensagem']}")
-          elif menu_tres_pontinhos == "🔄 Encaminhar":
-            msg_enc = f"[Encaminhado] {row_m['mensagem']}"
-            cursor.execute(
-                "INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (
-                    f"{remetente_atual} ({cargo_atual})",
-                    colab_escolhido_str,
-                    cargo_atual,
-                    msg_enc,
-                    "",
-                    "",
-                    datetime.now().strftime("%H:%M — %d/%m"),
-                ),
-            )
-            conn.commit()
-            st.success("Mensagem encaminhada!")
-            st.rerun()
+        # Menu expansor super compacto e delicado (⋮ Ações da mensagem)
+        with st.expander("⋮ Ações", expanded=False):
+          col_a1, col_a2, col_a3 = st.columns(3)
+          with col_a1:
+            if st.button("📋 Copiar", key=f"copiar_{row_m['id']}"):
+              st.info(f"Copiado: {row_m['mensagem']}")
+          with col_a2:
+            if st.button("🔄 Encaminhar", key=f"enc_{row_m['id']}"):
+              msg_enc = f"[Encaminhado] {row_m['mensagem']}"
+              cursor.execute(
+                  "INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                  (
+                      f"{remetente_atual} ({cargo_atual})",
+                      colab_escolhido_str,
+                      cargo_atual,
+                      msg_enc,
+                      "",
+                      "",
+                      datetime.now().strftime("%H:%M — %d/%m"),
+                  ),
+              )
+              conn.commit()
+              st.success("Mensagem encaminhada!")
+              st.rerun()
+          with col_a3:
+            if st.button("🗑️ Apagar", key=f"del_{row_m['id']}"):
+              cursor.execute(
+                  "DELETE FROM chat_interno WHERE id = ?", (row_m["id"],)
+              )
+              conn.commit()
+              st.success("Mensagem apagada!")
+              st.rerun()
 
         if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
           if row_m["arquivo_nome"].lower().endswith((".png", ".jpg", ".jpeg")):
