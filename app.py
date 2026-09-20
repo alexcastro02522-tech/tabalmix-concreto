@@ -31,7 +31,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE (COM CORREÇÃO PARA MODO ESCURO EM MOBILE)
+# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE (COM CORREÇÃO TOTAL DE RÓTULOS E INPUTS)
 st.markdown(
     """
     <style>
@@ -67,6 +67,13 @@ st.markdown(
         letter-spacing: -0.8px;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
+    
+    /* FORÇAR VISIBILIDADE DE TODOS OS RÓTULOS (LABELS) DE INPUTS E FORMULÁRIOS */
+    label, div[data-baseweb="input"] label, .stTextInput label, .stNumberInput label, .stSelectbox label, .stTextArea label {
+        color: #0f172a !important;
+        font-weight: 700 !important;
+    }
+
     div[data-testid="stMetric"] {
         background: #ffffff !important;
         border: 1px solid #e2e8f0 !important;
@@ -75,7 +82,8 @@ st.markdown(
         border-radius: 16px !important;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
     }
-    /* CORREÇÃO DEFINITIVA PARA TEXTOS E INPUTS EM MODO ESCURO MOBILE */
+    
+    /* CORREÇÃO DEFINITIVA PARA TEXTOS E CAIXAS DE INPUT EM MODO ESCURO MOBILE */
     div.stTextInput input, 
     div.stNumberInput input, 
     div.stSelectbox div[data-baseweb="select"],
@@ -87,6 +95,7 @@ st.markdown(
         border-radius: 12px !important;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
+    
     .stButton button {
         background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
         color: white !important;
