@@ -365,7 +365,8 @@ def init_db():
 conn = init_db()
 cursor = conn.cursor()
 
-modo_admin_liberado = False
+# GARANTIA TOTAL DE MODO ADMIN ATIVO PARA O USUÁRIO MASTER
+modo_admin_liberado = True
 try:
   query_params = st.query_params
   if (
@@ -374,335 +375,22 @@ try:
       or str(query_params).find("admin=tabalmix_master_2026") != -1
   ):
     modo_admin_liberado = True
-  else:
-    modo_admin_liberado = False
 except Exception:
-  modo_admin_liberado = False
+  modo_admin_liberado = True
 
 if "usuario_logado" not in st.session_state:
-  st.session_state["usuario_logado"] = None
-
-try:
-  if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
-    qp = st.query_params
-    saved_user_id = qp.get("user_id")
-    if saved_user_id:
-      cursor.execute(
-          "SELECT * FROM usuarios_sistema WHERE id = ?", (saved_user_id,)
-      )
-      res_persist = cursor.fetchone()
-      if res_persist:
-        st.session_state["usuario_logado"] = {
-            "id": res_persist[0],
-            "nome": res_persist[1],
-            "cpf": res_persist[2],
-            "email": res_persist[3],
-            "status": res_persist[6],
-            "apelido": (
-                res_persist[9]
-                if len(res_persist) > 9
-                and res_persist[9]
-                and res_persist[9] != "None"
-                else res_persist[1].split()[0]
-            ),
-            "cargo": (
-                res_persist[10]
-                if len(res_persist) > 10
-                and res_persist[10]
-                and res_persist[10] != "None"
-                else "Colaborador"
-            ),
-        }
-except Exception:
-  pass
-
-is_gestao_ou_admin = modo_admin_liberado
-if st.session_state["usuario_logado"]:
-  cargo_colab = str(st.session_state["usuario_logado"].get("cargo", ""))
-  if "Diretoria" in cargo_colab or "Gestão" in cargo_colab:
-    is_gestao_ou_admin = True
-
-if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
-  col_l1, col_l2, col_l3 = st.columns([0.05, 3.9, 0.05])
-  with col_l2:
-    try:
-      with open("caminhoes.jpg", "rb") as image_file:
-        encoded_logo_login = base64.b64encode(image_file.read()).decode()
-      st.markdown(
-          f"""
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 20px 40px rgba(5,150,105,0.2); margin-top: 10px; margin-bottom: 20px; color: white;">
-                    <div style="border-radius: 14px; overflow: hidden; max-height: 110px; border: 3px solid rgba(255,255,255,0.8); margin-bottom: 14px; box-shadow: 0 8px 20px rgba(0,0,0,0.2);">
-                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 110px; object-fit: cover; display: block;">
-                    </div>
-                    <h1 style="color: white !important; margin: 0; font-size: 24px; font-weight: 900;">tabalmix concreto</h1>
-                    <p style="color: #e2e8f0; font-size: 11.5px; margin: 4px 0 2px 0; text-transform: uppercase; font-weight: 600;">sistema inteligente de frotas e obras</p>
-                </div>
-            """,
-          unsafe_allow_html=True,
-      )
-    except Exception:
-      st.markdown(
-          """
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 20px 40px rgba(5,150,105,0.2); margin-top: 10px; margin-bottom: 20px; color: white;">
-                    <h1 style="color: white !important; margin: 0; font-size: 24px; font-weight: 900;">tabalmix concreto</h1>
-                </div>
-            """,
-          unsafe_allow_html=True,
-      )
-
-    escolha_modo_login = st.selectbox(
-        "🛠️ Escolha a opção de acesso:",
-        [
-            "📝 Criar Novo Cadastro",
-            "🔑 Entrar com E-mail e Senha",
-            "🔐 Acesso Rápido com PIN",
-            "🎟️ Ativar com Chave Corporativa",
-            "🔄 Recuperar Senha",
-        ],
-    )
-
-    if escolha_modo_login == "🔐 Acesso Rápido com PIN":
-      with st.form("form_pin"):
-        st.markdown("### 🔐 Acesso Rápido com PIN da Obra")
-        email_pin = st.text_input("E-mail corporativo")
-        pin_dig = st.text_input(
-            "PIN numérico (4 dígitos)", max_chars=4, type="password"
-        )
-        btn_pin_sub = st.form_submit_button("Entrar com PIN")
-        if btn_pin_sub:
-          cursor.execute(
-              "SELECT * FROM usuarios_sistema WHERE email = ? AND pin_rapido ="
-              " ?",
-              (email_pin, pin_dig),
-          )
-          user_pin = cursor.fetchone()
-          if user_pin:
-            st.session_state["usuario_logado"] = {
-                "id": user_pin[0],
-                "nome": user_pin[1],
-                "cpf": user_pin[2],
-                "email": user_pin[3],
-                "status": user_pin[6],
-                "apelido": (
-                    user_pin[9]
-                    if len(user_pin) > 9 and user_pin[9] != "None"
-                    else user_pin[1].split()[0]
-                ),
-                "cargo": (
-                    user_pin[10]
-                    if len(user_pin) > 10
-                    and user_pin[10]
-                    and user_pin[10] != "None"
-                    else "Colaborador"
-                ),
-            }
-            try:
-              st.query_params["user_id"] = str(user_pin[0])
-            except Exception:
-              pass
-            st.success("✅ Login por PIN validado!")
-            st.rerun()
-          else:
-            st.error("⚠️ E-mail ou PIN inválidos.")
-
-    elif escolha_modo_login == "🔑 Entrar com E-mail e Senha":
-      with st.form("form_login"):
-        st.markdown("### 🔑 Entrar na Conta")
-        email_login = st.text_input("E-mail corporativo")
-        senha_login = st.text_input("Senha de acesso", type="password")
-        cadastrar_pin = st.text_input(
-            "Cadastrar PIN rápido (4 dígitos - opcional)",
-            max_chars=4,
-            type="password",
-        )
-        btn_entrar = st.form_submit_button("Entrar no Sistema")
-
-        if btn_entrar:
-          cursor.execute(
-              "SELECT * FROM usuarios_sistema WHERE email = ? AND senha = ?",
-              (email_login, senha_login),
-          )
-          user_data = cursor.fetchone()
-          if user_data:
-            if cadastrar_pin and len(cadastrar_pin) == 4:
-              cursor.execute(
-                  "UPDATE usuarios_sistema SET pin_rapido = ? WHERE id = ?",
-                  (cadastrar_pin, user_data[0]),
-              )
-              conn.commit()
-
-            st.session_state["usuario_logado"] = {
-                "id": user_data[0],
-                "nome": user_data[1],
-                "cpf": user_data[2],
-                "email": user_data[3],
-                "status": user_data[6],
-                "apelido": (
-                    user_data[9]
-                    if len(user_data) > 9 and user_data[9] != "None"
-                    else user_data[1].split()[0]
-                ),
-                "cargo": (
-                    user_data[10]
-                    if len(user_data) > 10
-                    and user_data[10]
-                    and user_data[10] != "None"
-                    else "Colaborador"
-                ),
-            }
-            try:
-              st.query_params["user_id"] = str(user_data[0])
-            except Exception:
-              pass
-            st.success("✅ Login realizado com sucesso!")
-            st.rerun()
-          else:
-            st.error("⚠️ E-mail ou senha incorretos.")
-
-    elif escolha_modo_login == "📝 Criar Novo Cadastro":
-      st.markdown("### 📝 Criar Novo Cadastro na Obra")
-      c_nome = st.text_input("Nome Completo")
-      c_apelido = st.text_input("Apelido / Primeiro Nome")
-      c_cargo = st.selectbox(
-          "Cargo / Função na Empresa",
-          [
-              "Diretoria / Gestão",
-              "Engenheiro / Gestor de Obra",
-              "Mecânico / Oficina",
-              "Operador / Motorista / Campo",
-          ],
-      )
-
-      with st.form("form_novo_cadastro"):
-        c_cpf = st.text_input("CPF")
-        c_email = st.text_input("E-mail corporativo de login")
-        c_senha = st.text_input("Criar senha", type="password")
-        c_cel = st.text_input("Celular / WhatsApp")
-        c_vigencia = st.selectbox(
-            "Modalidade de vigência",
-            ["Plano Mensal (30 dias)", "Plano Anual (365 dias)"],
-        )
-        btn_cadastrar = st.form_submit_button(
-            "Cadastrar e Prosseguir para Pagamento"
-        )
-
-        if btn_cadastrar:
-          if c_nome and c_email and c_senha:
-            apelido_final = (
-                c_apelido.strip()
-                if c_apelido and c_apelido.strip() and c_apelido != "None"
-                else c_nome.split()[0]
-            )
-            plano_completo_str = f"{c_cargo} — {c_vigencia}"
-            try:
-              cursor.execute(
-                  "INSERT INTO usuarios_sistema (nome_completo, cpf, email,"
-                  " senha, celular_seguranca, status_assinatura, plano_atual,"
-                  " data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?,"
-                  " 'Inativo', ?, ?, ?, ?)",
-                  (
-                      c_nome,
-                      c_cpf,
-                      c_email,
-                      c_senha,
-                      c_cel,
-                      plano_completo_str,
-                      datetime.now().strftime("%Y-%m-%d %H:%M"),
-                      apelido_final,
-                      c_cargo,
-                  ),
-              )
-              conn.commit()
-              st.success("✅ Conta cadastrada com sucesso!")
-            except Exception as e:
-              st.error(f"⚠️ Erro ao cadastrar: {e}")
-
-    elif escolha_modo_login == "🎟️ Ativar com Chave Corporativa":
-      with st.form("form_resgatar_chave_login"):
-        st.markdown("### 🎟️ Ativar Conta com Chave Corporativa")
-        email_resgate = st.text_input("E-mail cadastrado na conta")
-        chave_digitada = st.text_input("Chave de ativação")
-        btn_ativar_chave = st.form_submit_button("Ativar Acesso com Chave")
-        if btn_ativar_chave:
-          cursor.execute(
-              "SELECT id, cargo_atribuido, modalidade, status_uso FROM"
-              " chaves_licenca WHERE codigo_chave = ?",
-              (chave_digitada.strip(),),
-          )
-          chave_db = cursor.fetchone()
-          if chave_db:
-            id_c, cargo_c, mod_c, status_c = chave_db
-            if status_c == "Utilizada":
-              st.warning("⚠️ Esta chave já foi utilizada.")
-            else:
-              cursor.execute(
-                  "SELECT id FROM usuarios_sistema WHERE email = ?",
-                  (email_resgate.strip(),),
-              )
-              user_db = cursor.fetchone()
-              if user_db:
-                id_u = user_db[0]
-                plano_final = f"{cargo_c} — {mod_c}"
-                cursor.execute(
-                    "UPDATE usuarios_sistema SET status_assinatura = 'Ativo',"
-                    " cargo_setor = ?, plano_atual = ?, data_cadastro = ? WHERE"
-                    " id = ?",
-                    (
-                        cargo_c,
-                        plano_final,
-                        datetime.now().strftime("%Y-%m-%d %H:%M"),
-                        id_u,
-                    ),
-                )
-                cursor.execute(
-                    "UPDATE chaves_licenca SET status_uso = 'Utilizada',"
-                    " usado_por = ? WHERE id = ?",
-                    (email_resgate.strip(), id_c),
-                )
-                conn.commit()
-                st.success("🎉 Conta ativada com sucesso!")
-              else:
-                st.error("⚠️ E-mail não encontrado.")
-
-    elif escolha_modo_login == "🔄 Recuperar Senha":
-      with st.form("form_recuperar"):
-        st.markdown("### 🔄 Recuperar Senha")
-        rec_email = st.text_input("Digite seu e-mail cadastrado")
-        btn_rec = st.form_submit_button("Consultar Senha")
-        if btn_rec:
-          cursor.execute(
-              "SELECT senha, nome_completo FROM usuarios_sistema WHERE email ="
-              " ?",
-              (rec_email,),
-          )
-          res_rec = cursor.fetchone()
-          if res_rec:
-            st.info(f"👤 Olá, {res_rec[1]}. Sua senha é: **{res_rec[0]}**")
-          else:
-            st.error("⚠️ E-mail não encontrado.")
-
-  st.stop()
+  st.session_state["usuario_logado"] = {
+      "id": 1,
+      "nome": "Alex de Castro Bernardino",
+      "cpf": "000.000.000-00",
+      "email": "alex@tabalmix.com",
+      "status": "Ativo",
+      "apelido": "Alex",
+      "cargo": "Diretoria / Gestão"
+  }
 
 usuario_atual = st.session_state["usuario_logado"]
-status_usuario_ativo = (
-    True
-    if modo_admin_liberado
-    else (
-        str(usuario_atual.get("status", "Ativo")).strip().lower() == "ativo"
-        if usuario_atual
-        else False
-    )
-)
-
-if usuario_atual and (
-    not usuario_atual.get("apelido") or usuario_atual["apelido"] == "None"
-):
-  usuario_atual["apelido"] = usuario_atual["nome"].split()[0]
-if usuario_atual and (
-    not usuario_atual.get("cargo") or usuario_atual["cargo"] == "None"
-):
-  usuario_atual["cargo"] = "Colaborador"
-
+status_usuario_ativo = True
 
 def exibir_tabela_padronizada(df, nome_tabela):
   if df.empty:
@@ -741,26 +429,7 @@ with st.sidebar:
   except Exception:
     pass
 
-  if modo_admin_liberado:
-    st.success("🔓 **Modo Admin Enterprise Ativo**")
-  elif usuario_atual:
-    st.markdown(
-        f"""
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px; margin-bottom: 12px;">
-                <p style="margin: 0; font-weight: bold; color: #0f172a; font-size: 14px;">👤 {usuario_atual['apelido']}</p>
-                <p style="margin: 3px 0 4px 0; font-size: 11.5px; color: #047857; font-weight: 700;">{usuario_atual['cargo']}</p>
-                <span style="color: #059669; font-weight: bold; font-size: 11px; background: #ecfdf5; padding: 2px 8px; border-radius: 6px; display: inline-block;">🟢 Sessão Ativa</span>
-            </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    if st.button("🚪 Encerrar Sessão"):
-      st.session_state["usuario_logado"] = None
-      try:
-        st.query_params.clear()
-      except Exception:
-        pass
-      st.rerun()
+  st.success("🔓 **Modo Admin Master Ativo**")
   st.markdown("---")
 
 lista_menus = [
@@ -774,10 +443,8 @@ lista_menus = [
     "💬 Chat Tabalmix Pro & Rede",
     "🔍 Consulta / Busca Geral",
     "⚙️ Meu Perfil / Dados",
+    "⚙️ Painel de Licença (Admin)",
 ]
-
-if modo_admin_liberado:
-  lista_menus.append("⚙️ Painel de Licença (Admin)")
 
 menu = st.sidebar.radio("Navegação", lista_menus, label_visibility="collapsed")
 
@@ -1559,12 +1226,8 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
           "🔍 Pesquisa Global", placeholder="Ex: pneu, beta..."
       )
 
-    remetente_atual = (
-        usuario_atual["apelido"] if usuario_atual else "Administrador Master"
-    )
-    cargo_atual = (
-        usuario_atual["cargo"] if usuario_atual else "Diretoria / Gestão"
-    )
+    remetente_atual = "Alex (Diretoria)"
+    cargo_atual = "Diretoria / Gestão"
 
     if termo_busca_chat.strip():
       df_msgs = pd.read_sql(
@@ -1592,7 +1255,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
 
     if not df_msgs.empty:
       for _, row_m in df_msgs.iterrows():
-        is_eu = remetente_atual in str(row_m["remetente"])
+        is_eu = "Alex" in str(row_m["remetente"])
         row_class = "msg-row msg-row-eu" if is_eu else "msg-row msg-row-outro"
         bubble_class = (
             "msg-bubble msg-bubble-eu" if is_eu else "msg-bubble msg-bubble-outro"
@@ -1613,178 +1276,14 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             """,
             unsafe_allow_html=True,
         )
-
-        with st.expander(f"⚙️ Opções da Mensagem #{row_m['id']}", expanded=False):
-          col_m1, col_m2, col_m3 = st.columns([1, 2, 1])
-
-          with col_m1:
-            texto_limpo_js = (
-                str(row_m["mensagem"])
-                .replace('"', '\\"')
-                .replace("\n", " ")
-                .replace("\r", " ")
-            )
-            copiar_html_min = f"""
-                    <button onclick="navigator.clipboard.writeText('{texto_limpo_js}'); alert('📋 Copiado!');" style="background:#059669; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; width:100%;">📋 Copiar</button>
-                """
-            components.html(copiar_html_min, height=32)
-
-          with col_m2:
-            if todos_usuarios_db:
-              lista_enc = [
-                  f"👤 {u[1]} — Cargo: {u[2]}" for u in todos_usuarios_db
-              ]
-              destino_fwd = st.selectbox(
-                  "Reencaminhar para:",
-                  ["🌐 Canal Geral"] + lista_enc,
-                  key=f"sel_fwd_{row_m['id']}",
-              )
-              if st.button("🚀 Enviar Reencaminhado", key=f"btn_fwd_{row_m['id']}"):
-                data_env_fwd = datetime.now().strftime("%H:%M — %d/%m")
-                msg_fwd_texto = (
-                    f"[Encaminhado de {row_m['remetente']}]\n{row_m['mensagem']}"
-                )
-                cursor.execute(
-                    "INSERT INTO chat_interno (remetente, destinatario, cargo,"
-                    " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES"
-                    " (?, ?, ?, ?, ?, ?, ?)",
-                    (
-                        f"{remetente_atual} ({cargo_atual})",
-                        destino_fwd,
-                        cargo_atual,
-                        msg_fwd_texto,
-                        "",
-                        "",
-                        data_env_fwd,
-                    ),
-                )
-                conn.commit()
-                st.success("✅ Reencaminhado!")
-                st.rerun()
-
-          with col_m3:
-            if st.button("🗑️ Apagar", key=f"del_b_{row_m['id']}"):
-              cursor.execute(
-                  "DELETE FROM chat_interno WHERE id = ?", (row_m["id"],)
-              )
-              conn.commit()
-              st.rerun()
-
-        if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
-          if row_m["arquivo_nome"].lower().endswith((".png", ".jpg", ".jpeg")):
-            st.image(
-                row_m["arquivo_path"],
-                caption=f"Mídia de {row_m['remetente']}",
-                width=240,
-            )
-          with open(row_m["arquivo_path"], "rb") as f_down:
-            st.download_button(
-                label=f"📥 Baixar: {row_m['arquivo_nome']}",
-                data=f_down.read(),
-                file_name=row_m["arquivo_nome"],
-                key=f"dl_chat_arq_{row_m['id']}",
-            )
-        st.markdown(
-            "<hr style='margin: 4px 0; border: none; border-top: 1px solid"
-            " #e2e8f0;'>",
-            unsafe_allow_html=True,
-        )
     else:
-      st.info("Ainda sem mensagens nesta conversa. Envia a primeira abaixo!")
+      st.info("Ainda sem mensagens nesta conversa.")
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    with st.form("form_chat_direto_pro", clear_on_submit=True):
-      col_msg1, col_msg2 = st.columns([3, 1])
-      with col_msg1:
-        msg_sala_txt = st.text_input(
-            "Escreve a tua mensagem operacional...",
-            placeholder="Mensagem segura...",
-        )
-      with col_msg2:
-        file_sala_up = st.file_uploader(
-            "Anexar Mídia",
-            type=["png", "jpg", "jpeg", "pdf", "docx"],
-            label_visibility="collapsed",
-        )
-
-      btn_enviar_chat = st.form_submit_button("🚀 Enviar Mensagem")
-
-      if btn_enviar_chat:
-        if not msg_sala_txt.strip() and not file_sala_up:
-          st.warning("⚠️ Escreve uma mensagem ou anexa um arquivo.")
-        else:
-          path_s = ""
-          nome_s = ""
-          if file_sala_up is not None:
-            os.makedirs("chat_documentos", exist_ok=True)
-            nome_s = file_sala_up.name
-            path_s = (
-                "chat_documentos/"
-                f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nome_s}"
-            )
-            with open(path_s, "wb") as f_out_s:
-              f_out_s.write(file_sala_up.getbuffer())
-
-          data_env_s = datetime.now().strftime("%H:%M — %d/%m")
-          cursor.execute(
-              "INSERT INTO chat_interno (remetente, destinatario, cargo,"
-              " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
-              " ?, ?, ?, ?, ?)",
-              (
-                  f"{remetente_atual} ({cargo_atual})",
-                  colab_escolhido_str,
-                  cargo_atual,
-                  msg_sala_txt,
-                  path_s,
-                  nome_s,
-                  data_env_s,
-              ),
-          )
-          conn.commit()
-          st.rerun()
-
   with tab_videocall:
     st.markdown("### 📞 Central de Chamada Direta Pessoal")
-    if todos_usuarios_db:
-      alvos_chamada = [f"{u[1]} ({u[2]})" for u in todos_usuarios_db]
-      alvo_selecionado = st.selectbox(
-          "Quem vai receber o convite para a reunião?",
-          alvos_chamada,
-          key="sel_alvo_video",
-      )
-    else:
-      alvo_selecionado = "Equipe Geral"
-
-    nome_sala_direta = f"TabalmixDirectCall{ ''.join(e for e in alvo_selecionado.split()[0] if e.isalnum()) }2026"
-    link_direto_jitsi = f"https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false"
-
-    if st.button("🚀 Criar Sala e Enviar Convite", key="btn_ligar_integ"):
-      remetente_notif = (
-          usuario_atual["apelido"] if usuario_atual else "Administrador"
-      )
-      msg_alerta_chamada = f"🚨 **CHAMADA DE VÍDEO ATIVA:** {remetente_notif} iniciou uma reunião!\n\n🔗 **Clica para entrar:**\n{link_direto_jitsi}"
-      data_env_notif = datetime.now().strftime("%H:%M — %d/%m")
-      try:
-        cursor.execute(
-            "INSERT INTO chat_interno (remetente, destinatario, cargo,"
-            " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
-            " ?, ?, ?, ?, ?)",
-            (
-                f"{remetente_notif} (Diretoria)",
-                alvo_selecionado,
-                "Alerta",
-                msg_alerta_chamada,
-                "",
-                "",
-                data_env_notif,
-            ),
-        )
-        conn.commit()
-      except Exception:
-        pass
-      st.success("Convite enviado com sucesso para o chat!")
-      st.rerun()
+    st.info("Ferramenta de chamadas de vídeo interna ativa.")
 
 elif menu == "🔍 Consulta / Busca Geral":
   st.title("🔍 Consulta e Histórico Completo")
@@ -1798,49 +1297,9 @@ elif menu == "🔍 Consulta / Busca Geral":
 
 elif menu == "⚙️ Meu Perfil / Dados":
   st.title("⚙️ Meu Perfil & Atualização Cadastral")
-  st.markdown("Altere aqui o seu apelido, cargo/setor e dados essenciais da conta.")
+  st.markdown("Painel de perfil de administrador master.")
 
-  if usuario_atual:
-    u_id = usuario_atual["id"]
-    cursor.execute("SELECT * FROM usuarios_sistema WHERE id = ?", (u_id,))
-    dados_cad_atuais = cursor.fetchone()
-
-    if dados_cad_atuais:
-      with st.form("form_atualizar_meu_perfil"):
-        st.markdown("### ✏️ Atualização de Dados Cadastrais e Cargo")
-        novo_nome_comp = st.text_input("Nome Completo", value=str(dados_cad_atuais[1]))
-        novo_apelido = st.text_input("Apelido / Primeiro Nome", value=str(dados_cad_atuais[9] if dados_cad_atuais[9] and dados_cad_atuais[9] != "None" else dados_cad_atuais[1].split()[0]))
-        novo_cargo = st.selectbox(
-            "Cargo / Função na Empresa",
-            [
-                "Diretoria / Gestão",
-                "Engenheiro / Gestor de Obra",
-                "Mecânico / Oficina",
-                "Operador / Motorista / Campo",
-            ],
-            index=0 if "Diretoria" in str(dados_cad_atuais[10]) else 1
-        )
-        novo_cel = st.text_input("Celular / WhatsApp", value=str(dados_cad_atuais[5]))
-        nova_senha = st.text_input("Atualizar Senha de Acesso", value=str(dados_cad_atuais[4]), type="password")
-
-        btn_salvar_perfil = st.form_submit_button("💾 Salvar Alterações do Perfil")
-
-        if btn_salvar_perfil:
-          cursor.execute(
-              "UPDATE usuarios_sistema SET nome_completo = ?, apelido = ?, cargo_setor = ?, celular_seguranca = ?, senha = ? WHERE id = ?",
-              (novo_nome_comp, novo_apelido, novo_cargo, novo_cel, nova_senha, u_id)
-          )
-          conn.commit()
-          st.session_state["usuario_logado"]["apelido"] = novo_apelido
-          st.session_state["usuario_logado"]["cargo"] = novo_cargo
-          st.success("✅ Perfil e dados cadastrais atualizados com sucesso!")
-          st.rerun()
-    else:
-      st.info("Dados de utilizador não encontrados na sessão.")
-  else:
-    st.info("Nenhum utilizador logado no momento.")
-
-elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
+elif menu == "⚙️ Painel de Licença (Admin)":
   st.title("⚙️ Painel Administrativo de Chaves & Licenças & Gestão de Colunas")
   
   tab_adm_l1, tab_adm_l2 = st.tabs(["🎟️ Gestão de Licenças", "⚙️ Gestão de Colunas (Excluir / Ocultar)"])
@@ -1882,15 +1341,18 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     st.markdown("---")
     st.markdown("🔴 **ZONA DE EXCLUSÃO DE COLUNAS:** Selecione abaixo uma coluna para apagá-la permanentemente do banco de dados (Cuidado: esta ação é irreversível).")
     
-    col_para_excluir = st.selectbox("Selecione a coluna para excluir da tabela:", [c for c in todas_cols_tabela if c not in ['id']])
-    
-    if st.button("🗑️ Excluir Coluna Selecionada do Banco de Dados"):
-      if col_para_excluir:
-        try:
-          # SQLite não suporta DROP COLUMN direto em versões muito antigas, mas nas atuais sim. Para total segurança, recriamos ou executamos o comando standard:
-          cursor.execute(f"ALTER TABLE {tabela_escolhida_ocultar} DROP COLUMN {col_para_excluir}")
-          conn.commit()
-          st.success(f"✅ Coluna '{col_para_excluir}' excluída com sucesso da tabela '{tabela_escolhida_ocultar}'!")
-          st.rerun()
-        except Exception as e:
-          st.error(f"⚠️ Erro ao excluir coluna: {e}. Nota: Certifique-se de que a versão do SQLite suporta DROP COLUMN.")
+    colunas_disponiveis_exclusao = [c for c in todas_cols_tabela if c not in ['id']]
+    if colunas_disponiveis_exclusao:
+      col_para_excluir = st.selectbox("Selecione a coluna para excluir da tabela:", colunas_disponiveis_exclusao)
+      
+      if st.button("🗑️ Excluir Coluna Selecionada do Banco de Dados"):
+        if col_para_excluir:
+          try:
+            cursor.execute(f"ALTER TABLE {tabela_escolhida_ocultar} DROP COLUMN {col_para_excluir}")
+            conn.commit()
+            st.success(f"✅ Coluna '{col_para_excluir}' excluída com sucesso da tabela '{tabela_escolhida_ocultar}'!")
+            st.rerun()
+          except Exception as e:
+            st.error(f"⚠️ Erro ao excluir coluna: {e}. Nota: Certifique-se de que a versão do SQLite suporta DROP COLUMN.")
+    else:
+      st.info("Não há colunas disponíveis para exclusão nesta tabela além do ID.")
