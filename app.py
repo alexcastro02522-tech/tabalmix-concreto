@@ -769,6 +769,163 @@ if menu == "📊 Visão Geral":
   if not df_veiculos.empty:
     exibir_tabela_padronizada(df_veiculos, "veiculos")
 
+elif menu == "🏗️ Mobilização / Desmobilização":
+  st.title("🏗️ Gestão de Mobilização e Desmobilização de Obras")
+  st.markdown(
+      "Registe novas movimentações ou edite os registos existentes informando"
+      " sempre o motivo da alteração."
+  )
+
+  tab_cad_mob, tab_edit_mob = st.tabs([
+      "➕ Registar Nova Movimentação",
+      "✏️ Editar Registos & Histórico",
+  ])
+
+  with tab_cad_mob:
+    with st.form("form_mob_novo"):
+      c1, c2 = st.columns(2)
+      with c1:
+        eq_mob = st.text_input("Equipamento / Tag (ex: EQ-001)")
+        tipo_mov = st.selectbox(
+            "Tipo de Movimento",
+            [
+                "Mobilização (Envio para Obra)",
+                "Desmobilização (Retorno)",
+                "Remanejamento",
+            ],
+        )
+        destino = st.text_input("Obra / Destino-Origem")
+      with c2:
+        resp = st.text_input("Responsável / Motorista")
+        dt_mob = st.date_input("Data da Ocorrência")
+        motivo_inicial = st.text_input(
+            "Motivo / Condição Inicial (Ex: Demanda de concreto na Obra X)"
+        )
+        obs = st.text_area("Observações operacionais")
+
+      btn_cad_mob = st.form_submit_button("💾 Salvar Nova Movimentação")
+      if btn_cad_mob:
+        if eq_mob and destino:
+          hist_inicial = f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Criado por {resp if resp else 'Operacional'} — Motivo inicial: {motivo_inicial}"
+          cursor.execute(
+              "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
+              " destino_origem, responsavel, data, motivo_condicao, observacao,"
+              " foto_checklist, historico_edicoes) VALUES (?, ?, ?, ?, ?, ?, ?,"
+              " '', ?)",
+              (
+                  str(eq_mob).upper(),
+                  tipo_mov,
+                  destino,
+                  resp,
+                  str(dt_mob),
+                  motivo_inicial,
+                  obs,
+                  hist_inicial,
+              ),
+          )
+          conn.commit()
+          st.success(
+              "✅ Movimentação de mobilização registada com sucesso na base de"
+              " dados!"
+          )
+          st.rerun()
+        else:
+          st.error("⚠️ Preencha os campos obrigatórios (Equipamento e Destino).")
+
+  with tab_edit_mob:
+    st.markdown("### ✏️ Editar Informações e Registar Motivo da Alteração")
+    try:
+      df_mobs_edit = pd.read_sql(
+          "SELECT * FROM mobilizacoes ORDER BY id DESC", conn
+      )
+    except Exception:
+      df_mobs_edit = pd.DataFrame()
+
+    if not df_mobs_edit.empty:
+      exibir_tabela_padronizada(df_mobs_edit, "mobilizacoes")
+
+      id_mob_sel = st.selectbox(
+          "Selecione o ID da mobilização para editar:",
+          df_mobs_edit["id"].tolist(),
+      )
+      reg_atual = df_mobs_edit[df_mobs_edit["id"] == id_mob_sel].iloc[0]
+
+      with st.form(f"form_editar_mob_{id_mob_sel}"):
+        st.markdown(f"#### Editando Registo ID #{id_mob_sel}")
+        e_eq = st.text_input("Equipamento / Tag", value=str(reg_atual["equipamento"]))
+        e_tipo = st.selectbox(
+            "Tipo de Movimento",
+            [
+                "Mobilização (Envio para Obra)",
+                "Desmobilização (Retorno)",
+                "Remanejamento",
+            ],
+            index=(
+                0
+                if "Mobilização" in str(reg_atual["tipo_movimento"])
+                else (
+                    1
+                    if "Desmobilização" in str(reg_atual["tipo_movimento"])
+                    else 2
+                )
+            ),
+        )
+        e_dest = st.text_input("Obra / Destino", value=str(reg_atual["destino_origem"]))
+        e_resp = st.text_input("Responsável", value=str(reg_atual["responsavel"]))
+        e_obs = st.text_area("Observações", value=str(reg_atual["observacao"]))
+
+        st.markdown("---")
+        st.markdown(
+            "🔴 **OBRIGATÓRIO:** Informe abaixo o motivo exato da alteração (Ex:"
+            " motorista desistiu, troca de última hora, alteração de destino):"
+        )
+        motivo_alteracao = st.text_input(
+            "Motivo da Edição / Atualização",
+            placeholder="Ex: Motorista recusou viagem por motivo pessoal...",
+        )
+
+        btn_salvar_edicao = st.form_submit_button(
+            "💾 Atualizar Registo e Salvar Histórico"
+        )
+
+        if btn_salvar_edicao:
+          if not motivo_alteracao.strip():
+            st.error(
+                "⚠️ O campo 'Motivo da Edição' é obrigatório para guardar na"
+                " base de dados!"
+            )
+          else:
+            historico_antigo = (
+                str(reg_atual["historico_edicoes"])
+                if reg_atual["historico_edicoes"]
+                else ""
+            )
+            novo_historico_item = f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Editado. Motivo: {motivo_alteracao}"
+            historico_atualizado = historico_antigo + novo_historico_item
+
+            cursor.execute(
+                "UPDATE mobilizacoes SET equipamento = ?, tipo_movimento = ?,"
+                " destino_origem = ?, responsavel = ?, observacao = ?,"
+                " historico_edicoes = ? WHERE id = ?",
+                (
+                    e_eq.upper(),
+                    e_tipo,
+                    e_dest,
+                    e_resp,
+                    e_obs,
+                    historico_atualizado,
+                    int(id_mob_sel),
+                ),
+            )
+            conn.commit()
+            st.success(
+                "✅ Registo atualizado com sucesso e motivo guardado no"
+                " histórico do banco de dados!"
+            )
+            st.rerun()
+    else:
+      st.info("Nenhuma mobilização registada para editar.")
+
 elif menu == "💬 Chat Tabalmix Pro & Rede":
   st.markdown(
       """
@@ -857,7 +1014,6 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         usuario_atual["cargo"] if usuario_atual else "Diretoria / Gestão"
     )
 
-    # CORREÇÃO CRUCIAL DA CONSULTA: AGORA MOSTRA MENSAGENS DO CANAL GERAL OU DIRETAS SEM FALHAR
     if termo_busca_chat.strip():
       df_msgs = pd.read_sql(
           "SELECT * FROM chat_interno WHERE mensagem LIKE ? ORDER BY id ASC LIMIT"
@@ -891,7 +1047,6 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         )
         cor_autor = "#d1fae5" if is_eu else "#047857"
 
-        # BALÃO DE MENSAGEM LIMPO E ELEGANTE COM OS TRÊS PONTINHOS NO CABEÇALHO
         st.markdown(
             f"""
             <div class="{row_class}">
@@ -907,7 +1062,6 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             unsafe_allow_html=True,
         )
 
-        # MENU COMPACTO UNIFICADO (EXPANDER LIMPO COM AS 3 OPÇÕES EM LINHA)
         with st.expander(f"⚙️ Opções da Mensagem #{row_m['id']}", expanded=False):
           col_m1, col_m2, col_m3 = st.columns([1, 2, 1])
 
@@ -987,48 +1141,6 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
       st.info("Ainda sem mensagens nesta conversa. Envia a primeira abaixo!")
 
     st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown(
-        "<p style='font-size: 11.5px; font-weight: 700; color: #475569;"
-        " margin: 10px 0 4px 0;'>⚡ Atalhos Rápidos Operacionais:</p>",
-        unsafe_allow_html=True,
-    )
-    col_at1, col_at2, col_at3, col_at4 = st.columns(4)
-    msg_atalho_escolhida = None
-    with col_at1:
-      if st.button("🚚 Betoneira a caminho"):
-        msg_atalho_escolhida = "🚚 Betoneira a caminho da obra."
-    with col_at2:
-      if st.button("📍 Cheguei à obra"):
-        msg_atalho_escolhida = "📍 Cheguei ao local da obra."
-    with col_at3:
-      if st.button("⚠️ Paragem imprevista"):
-        msg_atalho_escolhida = (
-            "⚠️ Atenção: paragem imprevista ou atraso operacional."
-        )
-    with col_at4:
-      if st.button("✅ Descarga concluída"):
-        msg_atalho_escolhida = (
-            "✅ Descarga de concreto concluída com sucesso."
-        )
-
-    if msg_atalho_escolhida:
-      data_env_s = datetime.now().strftime("%H:%M — %d/%m")
-      cursor.execute(
-          "INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem,"
-          " arquivo_path, arquivo_nome, data_envio) VALUES (?, ?, ?, ?, ?, ?, ?)",
-          (
-              f"{remetente_atual} ({cargo_atual})",
-              colab_escolhido_str,
-              cargo_atual,
-              msg_atalho_escolhida,
-              "",
-              "",
-              data_env_s,
-          ),
-      )
-      conn.commit()
-      st.rerun()
 
     with st.form("form_chat_direto_pro", clear_on_submit=True):
       col_msg1, col_msg2 = st.columns([3, 1])
@@ -1133,12 +1245,6 @@ elif menu == "⛽ Abastecimentos & Combustível":
   df_c = pd.read_sql("SELECT * FROM combustivel", conn)
   if not df_c.empty:
     exibir_tabela_padronizada(df_c, "combustivel")
-
-elif menu == "🏗️ Mobilização / Desmobilização":
-  st.title("🏗️ Mobilização e Desmobilização de Obras")
-  df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
-  if not df_mobs.empty:
-    exibir_tabela_padronizada(df_mobs, "mobilizacoes")
 
 elif menu == "🛠️ Ordens de Serviço (OS)":
   st.title("🛠️ Gestão Unificada de Ordens de Serviço (OS)")
