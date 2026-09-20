@@ -4,27 +4,20 @@ import csv
 import glob
 import io
 import os
-import random
 import sqlite3
-import string
 import urllib.parse
 import mercadopago
 import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import streamlit as st
-import streamlit.components.v1 as components
 
 # CONFIGURAÇÃO DO MERCADO PAGO (Token Oficial de Produção Integrado)
 MERCADO_PAGO_ACCESS_TOKEN = (
     "APP_USR-7480302560366070-091611-1118388bbc787e8f88ea1da583096dbc-2919829212"
 )
-try:
-  sdk_mp = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
-except Exception:
-  sdk_mp = None
 
-# Configuração da Página
+# Configuração da Página com Menu Fixo Expandido
 st.set_page_config(
     page_title="Tabalmix Concreto - Enterprise Fleet & Operations Pro X",
     page_icon="🚀",
@@ -32,7 +25,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE
+# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE ORIGINAL
 st.markdown(
     """
     <style>
@@ -42,13 +35,14 @@ st.markdown(
         background: transparent !important;
     }
     .block-container {
-        padding-top: 1rem !important;
+        padding-top: 2rem !important;
         padding-bottom: 3rem !important;
         max-width: 100% !important;
     }
+    
     [data-testid="stSidebar"] {
-        min-width: 310px !important;
-        width: 310px !important;
+        min-width: 320px !important;
+        width: 320px !important;
         background: #f8fafc !important;
         border-right: 1px solid #e2e8f0;
     }
@@ -67,9 +61,24 @@ st.markdown(
         letter-spacing: -0.8px;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
-    label, div[data-baseweb="input"] label, .stTextInput label, .stNumberInput label, .stSelectbox label, .stTextArea label {
-        color: #0f172a !important;
-        font-weight: 700 !important;
+    [data-testid="stSidebar"] .stRadio label {
+        color: #334155 !important;
+        font-weight: 600;
+        font-size: 13.5px;
+        padding: 11px 16px;
+        border-radius: 12px;
+        background: #ffffff !important;
+        margin-bottom: 8px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    [data-testid="stSidebar"] .stRadio label:hover {
+        background: #ecfdf5 !important;
+        border-color: #059669;
+        color: #047857 !important;
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(5,150,105,0.08);
     }
     div[data-testid="stMetric"] {
         background: #ffffff !important;
@@ -78,17 +87,52 @@ st.markdown(
         padding: 18px !important;
         border-radius: 16px !important;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
+        transition: transform 0.2s ease;
     }
-    div.stTextInput input, 
-    div.stNumberInput input, 
-    div.stSelectbox div[data-baseweb="select"],
-    div.stTextArea textarea {
+    div[data-testid="stMetric"]:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08);
+    }
+    div[data-testid="stMetric"] label {
+        color: #64748b !important;
+        font-weight: 700 !important;
+        font-size: 11px !important;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    div[data-testid="stMetric"] div[data-testid="stMetricValue"] {
+        color: #0f172a !important;
+        font-size: 26px !important;
+        font-weight: 800 !important;
+    }
+    div.stTextInput > div > div > input, 
+    div.stNumberInput > div > div > input, 
+    div.stSelectbox > div > div > div,
+    div.stTextArea > div > div > textarea,
+    div[data-baseweb="select"] > div {
         background-color: #ffffff !important;
         color: #0f172a !important;
-        -webkit-text-fill-color: #0f172a !important;
         border: 1px solid #cbd5e1 !important;
         border-radius: 12px !important;
+        min-height: 44px !important;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
+    }
+    div.stTextInput > div > div > input:focus, 
+    div.stNumberInput > div > div > input:focus,
+    div.stTextArea > div > div > textarea:focus {
+        border-color: #059669 !important;
+        box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.15) !important;
+    }
+    div[data-baseweb="menu"], ul[data-baseweb="menu"], li[data-baseweb="option"] {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+    }
+    div[data-testid="stDataFrame"], .stDataFrame {
+        background-color: #ffffff !important;
+        border-radius: 16px;
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 10px 30px -5px rgba(0,0,0,0.04);
     }
     .stButton button {
         background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
@@ -101,42 +145,34 @@ st.markdown(
         transition: all 0.25s ease-in-out;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
+    .stButton button:hover {
+        background: linear-gradient(135deg, #047857 100%, #065f46 100%) !important;
+        box-shadow: 0 8px 22px rgba(5, 150, 105, 0.45);
+        transform: translateY(-2px);
+    }
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: #e2e8f0;
+        padding: 6px;
+        border-radius: 14px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 40px;
+        border-radius: 10px;
+        color: #334155;
+        font-weight: 600;
+        font-size: 13px;
+        border: none !important;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #ffffff !important;
+        color: #047857 !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    }
     </style>
 """,
     unsafe_allow_html=True,
 )
-
-
-def gerar_excel_formatado(dataframe, nome_aba="Relatório Tabalmix"):
-  output = io.BytesIO()
-  with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-    dataframe.to_excel(writer, sheet_name=nome_aba, index=False)
-    workbook = writer.book
-    worksheet = writer.sheets[nome_aba]
-
-    header_format = workbook.add_format({
-        "bold": True,
-        "text_wrap": True,
-        "fg_color": "#047857",
-        "font_color": "white",
-        "border": 1,
-        "align": "center",
-        "valign": "middle",
-    })
-    cell_format = workbook.add_format({
-        "border": 1,
-        "align": "left",
-        "valign": "middle",
-        "text_wrap": True,
-    })
-
-    for col_num, value in enumerate(dataframe.columns.values):
-      worksheet.write(0, col_num, str(value).upper(), header_format)
-      max_len = max(dataframe[value].astype(str).map(len).max(), len(str(value))) + 4
-      worksheet.set_column(col_num, col_num, max(max_len, 15), cell_format)
-
-  output.seek(0)
-  return output
 
 
 def gerar_pdf_relatorio(titulo, dataframe):
@@ -222,22 +258,23 @@ def init_db():
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS veiculos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            tag_prefixo TEXT, categoria_equipamento TEXT,
+            tag_prefixo TEXT, categoria_equipamento TEXT, tipo_equipamento TEXT,
             marca TEXT, modelo TEXT, ano INTEGER, chassi TEXT, renavam TEXT,
             placa TEXT, crv TEXT, cor TEXT, combustivel TEXT, empresa TEXT,
-            horimetro_km INTEGER, status TEXT, historico_edicoes TEXT
+            operador_condutor TEXT, horimetro_km INTEGER, status TEXT, data_entrada TEXT, observacoes TEXT
         )
     """)
 
   for col_sql in [
       "ALTER TABLE veiculos ADD COLUMN categoria_equipamento TEXT",
+      "ALTER TABLE veiculos ADD COLUMN tipo_equipamento TEXT",
       "ALTER TABLE veiculos ADD COLUMN chassi TEXT",
       "ALTER TABLE veiculos ADD COLUMN renavam TEXT",
       "ALTER TABLE veiculos ADD COLUMN crv TEXT",
       "ALTER TABLE veiculos ADD COLUMN cor TEXT",
       "ALTER TABLE veiculos ADD COLUMN combustivel TEXT",
       "ALTER TABLE veiculos ADD COLUMN empresa TEXT",
-      "ALTER TABLE veiculos ADD COLUMN historico_edicoes TEXT",
+      "ALTER TABLE veiculos ADD COLUMN operador_condutor TEXT",
   ]:
     try:
       cursor.execute(col_sql)
@@ -271,14 +308,10 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             equipamento TEXT, tipo_movimento TEXT, destino_origem TEXT,
             responsavel TEXT, data TEXT, horimetro_km_mov TEXT,
-            motivo_condicao TEXT, observacao TEXT, foto_checklist TEXT,
-            historico_edicoes TEXT
+            motivo_condicao TEXT, observacao TEXT, foto_checklist TEXT
         )
     """)
-  for col_mob in [
-      "ALTER TABLE mobilizacoes ADD COLUMN foto_checklist TEXT",
-      "ALTER TABLE mobilizacoes ADD COLUMN historico_edicoes TEXT",
-  ]:
+  for col_mob in ["ALTER TABLE mobilizacoes ADD COLUMN foto_checklist TEXT"]:
     try:
       cursor.execute(col_mob)
     except Exception:
@@ -311,14 +344,9 @@ def init_db():
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS config_colunas (
             tabela TEXT PRIMARY KEY,
-            colunas_permitidas TEXT
+            ordem_colunas TEXT
         )
     """)
-  try:
-    cursor.execute("ALTER TABLE config_colunas ADD COLUMN colunas_permitidas TEXT")
-  except Exception:
-    pass
-
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_interno (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -338,14 +366,21 @@ def init_db():
       pass
 
   cursor.execute("""
-        CREATE TABLE IF NOT EXISTS chaves_licenca (
+        CREATE TABLE IF NOT EXISTS alertas_sos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            codigo_chave TEXT UNIQUE,
-            cargo_atribuido TEXT,
-            modalidade TEXT,
-            status_uso TEXT,
-            usado_por TEXT,
-            data_criacao TEXT
+            remetente TEXT,
+            equipamento TEXT,
+            motivo TEXT,
+            data_alerta TEXT,
+            status TEXT
+        )
+    """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS avisos_fixados (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            autor TEXT,
+            mensagem TEXT,
+            data_fixacao TEXT
         )
     """)
 
@@ -369,36 +404,311 @@ def init_db():
 conn = init_db()
 cursor = conn.cursor()
 
+modo_admin_liberado = False
+try:
+  query_params = st.query_params
+  if (
+      query_params.get("admin") == "1"
+      or query_params.get("admin") == ["1"]
+      or str(query_params).find("admin=1") != -1
+  ):
+    modo_admin_liberado = True
+except Exception:
+  pass
+
 if "usuario_logado" not in st.session_state:
-  st.session_state["usuario_logado"] = {
-      "id": 1,
-      "nome": "Alex de Castro Bernardino",
-      "cpf": "000.000.000-00",
-      "email": "alex@tabalmix.com",
-      "status": "Ativo",
-      "apelido": "Alex",
-      "cargo": "Diretoria / Gestão"
-  }
+  st.session_state["usuario_logado"] = None
+
+# PERSISTÊNCIA INTELIGENTE DE SESSÃO NA OBRA
+try:
+  if st.session_state["usuario_logado"] is None:
+    qp = st.query_params
+    saved_user_id = qp.get("user_id")
+    if saved_user_id:
+      cursor.execute(
+          "SELECT * FROM usuarios_sistema WHERE id = ?", (saved_user_id,)
+      )
+      res_persist = cursor.fetchone()
+      if res_persist:
+        st.session_state["usuario_logado"] = {
+            "id": res_persist[0],
+            "nome": res_persist[1],
+            "cpf": res_persist[2],
+            "email": res_persist[3],
+            "status": res_persist[6],
+            "apelido": (
+                res_persist[9]
+                if len(res_persist) > 9
+                and res_persist[9]
+                and res_persist[9] != "None"
+                else res_persist[1].split()[0]
+            ),
+            "cargo": (
+                res_persist[10]
+                if len(res_persist) > 10
+                and res_persist[10]
+                and res_persist[10] != "None"
+                else "Colaborador"
+            ),
+        }
+except Exception:
+  pass
+
+if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
+  col_l1, col_l2, col_l3 = st.columns([0.15, 3.7, 0.15])
+  with col_l2:
+    try:
+      with open("caminhoes.jpg", "rb") as image_file:
+        encoded_logo_login = base64.b64encode(image_file.read()).decode()
+      st.markdown(
+          f"""
+                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 24px; padding: 35px; text-align: center; box-shadow: 0 25px 50px rgba(5,150,105,0.25); margin-top: 15px; margin-bottom: 25px; color: white;">
+                    <div style="border-radius: 16px; overflow: hidden; max-height: 130px; border: 3px solid rgba(255,255,255,0.8); margin-bottom: 18px; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 125px; object-fit: cover; display: block;">
+                    </div>
+                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; padding: 4px 18px; margin-bottom: 12px;">
+                        <span style="color: white; font-size: 11px; font-weight: 800; letter-spacing: 1.5px;">🛡️ PLATAFORMA ENTERPRISE CERTIFICADA</span>
+                    </div>
+                    <h1 style="color: white !important; margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.8px;">tabalmix concreto</h1>
+                    <p style="color: #e2e8f0; font-size: 12.5px; margin: 6px 0 2px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">sistema inteligente de frotas, obras e oficina pro</p>
+                    <p style="color: #cbd5e1; font-size: 10px; margin: 0; font-style: italic;">powered by castro tech</p>
+                </div>
+            """,
+          unsafe_allow_html=True,
+      )
+    except Exception:
+      st.markdown(
+          """
+                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 24px; padding: 35px; text-align: center; box-shadow: 0 25px 50px rgba(5,150,105,0.25); margin-top: 15px; margin-bottom: 25px; color: white;">
+                    <div style="display: inline-block; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 20px; padding: 4px 18px; margin-bottom: 12px;">
+                        <span style="color: white; font-size: 11px; font-weight: 800; letter-spacing: 1.5px;">🛡️ PLATAFORMA ENTERPRISE CERTIFICADA</span>
+                    </div>
+                    <h1 style="color: white !important; margin: 0; font-size: 28px; font-weight: 900; letter-spacing: -0.8px;">tabalmix concreto</h1>
+                    <p style="color: #e2e8f0; font-size: 12.5px; margin: 6px 0 2px 0; text-transform: uppercase; letter-spacing: 1.5px; font-weight: 600;">sistema inteligente de frotas, obras e oficina pro</p>
+                    <p style="color: #cbd5e1; font-size: 10px; margin: 0; font-style: italic;">powered by castro tech</p>
+                </div>
+            """,
+          unsafe_allow_html=True,
+      )
+
+    tab_login, tab_cadastro, tab_recuperar, tab_pin = st.tabs([
+        "🔑 entrar na conta",
+        "📝 cadastrar colaborador",
+        "🔄 recuperar senha",
+        "🔐 pin rápido (obra)",
+    ])
+
+    with tab_login:
+      with st.form("form_login"):
+        email_login = st.text_input("e-mail corporativo")
+        senha_login = st.text_input("senha de acesso", type="password")
+        cadastrar_pin = st.text_input(
+            "cadastrar pin rápido (4 dígitos - opcional)",
+            max_chars=4,
+            type="password",
+        )
+        btn_entrar = st.form_submit_button("entrar no sistema")
+
+        if btn_entrar:
+          cursor.execute(
+              "SELECT * FROM usuarios_sistema WHERE email = ? AND senha = ?",
+              (email_login, senha_login),
+          )
+          user_data = cursor.fetchone()
+          if user_data:
+            if cadastrar_pin and len(cadastrar_pin) == 4:
+              cursor.execute(
+                  "UPDATE usuarios_sistema SET pin_rapido = ? WHERE id = ?",
+                  (cadastrar_pin, user_data[0]),
+              )
+              conn.commit()
+
+            st.session_state["usuario_logado"] = {
+                "id": user_data[0],
+                "nome": user_data[1],
+                "cpf": user_data[2],
+                "email": user_data[3],
+                "status": user_data[6],
+                "apelido": (
+                    user_data[9]
+                    if len(user_data) > 9 and user_data[9] and user_data[9] != "None"
+                    else user_data[1].split()[0]
+                ),
+                "cargo": (
+                    user_data[10]
+                    if len(user_data) > 10
+                    and user_data[10]
+                    and user_data[10] != "None"
+                    else "Colaborador"
+                ),
+            }
+            try:
+              st.query_params["user_id"] = str(user_data[0])
+            except Exception:
+              pass
+            st.success("✅ login realizado com sucesso!")
+            st.rerun()
+          else:
+            st.error("⚠️ e-mail ou senha incorretos.")
+
+    with tab_cadastro:
+      with st.form("form_novo_cadastro"):
+        c_nome = st.text_input("nome completo")
+        c_apelido = st.text_input("primeiro nome ou apelido de guerra")
+        c_cargo = st.selectbox(
+            "cargo / plano na empresa",
+            [
+                "Diretoria / Gestão",
+                "Segurança do Trabalho (SST)",
+                "Engenheiro / Gestor de Obra",
+                "Mecânico / Oficina",
+                "Operador / Motorista",
+                "Servente / Pedreiro / Campo",
+            ],
+        )
+        c_cpf = st.text_input("cpf")
+        c_email = st.text_input("e-mail corporativo de login")
+        c_senha = st.text_input("criar senha", type="password")
+        c_cel = st.text_input("celular / whatsapp")
+        btn_cadastrar = st.form_submit_button("cadastrar e solicitar liberação")
+
+        if btn_cadastrar:
+          if c_nome and c_email and c_senha:
+            apelido_final = (
+                c_apelido.strip()
+                if c_apelido and c_apelido.strip() and c_apelido != "None"
+                else c_nome.split()[0]
+            )
+            try:
+              cursor.execute(
+                  "INSERT INTO usuarios_sistema (nome_completo, cpf, email,"
+                  " senha, celular_seguranca, status_assinatura, plano_atual,"
+                  " data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?,"
+                  " 'Inativo', 'Aguardando Pagamento/Liberação', ?, ?, ?)",
+                  (
+                      c_nome,
+                      c_cpf,
+                      c_email,
+                      c_senha,
+                      c_cel,
+                      datetime.now().strftime("%Y-%m-%d %H:%M"),
+                      apelido_final,
+                      c_cargo,
+                  ),
+              )
+              conn.commit()
+              st.success(
+                  "✅ Conta cadastrada com sucesso! O acesso completo será"
+                  " liberado assim que aprovado pela administração."
+              )
+            except Exception as e:
+              st.error(f"⚠️ erro ao cadastrar (e-mail já cadastrado?): {e}")
+          else:
+            st.error("⚠️ preencha os campos obrigatórios.")
+
+    with tab_recuperar:
+      with st.form("form_recuperar"):
+        rec_email = st.text_input("digite seu e-mail cadastrado")
+        btn_rec = st.form_submit_button("consultar senha")
+        if btn_rec:
+          cursor.execute(
+              "SELECT senha, nome_completo FROM usuarios_sistema WHERE email ="
+              " ?",
+              (rec_email,),
+          )
+          res_rec = cursor.fetchone()
+          if res_rec:
+            st.info(
+                f"👤 olá, {res_rec[1]}. sua senha cadastrada é: **{res_rec[0]}**"
+            )
+          else:
+            st.error("⚠️ e-mail não encontrado.")
+
+    with tab_pin:
+      with st.form("form_pin"):
+        email_pin = st.text_input("e-mail da conta corporativa")
+        pin_dig = st.text_input(
+            "pin numérico (4 dígitos)", max_chars=4, type="password"
+        )
+        btn_pin_sub = st.form_submit_button("entrar com pin")
+        if btn_pin_sub:
+          cursor.execute(
+              "SELECT * FROM usuarios_sistema WHERE email = ? AND pin_rapido ="
+              " ?",
+              (email_pin, pin_dig),
+          )
+          user_pin = cursor.fetchone()
+          if user_pin:
+            st.session_state["usuario_logado"] = {
+                "id": user_pin[0],
+                "nome": user_pin[1],
+                "cpf": user_pin[2],
+                "email": user_pin[3],
+                "status": user_pin[6],
+                "apelido": (
+                    user_pin[9]
+                    if len(user_pin) > 9 and user_pin[9] != "None"
+                    else user_pin[1].split()[0]
+                ),
+                "cargo": (
+                    user_pin[10]
+                    if len(user_pin) > 10
+                    and user_pin[10]
+                    and user_pin[10] != "None"
+                    else "Colaborador"
+                ),
+            }
+            try:
+              st.query_params["user_id"] = str(user_pin[0])
+            except Exception:
+              pass
+            st.success("✅ login por pin validado!")
+            st.rerun()
+          else:
+            st.error("⚠️ e-mail ou pin inválidos.")
+
+  st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
-status_usuario_ativo = True
+status_usuario_ativo = (
+    True
+    if modo_admin_liberado
+    else (
+        str(usuario_atual.get("status", "Ativo")).strip().lower() == "ativo"
+        if usuario_atual
+        else False
+    )
+)
+
+if usuario_atual and (
+    not usuario_atual.get("apelido") or usuario_atual["apelido"] == "None"
+):
+  usuario_atual["apelido"] = usuario_atual["nome"].split()[0]
+if usuario_atual and (
+    not usuario_atual.get("cargo") or usuario_atual["cargo"] == "None"
+):
+  usuario_atual["cargo"] = "Colaborador"
 
 
 def exibir_tabela_padronizada(df, nome_tabela):
   if df.empty:
-    st.info("Nenhum registo encontrado.")
+    st.info("nenhum registro encontrado.")
     return
-  
-  try:
-    cursor.execute("SELECT colunas_permitidas FROM config_colunas WHERE tabela = ?", (nome_tabela,))
-    res_conf = cursor.fetchone()
-    if res_conf and res_conf[0]:
-      cols_permitidas = [c.strip() for c in res_conf[0].split(",") if c.strip()]
-      cols_existentes_validas = [c for c in cols_permitidas if c in df.columns]
-      if cols_existentes_validas:
-        df = df[cols_existentes_validas]
-  except Exception:
-    pass
+
+  cursor.execute(
+      "SELECT ordem_colunas FROM config_colunas WHERE tabela = ?",
+      (nome_tabela,),
+  )
+  res_ordem = cursor.fetchone()
+  cols_atuais = list(df.columns)
+
+  if res_ordem and res_ordem[0]:
+    cols_salvas = res_ordem[0].split(",")
+    cols_finais = [c for c in cols_salvas if c in cols_atuais]
+    for c in cols_atuais:
+      if c not in cols_finais:
+        cols_finais.append(c)
+    df = df[cols_finais]
 
   st.dataframe(df, use_container_width=True, hide_index=True)
 
@@ -409,12 +719,14 @@ with st.sidebar:
       encoded_logo_side = base64.b64encode(image_file.read()).decode()
     st.markdown(
         f"""
-            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 14px; padding: 10px; text-align: center; margin-bottom: 8px; color: white; box-shadow: 0 4px 12px rgba(5,150,105,0.2);">
-                <div style="font-size: 14px; font-weight: 900; margin-bottom: 6px; letter-spacing: -0.5px;">🏗️ TABALMIX CONCRETO</div>
-                <div style="border-radius: 10px; overflow: hidden; max-height: 90px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 6px;">
-                    <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 90px; object-fit: cover;">
+            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 14px; text-align: center; margin-top: 0px; margin-bottom: 12px; box-shadow: 0 10px 25px rgba(5,150,105,0.2); color: white;">
+                <div style="font-size: 15px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 8px; color: white;">🏗️ TABALMIX CONCRETO</div>
+                <div style="border-radius: 12px; overflow: hidden; max-height: 105px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 8px; box-shadow: 0 6px 15px rgba(0,0,0,0.15);">
+                    <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 100px; object-fit: cover; display: block;">
                 </div>
-                <div style="font-size: 9.5px; color: #e2e8f0; font-weight: 700; text-transform: uppercase;">⭐ Certificado Oficial | Castro Tech ⭐</div>
+                <div style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 10px; padding: 5px; text-align: center;">
+                    <span style="color: white; font-size: 10px; font-weight: 800; letter-spacing: 0.8px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
+                </div>
             </div>
         """,
         unsafe_allow_html=True,
@@ -422,442 +734,613 @@ with st.sidebar:
   except Exception:
     st.markdown(
         """
-            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 14px; padding: 10px; text-align: center; margin-bottom: 8px; color: white;">
-                <div style="font-size: 14px; font-weight: 900;">🏗️ TABALMIX CONCRETO</div>
-                <div style="font-size: 9.5px; color: #e2e8f0; font-weight: 700;">⭐ Certificado Oficial | Castro Tech ⭐</div>
+            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 14px; text-align: center; margin-top: 0px; margin-bottom: 12px; box-shadow: 0 10px 25px rgba(5,150,105,0.2); color: white;">
+                <div style="font-size: 15px; font-weight: 900; letter-spacing: -0.5px; margin-bottom: 8px; color: white;">🏗️ TABALMIX CONCRETO</div>
+                <div style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.4); border-radius: 10px; padding: 6px; text-align: center;">
+                    <span style="color: white; font-size: 10.5px; font-weight: 800; letter-spacing: 0.8px;">🛡️ SELO DE GARANTIA ENTERPRISE</span>
+                </div>
             </div>
         """,
         unsafe_allow_html=True,
     )
 
-  lista_menus = [
-      "📊 Visão Geral",
-      "🚜 Cadastro de Equipamentos",
-      "⛽ Abastecimentos & Combustível",
-      "🏗️ Mobilização / Desmobilização",
-      "🛠️ Ordens de Serviço (OS)",
-      "🔩 Peças e Ferramentas",
-      "👥 Gestão de Clientes",
-      "💬 Chat Tabalmix Pro & Rede",
-      "🔍 Consulta / Busca Geral",
-      "⚙️ Meu Perfil / Dados",
-      "⚙️ Painel de Licença (Admin)",
-  ]
+  if modo_admin_liberado:
+    st.success("🔓 **modo admin enterprise ativo**")
+  elif usuario_atual:
+    st.markdown(
+        f"""
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                <p style="margin: 0; font-weight: bold; color: #0f172a; font-size: 14px;">👤 {usuario_atual['apelido']}</p>
+                <p style="margin: 3px 0 4px 0; font-size: 11.5px; color: #047857; font-weight: 700;">{usuario_atual['cargo']}</p>
+                <span style="color: #059669; font-weight: bold; font-size: 11px; background: #ecfdf5; padding: 2px 8px; border-radius: 6px; display: inline-block;">🟢 Sessão Fixa na Obra</span>
+            </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    if not status_usuario_ativo:
+      st.warning(
+          "⚠️ **conta inativa / aguardando liberação:** modo de prestígio (leitura) habilitado."
+      )
+    if st.button("🚪 encerrar sessão"):
+      st.session_state["usuario_logado"] = None
+      try:
+        st.query_params.clear()
+      except Exception:
+        pass
+      st.rerun()
+  st.markdown("---")
 
-  menu = st.radio("Navegação", lista_menus, label_visibility="collapsed")
+menu = st.sidebar.radio(
+    "navegação",
+    [
+        "📊 visão geral",
+        "🚜 cadastro de equipamentos",
+        "⛽ abastecimentos & combustível",
+        "🏗️ mobilização / desmobilização",
+        "🛠️ ordens de serviço (os)",
+        "🔩 peças e ferramentas",
+        "👥 gestão de clientes",
+        "💬 chat tabalmix pro & rede",
+        "🔍 consulta / busca geral",
+        "⚙️ meu perfil / dados",
+        "⚙️ painel de licença (admin)",
+    ],
+    label_visibility="collapsed",
+)
 
-if menu == "📊 Visão Geral":
-  st.title("🏗️ Painel Executivo e Indicadores de Frota")
-  st.markdown("Indicadores consolidados em tempo real para tomada de decisão executiva.")
-
+if menu == "📊 visão geral":
+  st.title("🏗️ painel executivo e indicadores de frota")
   df_veiculos = pd.read_sql("SELECT * FROM veiculos", conn)
+  if not df_veiculos.empty and "tag_prefixo" in df_veiculos.columns:
+    df_veiculos["tag_prefixo"] = df_veiculos["tag_prefixo"].fillna(
+        "NÃO INFORMADO"
+    )
+
   df_manut = pd.read_sql("SELECT * FROM manutencoes", conn)
   df_comb = pd.read_sql("SELECT * FROM combustivel", conn)
-  df_pecas = pd.read_sql("SELECT * FROM pecas", conn)
-  df_cli = pd.read_sql("SELECT * FROM clientes", conn)
+
+  total_frota = len(df_veiculos)
+  custo_total_manut = (
+      df_manut["custo"].sum()
+      if not df_manut.empty and "custo" in df_manut.columns
+      else 0.0
+  )
+  gasto_total_comb = (
+      df_comb["valor_total"].sum() if not df_comb.empty else 0.0
+  )
+  litros_totais = df_comb["litros"].sum() if not df_comb.empty else 0.0
+
+  os_abertas = (
+      len(df_manut[df_manut["status_os"] == "aberta"])
+      if not df_manut.empty and "status_os" in df_manut.columns
+      else 0
+  )
 
   col1, col2, col3, col4, col5 = st.columns(5)
   with col1:
-    st.metric("Total Frota", len(df_veiculos))
+    st.metric("total frota", total_frota)
   with col2:
-    st.metric(
-        "OS Abertas",
-        len(df_manut[df_manut["status_os"] == "aberta"])
-        if not df_manut.empty
-        else 0,
-    )
+    st.metric("os abertas", os_abertas)
   with col3:
-    st.metric(
-        "Custo Manut.",
-        f"R$ {df_manut['custo'].sum() if not df_manut.empty else 0.0:,.2f}",
-    )
+    st.metric("custo manut.", f"r$ {custo_total_manut:,.2f}")
   with col4:
-    st.metric(
-        "Gasto Combust.",
-        f"R$ {df_comb['valor_total'].sum() if not df_comb.empty else 0.0:,.2f}",
-    )
+    st.metric("gasto combust.", f"r$ {gasto_total_comb:,.2f}")
   with col5:
-    st.metric(
-        "Total Litros",
-        f"{df_comb['litros'].sum() if not df_comb.empty else 0.0:,.1f} L",
-    )
+    st.metric("total litros", f"{litros_totais:,.1f} L")
 
   st.divider()
 
-  st.markdown("### 📈 Estatísticas e Gráficos de Desempenho")
-  col_g1, col_g2 = st.columns(2)
+  col_exp1, col_exp2 = st.columns([3, 1])
+  with col_exp1:
+    st.subheader("📋 listagem geral de equipamentos")
+  with col_exp2:
+    if not df_veiculos.empty and (status_usuario_ativo or modo_admin_liberado):
+      pdf_buf = gerar_pdf_relatorio(
+          "Relatório Consolidado da Frota - Tabalmix", df_veiculos
+      )
+      st.download_button(
+          "📥 exportar relatório pdf",
+          pdf_buf,
+          file_name="relatorio_frota.pdf",
+          mime="application/pdf",
+      )
 
-  with col_g1:
-    st.markdown("#### 🛠️ Custo de Manutenção por Tipo")
-    if not df_manut.empty and "tipo_manutencao" in df_manut.columns and "custo" in df_manut.columns:
-      df_custo_tipo = df_manut.groupby("tipo_manutencao")["custo"].sum().reset_index()
-      st.bar_chart(df_custo_tipo.set_index("tipo_manutencao"))
-    else:
-      st.info("Ainda sem dados suficientes para exibir o gráfico de manutenções.")
-
-  with col_g2:
-    st.markdown("#### ⛽ Consumo de Combustível (Litros) por Equipamento")
-    if not df_comb.empty and "equipamento" in df_comb.columns and "litros" in df_comb.columns:
-      df_litros_eq = df_comb.groupby("equipamento")["litros"].sum().reset_index()
-      st.bar_chart(df_litros_eq.set_index("equipamento"))
-    else:
-      st.info("Ainda sem dados suficientes para exibir o gráfico de combustíveis.")
-
-  st.divider()
-  st.markdown("### 📋 Resumo Geral da Frota em Operação")
   if not df_veiculos.empty:
     exibir_tabela_padronizada(df_veiculos, "veiculos")
-    
-    col_dl1, col_dl2 = st.columns(2)
-    with col_dl1:
-      if st.button("📄 Gerar Relatório Executivo Geral em PDF"):
-        pdf_geral = gerar_pdf_relatorio("Relatório Executivo Geral da Frota", df_veiculos)
-        st.download_button(
-            label="📥 Baixar PDF Certificado",
-            data=pdf_geral,
-            file_name="relatorio_executivo_tabalmix.pdf",
-            mime="application/pdf"
-        )
-    with col_dl2:
-      if st.button("📊 Gerar Relatório Formatado em Excel"):
-        excel_buf = gerar_excel_formatado(df_veiculos, "Frota_Geral")
-        st.download_button(
-            label="📥 Baixar Excel Pronto p/ Gestor",
-            data=excel_buf,
-            file_name="relatorio_frota_tabalmix.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
   else:
-    st.info("Nenhum veículo registado na frota.")
+    st.info("nenhum equipamento cadastrado na frota.")
 
-elif menu == "🚜 Cadastro de Equipamentos":
-  st.title("🚜 Cadastro de Equipamentos & Vistoria Fotográfica")
-  st.markdown("Gira a frota, atribua a Linha do Equipamento e execute a vistoria fotográfica completa.")
-
-  tab_eq_lista, tab_eq_cad, tab_eq_edit, tab_eq_foto, tab_eq_config = st.tabs([
-      "📋 Frota Cadastrada",
-      "➕ Registar Novo Equipamento",
-      "✏️ Editar Frota & Histórico",
-      "📸 Vistoria Fotográfica",
-      "⚙️ Editar Colunas (Sistema)",
-  ])
-
-  with tab_eq_lista:
-    df_f = pd.read_sql("SELECT * FROM veiculos", conn)
-    if not df_f.empty:
-      exibir_tabela_padronizada(df_f, "veiculos")
-      if st.button("📊 Exportar Frota em Excel"):
-        excel_f = gerar_excel_formatado(df_f, "Frota")
-        st.download_button(
-            label="📥 Baixar Excel da Frota",
-            data=excel_f,
-            file_name="frota_tabalmix.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-    else:
-      st.info("Nenhum equipamento cadastrado ainda.")
-
-  with tab_eq_cad:
-    with st.form("form_cad_veiculo_novo"):
-      st.markdown("### 🚜 Novo Veículo / Equipamento")
-      c_e1, c_e2 = st.columns(2)
-      with c_e1:
-        f_prefixo = st.text_input("Prefixo / Tag (ex: BET-01)")
-        f_cat = st.selectbox(
-            "Linha do Equipamento",
-            [
-                "🟡 Linha Amarela (Escavadeiras, Pás, Retro)",
-                "🟤 Linha Marrom (Tratores, Estacionários)",
-                "🚚 Linha Concreto (Caminhões Betoneira e Bomba)",
-                "🚛 Linha Branca / Apoio (Carrocerias, Utilitários)",
-            ],
-        )
-        f_marca = st.text_input("Marca (ex: Mercedes-Benz, Ford, Caterpillar)")
-        f_modelo = st.text_input("Modelo (ex: 2423 B, Cargo 2622)")
-        f_ano = st.number_input("Ano de Fabricação", value=2020, step=1)
-      with c_e2:
-        f_cor = st.text_input("Cor")
-        f_placa = st.text_input("Placa")
-        f_chassi = st.text_input("Chassi")
-        f_renavam = st.text_input("Renavam")
-        f_comb = st.selectbox("Combustível", ["Diesel S10", "Diesel S500", "Gasolina"])
-        f_horimetro = st.number_input("Km / Horímetro Atual", value=0, step=100)
-        f_empresa = st.text_input("Empresa / Filial", value="Tabalmix Concreto")
-
-      btn_salvar_eq = st.form_submit_button("💾 Salvar Equipamento na Frota")
-      if btn_salvar_eq:
-        if f_marca and f_modelo:
-          hist_cad_inicial = f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Equipamento cadastrado no sistema."
-          cursor.execute(
-              "INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca,"
-              " modelo, ano, chassi, renavam, placa, crv, cor, combustivel,"
-              " empresa, horimetro_km, status, historico_edicoes) VALUES (?, ?, ?, ?, ?, ?, ?, ?,"
-              " '', ?, ?, ?, ?, 'Ativo', ?)",
-              (
-                  f_prefixo,
-                  f_cat,
-                  f_marca,
-                  f_modelo,
-                  int(f_ano),
-                  f_chassi,
-                  f_renavam,
-                  f_placa,
-                  f_cor,
-                  f_comb,
-                  f_empresa,
-                  int(f_horimetro),
-                  hist_cad_inicial,
-              ),
-          )
-          conn.commit()
-          st.success("✅ Equipamento e linha operacional registados com sucesso!")
-          st.rerun()
-        else:
-          st.error("⚠️ Preencha pelo menos a Marca e o Modelo.")
-
-  with tab_eq_edit:
-    st.markdown("### ✏️ Editar Dados da Frota & Justificar Alteração")
-    try:
-      df_veiculos_edit = pd.read_sql("SELECT * FROM veiculos ORDER BY id DESC", conn)
-    except Exception:
-      df_veiculos_edit = pd.DataFrame()
-
-    if not df_veiculos_edit.empty:
-      id_veiculo_sel = st.selectbox(
-          "Selecione o Veículo / Equipamento para editar:",
-          df_veiculos_edit["id"].tolist(),
-          format_func=lambda x: f"ID #{x} — {df_veiculos_edit[df_veiculos_edit['id'] == x]['marca'].values[0]} {df_veiculos_edit[df_veiculos_edit['id'] == x]['modelo'].values[0]} (Placa: {df_veiculos_edit[df_veiculos_edit['id'] == x]['placa'].values[0]})"
+elif menu == "🚜 cadastro de equipamentos":
+  st.title("🚜 cadastro completo de equipamentos e frota")
+  with st.form("form_frota", clear_on_submit=False):
+    col1, col2 = st.columns(2)
+    with col1:
+      tag_prefixo = st.text_input("tag / prefixo (ex: EQ-001 / BET-12)")
+      categoria_equipamento = st.text_input("categoria do equipamento")
+      tipo_equipamento = st.text_input("tipo de equipamento")
+      marca = st.text_input("marca")
+      modelo = st.text_input("modelo")
+      ano = st.number_input(
+          "ano de fabricação", min_value=1950, value=2024, step=1
       )
-      veiculo_atual_reg = df_veiculos_edit[df_veiculos_edit["id"] == id_veiculo_sel].iloc[0]
-
-      with st.form(f"form_editar_veiculo_{id_veiculo_sel}"):
-        st.markdown(f"#### Editando Veículo ID #{id_veiculo_sel}")
-        e_pref = st.text_input("Prefixo / Tag", value=str(veiculo_atual_reg["tag_prefixo"]))
-        e_marca = st.text_input("Marca", value=str(veiculo_atual_reg["marca"]))
-        e_modelo = st.text_input("Modelo", value=str(veiculo_atual_reg["modelo"]))
-        e_placa = st.text_input("Placa", value=str(veiculo_atual_reg["placa"]))
-        e_cor = st.text_input("Cor", value=str(veiculo_atual_reg["cor"]))
-        e_km = st.number_input("Km / Horímetro", value=int(veiculo_atual_reg["horimetro_km"]) if pd.notnull(veiculo_atual_reg["horimetro_km"]) else 0, step=100)
-
-        st.markdown("---")
-        motivo_edicao_veiculo = st.text_input(
-            "Motivo da Atualização / Troca",
-            placeholder="Ex: Atualização de dados..."
-        )
-
-        btn_atualizar_veiculo = st.form_submit_button("💾 Salvar Alterações e Histórico")
-
-        if btn_atualizar_veiculo:
-          if not motivo_edicao_veiculo.strip():
-            st.error("⚠️ O campo 'Motivo da Atualização' é obrigatório!")
-          else:
-            hist_anterior = str(veiculo_atual_reg["historico_edicoes"]) if pd.notnull(veiculo_atual_reg["historico_edicoes"]) else ""
-            novo_item_hist = f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Atualizado. Motivo: {motivo_edicao_veiculo}"
-            hist_atualizado_final = hist_anterior + novo_item_hist
-
-            cursor.execute(
-                "UPDATE veiculos SET tag_prefixo = ?, marca = ?, modelo = ?, placa = ?, cor = ?, horimetro_km = ?, historico_edicoes = ? WHERE id = ?",
-                (e_pref, e_marca, e_modelo, e_placa, e_cor, int(e_km), hist_atualizado_final, int(id_veiculo_sel))
-            )
-            conn.commit()
-            st.success("✅ Veículo atualizado com sucesso!")
-            st.rerun()
-    else:
-      st.info("Nenhum veículo registado para editar.")
-
-  with tab_eq_foto:
-    st.markdown("### 📸 Vistoria Fotográfica Completa (Até 15 Ângulos)")
-    try:
-      df_veiculos_f = pd.read_sql("SELECT id, marca, modelo, placa FROM veiculos", conn)
-    except Exception:
-      df_veiculos_f = pd.DataFrame()
-
-    if not df_veiculos_f.empty:
-      veiculo_vistoria = st.selectbox(
-          "Selecione o veículo para anexar as fotografias:",
-          [
-              f"ID {r['id']} — {r['marca']} {r['modelo']} (Placa: {r['placa']})"
-              for _, r in df_veiculos_f.iterrows()
-          ],
+      chassi = st.text_input("número do chassi")
+      renavam = st.text_input("número do renavam")
+    with col2:
+      placa = st.text_input("placa do veículo")
+      crv = st.text_input("número do crv")
+      cor = st.text_input("cor principal")
+      combustivel = st.selectbox(
+          "tipo de combustível",
+          ["Diesel S10", "Diesel S500", "Gasolina", "Flex", "Elétrico"],
+      )
+      empresa = st.text_input("empresa / filial responsável")
+      operador_condutor = st.text_input("operador / motorista responsável")
+      horimetro_km = st.number_input(
+          "horímetro ou km inicial", min_value=0, value=15000, step=100
+      )
+      status = st.selectbox(
+          "situação operacional",
+          ["Ativo", "Em Manutenção", "Parado", "Mobilizado"],
       )
 
-      fotos_enviadas = st.file_uploader(
-          "Carregar fotografias da vistoria:",
-          type=["png", "jpg", "jpeg"],
-          accept_multiple_files=True,
+    btn_cad_eq = st.form_submit_button("cadastrar equipamento completo")
+    if btn_cad_eq and modelo:
+      tag_final = (
+          tag_prefixo.upper()
+          if tag_prefixo and tag_prefixo.strip()
+          else "EQ-00" + str(datetime.now().microsecond)[:3]
       )
-
-      if fotos_enviadas:
-        os.makedirs("vistorias_frota", exist_ok=True)
-        if st.button("🚀 Salvar Vistoria Fotográfica"):
-          for idx, foto in enumerate(fotos_enviadas[:15]):
-            nome_foto = f"vistoria_{datetime.now().strftime('%Y%m%d%H%M%S')}_{idx}_{foto.name}"
-            caminho_foto = os.path.join("vistorias_frota", nome_foto)
-            with open(caminho_foto, "wb") as f_out:
-              f_out.write(foto.getbuffer())
-          st.success("✅ Vistoria fotográfica armazenada com sucesso!")
-    else:
-      st.info("Registe primeiro um veículo na aba 'Registar Novo Equipamento'.")
-
-  with tab_eq_config:
-    st.markdown("### ⚙️ Selecionar Colunas Visíveis para Todo o Sistema")
-    st.markdown("Marque abaixo **apenas** as colunas que você deseja manter visíveis. As colunas desmarcadas serão excluídas da exibição para você e para todos os outros colaboradores.")
-
-    tabela_escolhida_aba = st.selectbox(
-        "Selecione a Tabela do Sistema para Configurar:",
-        ["veiculos", "manutencoes", "mobilizacoes", "combustivel", "pecas", "clientes"]
-    )
-
-    try:
-      df_cols_aba = pd.read_sql(f"SELECT * FROM {tabela_escolhida_aba} LIMIT 1", conn)
-      todas_cols_sistema = list(df_cols_aba.columns)
-    except Exception:
-      todas_cols_sistema = []
-
-    cursor.execute("SELECT colunas_permitidas FROM config_colunas WHERE tabela = ?", (tabela_escolhida_aba,))
-    res_db_aba = cursor.fetchone()
-
-    if res_db_aba and res_db_aba[0]:
-      cols_salvas_aba = [c.strip() for c in res_db_aba[0].split(",") if c.strip()]
-      def_cols_aba = [c for c in cols_salvas_aba if c in todas_cols_sistema]
-    else:
-      def_cols_aba = todas_cols_sistema
-
-    colunas_mantidas_nova = st.multiselect(
-        "Colunas que ficarão visíveis para a equipe:",
-        todas_cols_sistema,
-        default=def_cols_aba
-    )
-
-    if st.button("💾 Salvar Colunas para o Sistema Inteiro"):
-      if colunas_mantidas_nova:
-        str_cols_final_aba = ",".join(colunas_mantidas_nova)
-        cursor.execute("INSERT OR REPLACE INTO config_colunas (tabela, colunas_permitidas) VALUES (?, ?)", (tabela_escolhida_aba, str_cols_final_aba))
-        conn.commit()
-        st.success(f"✅ Configuração salva! Agora a tabela '{tabela_escolhida_aba}' mostrará apenas as colunas escolhidas para todos os colaboradores.")
-        st.rerun()
-      else:
-        st.warning("⚠️ Selecione pelo menos uma coluna.")
-
-elif menu == "⛽ Abastecimentos & Combustível":
-  st.title("⛽ Controle de Abastecimento e Combustível")
-  tab_c_lista, tab_c_cad = st.tabs(["📋 Histórico de Abastecimentos", "➕ Registar Abastecimento"])
-  with tab_c_lista:
-    df_c = pd.read_sql("SELECT * FROM combustivel ORDER BY id DESC", conn)
-    exibir_tabela_padronizada(df_c, "combustivel")
-  with tab_c_cad:
-    with st.form("form_abastecimento_novo"):
-      eq_ab = st.text_input("Equipamento / Prefixo")
-      litros_ab = st.number_input("Quantidade em Litros", value=100.0, step=10.0)
-      valor_ab = st.number_input("Valor Total (R$)", value=600.0, step=50.0)
-      btn_salvar_ab = st.form_submit_button("💾 Salvar Abastecimento")
-      if btn_salvar_ab and eq_ab:
-        cursor.execute("INSERT INTO combustivel (equipamento, litros, valor_total, km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?, '0', 'Posto', 'Alex', ?)", (eq_ab, litros_ab, valor_ab, datetime.now().strftime("%d/%m/%Y %H:%M")))
-        conn.commit()
-        st.success("✅ Abastecimento registado!")
-        st.rerun()
-
-elif menu == "🏗️ Mobilização / Desmobilização":
-  st.title("🏗️ Gestão de Mobilização e Desmobilização")
-  df_mobs = pd.read_sql("SELECT * FROM mobilizacoes ORDER BY id DESC", conn)
-  exibir_tabela_padronizada(df_mobs, "mobilizacoes")
-
-elif menu == "🛠️ Ordens de Serviço (OS)":
-  st.title("🛠️ Ordens de Serviço (OS)")
-  df_os = pd.read_sql("SELECT * FROM manutencoes ORDER BY id DESC", conn)
-  exibir_tabela_padronizada(df_os, "manutencoes")
-
-elif menu == "🔩 Peças e Ferramentas":
-  st.title("🔩 Controle de Peças e Ferramentas")
-  df_pecas = pd.read_sql("SELECT * FROM pecas ORDER BY id DESC", conn)
-  exibir_tabela_padronizada(df_pecas, "pecas")
-
-elif menu == "👥 Gestão de Clientes":
-  st.title("👥 Gestão de Clientes")
-  df_cli = pd.read_sql("SELECT * FROM clientes ORDER BY id DESC", conn)
-  exibir_tabela_padronizada(df_cli, "clientes")
-
-elif menu == "💬 Chat Tabalmix Pro & Rede":
-  st.markdown(
-      """
-        <style>
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            max-height: 540px;
-            overflow-y: auto;
-            padding: 16px;
-            background: #f8fafc;
-            border-radius: 16px;
-            border: 1px solid #e2e8f0;
-        }
-        .msg-row {
-            display: flex;
-            width: 100%;
-            margin-bottom: 2px;
-        }
-        .msg-row-eu {
-            justify-content: flex-end;
-        }
-        .msg-row-outro {
-            justify-content: flex-start;
-        }
-        .msg-bubble {
-            padding: 12px 18px;
-            border-radius: 16px;
-            max-width: 85%;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            position: relative;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
-        }
-        .msg-bubble-eu {
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
-            color: white;
-            border-top-right-radius: 3px;
-        }
-        .msg-bubble-outro {
-            background: #ffffff;
-            color: #0f172a;
-            border: 1px solid #e2e8f0;
-            border-top-left-radius: 3px;
-        }
-        </style>
-    """,
-      unsafe_allow_html=True,
-  )
-  st.title("💬 Central Pro Enterprise — Chat & Live Ops")
-  cursor.execute("SELECT id, apelido, cargo_setor FROM usuarios_sistema ORDER BY id DESC")
-  todos_usuarios_db = cursor.fetchall()
-  df_msgs = pd.read_sql("SELECT * FROM chat_interno ORDER BY id ASC LIMIT 60", conn)
-  
-  st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-  if not df_msgs.empty:
-    for _, row_m in df_msgs.iterrows():
-      st.markdown(f"**{row_m['remetente']}**: {row_m['mensagem']}")
-  else:
-    st.info("Ainda sem mensagens.")
-  st.markdown('</div>', unsafe_allow_html=True)
-
-  with st.form("form_chat_pro", clear_on_submit=True):
-    msg_txt = st.text_input("Escreva sua mensagem...")
-    btn_env = st.form_submit_button("Enviar")
-    if btn_env and msg_txt:
-      cursor.execute("INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, 'Geral', 'Diretoria', ?, '', '', ?)", ("Alex", msg_txt, datetime.now().strftime("%H:%M — %d/%m")))
+      cursor.execute(
+          "INSERT INTO veiculos (tag_prefixo, categoria_equipamento,"
+          " tipo_equipamento, marca, modelo, ano, chassi, renavam, placa, crv,"
+          " cor, combustivel, empresa, operador_condutor, horimetro_km,"
+          " status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+          (
+              tag_final,
+              categoria_equipamento,
+              tipo_equipamento,
+              marca,
+              modelo,
+              int(ano),
+              chassi.upper(),
+              renavam,
+              placa.upper(),
+              crv,
+              cor,
+              combustivel,
+              empresa,
+              operador_condutor,
+              int(horimetro_km),
+              status,
+          ),
+      )
       conn.commit()
+      st.success(f"✅ Equipamento '{tag_final}' cadastrado com sucesso!")
       st.rerun()
 
-elif menu == "🔍 Consulta / Busca Geral":
-  st.title("🔍 Consulta e Histórico Completo")
-  df_v_busca = pd.read_sql("SELECT * FROM veiculos", conn)
-  exibir_tabela_padronizada(df_v_busca, "veiculos")
+  df_f = pd.read_sql("SELECT * FROM veiculos", conn)
+  if not df_f.empty:
+    exibir_tabela_padronizada(df_f, "cad_veiculos")
 
-elif menu == "⚙️ Meu Perfil / Dados":
-  st.title("⚙️ Meu Perfil & Atualização Cadastral")
-  st.info("Painel de perfil de administrador ativo.")
+elif menu == "⛽ abastecimentos & combustível":
+  st.title("⛽ controle de abastecimento e combustível")
+  df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
+  tags_comb = (
+      df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
+  )
+  with st.form("form_comb"):
+    c1, c2 = st.columns(2)
+    with c1:
+      eq_comb = st.selectbox(
+          "equipamento / tag", tags_comb if tags_comb else ["MANUAL"]
+      )
+      litros = st.number_input("litros", min_value=0.1, value=100.0)
+      val_tot = st.number_input("valor total (r$)", min_value=0.0, value=600.0)
+    with c2:
+      km_h = st.text_input("km ou horímetro")
+      posto = st.text_input("posto / fornecedor")
+      motorista = st.text_input("motorista / responsável")
+      dt_ab = st.date_input("data")
+    btn_cad_comb = st.form_submit_button("registrar abastecimento")
+    if btn_cad_comb:
+      cursor.execute(
+          "INSERT INTO combustivel (equipamento, litros, valor_total,"
+          " km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?, ?, ?, ?,"
+          " ?)",
+          (
+              str(eq_comb).upper(),
+              float(litros),
+              float(val_tot),
+              str(km_h),
+              posto,
+              motorista,
+              str(dt_ab),
+          ),
+      )
+      conn.commit()
+      st.success("✅ abastecimento registrado!")
+      st.rerun()
 
-elif menu == "⚙️ Painel de Licença (Admin)":
-  st.title("⚙️ Painel Administrativo Master")
-  st.markdown("Gerenciamento de chaves e licenças corporativas do sistema.")
-  df_chaves = pd.read_sql("SELECT * FROM chaves_licenca", conn)
-  exibir_tabela_padronizada(df_chaves, "chaves_licenca")
+  df_c = pd.read_sql("SELECT * FROM combustivel", conn)
+  if not df_c.empty:
+    exibir_tabela_padronizada(df_c, "combustivel")
+
+elif menu == "🏗️ mobilização / desmobilização":
+  st.title("🏗️ mobilização e desmobilização de obras")
+  df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
+  tags_mob = (
+      df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
+  )
+  with st.form("form_mob"):
+    c1, c2 = st.columns(2)
+    with c1:
+      eq_mob = st.selectbox(
+          "equipamento / tag", tags_mob if tags_mob else ["MANUAL"]
+      )
+      tipo_mov = st.selectbox(
+          "movimentação",
+          ["mobilização (envio)", "desmobilização (retorno)", "remanejamento"],
+      )
+      destino = st.text_input("obra / destino-origem")
+    with c2:
+      resp = st.text_input("responsável")
+      dt_mob = st.date_input("data")
+      obs = st.text_input("observação")
+
+    fotos_subidas = st.file_uploader(
+        "📷 anexar fotos do check-list",
+        type=["png", "jpg", "jpeg"],
+        accept_multiple_files=True,
+    )
+    btn_cad_mob = st.form_submit_button("registrar movimentação")
+    if btn_cad_mob:
+      caminhos_fotos = []
+      if fotos_subidas:
+        os.makedirs("uploads_checklists", exist_ok=True)
+        for f_item in fotos_subidas[:15]:
+          nome_f = (
+              "uploads_checklists/"
+              f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{f_item.name}"
+          )
+          with open(nome_f, "wb") as f_out:
+            f_out.write(f_item.getbuffer())
+          caminhos_fotos.append(nome_f)
+
+      paths_str = "|".join(caminhos_fotos)
+      cursor.execute(
+          "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
+          " destino_origem, responsavel, data, observacao, foto_checklist)"
+          " VALUES (?, ?, ?, ?, ?, ?, ?)",
+          (
+              str(eq_mob).upper(),
+              tipo_mov,
+              destino,
+              resp,
+              str(dt_mob),
+              obs,
+              paths_str,
+          ),
+      )
+      conn.commit()
+      st.success("✅ movimentação registrada!")
+      st.rerun()
+
+  df_mobs = pd.read_sql("SELECT * FROM mobilizacoes", conn)
+  if not df_mobs.empty:
+    exibir_tabela_padronizada(df_mobs, "mobilizacoes")
+
+elif menu == "🛠️ ordens de serviço (os)":
+  st.title("🛠️ gestão unificada de ordens de serviço (os)")
+  df_v = pd.read_sql("SELECT tag_prefixo FROM veiculos", conn)
+  tags_disponiveis = (
+      df_v["tag_prefixo"].dropna().tolist() if not df_v.empty else []
+  )
+
+  st.markdown("### 🟢 abertura de nova os (etapa 1)")
+  with st.form("form_abertura_os", clear_on_submit=True):
+    c1, c2 = st.columns(2)
+    with c1:
+      tag_os = st.selectbox(
+          "tag / prefixo", tags_disponiveis if tags_disponiveis else ["GERAL"]
+      )
+      tipo_manut = st.selectbox(
+          "tipo", ["preventiva", "corretiva", "preditiva", "revisão geral"]
+      )
+      horimetro_ab = st.text_input("horímetro / km")
+      origem_f = st.selectbox("origem", ["operação", "máquina"])
+    with c2:
+      data_ab = st.date_input("data", value=datetime.now().date())
+      hora_ab = st.text_input("hora", value=datetime.now().strftime("%H:%M"))
+      desc_prob = st.text_area("descrição do problema")
+
+    btn_abrir_os = st.form_submit_button("abrir nova os")
+    if btn_abrir_os:
+      cursor.execute(
+          "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao,"
+          " horimetro_km_manut, origem_falha, descricao_problema,"
+          " data_abertura, hora_abertura, status_os, custo, custo_pecas,"
+          " mao_de_obra) VALUES (?, ?, ?, ?, ?, ?, ?, 'aberta', 0.0, 0.0,"
+          " 0.0)",
+          (
+              str(tag_os).upper(),
+              tipo_manut,
+              horimetro_ab,
+              origem_f,
+              desc_prob,
+              str(data_ab),
+              hora_ab,
+          ),
+      )
+      conn.commit()
+      st.success("✅ OS aberta com sucesso!")
+      st.rerun()
+
+  df_os = pd.read_sql("SELECT * FROM manutencoes", conn)
+  if not df_os.empty:
+    exibir_tabela_padronizada(df_os, "manutencoes")
+
+elif menu == "🔩 peças e ferramentas":
+  st.title("🔩 controle de peças e ferramentas")
+  with st.form("form_pecas"):
+    c1, c2 = st.columns(2)
+    with c1:
+      nome_i = st.text_input("nome da peça")
+      cat = st.text_input("categoria")
+    with c2:
+      qtd = st.number_input("quantidade", min_value=1, value=1)
+      v_unit = st.number_input("valor unitário (r$)", min_value=0.0)
+    btn_cad_peca = st.form_submit_button("adicionar peça")
+    if btn_cad_peca:
+      cursor.execute(
+          "INSERT INTO pecas (nome_item, categoria, quantidade,"
+          " valor_unitario) VALUES (?, ?, ?, ?)",
+          (nome_i, cat.strip() if cat else "Geral", qtd, v_unit),
+      )
+      conn.commit()
+      st.success("✅ Peça adicionada!")
+      st.rerun()
+
+  df_p = pd.read_sql("SELECT * FROM pecas", conn)
+  if not df_p.empty:
+    exibir_tabela_padronizada(df_p, "pecas")
+
+elif menu == "👥 gestão de clientes":
+  st.title("👥 gestão de clientes")
+  with st.form("form_cli"):
+    c1, c2 = st.columns(2)
+    with c1:
+      nome_c = st.text_input("nome / razão social")
+      emp = st.text_input("empresa")
+      tel = st.text_input("telefone")
+    with c2:
+      doc = st.text_input("cpf / cnpj")
+      em = st.text_input("e-mail")
+      end = st.text_input("endereço")
+    btn_cad_cli = st.form_submit_button("salvar cliente")
+    if btn_cad_cli:
+      cursor.execute(
+          "INSERT INTO clientes (nome, empresa, telefone, documento, email,"
+          " endereco) VALUES (?, ?, ?, ?, ?, ?)",
+          (nome_c, emp, tel, doc, em, end),
+      )
+      conn.commit()
+      st.success("✅ Cliente salvo!")
+      st.rerun()
+
+  df_cli = pd.read_sql("SELECT * FROM clientes", conn)
+  if not df_cli.empty:
+    exibir_tabela_padronizada(df_cli, "clientes")
+
+elif menu == "💬 chat tabalmix pro & rede":
+  st.title("💬 Central Pro de Chamadas e Chat em Tempo Real")
+  st.markdown(
+      "Comunicação corporativa avançada com **chamada interativa** e alertas"
+      " sonoros automáticos para a equipe na obra."
+  )
+
+  # CENTRAL DE CHAMADA COM ALARME SONORO E VIBRAÇÃO EM TEMPO REAL
+  with st.expander(
+      "📞 CENTRAL DE CHAMADAS E VÍDEO AO VIVO (TOQUE & ALARME)", expanded=True
+  ):
+    st.markdown(
+        "Utilize a central para iniciar chamadas diretas com som de toque e"
+        " câmara integrada:"
+    )
+    st.components.v1.html(
+        """
+        <div style="background: #0f172a; border-radius: 16px; padding: 20px; text-align: center; color: white; font-family: 'Plus Jakarta Sans', sans-serif; box-shadow: 0 10px 25px rgba(0,0,0,0.3);">
+            <div id="callStatus" style="background: #1e293b; border: 1px solid #334155; padding: 12px; border-radius: 10px; margin-bottom: 15px; font-weight: bold; color: #38bdf8;">
+                📲 Central Pronta. Clique em "Tocar Alarme de Chamada" para testar o toque/vibração ou inicie a câmara.
+            </div>
+            
+            <video id="localVideo" autoplay playsinline muted style="width: 100%; max-height: 220px; border-radius: 12px; background: #1e293b; border: 2px solid #059669; object-fit: cover; margin-bottom: 12px;"></video>
+            
+            <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
+                <button onclick="tocarAlarmeChamada()" style="background: #f59e0b; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🔔 Tocar Toque de Chamada</button>
+                <button onclick="ligarCamera()" style="background: #059669; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🟢 Atender / Ligar Câmara</button>
+                <button onclick="desligarCamera()" style="background: #dc2626; color: white; border: none; padding: 10px 16px; border-radius: 10px; font-weight: bold; cursor: pointer; font-size: 13px;">🔴 Recusar / Desligar</button>
+            </div>
+        </div>
+        <script>
+        let localStream = null;
+        let audioCtx = null;
+
+        function tocarAlarmeChamada() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                // Simula toque de chamada telefônica (beep duplo repetido)
+                let now = audioCtx.currentTime;
+                for (let i = 0; i < 4; i++) {
+                    let osc = audioCtx.createOscillator();
+                    let gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, now + (i * 0.8));
+                    gain.gain.setValueAtTime(0.2, now + (i * 0.8));
+                    gain.gain.exponentialRampToValueAtTime(0.00001, now + (i * 0.8) + 0.4);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(now + (i * 0.8));
+                    osc.stop(now + (i * 0.8) + 0.4);
+                }
+                if (navigator.vibrate) {
+                    navigator.vibrate([500, 300, 500, 300]);
+                }
+                document.getElementById('callStatus').innerText = "📞 A receber chamada entrante! Toque e vibração ativados.";
+            } catch(e) {
+                console.log("Erro ao reproduzir áudio:", e);
+            }
+        }
+
+        async function ligarCamera() {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('localVideo').srcObject = localStream;
+                document.getElementById('callStatus').innerText = "🟢 Chamada de vídeo ativa com sucesso!";
+            } catch (err) {
+                alert("Erro ao aceder à câmara: " + err);
+            }
+        }
+
+        function desligarCamera() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                document.getElementById('localVideo').srcObject = null;
+            }
+            document.getElementById('callStatus').innerText = "🔴 Chamada encerrada ou recusada.";
+        }
+        </script>
+        """,
+        height=370,
+    )
+
+  st.markdown("---")
+  st.markdown("#### 🗨️ Histórico de Mensagens da Equipe na Obra")
+
+  df_msgs = pd.read_sql(
+      "SELECT * FROM chat_interno ORDER BY id DESC LIMIT 25", conn
+  )
+  if not df_msgs.empty:
+    for _, row_m in df_msgs.iterrows():
+      st.markdown(
+          f"""
+            <div style="background: #ffffff; border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; border: 1px solid #e2e8f0; box-shadow: 0 3px 10px rgba(0,0,0,0.02);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                    <b style="color: #047857; font-size: 12.5px;">👤 {row_m['remetente']}</b>
+                    <span style="font-size: 10px; color: #64748b;">{row_m['data_envio']}</span>
+                </div>
+                <div style="font-size: 14px; color: #0f172a; white-space: pre-wrap; line-height: 1.4;">{row_m['mensagem']}</div>
+            </div>
+        """,
+          unsafe_allow_html=True,
+      )
+      if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
+        with open(row_m["arquivo_path"], "rb") as f_down:
+          st.download_button(
+              label=f"📥 Baixar anexo: {row_m['arquivo_nome']}",
+              data=f_down.read(),
+              file_name=row_m["arquivo_nome"],
+              key=f"dl_chat_arq_{row_m['id']}",
+          )
+  else:
+    st.info("Nenhuma mensagem registrada no chat ainda.")
+
+  remetente_atual = (
+      usuario_atual["apelido"]
+      if usuario_atual
+      else ("Administrador" if modo_admin_liberado else "Colaborador")
+  )
+  cargo_atual = usuario_atual["cargo"] if usuario_atual else "Gestão / ADM"
+
+  with st.form("form_chat_melhorado", clear_on_submit=True):
+    msg_sala_txt = st.text_input("Escreva sua mensagem corporativa...")
+    file_sala_up = st.file_uploader(
+        "Anexar arquivo ou foto (opcional)",
+        type=["png", "jpg", "jpeg", "pdf", "docx", "xlsx"],
+    )
+    btn_enviar_chat = st.form_submit_button("➤ Enviar Mensagem")
+
+    if btn_enviar_chat:
+      if not msg_sala_txt.strip() and not file_sala_up:
+        st.warning("⚠️ Digite uma mensagem ou anexe um arquivo.")
+      else:
+        path_s = ""
+        nome_s = ""
+        if file_sala_up is not None:
+          os.makedirs("chat_documentos", exist_ok=True)
+          nome_s = file_sala_up.name
+          path_s = (
+              "chat_documentos/"
+              f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nome_s}"
+          )
+          with open(path_s, "wb") as f_out_s:
+            f_out_s.write(file_sala_up.getbuffer())
+
+        data_env_s = datetime.now().strftime("%d/%m às %H:%M")
+        cursor.execute(
+            "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+            " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
+            " ?, ?, ?, ?, ?)",
+            (
+                f"{remetente_atual} ({cargo_atual})",
+                "Geral (Equipe)",
+                cargo_atual,
+                msg_sala_txt,
+                path_s,
+                nome_s,
+                data_env_s,
+            ),
+        )
+        conn.commit()
+        st.success("✅ Mensagem enviada com sucesso!")
+        st.rerun()
+
+elif menu == "🔍 consulta / busca geral":
+  st.title("🔍 consulta e histórico completo do equipamento")
+  df_v_busca = pd.read_sql(
+      "SELECT tag_prefixo, modelo, placa FROM veiculos", conn
+  )
+  lista_tags = (
+      df_v_busca["tag_prefixo"].dropna().tolist()
+      if not df_v_busca.empty
+      else []
+  )
+  if lista_tags:
+    eq_sel = st.selectbox("selecione a tag/prefixo", lista_tags)
+    if eq_sel:
+      df_eq_info = df_v_busca[df_v_busca["tag_prefixo"] == eq_sel]
+      exibir_tabela_padronizada(df_eq_info, "busca_eq_info")
+
+elif menu == "⚙️ meu perfil / dados":
+  st.title("⚙️ Meu Perfil & Credenciais Corporativas")
+  if usuario_atual:
+    user_id_ativo = usuario_atual.get("id")
+    cursor.execute(
+        "SELECT nome_completo, cpf, email, celular_seguranca, apelido,"
+        " cargo_setor, pin_rapido FROM usuarios_sistema WHERE id = ?",
+        (user_id_ativo,),
+    )
+    dados_db = cursor.fetchone()
+    if dados_db:
+      n_comp, n_cpf, n_email, n_cel, n_apelido, n_cargo, n_pin = dados_db
+      with st.form("form_atualizar_meu_perfil"):
+        novo_nome = st.text_input("Nome Completo", value=n_comp or "")
+        novo_apelido = st.text_input("Apelido de Guerra", value=n_apelido or "")
+        novo_cel = st.text_input("Celular / WhatsApp", value=n_cel or "")
+        btn_salvar_perfil = st.form_submit_button("💾 Salvar Alterações")
+        if btn_salvar_perfil and novo_nome:
+          cursor.execute(
+              "UPDATE usuarios_sistema SET nome_completo = ?, apelido = ?,"
+              " celular_seguranca = ? WHERE id = ?",
+              (novo_nome, novo_apelido, novo_cel, user_id_ativo),
+          )
+          conn.commit()
+          st.success("✅ Perfil atualizado com sucesso!")
+          st.rerun()
+
+elif menu == "⚙️ painel de licença (admin)":
+  st.title("⚙️ painel administrativo de colaboradores")
+  df_users = pd.read_sql("SELECT * FROM usuarios_sistema", conn)
+  if not df_users.empty:
+    exibir_tabela_padronizada(df_users, "usuarios_sistema")
