@@ -1357,9 +1357,8 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
 
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
   st.markdown(
-      "Comunicação em tempo real de nível profissional. Usa os botões"
-      " discretos por baixo de cada mensagem para apagar, copiar ou"
-      " encaminhar instantaneamente."
+      "Comunicação em tempo real de nível profissional. Conversas privadas"
+      " isoladas e menu de opções com três pontinhos."
   )
 
   cursor.execute(
@@ -1380,7 +1379,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             f"👤 {u[1]} — Cargo: {u[2]} (ID: {u[0]})" for u in todos_usuarios_db
         ]
         colab_escolhido_str = st.selectbox(
-            "Canal / Destinatário:",
+            "Canal / Conversa Privada com:",
             ["🌐 Canal Geral (Toda a Equipe)"] + opcoes_colab,
         )
       else:
@@ -1390,6 +1389,14 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
           "🔍 Pesquisa Global", placeholder="Ex: pneu, beta..."
       )
 
+    remetente_atual = (
+        usuario_atual["apelido"] if usuario_atual else "Administrador Master"
+    )
+    cargo_atual = (
+        usuario_atual["cargo"] if usuario_atual else "Diretoria / Gestão"
+    )
+
+    # FILTRAGEM INTELIGENTE DE MENSAGENS PRIVADAS OU GERAIS
     if termo_busca_chat.strip():
       df_msgs = pd.read_sql(
           "SELECT * FROM chat_interno WHERE mensagem LIKE ? ORDER BY id ASC LIMIT"
@@ -1397,17 +1404,23 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
           conn,
           params=(f"%{termo_busca_chat}%",),
       )
-    else:
+    elif "Canal Geral" in colab_escolhido_str:
       df_msgs = pd.read_sql(
-          "SELECT * FROM chat_interno ORDER BY id ASC LIMIT 60", conn
+          "SELECT * FROM chat_interno WHERE destinatario LIKE '%Canal Geral%' ORDER BY id ASC LIMIT 60",
+          conn,
       )
-
-    remetente_atual = (
-        usuario_atual["apelido"] if usuario_atual else "Administrador Master"
-    )
-    cargo_atual = (
-        usuario_atual["cargo"] if usuario_atual else "Diretoria / Gestão"
-    )
+    else:
+      nome_colab_alvo = colab_escolhido_str.split("—")[0].replace("👤", "").strip()
+      df_msgs = pd.read_sql(
+          "SELECT * FROM chat_interno WHERE (remetente LIKE ? AND destinatario LIKE ?) OR (remetente LIKE ? AND destinatario LIKE ?) ORDER BY id ASC LIMIT 60",
+          conn,
+          params=(
+              f"%{remetente_atual}%",
+              f"%{nome_colab_alvo}%",
+              f"%{nome_colab_alvo}%",
+              f"%{remetente_atual}%",
+          ),
+      )
 
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 
@@ -1417,9 +1430,11 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         estilo_classe = "msg-card-eu" if is_eu else "msg-card-outro"
         cor_autor = "#d1fae5" if is_eu else "#047857"
 
-        st.markdown(
-            f"""
-                    <div class="{estilo_classe}">
+        col_msg_balao, col_msg_menu = st.columns([9, 1])
+        with col_msg_balao:
+          st.markdown(
+              f"""
+                    <div class="{estilo_classe}" style="max-width: 100% !important;">
                         <div style="font-size: 11px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
                             <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
                             <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
@@ -1427,29 +1442,32 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
                         <div style="font-size: 14px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
                     </div>
                 """,
-            unsafe_allow_html=True,
-        )
+              unsafe_allow_html=True,
+          )
+        with col_msg_menu:
+          menu_tres_pontinhos = st.selectbox(
+              "⋮",
+              ["⋮", "📋 Copiar", "🔄 Encaminhar", "🗑️ Apagar"],
+              key=f"opt_menu_{row_m['id']}",
+              label_visibility="collapsed",
+          )
 
-        # Ações rápidas discretas por baixo de cada balão
-        col_m1, col_m2, col_m3, col_m4 = st.columns([1, 1, 1, 5])
-        with col_m1:
-          if st.button("🗑️", key=f"del_m_{row_m['id']}", help="Apagar mensagem"):
+          if menu_tres_pontinhos == "🗑️ Apagar":
             cursor.execute(
                 "DELETE FROM chat_interno WHERE id = ?", (row_m["id"],)
             )
             conn.commit()
+            st.success("Mensagem apagada!")
             st.rerun()
-        with col_m2:
-          if st.button("📋", key=f"copy_m_{row_m['id']}", help="Copiar texto"):
-            st.toast(f"Copiado: {row_m['mensagem']}")
-        with col_m3:
-          if st.button("🔄", key=f"fwd_m_{row_m['id']}", help="Encaminhar"):
+          elif menu_tres_pontinhos == "📋 Copiar":
+            st.info(f"📋 Copiado: {row_m['mensagem']}")
+          elif menu_tres_pontinhos == "🔄 Encaminhar":
             msg_enc = f"[Encaminhado] {row_m['mensagem']}"
             cursor.execute(
                 "INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (
                     f"{remetente_atual} ({cargo_atual})",
-                    "🌐 Canal Geral (Toda a Equipe)",
+                    colab_escolhido_str,
                     cargo_atual,
                     msg_enc,
                     "",
@@ -1458,6 +1476,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
                 ),
             )
             conn.commit()
+            st.success("Mensagem encaminhada!")
             st.rerun()
 
         if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
@@ -1480,7 +1499,10 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             unsafe_allow_html=True,
         )
     else:
-      st.info("Ainda sem mensagens neste canal. Começa a conversa abaixo!")
+      st.info(
+          "Ainda sem mensagens nesta conversa privada. Envia a primeira"
+          " mensagem abaixo!"
+      )
 
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -1489,7 +1511,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
       with col_msg1:
         msg_sala_txt = st.text_input(
             "Escreve a tua mensagem operacional...",
-            placeholder="Mensagem segura para a equipa...",
+            placeholder="Mensagem segura...",
         )
       with col_msg2:
         file_sala_up = st.file_uploader(
@@ -1498,9 +1520,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             label_visibility="collapsed",
         )
 
-      btn_enviar_chat = st.form_submit_button(
-          "🚀 Enviar Mensagem Instantânea"
-      )
+      btn_enviar_chat = st.form_submit_button("🚀 Enviar Mensagem")
 
       if btn_enviar_chat:
         if not msg_sala_txt.strip() and not file_sala_up:
@@ -1558,11 +1578,13 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
     nome_sala_direta = f"TabalmixDirectCall{ ''.join(e for e in alvo_selecionado.split()[0] if e.isalnum()) }2026"
     link_direto_jitsi = f"https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false&config.startWithAudioMuted=false&config.startWithVideoMuted=false"
 
-    if st.button("🚀 Criar Sala e Enviar Convite para o Chat", key="btn_ligar_integ"):
+    if st.button(
+        "🚀 Criar Sala e Enviar Convite para o Chat", key="btn_ligar_integ"
+    ):
       remetente_notif = (
           usuario_atual["apelido"] if usuario_atual else "Administrador"
       )
-      
+
       msg_alerta_chamada = (
           f"🚨 **CHAMADA DE VÍDEO ATIVA:** {remetente_notif} iniciou uma"
           f" reunião ao vivo contigo!\n\n🔗 **Clica no link abaixo para"
