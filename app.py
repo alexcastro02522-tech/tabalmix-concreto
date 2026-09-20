@@ -31,7 +31,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE ORIGINAL
+# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE (COM CORREÇÃO PARA MODO ESCURO EM MOBILE)
 st.markdown(
     """
     <style>
@@ -75,16 +75,16 @@ st.markdown(
         border-radius: 16px !important;
         box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
     }
-    div.stTextInput > div > div > input, 
-    div.stNumberInput > div > div > input, 
-    div.stSelectbox > div > div > div,
-    div.stTextArea > div > div > textarea,
-    div[data-baseweb="select"] > div {
+    /* CORREÇÃO DEFINITIVA PARA TEXTOS E INPUTS EM MODO ESCURO MOBILE */
+    div.stTextInput input, 
+    div.stNumberInput input, 
+    div.stSelectbox div[data-baseweb="select"],
+    div.stTextArea textarea {
         background-color: #ffffff !important;
         color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
         border: 1px solid #cbd5e1 !important;
         border-radius: 12px !important;
-        min-height: 44px !important;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
     .stButton button {
