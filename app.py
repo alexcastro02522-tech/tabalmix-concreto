@@ -857,6 +857,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         usuario_atual["cargo"] if usuario_atual else "Diretoria / Gestão"
     )
 
+    # CORREÇÃO CRUCIAL DA CONSULTA: AGORA MOSTRA MENSAGENS DO CANAL GERAL OU DIRETAS SEM FALHAR
     if termo_busca_chat.strip():
       df_msgs = pd.read_sql(
           "SELECT * FROM chat_interno WHERE mensagem LIKE ? ORDER BY id ASC LIMIT"
@@ -866,22 +867,17 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
       )
     elif "Canal Geral" in colab_escolhido_str:
       df_msgs = pd.read_sql(
-          "SELECT * FROM chat_interno WHERE destinatario LIKE '%Canal Geral%' ORDER BY id ASC LIMIT 60",
+          "SELECT * FROM chat_interno WHERE destinatario LIKE '%Canal Geral%'"
+          " OR destinatario LIKE '%Equipe Geral%' ORDER BY id ASC LIMIT 60",
           conn,
       )
     else:
       nome_colab_alvo = colab_escolhido_str.split("—")[0].replace("👤", "").strip()
       df_msgs = pd.read_sql(
-          "SELECT * FROM chat_interno WHERE (remetente LIKE ? AND destinatario"
-          " LIKE ?) OR (remetente LIKE ? AND destinatario LIKE ?) ORDER BY id"
-          " ASC LIMIT 60",
+          "SELECT * FROM chat_interno WHERE destinatario LIKE ? OR remetente"
+          " LIKE ? ORDER BY id ASC LIMIT 60",
           conn,
-          params=(
-              f"%{remetente_atual}%",
-              f"%{nome_colab_alvo}%",
-              f"%{nome_colab_alvo}%",
-              f"%{remetente_atual}%",
-          ),
+          params=(f"%{nome_colab_alvo}%", f"%{nome_colab_alvo}%"),
       )
 
     st.markdown('<div class="chat-container">', unsafe_allow_html=True)
