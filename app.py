@@ -1300,59 +1300,48 @@ elif menu == "⚙️ Meu Perfil / Dados":
   st.markdown("Painel de perfil de administrador master.")
 
 elif menu == "⚙️ Painel de Licença (Admin)":
-  st.title("⚙️ Painel Administrativo de Chaves & Licenças & Gestão de Colunas")
+  st.title("⚙️ Painel Administrativo Master & Exclusão Global de Colunas")
+  st.markdown("Aqui o Administrador do sistema pode apagar colunas permanentemente do banco de dados para todos os colaboradores.")
   
-  tab_adm_l1, tab_adm_l2 = st.tabs(["🎟️ Gestão de Licenças", "⚙️ Gestão de Colunas (Excluir / Ocultar)"])
+  st.markdown("### 🗑️ Excluir Coluna Indesejada (Banco de Dados Global)")
   
-  with tab_adm_l1:
-    df_chaves = pd.read_sql("SELECT * FROM chaves_licenca", conn)
-    if not df_chaves.empty:
-      exibir_tabela_padronizada(df_chaves, "chaves_licenca")
-    else:
-      st.info("Nenhuma chave registada.")
-
-  with tab_adm_l2:
-    st.markdown("### ⚙️ Gestão Executiva de Colunas (Ocultar ou Excluir Permanentemente)")
-    tabela_escolhida_ocultar = st.selectbox("Selecione a Tabela do Banco de Dados:", ["veiculos", "manutencoes", "mobilizacoes", "combustivel", "pecas", "clientes"])
+  tabela_excluir_col = st.selectbox(
+      "Selecione a Tabela do Sistema:",
+      ["veiculos", "manutencoes", "mobilizacoes", "combustivel", "pecas", "clientes"]
+  )
+  
+  try:
+    df_cols_temp = pd.read_sql(f"SELECT * FROM {tabela_excluir_col} LIMIT 1", conn)
+    colunas_existentes = list(df_cols_temp.columns)
+  except Exception:
+    colunas_existentes = []
     
-    try:
-      df_ex_cols = pd.read_sql(f"SELECT * FROM {tabela_escolhida_ocultar} LIMIT 1", conn)
-      todas_cols_tabela = list(df_ex_cols.columns)
-    except Exception:
-      todas_cols_tabela = []
-
-    cursor.execute("SELECT ordem_colunas FROM config_colunas WHERE tabela = ?", (tabela_escolhida_ocultar,))
-    res_oc = cursor.fetchone()
-    cols_ja_ocultas = [c.strip() for c in res_oc[0].split(",")] if res_oc and res_oc[0] else []
-
-    colunas_para_ocultar = st.multiselect(
-        "Selecione as colunas que deseja ocultar da visualização:",
-        todas_cols_tabela,
-        default=[c for c in cols_ja_ocultas if c in todas_cols_tabela]
+  # Proteger a coluna 'id' para não ser excluída por segurança
+  colunas_para_escolher = [c for c in colunas_existentes if c != 'id']
+  
+  if colunas_para_escolher:
+    coluna_alvo_exclusao = st.selectbox(
+        "Selecione a coluna que deseja EXCLUIR permanentemente:",
+        colunas_para_escolher
     )
-
-    if st.button("💾 Salvar Configuração de Ocultação"):
-      str_ocultas_final = ",".join(colunas_para_ocultar)
-      cursor.execute("INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas) VALUES (?, ?)", (tabela_escolhida_ocultar, str_ocultas_final))
-      conn.commit()
-      st.success("✅ Ocultação de colunas atualizada com sucesso!")
-      st.rerun()
-
-    st.markdown("---")
-    st.markdown("🔴 **ZONA DE EXCLUSÃO DE COLUNAS:** Selecione abaixo uma coluna para apagá-la permanentemente do banco de dados (Cuidado: esta ação é irreversível).")
     
-    colunas_disponiveis_exclusao = [c for c in todas_cols_tabela if c not in ['id']]
-    if colunas_disponiveis_exclusao:
-      col_para_excluir = st.selectbox("Selecione a coluna para excluir da tabela:", colunas_disponiveis_exclusao)
-      
-      if st.button("🗑️ Excluir Coluna Selecionada do Banco de Dados"):
-        if col_para_excluir:
-          try:
-            cursor.execute(f"ALTER TABLE {tabela_escolhida_ocultar} DROP COLUMN {col_para_excluir}")
-            conn.commit()
-            st.success(f"✅ Coluna '{col_para_excluir}' excluída com sucesso da tabela '{tabela_escolhida_ocultar}'!")
-            st.rerun()
-          except Exception as e:
-            st.error(f"⚠️ Erro ao excluir coluna: {e}. Nota: Certifique-se de que a versão do SQLite suporta DROP COLUMN.")
-    else:
-      st.info("Não há colunas disponíveis para exclusão nesta tabela além do ID.")
+    if st.button("🔥 Excluir Coluna Definitivamente para Todos"):
+      if coluna_alvo_exclusao:
+        try:
+          cols_mantidas = [c for c in colunas_existentes if c != coluna_alvo_exclusao]
+          cols_selecao = ", ".join([f'"{c}"' for c in cols_mantidas])
+          
+          # Executa transação segura para remover a coluna sem corromper o banco
+          cursor.execute("BEGIN TRANSACTION;")
+          cursor.execute(f"CREATE TABLE {tabela_excluir_col}_new AS SELECT {cols_selecao} FROM {tabela_excluir_col};")
+          cursor.execute(f"DROP TABLE {tabela_excluir_col};")
+          cursor.execute(f"ALTER TABLE {tabela_excluir_col}_new RENAME TO {tabela_excluir_col};")
+          conn.commit()
+          
+          st.success(f"✅ Coluna '{coluna_alvo_exclusao}' excluída com sucesso da tabela '{tabela_excluir_col}'. Ela não aparecerá mais para nenhum colaborador!")
+          st.rerun()
+        except Exception as e:
+          conn.rollback()
+          st.error(f"⚠️ Erro ao excluir coluna: {e}")
+  else:
+    st.info("Não há colunas disponíveis para exclusão nesta tabela.")
