@@ -107,6 +107,40 @@ st.markdown(
 )
 
 
+def gerar_excel_formatado(dataframe, nome_aba="Relatório Tabalmix"):
+  output = io.BytesIO()
+  with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
+    dataframe.to_excel(writer, sheet_name=nome_aba, index=False)
+    workbook = writer.book
+    worksheet = writer.sheets[nome_aba]
+
+    # Formatação corporativa para o Excel
+    header_format = workbook.add_format({
+        "bold": True,
+        "text_wrap": True,
+        "fg_color": "#047857",
+        "font_color": "white",
+        "border": 1,
+        "align": "center",
+        "valign": "middle",
+    })
+    cell_format = workbook.add_format({
+        "border": 1,
+        "align": "left",
+        "valign": "middle",
+        "text_wrap": True,
+    })
+
+    for col_num, value in enumerate(dataframe.columns.values):
+      worksheet.write(0, col_num, str(value).upper(), header_format)
+      # Ajuste automático de largura de coluna para o gestor
+      max_len = max(dataframe[value].astype(str).map(len).max(), len(str(value))) + 4
+      worksheet.set_column(col_num, col_num, max(max_len, 15), cell_format)
+
+  output.seek(0)
+  return output
+
+
 def gerar_pdf_relatorio(titulo, dataframe):
   buffer = io.BytesIO()
   c = canvas.Canvas(buffer, pagesize=letter)
@@ -810,14 +844,26 @@ if menu == "📊 Visão Geral":
   st.markdown("### 📋 Resumo Geral da Frota em Operação")
   if not df_veiculos.empty:
     exibir_tabela_padronizada(df_veiculos, "veiculos")
-    if st.button("📄 Gerar Relatório Executivo Geral em PDF"):
-      pdf_geral = gerar_pdf_relatorio("Relatório Executivo Geral da Frota", df_veiculos)
-      st.download_button(
-          label="📥 Baixar PDF Certificado",
-          data=pdf_geral,
-          file_name="relatorio_executivo_tabalmix.pdf",
-          mime="application/pdf"
-      )
+    
+    col_dl1, col_dl2 = st.columns(2)
+    with col_dl1:
+      if st.button("📄 Gerar Relatório Executivo Geral em PDF"):
+        pdf_geral = gerar_pdf_relatorio("Relatório Executivo Geral da Frota", df_veiculos)
+        st.download_button(
+            label="📥 Baixar PDF Certificado",
+            data=pdf_geral,
+            file_name="relatorio_executivo_tabalmix.pdf",
+            mime="application/pdf"
+        )
+    with col_dl2:
+      if st.button("📊 Gerar Relatório Formatado em Excel"):
+        excel_buf = gerar_excel_formatado(df_veiculos, "Frota_Geral")
+        st.download_button(
+            label="📥 Baixar Excel Pronto p/ Gestor",
+            data=excel_buf,
+            file_name="relatorio_frota_tabalmix.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
   else:
     st.info("Nenhum veículo registado na frota.")
 
@@ -838,6 +884,14 @@ elif menu == "🚜 Cadastro de Equipamentos":
     df_f = pd.read_sql("SELECT * FROM veiculos", conn)
     if not df_f.empty:
       exibir_tabela_padronizada(df_f, "veiculos")
+      if st.button("📊 Exportar Frota em Excel"):
+        excel_f = gerar_excel_formatado(df_f, "Frota")
+        st.download_button(
+            label="📥 Baixar Excel da Frota",
+            data=excel_f,
+            file_name="frota_tabalmix.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
     else:
       st.info("Nenhum equipamento cadastrado ainda.")
 
@@ -962,14 +1016,26 @@ elif menu == "⛽ Abastecimentos & Combustível":
     df_c = pd.read_sql("SELECT * FROM combustivel ORDER BY id DESC", conn)
     if not df_c.empty:
       exibir_tabela_padronizada(df_c, "combustivel")
-      if st.button("📄 Gerar Relatório em PDF de Combustível"):
-        pdf_c = gerar_pdf_relatorio("Relatório de Abastecimento", df_c)
-        st.download_button(
-            label="📥 Baixar PDF Certificado",
-            data=pdf_c,
-            file_name="relatorio_combustivel.pdf",
-            mime="application/pdf",
-        )
+      
+      col_bc1, col_bc2 = st.columns(2)
+      with col_bc1:
+        if st.button("📄 Gerar Relatório em PDF de Combustível"):
+          pdf_c = gerar_pdf_relatorio("Relatório de Abastecimento", df_c)
+          st.download_button(
+              label="📥 Baixar PDF Certificado",
+              data=pdf_c,
+              file_name="relatorio_combustivel.pdf",
+              mime="application/pdf",
+          )
+      with col_bc2:
+        if st.button("📊 Exportar Abastecimentos em Excel"):
+          excel_c = gerar_excel_formatado(df_c, "Combustivel")
+          st.download_button(
+              label="📥 Baixar Excel Tratado",
+              data=excel_c,
+              file_name="combustivel_tabalmix.xlsx",
+              mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          )
     else:
       st.info("Nenhum abastecimento registado.")
 
@@ -1104,6 +1170,15 @@ elif menu == "🏗️ Mobilização / Desmobilização":
 
     if not df_mobs_edit.empty:
       exibir_tabela_padronizada(df_mobs_edit, "mobilizacoes")
+      
+      if st.button("📊 Exportar Mobilizações em Excel"):
+        excel_mob = gerar_excel_formatado(df_mobs_edit, "Mobilizacoes")
+        st.download_button(
+            label="📥 Baixar Excel de Mobilizações",
+            data=excel_mob,
+            file_name="mobilizacoes_tabalmix.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
 
       id_mob_sel = st.selectbox(
           "Selecione o ID da mobilização para editar:",
@@ -1197,14 +1272,26 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
     df_os = pd.read_sql("SELECT * FROM manutencoes ORDER BY id DESC", conn)
     if not df_os.empty:
       exibir_tabela_padronizada(df_os, "manutencoes")
-      if st.button("📄 Gerar Relatório em PDF de OS"):
-        pdf_os = gerar_pdf_relatorio("Relatório de Ordens de Serviço", df_os)
-        st.download_button(
-            label="📥 Baixar PDF Certificado",
-            data=pdf_os,
-            file_name="relatorio_ordens_servico.pdf",
-            mime="application/pdf",
-        )
+      
+      col_os1, col_os2 = st.columns(2)
+      with col_os1:
+        if st.button("📄 Gerar Relatório em PDF de OS"):
+          pdf_os = gerar_pdf_relatorio("Relatório de Ordens de Serviço", df_os)
+          st.download_button(
+              label="📥 Baixar PDF Certificado",
+              data=pdf_os,
+              file_name="relatorio_ordens_servico.pdf",
+              mime="application/pdf",
+          )
+      with col_os2:
+        if st.button("📊 Exportar Ordens de Serviço em Excel"):
+          excel_os = gerar_excel_formatado(df_os, "Ordens_Servico")
+          st.download_button(
+              label="📥 Baixar Excel de OS",
+              data=excel_os,
+              file_name="ordens_servico_tabalmix.xlsx",
+              mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          )
     else:
       st.info("Nenhuma Ordem de Serviço registada.")
 
@@ -1266,6 +1353,14 @@ elif menu == "🔩 Peças e Ferramentas":
     df_pecas = pd.read_sql("SELECT * FROM pecas ORDER BY id DESC", conn)
     if not df_pecas.empty:
       exibir_tabela_padronizada(df_pecas, "pecas")
+      if st.button("📊 Exportar Stock em Excel"):
+        excel_p = gerar_excel_formatado(df_pecas, "Pecas")
+        st.download_button(
+            label="📥 Baixar Excel de Stock",
+            data=excel_p,
+            file_name="pecas_tabalmix.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
     else:
       st.info("Nenhuma peça registada no stock.")
 
@@ -1306,6 +1401,14 @@ elif menu == "👥 Gestão de Clientes":
     df_cli = pd.read_sql("SELECT * FROM clientes ORDER BY id DESC", conn)
     if not df_cli.empty:
       exibir_tabela_padronizada(df_cli, "clientes")
+      if st.button("📊 Exportar Clientes em Excel"):
+        excel_cli = gerar_excel_formatado(df_cli, "Clientes")
+        st.download_button(
+            label="📥 Baixar Excel de Clientes",
+            data=excel_cli,
+            file_name="clientes_tabalmix.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
     else:
       st.info("Nenhum cliente registado.")
 
