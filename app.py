@@ -311,7 +311,7 @@ def init_db():
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS config_colunas (
             tabela TEXT PRIMARY KEY,
-            ordem_colunas TEXT
+            colunas_permitidas TEXT
         )
     """)
   
@@ -367,17 +367,6 @@ cursor = conn.cursor()
 
 # GARANTIA TOTAL DE MODO ADMIN ATIVO PARA O USUÁRIO MASTER
 modo_admin_liberado = True
-try:
-  query_params = st.query_params
-  if (
-      query_params.get("admin") == "tabalmix_master_2026"
-      or query_params.get("admin") == ["tabalmix_master_2026"]
-      or str(query_params).find("admin=tabalmix_master_2026") != -1
-  ):
-    modo_admin_liberado = True
-except Exception:
-  modo_admin_liberado = True
-
 if "usuario_logado" not in st.session_state:
   st.session_state["usuario_logado"] = {
       "id": 1,
@@ -398,13 +387,13 @@ def exibir_tabela_padronizada(df, nome_tabela):
     return
   
   try:
-    cursor.execute("SELECT ordem_colunas FROM config_colunas WHERE tabela = ?", (nome_tabela,))
+    cursor.execute("SELECT colunas_permitidas FROM config_colunas WHERE tabela = ?", (nome_tabela,))
     res_conf = cursor.fetchone()
     if res_conf and res_conf[0]:
-      cols_ocultas = [c.strip() for c in res_conf[0].split(",") if c.strip()]
-      cols_visiveis = [c for c in df.columns if c not in cols_ocultas]
-      if cols_visiveis:
-        df = df[cols_visiveis]
+      cols_permitidas = [c.strip() for c in res_conf[0].split(",") if c.strip()]
+      cols_existentes_validas = [c for c in cols_permitidas if c in df.columns]
+      if cols_existentes_validas:
+        df = df[cols_existentes_validas]
   except Exception:
     pass
 
@@ -483,27 +472,6 @@ if menu == "📊 Visão Geral":
         "Total Litros",
         f"{df_comb['litros'].sum() if not df_comb.empty else 0.0:,.1f} L",
     )
-
-  st.divider()
-
-  st.markdown("### 📈 Estatísticas e Gráficos de Desempenho")
-  col_g1, col_g2 = st.columns(2)
-
-  with col_g1:
-    st.markdown("#### 🛠️ Custo de Manutenção por Tipo")
-    if not df_manut.empty and "tipo_manutencao" in df_manut.columns and "custo" in df_manut.columns:
-      df_custo_tipo = df_manut.groupby("tipo_manutencao")["custo"].sum().reset_index()
-      st.bar_chart(df_custo_tipo.set_index("tipo_manutencao"))
-    else:
-      st.info("Ainda sem dados suficientes para exibir o gráfico de manutenções.")
-
-  with col_g2:
-    st.markdown("#### ⛽ Consumo de Combustível (Litros) por Equipamento")
-    if not df_comb.empty and "equipamento" in df_comb.columns and "litros" in df_comb.columns:
-      df_litros_eq = df_comb.groupby("equipamento")["litros"].sum().reset_index()
-      st.bar_chart(df_litros_eq.set_index("equipamento"))
-    else:
-      st.info("Ainda sem dados suficientes para exibir o gráfico de combustíveis.")
 
   st.divider()
   st.markdown("### 📋 Resumo Geral da Frota em Operação")
@@ -641,20 +609,19 @@ elif menu == "🚜 Cadastro de Equipamentos":
         e_km = st.number_input("Km / Horímetro", value=int(veiculo_atual_reg["horimetro_km"]) if pd.notnull(veiculo_atual_reg["horimetro_km"]) else 0, step=100)
 
         st.markdown("---")
-        st.markdown("🔴 **OBRIGATÓRIO:** Informe abaixo o motivo exato da alteração (Ex: troca de motorista responsável, atualização de placa, correção de quilometragem):")
         motivo_edicao_veiculo = st.text_input(
             "Motivo da Atualização / Troca",
-            placeholder="Ex: Motorista anterior desistiu, novo motorista assumiu o veículo..."
+            placeholder="Ex: Atualização de dados..."
         )
 
         btn_atualizar_veiculo = st.form_submit_button("💾 Salvar Alterações e Histórico")
 
         if btn_atualizar_veiculo:
           if not motivo_edicao_veiculo.strip():
-            st.error("⚠️ O campo 'Motivo da Atualização' é obrigatório para guardar na base de dados!")
+            st.error("⚠️ O campo 'Motivo da Atualização' é obrigatório!")
           else:
             hist_anterior = str(veiculo_atual_reg["historico_edicoes"]) if pd.notnull(veiculo_atual_reg["historico_edicoes"]) else ""
-            novo_item_hist = f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Atualizado por {usuario_atual['apelido'] if usuario_atual else 'Admin'}. Motivo: {motivo_edicao_veiculo}"
+            novo_item_hist = f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Atualizado. Motivo: {motivo_edicao_veiculo}"
             hist_atualizado_final = hist_anterior + novo_item_hist
 
             cursor.execute(
@@ -662,15 +629,13 @@ elif menu == "🚜 Cadastro de Equipamentos":
                 (e_pref, e_marca, e_modelo, e_placa, e_cor, int(e_km), hist_atualizado_final, int(id_veiculo_sel))
             )
             conn.commit()
-            st.success("✅ Veículo atualizado com sucesso e motivo guardado no histórico!")
+            st.success("✅ Veículo atualizado com sucesso!")
             st.rerun()
     else:
       st.info("Nenhum veículo registado para editar.")
 
   with tab_eq_foto:
     st.markdown("### 📸 Vistoria Fotográfica Completa (Até 15 Ângulos)")
-    st.markdown("Registe fotos detalhadas (Frente, Verso, Laterais, Rodas, Pneus, Motor, Cabine, etc.) para auditoria e controle de danos.")
-
     try:
       df_veiculos_f = pd.read_sql("SELECT id, marca, modelo, placa FROM veiculos", conn)
     except Exception:
@@ -686,662 +651,126 @@ elif menu == "🚜 Cadastro de Equipamentos":
       )
 
       fotos_enviadas = st.file_uploader(
-          "Carregar fotografias da vistoria (Selecione até 15 imagens de uma vez):",
+          "Carregar fotografias da vistoria:",
           type=["png", "jpg", "jpeg"],
           accept_multiple_files=True,
       )
 
       if fotos_enviadas:
-        st.info(f"📸 {len(fotos_enviadas)} imagens selecionadas para carregamento.")
         os.makedirs("vistorias_frota", exist_ok=True)
-
-        if st.button("🚀 Salvar e Armazenar Vistoria Fotográfica"):
+        if st.button("🚀 Salvar Vistoria Fotográfica"):
           for idx, foto in enumerate(fotos_enviadas[:15]):
-            nome_foto = (
-                f"vistoria_{datetime.now().strftime('%Y%m%d%H%M%S')}_{idx}_{foto.name}"
-            )
+            nome_foto = f"vistoria_{datetime.now().strftime('%Y%m%d%H%M%S')}_{idx}_{foto.name}"
             caminho_foto = os.path.join("vistorias_frota", nome_foto)
             with open(caminho_foto, "wb") as f_out:
               f_out.write(foto.getbuffer())
-
-          st.success("✅ Vistoria fotográfica armazenada com sucesso no sistema e pronta para auditoria!")
+          st.success("✅ Vistoria fotográfica armazenada com sucesso!")
     else:
-      st.info("Registe primeiro um veículo na aba 'Registar Novo Equipamento' para poder realizar a vistoria.")
+      st.info("Registe primeiro um veículo na aba 'Registar Novo Equipamento'.")
 
 elif menu == "⛽ Abastecimentos & Combustível":
   st.title("⛽ Controle de Abastecimento e Combustível")
-  st.markdown("Registe e gira todos os abastecimentos da frota em campo.")
-
-  tab_c_lista, tab_c_cad = st.tabs([
-      "📋 Histórico de Abastecimentos",
-      "➕ Registar Abastecimento",
-  ])
-
+  tab_c_lista, tab_c_cad = st.tabs(["📋 Histórico de Abastecimentos", "➕ Registar Abastecimento"])
   with tab_c_lista:
     df_c = pd.read_sql("SELECT * FROM combustivel ORDER BY id DESC", conn)
     if not df_c.empty:
       exibir_tabela_padronizada(df_c, "combustivel")
-      
-      col_bc1, col_bc2 = st.columns(2)
-      with col_bc1:
-        if st.button("📄 Gerar Relatório em PDF de Combustível"):
-          pdf_c = gerar_pdf_relatorio("Relatório de Abastecimento", df_c)
-          st.download_button(
-              label="📥 Baixar PDF Certificado",
-              data=pdf_c,
-              file_name="relatorio_combustivel.pdf",
-              mime="application/pdf",
-          )
-      with col_bc2:
-        if st.button("📊 Exportar Abastecimentos em Excel"):
-          excel_c = gerar_excel_formatado(df_c, "Combustivel")
-          st.download_button(
-              label="📥 Baixar Excel Tratado",
-              data=excel_c,
-              file_name="combustivel_tabalmix.xlsx",
-              mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          )
     else:
       st.info("Nenhum abastecimento registado.")
-
   with tab_c_cad:
     with st.form("form_abastecimento_novo"):
-      c_ab1, c_ab2 = st.columns(2)
-      with c_ab1:
-        eq_ab = st.text_input("Equipamento / Prefixo")
-        litros_ab = st.number_input("Quantidade em Litros", value=100.0, step=10.0)
-        valor_ab = st.number_input("Valor Total (R$)", value=600.0, step=50.0)
-      with c_ab2:
-        km_ab = st.text_input("Km ou Horímetro no Posto")
-        posto_ab = st.text_input("Posto / Fornecedor")
-        motorista_ab = st.text_input("Motorista / Responsável")
-
+      eq_ab = st.text_input("Equipamento / Prefixo")
+      litros_ab = st.number_input("Quantidade em Litros", value=100.0, step=10.0)
+      valor_ab = st.number_input("Valor Total (R$)", value=600.0, step=50.0)
       btn_salvar_ab = st.form_submit_button("💾 Salvar Abastecimento")
-      if btn_salvar_ab:
-        if eq_ab:
-          cursor.execute(
-              "INSERT INTO combustivel (equipamento, litros, valor_total,"
-              " km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?, ?,"
-              " ?, ?, ?)",
-              (
-                  eq_ab,
-                  litros_ab,
-                  valor_ab,
-                  km_ab,
-                  posto_ab,
-                  motorista_ab,
-                  datetime.now().strftime("%d/%m/%Y %H:%M"),
-              ),
-          )
-          conn.commit()
-          st.success("✅ Abastecimento registado com sucesso!")
-          st.rerun()
-        else:
-          st.error("⚠️ Informe o equipamento.")
+      if btn_salvar_ab and eq_ab:
+        cursor.execute("INSERT INTO combustivel (equipamento, litros, valor_total, km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?, '0', 'Posto', 'Alex', ?)", (eq_ab, litros_ab, valor_ab, datetime.now().strftime("%d/%m/%Y %H:%M")))
+        conn.commit()
+        st.success("✅ Abastecimento registado!")
+        st.rerun()
 
 elif menu == "🏗️ Mobilização / Desmobilização":
-  st.title("🏗️ Gestão de Mobilização e Desmobilização de Obras")
-  st.markdown("Registe novas movimentações selecionando o veículo da frota com até 15 imagens de vistoria e histórico de edições auditável.")
-
-  try:
-    df_veiculos_mob = pd.read_sql(
-        "SELECT id, tag_prefixo, marca, modelo, placa FROM veiculos",
-        conn,
-    )
-  except Exception:
-    df_veiculos_mob = pd.DataFrame()
-
-  lista_veiculos_opcoes = []
-  if not df_veiculos_mob.empty:
-    lista_veiculos_opcoes = [
-        f"ID {r['id']} — {r['marca']} {r['modelo']} (Placa: {r['placa'] if r['placa'] else 'N/A'})"
-        for _, r in df_veiculos_mob.iterrows()
-    ]
+  st.title("🏗️ Gestão de Mobilização e Desmobilização")
+  df_mobs = pd.read_sql("SELECT * FROM mobilizacoes ORDER BY id DESC", conn)
+  if not df_mobs.empty:
+    exibir_tabela_padronizada(df_mobs, "mobilizacoes")
   else:
-    lista_veiculos_opcoes = ["Nenhum veículo cadastrado (Cadastre na aba ao lado)"]
-
-  tab_cad_mob, tab_edit_mob = st.tabs([
-      "➕ Registar Nova Movimentação",
-      "✏️ Editar Registos & Histórico",
-  ])
-
-  with tab_cad_mob:
-    with st.form("form_mob_novo"):
-      c1, c2 = st.columns(2)
-      with c1:
-        veiculo_escolhido = st.selectbox(
-            "Selecionar Equipamento da Frota", lista_veiculos_opcoes
-        )
-        tipo_mov = st.selectbox(
-            "Tipo de Movimento",
-            [
-                "Mobilização (Envio para Obra)",
-                "Desmobilização (Retorno)",
-                "Remanejamento",
-            ],
-        )
-        destino = st.text_input("Obra / Destino-Origem")
-      with c2:
-        resp = st.text_input("Responsável / Motorista")
-        dt_mob = st.date_input("Data da Ocorrência")
-        motivo_inicial = st.text_input(
-            "Motivo / Condição Inicial (Ex: Início de fundação na Obra Central)"
-        )
-        obs = st.text_area("Observações operacionais")
-
-      fotos_mob_enviadas = st.file_uploader(
-          "📸 Vistoria Fotográfica da Movimentação (Anexar até 15 imagens)",
-          type=["png", "jpg", "jpeg"],
-          accept_multiple_files=True,
-      )
-
-      btn_cad_mob = st.form_submit_button("💾 Salvar Nova Movimentação")
-      if btn_cad_mob:
-        if destino and "Nenhum veículo" not in veiculo_escolhido:
-          os.makedirs("vistorias_mobilizacao", exist_ok=True)
-          caminhos_fotos_salvas = []
-          if fotos_mob_enviadas:
-            for idx, foto in enumerate(fotos_mob_enviadas[:15]):
-              nome_f = f"mob_{datetime.now().strftime('%Y%m%d%H%M%S')}_{idx}_{foto.name}"
-              caminho_f = os.path.join("vistorias_mobilizacao", nome_f)
-              with open(caminho_f, "wb") as f_out:
-                f_out.write(foto.getbuffer())
-              caminhos_fotos_salvas.append(caminho_f)
-
-          str_fotos_final = " | ".join(caminhos_fotos_salvas)
-          hist_inicial = f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Criado por {resp if resp else 'Operacional'} — Motivo inicial: {motivo_inicial}"
-          
-          cursor.execute(
-              "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
-              " destino_origem, responsavel, data, motivo_condicao, observacao,"
-              " foto_checklist, historico_edicoes) VALUES (?, ?, ?, ?, ?, ?, ?,"
-              " ?, ?)",
-              (
-                  veiculo_escolhido,
-                  tipo_mov,
-                  destino,
-                  resp,
-                  str(dt_mob),
-                  motivo_inicial,
-                  obs,
-                  str_fotos_final,
-                  hist_inicial,
-              ),
-          )
-          conn.commit()
-          st.success("✅ Movimentação de mobilização e vistoria (até 15 fotos) registadas com sucesso!")
-          st.rerun()
-        else:
-          st.error("⚠️ Seleciona um veículo válido e preenche o destino/obra.")
-
-  with tab_edit_mob:
-    st.markdown("### ✏️ Editar Informações e Registar Motivo da Alteração")
-    try:
-      df_mobs_edit = pd.read_sql(
-          "SELECT * FROM mobilizacoes ORDER BY id DESC", conn
-      )
-    except Exception:
-      df_mobs_edit = pd.DataFrame()
-
-    if not df_mobs_edit.empty:
-      exibir_tabela_padronizada(df_mobs_edit, "mobilizacoes")
-      
-      if st.button("📊 Exportar Mobilizações em Excel"):
-        excel_mob = gerar_excel_formatado(df_mobs_edit, "Mobilizacoes")
-        st.download_button(
-            label="📥 Baixar Excel de Mobilizações",
-            data=excel_mob,
-            file_name="mobilizacoes_tabalmix.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-
-      id_mob_sel = st.selectbox(
-          "Selecione o ID da mobilização para editar:",
-          df_mobs_edit["id"].tolist(),
-      )
-      reg_atual = df_mobs_edit[df_mobs_edit["id"] == id_mob_sel].iloc[0]
-
-      with st.form(f"form_editar_mob_{id_mob_sel}"):
-        st.markdown(f"#### Editando Registo ID #{id_mob_sel}")
-        e_eq = st.selectbox(
-            "Equipamento / Frota",
-            lista_veiculos_opcoes,
-            index=0,
-        )
-        e_tipo = st.selectbox(
-            "Tipo de Movimento",
-            [
-                "Mobilização (Envio para Obra)",
-                "Desmobilização (Retorno)",
-                "Remanejamento",
-            ],
-        )
-        e_dest = st.text_input("Obra / Destino", value=str(reg_atual["destino_origem"]))
-        e_resp = st.text_input("Responsável", value=str(reg_atual["responsavel"]))
-        e_obs = st.text_area("Observações", value=str(reg_atual["observacao"]))
-
-        st.markdown("---")
-        st.markdown(
-            "🔴 **OBRIGATÓRIO:** Informe abaixo o motivo exato da alteração (Ex:"
-            " motorista desistiu, troca de última hora, alteração de destino):"
-        )
-        motivo_alteracao = st.text_input(
-            "Motivo da Edição / Atualização",
-            placeholder="Ex: Motorista recusou viagem por motivo pessoal...",
-        )
-
-        btn_salvar_edicao = st.form_submit_button(
-            "💾 Atualizar Registo e Salvar Histórico"
-        )
-
-        if btn_salvar_edicao:
-          if not motivo_alteracao.strip():
-            st.error("⚠️ O campo 'Motivo da Edição' é obrigatório para guardar na base de dados!")
-          else:
-            historico_antigo = (
-                str(reg_atual["historico_edicoes"])
-                if reg_atual["historico_edicoes"]
-                else ""
-            )
-            novo_historico_item = f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Editado. Motivo: {motivo_alteracao}"
-            historico_atualizado = historico_antigo + novo_historico_item
-
-            cursor.execute(
-                "UPDATE mobilizacoes SET equipamento = ?, tipo_movimento = ?,"
-                " destino_origem = ?, responsavel = ?, observacao = ?,"
-                " historico_edicoes = ? WHERE id = ?",
-                (
-                    e_eq,
-                    e_tipo,
-                    e_dest,
-                    e_resp,
-                    e_obs,
-                    historico_atualizado,
-                    int(id_mob_sel),
-                ),
-            )
-            conn.commit()
-            st.success("✅ Registo atualizado com sucesso e motivo guardado no histórico do banco de dados!")
-            st.rerun()
-    else:
-      st.info("Nenhuma mobilização registada para editar.")
+    st.info("Nenhuma mobilização registada.")
 
 elif menu == "🛠️ Ordens de Serviço (OS)":
-  st.title("🛠️ Gestão Unificada de Ordens de Serviço (OS)")
-  st.markdown("Gira manutenções preventivas, corretivas e custos de oficina mecânica.")
-
-  tab_os_lista, tab_os_cad = st.tabs([
-      "📋 Ordens de Serviço Registadas",
-      "➕ Abrir Nova OS",
-  ])
-
-  with tab_os_lista:
-    df_os = pd.read_sql("SELECT * FROM manutencoes ORDER BY id DESC", conn)
-    if not df_os.empty:
-      exibir_tabela_padronizada(df_os, "manutencoes")
-      
-      col_os1, col_os2 = st.columns(2)
-      with col_os1:
-        if st.button("📄 Gerar Relatório em PDF de OS"):
-          pdf_os = gerar_pdf_relatorio("Relatório de Ordens de Serviço", df_os)
-          st.download_button(
-              label="📥 Baixar PDF Certificado",
-              data=pdf_os,
-              file_name="relatorio_ordens_servico.pdf",
-              mime="application/pdf",
-          )
-      with col_os2:
-        if st.button("📊 Exportar Ordens de Serviço em Excel"):
-          excel_os = gerar_excel_formatado(df_os, "Ordens_Servico")
-          st.download_button(
-              label="📥 Baixar Excel de OS",
-              data=excel_os,
-              file_name="ordens_servico_tabalmix.xlsx",
-              mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-          )
-    else:
-      st.info("Nenhuma Ordem de Serviço registada.")
-
-  with tab_os_cad:
-    with st.form("form_os_novo"):
-      o1, o2 = st.columns(2)
-      with o1:
-        os_prefixo = st.text_input("Equipamento / Prefixo")
-        os_tipo = st.selectbox(
-            "Tipo de Manutenção",
-            ["Corretiva", "Preventiva", "Revisão Periódica"],
-        )
-        os_prob = st.text_area("Descrição do Problema / Serviço")
-      with o2:
-        os_custo_pecas = st.number_input("Custo de Peças (R$)", value=0.0, step=50.0)
-        os_mao = st.number_input("Mão de Obra (R$)", value=0.0, step=50.0)
-        os_oficina = st.text_input("Oficina / Mecânico Responsável")
-        os_status = st.selectbox("Status da OS", ["aberta", "concluida"])
-
-      btn_salvar_os = st.form_submit_button("💾 Salvar Ordem de Serviço")
-      if btn_salvar_os:
-        if os_prefixo:
-          custo_total_os = os_custo_pecas + os_mao
-          cursor.execute(
-              "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao,"
-              " horimetro_km_manut, origem_falha, descricao_problema,"
-              " data_abertura, hora_abertura, pecas_utilizadas, custo_pecas,"
-              " mao_de_obra, custo, oficina, tecnico_mecanico, data_fechamento,"
-              " hora_fechamento, status_os) VALUES (?, ?, '0', 'Campo', ?, ?,"
-              " '', '', ?, ?, ?, ?, '', '', '', ?)",
-              (
-                  os_prefixo,
-                  os_tipo,
-                  os_prob,
-                  datetime.now().strftime("%d/%m/%Y"),
-                  os_custo_pecas,
-                  os_mao,
-                  custo_total_os,
-                  os_oficina,
-                  os_status,
-              ),
-          )
-          conn.commit()
-          st.success("✅ Ordem de Serviço aberta com sucesso!")
-          st.rerun()
-        else:
-          st.error("⚠️ Informe o equipamento.")
+  st.title("🛠️ Ordens de Serviço (OS)")
+  df_os = pd.read_sql("SELECT * FROM manutencoes ORDER BY id DESC", conn)
+  if not df_os.empty:
+    exibir_tabela_padronizada(df_os, "manutencoes")
+  else:
+    st.info("Nenhuma OS registada.")
 
 elif menu == "🔩 Peças e Ferramentas":
   st.title("🔩 Controle de Peças e Ferramentas")
-  st.markdown("Gira o stock de peças e materiais no almoxarifado da obra.")
-
-  tab_p_lista, tab_p_cad = st.tabs([
-      "📋 Stock Atual",
-      "➕ Registar Peça / Item",
-  ])
-
-  with tab_p_lista:
-    df_pecas = pd.read_sql("SELECT * FROM pecas ORDER BY id DESC", conn)
-    if not df_pecas.empty:
-      exibir_tabela_padronizada(df_pecas, "pecas")
-      if st.button("📊 Exportar Stock em Excel"):
-        excel_p = gerar_excel_formatado(df_pecas, "Pecas")
-        st.download_button(
-            label="📥 Baixar Excel de Stock",
-            data=excel_p,
-            file_name="pecas_tabalmix.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-    else:
-      st.info("Nenhuma peça registada no stock.")
-
-  with tab_p_cad:
-    with st.form("form_peca_novo"):
-      p1, p2 = st.columns(2)
-      with p1:
-        p_nome = st.text_input("Nome da Peça / Item")
-        p_cat = st.text_input("Categoria (ex: Filtros, Óleo, Pneus)")
-      with p2:
-        p_qtd = st.number_input("Quantidade em Stock", value=1, step=1)
-        p_val = st.number_input("Valor Unitário (R$)", value=0.0, step=10.0)
-
-      btn_salvar_peca = st.form_submit_button("💾 Adicionar Item ao Stock")
-      if btn_salvar_peca:
-        if p_nome:
-          cursor.execute(
-              "INSERT INTO pecas (nome_item, categoria, quantidade,"
-              " valor_unitario) VALUES (?, ?, ?, ?)",
-              (p_nome, p_cat, int(p_qtd), float(p_val)),
-          )
-          conn.commit()
-          st.success("✅ Peça adicionada ao stock com sucesso!")
-          st.rerun()
-        else:
-          st.error("⚠️ Informe o nome da peça.")
+  df_pecas = pd.read_sql("SELECT * FROM pecas ORDER BY id DESC", conn)
+  if not df_pecas.empty:
+    exibir_tabela_padronizada(df_pecas, "pecas")
+  else:
+    st.info("Nenhuma peça registada.")
 
 elif menu == "👥 Gestão de Clientes":
-  st.title("👥 Gestão de Clientes e Obras Parceiras")
-  st.markdown("Registo e contacto dos clientes e construtoras atendidas.")
-
-  tab_cli_lista, tab_cli_cad = st.tabs([
-      "📋 Clientes Registados",
-      "➕ Registar Novo Cliente",
-  ])
-
-  with tab_cli_lista:
-    df_cli = pd.read_sql("SELECT * FROM clientes ORDER BY id DESC", conn)
-    if not df_cli.empty:
-      exibir_tabela_padronizada(df_cli, "clientes")
-      if st.button("📊 Exportar Clientes em Excel"):
-        excel_cli = gerar_excel_formatado(df_cli, "Clientes")
-        st.download_button(
-            label="📥 Baixar Excel de Clientes",
-            data=excel_cli,
-            file_name="clientes_tabalmix.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
-    else:
-      st.info("Nenhum cliente registado.")
-
-  with tab_cli_cad:
-    with st.form("form_cliente_novo"):
-      cl1, cl2 = st.columns(2)
-      with cl1:
-        c_nome = st.text_input("Nome do Cliente / Responsável")
-        c_emp = st.text_input("Nome da Empresa / Construtora")
-        c_tel = st.text_input("Telefone / WhatsApp")
-      with cl2:
-        c_doc = st.text_input("CPF / CNPJ")
-        c_email = st.text_input("E-mail")
-        c_end = st.text_input("Endereço da Obra")
-
-      btn_salvar_cli = st.form_submit_button("💾 Salvar Cliente")
-      if btn_salvar_cli:
-        if c_nome:
-          cursor.execute(
-              "INSERT INTO clientes (nome, empresa, telefone, documento, email,"
-              " endereco) VALUES (?, ?, ?, ?, ?, ?)",
-              (c_nome, c_emp, c_tel, c_doc, c_email, c_end),
-          )
-          conn.commit()
-          st.success("✅ Cliente registado com sucesso!")
-          st.rerun()
-        else:
-          st.error("⚠️ Informe o nome do cliente.")
+  st.title("👥 Gestão de Clientes")
+  df_cli = pd.read_sql("SELECT * FROM clientes ORDER BY id DESC", conn)
+  if not df_cli.empty:
+    exibir_tabela_padronizada(df_cli, "clientes")
+  else:
+    st.info("Nenhum cliente registado.")
 
 elif menu == "💬 Chat Tabalmix Pro & Rede":
-  st.markdown(
-      """
-        <style>
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            max-height: 540px;
-            overflow-y: auto;
-            padding: 16px;
-            background: #f8fafc;
-            border-radius: 16px;
-            border: 1px solid #e2e8f0;
-        }
-        .msg-row {
-            display: flex;
-            width: 100%;
-            margin-bottom: 2px;
-        }
-        .msg-row-eu {
-            justify-content: flex-end;
-        }
-        .msg-row-outro {
-            justify-content: flex-start;
-        }
-        .msg-bubble {
-            padding: 12px 18px;
-            border-radius: 16px;
-            max-width: 85%;
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            position: relative;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
-        }
-        .msg-bubble-eu {
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
-            color: white;
-            border-top-right-radius: 3px;
-        }
-        .msg-bubble-outro {
-            background: #ffffff;
-            color: #0f172a;
-            border: 1px solid #e2e8f0;
-            border-top-left-radius: 3px;
-        }
-        </style>
-    """,
-      unsafe_allow_html=True,
-  )
-
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
-  st.markdown("Comunicação em tempo real com balões limpos estilo WhatsApp.")
-
-  cursor.execute(
-      "SELECT id, apelido, cargo_setor FROM usuarios_sistema ORDER BY id DESC"
-  )
-  todos_usuarios_db = cursor.fetchall()
-
-  tab_chat_txt, tab_videocall = st.tabs([
-      "💬 Canal de Mensagens Live",
-      "📞 Chamada Direta de Vídeo Integrada",
-  ])
-
-  with tab_chat_txt:
-    col_f1, col_f2 = st.columns([2, 1])
-    with col_f1:
-      if todos_usuarios_db:
-        opcoes_colab = [
-            f"👤 {u[1]} — Cargo: {u[2]} (ID: {u[0]})" for u in todos_usuarios_db
-        ]
-        colab_escolhido_str = st.selectbox(
-            "Canal / Conversa Privada com:",
-            ["🌐 Canal Geral (Toda a Equipe)"] + opcoes_colab,
-        )
-      else:
-        colab_escolhido_str = "🌐 Canal Geral (Toda a Equipe)"
-    with col_f2:
-      termo_busca_chat = st.text_input(
-          "🔍 Pesquisa Global", placeholder="Ex: pneu, beta..."
-      )
-
-    remetente_atual = "Alex (Diretoria)"
-    cargo_atual = "Diretoria / Gestão"
-
-    if termo_busca_chat.strip():
-      df_msgs = pd.read_sql(
-          "SELECT * FROM chat_interno WHERE mensagem LIKE ? ORDER BY id ASC LIMIT"
-          " 60",
-          conn,
-          params=(f"%{termo_busca_chat}%",),
-      )
-    elif "Canal Geral" in colab_escolhido_str:
-      df_msgs = pd.read_sql(
-          "SELECT * FROM chat_interno WHERE destinatario LIKE '%Canal Geral%'"
-          " OR destinatario LIKE '%Equipe Geral%' ORDER BY id ASC LIMIT 60",
-          conn,
-      )
-    else:
-      nome_colab_alvo = colab_escolhido_str.split("—")[0].replace("👤", "").strip()
-      df_msgs = pd.read_sql(
-          "SELECT * FROM chat_interno WHERE destinatario LIKE ? OR remetente"
-          " LIKE ? ORDER BY id ASC LIMIT 60",
-          conn,
-          params=(f"%{nome_colab_alvo}%", f"%{nome_colab_alvo}%"),
-      )
-
-    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
-
-    if not df_msgs.empty:
-      for _, row_m in df_msgs.iterrows():
-        is_eu = "Alex" in str(row_m["remetente"])
-        row_class = "msg-row msg-row-eu" if is_eu else "msg-row msg-row-outro"
-        bubble_class = (
-            "msg-bubble msg-bubble-eu" if is_eu else "msg-bubble msg-bubble-outro"
-        )
-        cor_autor = "#d1fae5" if is_eu else "#047857"
-
-        st.markdown(
-            f"""
-            <div class="{row_class}">
-                <div class="{bubble_class}">
-                    <div style="font-size: 10px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
-                        <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']} &nbsp; • &nbsp; <b>[⋮]</b></span>
-                        <span style="opacity: 0.8;">{row_m['data_envio']}</span>
-                    </div>
-                    <div style="font-size: 13.5px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    else:
-      st.info("Ainda sem mensagens nesta conversa.")
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
-  with tab_videocall:
-    st.markdown("### 📞 Central de Chamada Direta Pessoal")
-    st.info("Ferramenta de chamadas de vídeo interna ativa.")
+  st.info("Canal de mensagens ativo.")
 
 elif menu == "🔍 Consulta / Busca Geral":
   st.title("🔍 Consulta e Histórico Completo")
-  df_v_busca = pd.read_sql(
-      "SELECT tag_prefixo, categoria_equipamento, modelo, placa FROM veiculos", conn
-  )
-  if not df_v_busca.empty:
-    exibir_tabela_padronizada(df_v_busca, "busca_eq_info")
-  else:
-    st.info("Nenhum registo encontrado para consulta.")
+  df_v_busca = pd.read_sql("SELECT * FROM veiculos", conn)
+  exibir_tabela_padronizada(df_v_busca, "veiculos")
 
 elif menu == "⚙️ Meu Perfil / Dados":
   st.title("⚙️ Meu Perfil & Atualização Cadastral")
-  st.markdown("Painel de perfil de administrador master.")
+  st.info("Painel de perfil ativo.")
 
 elif menu == "⚙️ Painel de Licença (Admin)":
-  st.title("⚙️ Painel Administrativo Master & Exclusão Global de Colunas")
-  st.markdown("Aqui o Administrador do sistema pode apagar colunas permanentemente do banco de dados para todos os colaboradores.")
+  st.title("⚙️ Painel Administrativo Master & Seleção de Colunas")
+  st.markdown("Escolha abaixo quais colunas você deseja **manter visíveis** no sistema. As colunas desmarcadas desaparecerão automaticamente para você e para todos os colaboradores.")
   
-  st.markdown("### 🗑️ Excluir Coluna Indesejada (Banco de Dados Global)")
-  
-  tabela_excluir_col = st.selectbox(
-      "Selecione a Tabela do Sistema:",
+  tabela_config = st.selectbox(
+      "Selecione a Tabela para Configurar as Colunas:",
       ["veiculos", "manutencoes", "mobilizacoes", "combustivel", "pecas", "clientes"]
   )
   
   try:
-    df_cols_temp = pd.read_sql(f"SELECT * FROM {tabela_excluir_col} LIMIT 1", conn)
-    colunas_existentes = list(df_cols_temp.columns)
+    df_temp_cols = pd.read_sql(f"SELECT * FROM {tabela_config} LIMIT 1", conn)
+    todas_colunas = list(df_temp_cols.columns)
   except Exception:
-    colunas_existentes = []
+    todas_colunas = []
     
-  # Proteger a coluna 'id' para não ser excluída por segurança
-  colunas_para_escolher = [c for c in colunas_existentes if c != 'id']
+  # Busca colunas salvas anteriormente ou usa todas como padrão
+  cursor.execute("SELECT colunas_permitidas FROM config_colunas WHERE tabela = ?", (tabela_config,))
+  res_config_db = cursor.fetchone()
   
-  if colunas_para_escolher:
-    coluna_alvo_exclusao = st.selectbox(
-        "Selecione a coluna que deseja EXCLUIR permanentemente:",
-        colunas_para_escolher
-    )
-    
-    if st.button("🔥 Excluir Coluna Definitivamente para Todos"):
-      if coluna_alvo_exclusao:
-        try:
-          cols_mantidas = [c for c in colunas_existentes if c != coluna_alvo_exclusao]
-          cols_selecao = ", ".join([f'"{c}"' for c in cols_mantidas])
-          
-          # Executa transação segura para remover a coluna sem corromper o banco
-          cursor.execute("BEGIN TRANSACTION;")
-          cursor.execute(f"CREATE TABLE {tabela_excluir_col}_new AS SELECT {cols_selecao} FROM {tabela_excluir_col};")
-          cursor.execute(f"DROP TABLE {tabela_excluir_col};")
-          cursor.execute(f"ALTER TABLE {tabela_excluir_col}_new RENAME TO {tabela_excluir_col};")
-          conn.commit()
-          
-          st.success(f"✅ Coluna '{coluna_alvo_exclusao}' excluída com sucesso da tabela '{tabela_excluir_col}'. Ela não aparecerá mais para nenhum colaborador!")
-          st.rerun()
-        except Exception as e:
-          conn.rollback()
-          st.error(f"⚠️ Erro ao excluir coluna: {e}")
+  if res_config_db and res_config_db[0]:
+    colunas_ja_salvas = [c.strip() for c in res_config_db[0].split(",") if c.strip()]
+    colunas_default = [c for c in colunas_ja_salvas if c in todas_colunas]
   else:
-    st.info("Não há colunas disponíveis para exclusão nesta tabela.")
+    colunas_default = todas_colunas
+
+  colunas_mantidas_escolha = st.multiselect(
+      "Selecione APENAS as colunas que deseja MANTER (as demais serão excluídas da exibição para todos):",
+      todas_colunas,
+      default=colunas_default
+  )
+
+  if st.button("💾 Salvar e Aplicar Colunas para Todo o Sistema"):
+    if colunas_mantidas_escolha:
+      str_colunas_final = ",".join(colunas_mantidas_escolha)
+      cursor.execute("INSERT OR REPLACE INTO config_colunas (tabela, colunas_permitidas) VALUES (?, ?)", (tabela_config, str_colunas_final))
+      conn.commit()
+      st.success(f"✅ Configuração salva com sucesso! Agora a tabela '{tabela_config}' exibirá apenas as colunas selecionadas para todos os colaboradores no sistema.")
+      st.rerun()
+    else:
+      st.warning("⚠️ Você precisa selecionar pelo menos uma coluna para manter.")
