@@ -1358,7 +1358,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
   st.markdown(
       "Comunicação em tempo real de nível profissional. Conversas privadas"
-      " isoladas e menu de opções com três pontinhos."
+      " isoladas e menu de três pontinhos delicado no canto."
   )
 
   cursor.execute(
@@ -1396,7 +1396,6 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         usuario_atual["cargo"] if usuario_atual else "Diretoria / Gestão"
     )
 
-    # FILTRAGEM INTELIGENTE DE MENSAGENS PRIVADAS OU GERAIS
     if termo_busca_chat.strip():
       df_msgs = pd.read_sql(
           "SELECT * FROM chat_interno WHERE mensagem LIKE ? ORDER BY id ASC LIMIT"
@@ -1430,21 +1429,22 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         estilo_classe = "msg-card-eu" if is_eu else "msg-card-outro"
         cor_autor = "#d1fae5" if is_eu else "#047857"
 
-        col_msg_balao, col_msg_menu = st.columns([9, 1])
-        with col_msg_balao:
-          st.markdown(
-              f"""
-                    <div class="{estilo_classe}" style="max-width: 100% !important;">
-                        <div style="font-size: 11px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
-                            <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
-                            <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
-                        </div>
-                        <div style="font-size: 14px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
+        st.markdown(
+            f"""
+                <div class="{estilo_classe}" style="position: relative;">
+                    <div style="font-size: 11px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
+                        <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
+                        <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
                     </div>
-                """,
-              unsafe_allow_html=True,
-          )
-        with col_msg_menu:
+                    <div style="font-size: 14px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
+                </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        # Menu discreto de três pontinhos perfeitamente posicionado no canto superior direito
+        col_vazio_chat, col_menu_tres_pontos = st.columns([5, 1])
+        with col_menu_tres_pontos:
           menu_tres_pontinhos = st.selectbox(
               "⋮",
               ["⋮", "📋 Copiar", "🔄 Encaminhar", "🗑️ Apagar"],
