@@ -13,6 +13,7 @@ import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import streamlit as st
+import streamlit.components.v1 as components
 
 # CONFIGURAÇÃO DO MERCADO PAGO (Token Oficial de Produção Integrado)
 MERCADO_PAGO_ACCESS_TOKEN = (
@@ -1358,7 +1359,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
   st.markdown(
       "Comunicação em tempo real de nível profissional. Conversas privadas"
-      " isoladas e menu lateral discreto."
+      " isoladas, cópia real para telemóvel e atalhos rápidos."
   )
 
   cursor.execute(
@@ -1429,7 +1430,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         estilo_classe = "msg-card-eu" if is_eu else "msg-card-outro"
         cor_autor = "#d1fae5" if is_eu else "#047857"
 
-        # Colunas paralelas: Coluna da esquerda com o balão intocado | Coluna da direita com o menu lateral (zona da seta mostarda)
+        # Colunas paralelas: Balão à esquerda | Ações laterais à direita (fora do balão)
         col_chat_balao, col_chat_menu_lateral = st.columns([10, 2])
 
         with col_chat_balao:
@@ -1440,45 +1441,32 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
                             <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']}</span>
                             <span style="opacity: 0.8; font-weight: 500;">{row_m['data_envio']}</span>
                         </div>
-                        <div style="font-size: 14px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
+                        <div style="font-size: 14px; line-height: 1.4; white-space: pre-wrap;" id="msg_txt_{row_m['id']}">{row_m['mensagem']}</div>
                     </div>
                 """,
               unsafe_allow_html=True,
           )
 
         with col_chat_menu_lateral:
-          menu_tres_pontinhos = st.selectbox(
-              "⋮",
-              ["⋮", "📋 Copiar", "🔄 Encaminhar", "🗑️ Apagar"],
-              key=f"opt_menu_{row_m['id']}",
-              label_visibility="collapsed",
+          # Botão Copiar Real via JavaScript
+          texto_limpo_js = (
+              str(row_m["mensagem"])
+              .replace('"', '\\"')
+              .replace("\n", " ")
+              .replace("\r", " ")
           )
+          copiar_html_js = f"""
+                    <button onclick="navigator.clipboard.writeText('{texto_limpo_js}'); alert('📋 Texto copiado para a área de transferência!');" style="background:#059669; color:white; border:none; padding:6px 10px; border-radius:8px; font-size:11px; font-weight:700; cursor:pointer; width:100%; margin-bottom:4px;">📋 Copiar</button>
+                """
+          components.html(copiar_html_js, height=35)
 
-          if menu_tres_pontinhos == "🗑️ Apagar":
+          # Botão Apagar Direto
+          if st.button("🗑️ Apagar", key=f"del_dir_{row_m['id']}"):
             cursor.execute(
                 "DELETE FROM chat_interno WHERE id = ?", (row_m["id"],)
             )
             conn.commit()
             st.success("Mensagem apagada!")
-            st.rerun()
-          elif menu_tres_pontinhos == "📋 Copiar":
-            st.info(f"📋 Copiado: {row_m['mensagem']}")
-          elif menu_tres_pontinhos == "🔄 Encaminhar":
-            msg_enc = f"[Encaminhado] {row_m['mensagem']}"
-            cursor.execute(
-                "INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?, ?, ?, ?, ?, ?)",
-                (
-                    f"{remetente_atual} ({cargo_atual})",
-                    colab_escolhido_str,
-                    cargo_atual,
-                    msg_enc,
-                    "",
-                    "",
-                    datetime.now().strftime("%H:%M — %d/%m"),
-                ),
-            )
-            conn.commit()
-            st.success("Mensagem encaminhada!")
             st.rerun()
 
         if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
@@ -1507,6 +1495,49 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
       )
 
     st.markdown("</div>", unsafe_allow_html=True)
+
+    # ATALHOS RÁPIDOS DE COMANDOS DE OBRA (CHIPS)
+    st.markdown(
+        "<p style='font-size: 11.5px; font-weight: 700; color: #475569;"
+        " margin: 10px 0 4px 0;'>⚡ Atalhos Rápidos Operacionais:</p>",
+        unsafe_allow_html=True,
+    )
+    col_at1, col_at2, col_at3, col_at4 = st.columns(4)
+    msg_atalho_escolhida = None
+    with col_at1:
+      if st.button("🚚 Betoneira a caminho"):
+        msg_atalho_escolhida = "🚚 Betoneira a caminho da obra."
+    with col_at2:
+      if st.button("📍 Cheguei à obra"):
+        msg_atalho_escolhida = "📍 Cheguei ao local da obra."
+    with col_at3:
+      if st.button("⚠️ Paragem imprevista"):
+        msg_atalho_escolhida = (
+            "⚠️ Atenção: paragem imprevista ou atraso operacional."
+        )
+    with col_at4:
+      if st.button("✅ Descarga concluída"):
+        msg_atalho_escolhida = (
+            "✅ Descarga de concreto concluída com sucesso."
+        )
+
+    if msg_atalho_escolhida:
+      data_env_s = datetime.now().strftime("%H:%M — %d/%m")
+      cursor.execute(
+          "INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem,"
+          " arquivo_path, arquivo_nome, data_envio) VALUES (?, ?, ?, ?, ?, ?, ?)",
+          (
+              f"{remetente_atual} ({cargo_atual})",
+              colab_escolhido_str,
+              cargo_atual,
+              msg_atalho_escolhida,
+              "",
+              "",
+              data_env_s,
+          ),
+      )
+      conn.commit()
+      st.rerun()
 
     with st.form("form_chat_direto_pro", clear_on_submit=True):
       col_msg1, col_msg2 = st.columns([3, 1])
