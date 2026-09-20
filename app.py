@@ -674,6 +674,19 @@ def exibir_tabela_padronizada(df, nome_tabela):
   if df.empty:
     st.info("Nenhum registro encontrado.")
     return
+  
+  # Sistema de Gestão e Ocultação de Colunas para o Administrador / Gestor
+  try:
+    cursor.execute("SELECT ordem_colunas FROM config_colunas WHERE tabela = ?", (nome_tabela,))
+    res_conf = cursor.fetchone()
+    if res_conf and res_conf[0]:
+      cols_ocultas = [c.strip() for c in res_conf[0].split(",") if c.strip()]
+      cols_visiveis = [c for c in df.columns if c not in cols_ocultas]
+      if cols_visiveis:
+        df = df[cols_visiveis]
+  except Exception:
+    pass
+
   st.dataframe(df, use_container_width=True, hide_index=True)
 
 
@@ -1020,4 +1033,665 @@ elif menu == "🏗️ Mobilização / Desmobilização":
   else:
     lista_veiculos_opcoes = ["Nenhum veículo cadastrado (Cadastre na aba ao lado)"]
 
-  tab_cad_mob,
+  tab_cad_mob, tab_edit_mob = st.tabs([
+      "➕ Registar Nova Movimentação",
+      "✏️ Editar Registos & Histórico",
+  ])
+
+  with tab_cad_mob:
+    with st.form("form_mob_novo"):
+      c1, c2 = st.columns(2)
+      with c1:
+        veiculo_escolhido = st.selectbox(
+            "Selecionar Equipamento / Linha da Frota", lista_veiculos_opcoes
+        )
+        tipo_mov = st.selectbox(
+            "Tipo de Movimento",
+            [
+                "Mobilização (Envio para Obra)",
+                "Desmobilização (Retorno)",
+                "Remanejamento",
+            ],
+        )
+        destino = st.text_input("Obra / Destino-Origem")
+      with c2:
+        resp = st.text_input("Responsável / Motorista")
+        dt_mob = st.date_input("Data da Ocorrência")
+        motivo_inicial = st.text_input(
+            "Motivo / Condição Inicial (Ex: Início de fundação na Obra Central)"
+        )
+        obs = st.text_area("Observações operacionais")
+
+      btn_cad_mob = st.form_submit_button("💾 Salvar Nova Movimentação")
+      if btn_cad_mob:
+        if destino and "Nenhum veículo" not in veiculo_escolhido:
+          hist_inicial = f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Criado por {resp if resp else 'Operacional'} — Motivo inicial: {motivo_inicial}"
+          cursor.execute(
+              "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
+              " destino_origem, responsavel, data, motivo_condicao, observacao,"
+              " foto_checklist, historico_edicoes) VALUES (?, ?, ?, ?, ?, ?, ?,"
+              " '', ?)",
+              (
+                  veiculo_escolhido,
+                  tipo_mov,
+                  destino,
+                  resp,
+                  str(dt_mob),
+                  motivo_inicial,
+                  obs,
+                  hist_inicial,
+              ),
+          )
+          conn.commit()
+          st.success(
+              "✅ Movimentação de mobilização registada com sucesso na base de"
+              " dados!"
+          )
+          st.rerun()
+        else:
+          st.error(
+              "⚠️ Seleciona um veículo válido e preenche o destino/obra."
+          )
+
+  with tab_edit_mob:
+    st.markdown("### ✏️ Editar Informações e Registar Motivo da Alteração")
+    try:
+      df_mobs_edit = pd.read_sql(
+          "SELECT * FROM mobilizacoes ORDER BY id DESC", conn
+      )
+    except Exception:
+      df_mobs_edit = pd.DataFrame()
+
+    if not df_mobs_edit.empty:
+      exibir_tabela_padronizada(df_mobs_edit, "mobilizacoes")
+
+      id_mob_sel = st.selectbox(
+          "Selecione o ID da mobilização para editar:",
+          df_mobs_edit["id"].tolist(),
+      )
+      reg_atual = df_mobs_edit[df_mobs_edit["id"] == id_mob_sel].iloc[0]
+
+      with st.form(f"form_editar_mob_{id_mob_sel}"):
+        st.markdown(f"#### Editando Registo ID #{id_mob_sel}")
+        e_eq = st.selectbox(
+            "Equipamento / Linha",
+            lista_veiculos_opcoes,
+            index=0,
+        )
+        e_tipo = st.selectbox(
+            "Tipo de Movimento",
+            [
+                "Mobilização (Envio para Obra)",
+                "Desmobilização (Retorno)",
+                "Remanejamento",
+            ],
+        )
+        e_dest = st.text_input("Obra / Destino", value=str(reg_atual["destino_origem"]))
+        e_resp = st.text_input("Responsável", value=str(reg_atual["responsavel"]))
+        e_obs = st.text_area("Observações", value=str(reg_atual["observacao"]))
+
+        st.markdown("---")
+        st.markdown(
+            "🔴 **OBRIGATÓRIO:** Informe abaixo o motivo exato da alteração (Ex:"
+            " motorista desistiu, troca de última hora, alteração de destino):"
+        )
+        motivo_alteracao = st.text_input(
+            "Motivo da Edição / Atualização",
+            placeholder="Ex: Motorista recusou viagem por motivo pessoal...",
+        )
+
+        btn_salvar_edicao = st.form_submit_button(
+            "💾 Atualizar Registo e Salvar Histórico"
+        )
+
+        if btn_salvar_edicao:
+          if not motivo_alteracao.strip():
+            st.error(
+                "⚠️ O campo 'Motivo da Edição' é obrigatório para guardar na"
+                " base de dados!"
+            )
+          else:
+            historico_antigo = (
+                str(reg_atual["historico_edicoes"])
+                if reg_atual["historico_edicoes"]
+                else ""
+            )
+            novo_historico_item = f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Editado. Motivo: {motivo_alteracao}"
+            historico_atualizado = historico_antigo + novo_historico_item
+
+            cursor.execute(
+                "UPDATE mobilizacoes SET equipamento = ?, tipo_movimento = ?,"
+                " destino_origem = ?, responsavel = ?, observacao = ?,"
+                " historico_edicoes = ? WHERE id = ?",
+                (
+                    e_eq,
+                    e_tipo,
+                    e_dest,
+                    e_resp,
+                    e_obs,
+                    historico_atualizado,
+                    int(id_mob_sel),
+                ),
+            )
+            conn.commit()
+            st.success(
+                "✅ Registo atualizado com sucesso e motivo guardado no"
+                " histórico do banco de dados!"
+            )
+            st.rerun()
+    else:
+      st.info("Nenhuma mobilização registada para editar.")
+
+elif menu == "🛠️ Ordens de Serviço (OS)":
+  st.title("🛠️ Gestão Unificada de Ordens de Serviço (OS)")
+  st.markdown(
+      "Gira manutenções preventivas, corretivas e custos de oficina mecânica."
+  )
+
+  tab_os_lista, tab_os_cad = st.tabs([
+      "📋 Ordens de Serviço Registadas",
+      "➕ Abrir Nova OS",
+  ])
+
+  with tab_os_lista:
+    df_os = pd.read_sql("SELECT * FROM manutencoes ORDER BY id DESC", conn)
+    if not df_os.empty:
+      exibir_tabela_padronizada(df_os, "manutencoes")
+      if st.button("📄 Gerar Relatório em PDF de OS"):
+        pdf_os = gerar_pdf_relatorio("Relatório de Ordens de Serviço", df_os)
+        st.download_button(
+            label="📥 Baixar PDF Certificado",
+            data=pdf_os,
+            file_name="relatorio_ordens_servico.pdf",
+            mime="application/pdf",
+        )
+    else:
+      st.info("Nenhuma Ordem de Serviço registada.")
+
+  with tab_os_cad:
+    with st.form("form_os_novo"):
+      o1, o2 = st.columns(2)
+      with o1:
+        os_prefixo = st.text_input("Equipamento / Prefixo")
+        os_tipo = st.selectbox(
+            "Tipo de Manutenção",
+            ["Corretiva", "Preventiva", "Revisão Periódica"],
+        )
+        os_prob = st.text_area("Descrição do Problema / Serviço")
+      with o2:
+        os_custo_pecas = st.number_input("Custo de Peças (R$)", value=0.0, step=50.0)
+        os_mao = st.number_input("Mão de Obra (R$)", value=0.0, step=50.0)
+        os_oficina = st.text_input("Oficina / Mecânico Responsável")
+        os_status = st.selectbox("Status da OS", ["aberta", "concluida"])
+
+      btn_salvar_os = st.form_submit_button("💾 Salvar Ordem de Serviço")
+      if btn_salvar_os:
+        if os_prefixo:
+          custo_total_os = os_custo_pecas + os_mao
+          cursor.execute(
+              "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao,"
+              " horimetro_km_manut, origem_falha, descricao_problema,"
+              " data_abertura, hora_abertura, pecas_utilizadas, custo_pecas,"
+              " mao_de_obra, custo, oficina, tecnico_mecanico, data_fechamento,"
+              " hora_fechamento, status_os) VALUES (?, ?, '0', 'Campo', ?, ?,"
+              " '', '', ?, ?, ?, ?, '', '', '', ?)",
+              (
+                  os_prefixo,
+                  os_tipo,
+                  os_prob,
+                  datetime.now().strftime("%d/%m/%Y"),
+                  os_custo_pecas,
+                  os_mao,
+                  custo_total_os,
+                  os_oficina,
+                  os_status,
+              ),
+          )
+          conn.commit()
+          st.success("✅ Ordem de Serviço aberta com sucesso!")
+          st.rerun()
+        else:
+          st.error("⚠️ Informe o equipamento.")
+
+elif menu == "🔩 Peças e Ferramentas":
+  st.title("🔩 Controle de Peças e Ferramentas")
+  st.markdown("Gira o stock de peças e materiais no almoxarifado da obra.")
+
+  tab_p_lista, tab_p_cad = st.tabs([
+      "📋 Stock Atual",
+      "➕ Registar Peça / Item",
+  ])
+
+  with tab_p_lista:
+    df_pecas = pd.read_sql("SELECT * FROM pecas ORDER BY id DESC", conn)
+    if not df_pecas.empty:
+      exibir_tabela_padronizada(df_pecas, "pecas")
+    else:
+      st.info("Nenhuma peça registada no stock.")
+
+  with tab_p_cad:
+    with st.form("form_peca_novo"):
+      p1, p2 = st.columns(2)
+      with p1:
+        p_nome = st.text_input("Nome da Peça / Item")
+        p_cat = st.text_input("Categoria (ex: Filtros, Óleo, Pneus)")
+      with p2:
+        p_qtd = st.number_input("Quantidade em Stock", value=1, step=1)
+        p_val = st.number_input("Valor Unitário (R$)", value=0.0, step=10.0)
+
+      btn_salvar_peca = st.form_submit_button("💾 Adicionar Item ao Stock")
+      if btn_salvar_peca:
+        if p_nome:
+          cursor.execute(
+              "INSERT INTO pecas (nome_item, categoria, quantidade,"
+              " valor_unitario) VALUES (?, ?, ?, ?)",
+              (p_nome, p_cat, int(p_qtd), float(p_val)),
+          )
+          conn.commit()
+          st.success("✅ Peça adicionada ao stock com sucesso!")
+          st.rerun()
+        else:
+          st.error("⚠️ Informe o nome da peça.")
+
+elif menu == "👥 Gestão de Clientes":
+  st.title("👥 Gestão de Clientes e Obras Parceiras")
+  st.markdown("Registo e contacto dos clientes e construtoras atendidas.")
+
+  tab_cli_lista, tab_cli_cad = st.tabs([
+      "📋 Clientes Registados",
+      "➕ Registar Novo Cliente",
+  ])
+
+  with tab_cli_lista:
+    df_cli = pd.read_sql("SELECT * FROM clientes ORDER BY id DESC", conn)
+    if not df_cli.empty:
+      exibir_tabela_padronizada(df_cli, "clientes")
+    else:
+      st.info("Nenhum cliente registado.")
+
+  with tab_cli_cad:
+    with st.form("form_cliente_novo"):
+      cl1, cl2 = st.columns(2)
+      with cl1:
+        c_nome = st.text_input("Nome do Cliente / Responsável")
+        c_emp = st.text_input("Nome da Empresa / Construtora")
+        c_tel = st.text_input("Telefone / WhatsApp")
+      with cl2:
+        c_doc = st.text_input("CPF / CNPJ")
+        c_email = st.text_input("E-mail")
+        c_end = st.text_input("Endereço da Obra")
+
+      btn_salvar_cli = st.form_submit_button("💾 Salvar Cliente")
+      if btn_salvar_cli:
+        if c_nome:
+          cursor.execute(
+              "INSERT INTO clientes (nome, empresa, telefone, documento, email,"
+              " endereco) VALUES (?, ?, ?, ?, ?, ?)",
+              (c_nome, c_emp, c_tel, c_doc, c_email, c_end),
+          )
+          conn.commit()
+          st.success("✅ Cliente registado com sucesso!")
+          st.rerun()
+        else:
+          st.error("⚠️ Informe o nome do cliente.")
+
+elif menu == "💬 Chat Tabalmix Pro & Rede":
+  st.markdown(
+      """
+        <style>
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 540px;
+            overflow-y: auto;
+            padding: 16px;
+            background: #f8fafc;
+            border-radius: 16px;
+            border: 1px solid #e2e8f0;
+        }
+        .msg-row {
+            display: flex;
+            width: 100%;
+            margin-bottom: 2px;
+        }
+        .msg-row-eu {
+            justify-content: flex-end;
+        }
+        .msg-row-outro {
+            justify-content: flex-start;
+        }
+        .msg-bubble {
+            padding: 12px 18px;
+            border-radius: 16px;
+            max-width: 85%;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            position: relative;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+        .msg-bubble-eu {
+            background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            color: white;
+            border-top-right-radius: 3px;
+        }
+        .msg-bubble-outro {
+            background: #ffffff;
+            color: #0f172a;
+            border: 1px solid #e2e8f0;
+            border-top-left-radius: 3px;
+        }
+        </style>
+    """,
+      unsafe_allow_html=True,
+  )
+
+  st.title("💬 Central Pro Enterprise — Chat & Live Ops")
+  st.markdown("Comunicação em tempo real com balões limpos estilo WhatsApp.")
+
+  cursor.execute(
+      "SELECT id, apelido, cargo_setor FROM usuarios_sistema ORDER BY id DESC"
+  )
+  todos_usuarios_db = cursor.fetchall()
+
+  tab_chat_txt, tab_videocall = st.tabs([
+      "💬 Canal de Mensagens Live",
+      "📞 Chamada Direta de Vídeo Integrada",
+  ])
+
+  with tab_chat_txt:
+    col_f1, col_f2 = st.columns([2, 1])
+    with col_f1:
+      if todos_usuarios_db:
+        opcoes_colab = [
+            f"👤 {u[1]} — Cargo: {u[2]} (ID: {u[0]})" for u in todos_usuarios_db
+        ]
+        colab_escolhido_str = st.selectbox(
+            "Canal / Conversa Privada com:",
+            ["🌐 Canal Geral (Toda a Equipe)"] + opcoes_colab,
+        )
+      else:
+        colab_escolhido_str = "🌐 Canal Geral (Toda a Equipe)"
+    with col_f2:
+      termo_busca_chat = st.text_input(
+          "🔍 Pesquisa Global", placeholder="Ex: pneu, beta..."
+      )
+
+    remetente_atual = (
+        usuario_atual["apelido"] if usuario_atual else "Administrador Master"
+    )
+    cargo_atual = (
+        usuario_atual["cargo"] if usuario_atual else "Diretoria / Gestão"
+    )
+
+    if termo_busca_chat.strip():
+      df_msgs = pd.read_sql(
+          "SELECT * FROM chat_interno WHERE mensagem LIKE ? ORDER BY id ASC LIMIT"
+          " 60",
+          conn,
+          params=(f"%{termo_busca_chat}%",),
+      )
+    elif "Canal Geral" in colab_escolhido_str:
+      df_msgs = pd.read_sql(
+          "SELECT * FROM chat_interno WHERE destinatario LIKE '%Canal Geral%'"
+          " OR destinatario LIKE '%Equipe Geral%' ORDER BY id ASC LIMIT 60",
+          conn,
+      )
+    else:
+      nome_colab_alvo = colab_escolhido_str.split("—")[0].replace("👤", "").strip()
+      df_msgs = pd.read_sql(
+          "SELECT * FROM chat_interno WHERE destinatario LIKE ? OR remetente"
+          " LIKE ? ORDER BY id ASC LIMIT 60",
+          conn,
+          params=(f"%{nome_colab_alvo}%", f"%{nome_colab_alvo}%"),
+      )
+
+    st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+
+    if not df_msgs.empty:
+      for _, row_m in df_msgs.iterrows():
+        is_eu = remetente_atual in str(row_m["remetente"])
+        row_class = "msg-row msg-row-eu" if is_eu else "msg-row msg-row-outro"
+        bubble_class = (
+            "msg-bubble msg-bubble-eu" if is_eu else "msg-bubble msg-bubble-outro"
+        )
+        cor_autor = "#d1fae5" if is_eu else "#047857"
+
+        st.markdown(
+            f"""
+            <div class="{row_class}">
+                <div class="{bubble_class}">
+                    <div style="font-size: 10px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
+                        <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']} &nbsp; • &nbsp; <b>[⋮]</b></span>
+                        <span style="opacity: 0.8;">{row_m['data_envio']}</span>
+                    </div>
+                    <div style="font-size: 13.5px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        with st.expander(f"⚙️ Opções da Mensagem #{row_m['id']}", expanded=False):
+          col_m1, col_m2, col_m3 = st.columns([1, 2, 1])
+
+          with col_m1:
+            texto_limpo_js = (
+                str(row_m["mensagem"])
+                .replace('"', '\\"')
+                .replace("\n", " ")
+                .replace("\r", " ")
+            )
+            copiar_html_min = f"""
+                    <button onclick="navigator.clipboard.writeText('{texto_limpo_js}'); alert('📋 Copiado!');" style="background:#059669; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; width:100%;">📋 Copiar</button>
+                """
+            components.html(copiar_html_min, height=32)
+
+          with col_m2:
+            if todos_usuarios_db:
+              lista_enc = [
+                  f"👤 {u[1]} — Cargo: {u[2]}" for u in todos_usuarios_db
+              ]
+              destino_fwd = st.selectbox(
+                  "Reencaminhar para:",
+                  ["🌐 Canal Geral"] + lista_enc,
+                  key=f"sel_fwd_{row_m['id']}",
+              )
+              if st.button("🚀 Enviar Reencaminhado", key=f"btn_fwd_{row_m['id']}"):
+                data_env_fwd = datetime.now().strftime("%H:%M — %d/%m")
+                msg_fwd_texto = (
+                    f"[Encaminhado de {row_m['remetente']}]\n{row_m['mensagem']}"
+                )
+                cursor.execute(
+                    "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+                    " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES"
+                    " (?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        f"{remetente_atual} ({cargo_atual})",
+                        destino_fwd,
+                        cargo_atual,
+                        msg_fwd_texto,
+                        "",
+                        "",
+                        data_env_fwd,
+                    ),
+                )
+                conn.commit()
+                st.success("✅ Reencaminhado!")
+                st.rerun()
+
+          with col_m3:
+            if st.button("🗑️ Apagar", key=f"del_b_{row_m['id']}"):
+              cursor.execute(
+                  "DELETE FROM chat_interno WHERE id = ?", (row_m["id"],)
+              )
+              conn.commit()
+              st.rerun()
+
+        if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
+          if row_m["arquivo_nome"].lower().endswith((".png", ".jpg", ".jpeg")):
+            st.image(
+                row_m["arquivo_path"],
+                caption=f"Mídia de {row_m['remetente']}",
+                width=240,
+            )
+          with open(row_m["arquivo_path"], "rb") as f_down:
+            st.download_button(
+                label=f"📥 Baixar: {row_m['arquivo_nome']}",
+                data=f_down.read(),
+                file_name=row_m["arquivo_nome"],
+                key=f"dl_chat_arq_{row_m['id']}",
+            )
+        st.markdown(
+            "<hr style='margin: 4px 0; border: none; border-top: 1px solid"
+            " #e2e8f0;'>",
+            unsafe_allow_html=True,
+        )
+    else:
+      st.info("Ainda sem mensagens nesta conversa. Envia a primeira abaixo!")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    with st.form("form_chat_direto_pro", clear_on_submit=True):
+      col_msg1, col_msg2 = st.columns([3, 1])
+      with col_msg1:
+        msg_sala_txt = st.text_input(
+            "Escreve a tua mensagem operacional...",
+            placeholder="Mensagem segura...",
+        )
+      with col_msg2:
+        file_sala_up = st.file_uploader(
+            "Anexar Mídia",
+            type=["png", "jpg", "jpeg", "pdf", "docx"],
+            label_visibility="collapsed",
+        )
+
+      btn_enviar_chat = st.form_submit_button("🚀 Enviar Mensagem")
+
+      if btn_enviar_chat:
+        if not msg_sala_txt.strip() and not file_sala_up:
+          st.warning("⚠️ Escreve uma mensagem ou anexa um arquivo.")
+        else:
+          path_s = ""
+          nome_s = ""
+          if file_sala_up is not None:
+            os.makedirs("chat_documentos", exist_ok=True)
+            nome_s = file_sala_up.name
+            path_s = (
+                "chat_documentos/"
+                f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nome_s}"
+            )
+            with open(path_s, "wb") as f_out_s:
+              f_out_s.write(file_sala_up.getbuffer())
+
+          data_env_s = datetime.now().strftime("%H:%M — %d/%m")
+          cursor.execute(
+              "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+              " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
+              " ?, ?, ?, ?, ?)",
+              (
+                  f"{remetente_atual} ({cargo_atual})",
+                  colab_escolhido_str,
+                  cargo_atual,
+                  msg_sala_txt,
+                  path_s,
+                  nome_s,
+                  data_env_s,
+              ),
+          )
+          conn.commit()
+          st.rerun()
+
+  with tab_videocall:
+    st.markdown("### 📞 Central de Chamada Direta Pessoal")
+    if todos_usuarios_db:
+      alvos_chamada = [f"{u[1]} ({u[2]})" for u in todos_usuarios_db]
+      alvo_selecionado = st.selectbox(
+          "Quem vai receber o convite para a reunião?",
+          alvos_chamada,
+          key="sel_alvo_video",
+      )
+    else:
+      alvo_selecionado = "Equipe Geral"
+
+    nome_sala_direta = f"TabalmixDirectCall{ ''.join(e for e in alvo_selecionado.split()[0] if e.isalnum()) }2026"
+    link_direto_jitsi = f"https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false"
+
+    if st.button("🚀 Criar Sala e Enviar Convite", key="btn_ligar_integ"):
+      remetente_notif = (
+          usuario_atual["apelido"] if usuario_atual else "Administrador"
+      )
+      msg_alerta_chamada = f"🚨 **CHAMADA DE VÍDEO ATIVA:** {remetente_notif} iniciou uma reunião!\n\n🔗 **Clica para entrar:**\n{link_direto_jitsi}"
+      data_env_notif = datetime.now().strftime("%H:%M — %d/%m")
+      try:
+        cursor.execute(
+            "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+            " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
+            " ?, ?, ?, ?, ?)",
+            (
+                f"{remetente_notif} (Diretoria)",
+                alvo_selecionado,
+                "Alerta",
+                msg_alerta_chamada,
+                "",
+                "",
+                data_env_notif,
+            ),
+        )
+        conn.commit()
+      except Exception:
+        pass
+      st.success("Convite enviado com sucesso para o chat!")
+      st.rerun()
+
+elif menu == "🔍 Consulta / Busca Geral":
+  st.title("🔍 Consulta e Histórico Completo")
+  df_v_busca = pd.read_sql(
+      "SELECT tag_prefixo, modelo, placa FROM veiculos", conn
+  )
+  if not df_v_busca.empty:
+    exibir_tabela_padronizada(df_v_busca, "busca_eq_info")
+  else:
+    st.info("Nenhum registo encontrado para consulta.")
+
+elif menu == "⚙️ Meu Perfil / Dados":
+  st.title("⚙️ Meu Perfil & Credenciais Corporativas")
+  if usuario_atual:
+    st.info(f"Logado como: {usuario_atual['nome']} ({usuario_atual['cargo']})")
+
+elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
+  st.title("⚙️ Painel Administrativo de Chaves & Licenças & Gestão de Colunas")
+  
+  tab_adm_l1, tab_adm_l2 = st.tabs(["🎟️ Gestão de Licenças", "⚙️ Gestão de Colunas (Ocultar)"])
+  
+  with tab_adm_l1:
+    df_chaves = pd.read_sql("SELECT * FROM chaves_licenca", conn)
+    if not df_chaves.empty:
+      exibir_tabela_padronizada(df_chaves, "chaves_licenca")
+    else:
+      st.info("Nenhuma chave registada.")
+
+  with tab_adm_l2:
+    st.markdown("### ⚙️ Ocultar Colunas Indesejadas das Tabelas")
+    tabela_escolhida_ocultar = st.selectbox("Selecione a Tabela:", ["veiculos", "manutencoes", "mobilizacoes", "combustivel", "pecas", "clientes"])
+    try:
+      df_ex_cols = pd.read_sql(f"SELECT * FROM {tabela_escolhida_ocultar} LIMIT 1", conn)
+      todas_cols_tabela = list(df_ex_cols.columns)
+    except Exception:
+      todas_cols_tabela = []
+
+    cursor.execute("SELECT ordem_colunas FROM config_colunas WHERE tabela = ?", (tabela_escolhida_ocultar,))
+    res_oc = cursor.fetchone()
+    cols_ja_ocultas = [c.strip() for c in res_oc[0].split(",")] if res_oc and res_oc[0] else []
+
+    colunas_para_ocultar = st.multiselect(
+        "Selecione as colunas que deseja ocultar nas tabelas:",
+        todas_cols_tabela,
+        default=[c for c in cols_ja_ocultas if c in todas_cols_tabela]
+    )
+
+    if st.button("💾 Salvar Configuração de Colunas"):
+      str_ocultas_final = ",".join(colunas_para_ocultar)
+      cursor.execute("INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas) VALUES (?, ?)", (tabela_escolhida_ocultar, str_ocultas_final))
+      conn.commit()
+      st.success("✅ Configuração de colunas atualizada com sucesso!")
+      st.rerun()
