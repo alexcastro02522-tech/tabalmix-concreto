@@ -769,12 +769,104 @@ if menu == "📊 Visão Geral":
   if not df_veiculos.empty:
     exibir_tabela_padronizada(df_veiculos, "veiculos")
 
+elif menu == "🚜 Cadastro de Equipamentos":
+  st.title("🚜 Cadastro de Equipamentos e Frota")
+  st.markdown(
+      "Registe novos caminhões, betoneiras ou máquinas e gira a frota da"
+      " empresa."
+  )
+
+  tab_eq_lista, tab_eq_cad = st.tabs([
+      "📋 Frota Cadastrada",
+      "➕ Registar Novo Equipamento",
+  ])
+
+  with tab_eq_lista:
+    df_f = pd.read_sql("SELECT * FROM veiculos", conn)
+    if not df_f.empty:
+      exibir_tabela_padronizada(df_f, "veiculos")
+    else:
+      st.info("Nenhum equipamento cadastrado ainda.")
+
+  with tab_eq_cad:
+    with st.form("form_cad_veiculo_novo"):
+      st.markdown("### 🚜 Novo Veículo / Equipamento")
+      c_e1, c_e2 = st.columns(2)
+      with c_e1:
+        f_prefixo = st.text_input("Prefixo / Tag (ex: BET-01)")
+        f_cat = st.selectbox(
+            "Categoria",
+            [
+                "Caminhão Betoneira",
+                "Caminhão Bomba",
+                "Caminhão Carroceria",
+                "Equipamento Estacionario",
+            ],
+        )
+        f_marca = st.text_input("Marca (ex: Mercedes-Benz, Ford)")
+        f_modelo = st.text_input("Modelo (ex: 2423 B, Cargo)")
+        f_ano = st.number_input("Ano de Fabricação", value=2020, step=1)
+        f_cor = st.text_input("Cor")
+      with c_e2:
+        f_placa = st.text_input("Placa")
+        f_chassi = st.text_input("Chassi")
+        f_renavam = st.text_input("Renavam")
+        f_comb = st.selectbox("Combustível", ["Diesel S10", "Diesel S500", "Gasolina"])
+        f_horimetro = st.number_input(
+            "Km / Horímetro Atual", value=0, step=100
+        )
+        f_empresa = st.text_input("Empresa / Filial", value="Tabalmix Concreto")
+
+      btn_salvar_eq = st.form_submit_button("💾 Salvar Equipamento na Frota")
+      if btn_salvar_eq:
+        if f_marca and f_modelo:
+          cursor.execute(
+              "INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca,"
+              " modelo, ano, chassi, renavam, placa, crv, cor, combustivel,"
+              " empresa, horimetro_km, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?,"
+              " '', ?, ?, ?, ?, 'Ativo')",
+              (
+                  f_prefixo,
+                  f_cat,
+                  f_marca,
+                  f_modelo,
+                  int(f_ano),
+                  f_chassi,
+                  f_renavam,
+                  f_placa,
+                  f_cor,
+                  f_comb,
+                  f_empresa,
+                  int(f_horimetro),
+              ),
+          )
+          conn.commit()
+          st.success("✅ Equipamento cadastrado com sucesso!")
+          st.rerun()
+        else:
+          st.error("⚠️ Preencha pelo menos a Marca e o Modelo.")
+
 elif menu == "🏗️ Mobilização / Desmobilização":
   st.title("🏗️ Gestão de Mobilização e Desmobilização de Obras")
   st.markdown(
-      "Registe novas movimentações ou edite os registos existentes informando"
-      " sempre o motivo da alteração."
+      "Registe novas movimentações selecionando o veículo da frota e edite os"
+      " registos com justificativa obrigatória."
   )
+
+  # Buscar veículos cadastrados para o selectbox
+  try:
+    df_veiculos_mob = pd.read_sql("SELECT id, marca, modelo, placa FROM veiculos", conn)
+  except Exception:
+    df_veiculos_mob = pd.DataFrame()
+
+  lista_veiculos_opcoes = []
+  if not df_veiculos_mob.empty:
+    lista_veiculos_opcoes = [
+        f"ID {r['id']} — {r['marca']} {r['modelo']} (Placa: {r['placa'] if r['placa'] else 'N/A'})"
+        for _, r in df_veiculos_mob.iterrows()
+    ]
+  else:
+    lista_veiculos_opcoes = ["Nenhum veículo cadastrado (Cadastre na aba ao lado)"]
 
   tab_cad_mob, tab_edit_mob = st.tabs([
       "➕ Registar Nova Movimentação",
@@ -785,7 +877,9 @@ elif menu == "🏗️ Mobilização / Desmobilização":
     with st.form("form_mob_novo"):
       c1, c2 = st.columns(2)
       with c1:
-        eq_mob = st.text_input("Equipamento / Tag (ex: EQ-001)")
+        veiculo_escolhido = st.selectbox(
+            "Selecionar Veículo / Equipamento da Frota", lista_veiculos_opcoes
+        )
         tipo_mov = st.selectbox(
             "Tipo de Movimento",
             [
@@ -799,13 +893,13 @@ elif menu == "🏗️ Mobilização / Desmobilização":
         resp = st.text_input("Responsável / Motorista")
         dt_mob = st.date_input("Data da Ocorrência")
         motivo_inicial = st.text_input(
-            "Motivo / Condição Inicial (Ex: Demanda de concreto na Obra X)"
+            "Motivo / Condição Inicial (Ex: Início de fundação na Obra Central)"
         )
         obs = st.text_area("Observações operacionais")
 
       btn_cad_mob = st.form_submit_button("💾 Salvar Nova Movimentação")
       if btn_cad_mob:
-        if eq_mob and destino:
+        if destino and "Nenhum veículo" not in veiculo_escolhido:
           hist_inicial = f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Criado por {resp if resp else 'Operacional'} — Motivo inicial: {motivo_inicial}"
           cursor.execute(
               "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
@@ -813,7 +907,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
               " foto_checklist, historico_edicoes) VALUES (?, ?, ?, ?, ?, ?, ?,"
               " '', ?)",
               (
-                  str(eq_mob).upper(),
+                  veiculo_escolhido,
                   tipo_mov,
                   destino,
                   resp,
@@ -830,7 +924,9 @@ elif menu == "🏗️ Mobilização / Desmobilização":
           )
           st.rerun()
         else:
-          st.error("⚠️ Preencha os campos obrigatórios (Equipamento e Destino).")
+          st.error(
+              "⚠️ Seleciona um veículo válido e preenche o destino/obra."
+          )
 
   with tab_edit_mob:
     st.markdown("### ✏️ Editar Informações e Registar Motivo da Alteração")
@@ -852,7 +948,11 @@ elif menu == "🏗️ Mobilização / Desmobilização":
 
       with st.form(f"form_editar_mob_{id_mob_sel}"):
         st.markdown(f"#### Editando Registo ID #{id_mob_sel}")
-        e_eq = st.text_input("Equipamento / Tag", value=str(reg_atual["equipamento"]))
+        e_eq = st.selectbox(
+            "Equipamento / Veículo",
+            lista_veiculos_opcoes,
+            index=0,
+        )
         e_tipo = st.selectbox(
             "Tipo de Movimento",
             [
@@ -860,15 +960,6 @@ elif menu == "🏗️ Mobilização / Desmobilização":
                 "Desmobilização (Retorno)",
                 "Remanejamento",
             ],
-            index=(
-                0
-                if "Mobilização" in str(reg_atual["tipo_movimento"])
-                else (
-                    1
-                    if "Desmobilização" in str(reg_atual["tipo_movimento"])
-                    else 2
-                )
-            ),
         )
         e_dest = st.text_input("Obra / Destino", value=str(reg_atual["destino_origem"]))
         e_resp = st.text_input("Responsável", value=str(reg_atual["responsavel"]))
@@ -908,7 +999,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
                 " destino_origem = ?, responsavel = ?, observacao = ?,"
                 " historico_edicoes = ? WHERE id = ?",
                 (
-                    e_eq.upper(),
+                    e_eq,
                     e_tipo,
                     e_dest,
                     e_resp,
@@ -1233,12 +1324,6 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
         pass
       st.success("Convite enviado com sucesso para o chat!")
       st.rerun()
-
-elif menu == "🚜 Cadastro de Equipamentos":
-  st.title("🚜 Cadastro de Equipamentos e Frota")
-  df_f = pd.read_sql("SELECT * FROM veiculos", conn)
-  if not df_f.empty:
-    exibir_tabela_padronizada(df_f, "veiculos")
 
 elif menu == "⛽ Abastecimentos & Combustível":
   st.title("⛽ Controle de Abastecimento e Combustível")
