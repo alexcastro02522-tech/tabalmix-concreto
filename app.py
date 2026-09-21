@@ -773,7 +773,7 @@ if usuario_atual and (
 
 def exibir_tabela_padronizada(df, nome_tabela):
   if df.empty:
-    st.info("Nenhum registro encontrado.")
+    st.info("Nenhum registo encontrado.")
     return
 
   try:
@@ -959,29 +959,9 @@ elif menu == "🚜 Cadastro de Equipamentos":
       if is_gestao_ou_admin:
         st.markdown("---")
         with st.expander("⚙️ Painel de Gestão Avançada de Equipamentos (Exclusivo Gestão / Engenharia)", expanded=False):
-          sub_gestao_op = st.selectbox("Escolha a ação de gestão:", ["🗑️ Excluir Equipamento", "⚙️ Gerir e Ocultar Colunas"])
+          sub_gestao_op = st.selectbox("Escolha a ação de gestão:", ["⚙️ Gerir e Ocultar Colunas"])
           
-          if sub_gestao_op == "🗑️ Excluir Equipamento":
-            try:
-              df_veiculos_exc = pd.read_sql("SELECT id, tag_prefixo, marca, modelo, placa FROM veiculos ORDER BY id DESC", conn)
-            except Exception:
-              df_veiculos_exc = pd.DataFrame()
-            if not df_veiculos_exc.empty:
-              id_exc_sel = st.selectbox(
-                  "Selecione o Equipamento para Excluir Definitivamente:",
-                  df_veiculos_exc["id"].tolist(),
-                  format_func=lambda x: f"ID #{x} — {df_veiculos_exc[df_veiculos_exc['id'] == x]['marca'].values[0]} {df_veiculos_exc[df_veiculos_exc['id'] == x]['modelo'].values[0]} (Placa: {df_veiculos_exc[df_veiculos_exc['id'] == x]['placa'].values[0]})",
-                  key="sel_exc_veiculo_ges"
-              )
-              if st.button("🗑️ Confirmar Exclusão do Equipamento"):
-                cursor.execute("DELETE FROM veiculos WHERE id = ?", (id_exc_sel,))
-                conn.commit()
-                st.success("✅ Equipamento removido com sucesso!")
-                st.rerun()
-            else:
-              st.info("Nenhum veículo registado para excluir.")
-              
-          elif sub_gestao_op == "⚙️ Gerir e Ocultar Colunas":
+          if sub_gestao_op == "⚙️ Gerir e Ocultar Colunas":
             try:
               df_ex_cols_v = pd.read_sql("SELECT * FROM veiculos LIMIT 1", conn)
               todas_cols_v = list(df_ex_cols_v.columns)
@@ -2033,7 +2013,7 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     st.markdown("### ⚙️ Ocultar Colunas Indesejadas das Tabelas")
     tabela_escolhida_ocultar = st.selectbox("Selecione a Tabela:", ["veiculos", "manutencoes", "mobilizacoes", "combustivel", "pecas", "clientes"])
     try:
-      df_ex_cols = pd.read_sql(f"SELECT * FROM {tabela_escolh_ocultar} LIMIT 1", conn)
+      df_ex_cols = pd.read_sql(f"SELECT * FROM {tabela_escolhida_ocultar} LIMIT 1", conn)
       todas_cols_tabela = list(df_ex_cols.columns)
     except Exception:
       todas_cols_tabela = []
