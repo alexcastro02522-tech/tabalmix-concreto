@@ -790,7 +790,7 @@ def exibir_tabela_padronizada(df, nome_tabela):
   st.dataframe(df, use_container_width=True, hide_index=True)
 
 
-# BARRA LATERAL ELEGANTE E LIMPA (SEM ERROS OU TEXTOS TÉCNICOS)
+# BARRA LATERAL ELEGANTE, LIMPA E PADRONIZADA (Nativa e Sem Erros)
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
@@ -913,7 +913,7 @@ if menu == "📊 Visão Geral":
 
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
-      if st.button("📄 Gerar Relatório Executivo Geral em PDF"):
+      if st.button("📄 Gerar Relatório Executivo Geral in PDF"):
         pdf_geral = gerar_pdf_relatorio("Relatório Executivo Geral da Frota", df_veiculos)
         st.download_button(
             label="📥 Baixar PDF Certificado",
