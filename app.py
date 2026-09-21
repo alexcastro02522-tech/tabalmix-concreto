@@ -565,7 +565,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
       c_nome = st.text_input("Nome Completo")
       c_apelido = st.text_input("Apelido / Primeiro Nome")
       
-      # SELEÇÃO DE CARGO COM APRESENTAÇÃO HUMILDE, SENSATA E BONITA DOS PLANOS
       c_cargo = st.selectbox(
           "Cargo / Função na Empresa",
           [
@@ -576,7 +575,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           ],
       )
 
-      # EXIBIÇÃO DETALHADA E ATRAENTE DE CADA PLANO LOGO ABAIXO DO SELECTBOX
       if "💎 Master Concreto & Diretoria" in c_cargo:
         st.markdown(
             """
@@ -668,7 +666,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                   "INSERT INTO usuarios_sistema (nome_completo, cpf, email,"
                   " senha, celular_seguranca, status_assinatura, plano_atual,"
                   " data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?,"
-                  " 'Inativo', ?, ?, ?, ?)",
+                  " 'Ativo', ?, ?, ?, ?)",
                   (
                       c_nome,
                       c_cpf,
@@ -938,7 +936,6 @@ elif menu == "🚜 Cadastro de Equipamentos":
   st.title("🚜 Cadastro de Equipamentos & Vistoria Fotográfica")
   st.markdown("Gira a frota, atribua a Linha do Equipamento e execute a vistoria fotográfica completa.")
 
-  # EXACT 4 TABS PRESERVED AS REQUESTED
   tab_eq_lista, tab_eq_cad, tab_eq_edit, tab_eq_foto = st.tabs([
       "📋 Frota Cadastrada",
       "➕ Registar Novo",
@@ -959,7 +956,6 @@ elif menu == "🚜 Cadastro de Equipamentos":
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-      # PAINEL DE GESTÃO RESTRITO EXCLUSIVAMENTE A GESTORES / ENGENHEIROS / ADMIN
       if is_gestao_ou_admin:
         st.markdown("---")
         with st.expander("⚙️ Painel de Gestão Avançada de Equipamentos (Exclusivo Gestão / Engenharia)", expanded=False):
@@ -1697,4 +1693,9 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
           conn,
       )
     else:
-      no
+      nome_colab_alvo = colab_escolhido_str.split("—")[0].replace("👤", "").strip()
+      df_msgs = pd.read_sql(
+          "SELECT * FROM chat_interno WHERE destinatario LIKE ? OR remetente"
+          " LIKE ? ORDER BY id ASC LIMIT 60",
+          conn,
+          params=(f"%{nome_colab_alv
