@@ -15,7 +15,7 @@ from reportlab.pdfgen import canvas
 import streamlit as st
 import streamlit.components.v1 as components
 
-# CONFIGURAÇÃO DO MERCADO PAGO (Token Oficial de Produção Integrado)
+# CONFIGURAÇÃO DO MERCADO PAGO
 MERCADO_PAGO_ACCESS_TOKEN = (
     "APP_USR-7480302560366070-091611-1118388bbc787e8f88ea1da583096dbc-2919829212"
 )
@@ -24,7 +24,7 @@ try:
 except Exception:
   sdk_mp = None
 
-# Configuração da Página com layout limpo e barra lateral nativa expansível
+# Configuração da Página
 st.set_page_config(
     page_title="Tabalmix Concreto - Enterprise Fleet & Operations Pro X",
     page_icon="🚀",
@@ -32,7 +32,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE (Limpa, Moderna e Sofisticada)
+# ESTILIZAÇÃO VISUAL LIMPA (Sem fontes de ícones corrompidas)
 st.markdown(
     """
     <style>
@@ -790,7 +790,7 @@ def exibir_tabela_padronizada(df, nome_tabela):
   st.dataframe(df, use_container_width=True, hide_index=True)
 
 
-# BARRA LATERAL ELEGANTE, LIMPA E PADRONIZADA (Nativa e Sem Erros)
+# BARRA LATERAL NATIVA LIMPA (Sem ícones quebrados)
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
@@ -913,7 +913,7 @@ if menu == "📊 Visão Geral":
 
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
-      if st.button("📄 Gerar Relatório Executivo Geral in PDF"):
+      if st.button("📄 Gerar Relatório Executivo Geral em PDF"):
         pdf_geral = gerar_pdf_relatorio("Relatório Executivo Geral da Frota", df_veiculos)
         st.download_button(
             label="📥 Baixar PDF Certificado",
@@ -1157,7 +1157,7 @@ elif menu == "⛽ Abastecimentos & Combustível":
 
       col_bc1, col_bc2 = st.columns(2)
       with col_bc1:
-        if st.button("📄 Gerar Relatório in PDF de Combustível"):
+        if st.button("📄 Gerar Relatório em PDF de Combustível"):
           pdf_c = gerar_pdf_relatorio("Relatório de Abastecimento", df_c)
           st.download_button(
               label="📥 Baixar PDF Certificado",
@@ -1415,7 +1415,7 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
 
       col_os1, col_os2 = st.columns(2)
       with col_os1:
-        if st.button("📄 Gerar Relatório in PDF de OS"):
+        if st.button("📄 Gerar Relatório em PDF de OS"):
           pdf_os = gerar_pdf_relatorio("Relatório de Ordens de Serviço", df_os)
           st.download_button(
               label="📥 Baixar PDF Certificado",
