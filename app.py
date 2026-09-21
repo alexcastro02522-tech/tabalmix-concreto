@@ -2005,18 +2005,43 @@ elif menu == "⚙️ Meu Perfil / Dados":
     st.info("Nenhum utilizador logado no momento.")
 
 elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
-  st.title("⚙️ Painel Administrativo de Chaves & Licenças & Gestão de Colunas")
+  st.title("⚙️ Painel Administrativo de Cadastros & Licenças")
 
-  tab_adm_l1, tab_adm_l2 = st.tabs(["🎟️ Gestão de Licenças", "⚙️ Gestão de Colunas (Ocultar)"])
+  tab_adm_l1, tab_adm_l2, tab_adm_l3 = st.tabs([
+      "👥 Gestão de Cadastros & Ativações",
+      "🎟️ Gestão de Licenças",
+      "⚙️ Gestão de Colunas (Ocultar)",
+  ])
 
   with tab_adm_l1:
+    st.markdown("### 👥 Cadastros Realizados no Sistema")
+    df_users_adm = pd.read_sql("SELECT id, nome_completo, email, cpf, status_assinatura, plano_atual, data_cadastro, cargo_setor FROM usuarios_sistema ORDER BY id DESC", conn)
+    if not df_users_adm.empty:
+      exibir_tabela_padronizada(df_users_adm, "usuarios_sistema")
+      
+      st.markdown("---")
+      st.markdown("### 🗑️ Excluir ou Gerir Utilizador Cadastrado")
+      id_user_exc = st.selectbox(
+          "Selecione o Utilizador para Excluir Definitivamente:",
+          df_users_adm["id"].tolist(),
+          format_func=lambda x: f"ID #{x} — {df_users_adm[df_users_adm['id'] == x]['nome_completo'].values[0]} ({df_users_adm[df_users_adm['id'] == x]['email'].values[0]})"
+      )
+      if st.button("🗑️ Confirmar Exclusão do Utilizador"):
+        cursor.execute("DELETE FROM usuarios_sistema WHERE id = ?", (id_user_exc,))
+        conn.commit()
+        st.success("✅ Utilizador removido com sucesso!")
+        st.rerun()
+    else:
+      st.info("Nenhum utilizador cadastrado.")
+
+  with tab_adm_l2:
     df_chaves = pd.read_sql("SELECT * FROM chaves_licenca", conn)
     if not df_chaves.empty:
       exibir_tabela_padronizada(df_chaves, "chaves_licenca")
     else:
       st.info("Nenhuma chave registada.")
 
-  with tab_adm_l2:
+  with tab_adm_l3:
     st.markdown("### ⚙️ Ocultar Colunas Indesejadas das Tabelas")
     tabela_escolhida_ocultar = st.selectbox("Selecione a Tabela:", ["veiculos", "manutencoes", "mobilizacoes", "combustivel", "pecas", "clientes"])
     try:
@@ -2025,7 +2050,7 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     except Exception:
       todas_cols_tabela = []
 
-    cursor.execute("SELECT ordem_colunas FROM config_colunas WHERE tabela = ?", (tabela_escolh_ocultar,))
+    cursor.execute("SELECT ordem_colunas FROM config_colunas WHERE tabela = ?", (tabela_escolhida_ocultar,))
     res_oc = cursor.fetchone()
     cols_ja_ocultas = [c.strip() for c in res_oc[0].split(",")] if res_oc and res_oc[0] else []
 
