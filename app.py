@@ -1695,4 +1695,340 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
           params=(f"%{nome_colab_alvo}%", f"%{nome_colab_alvo}%"),
       )
 
-    chat_container_abertura = '<div class="
+    chat_container_abertura = """<div class="chat-container">"""
+    st.markdown(chat_container_abertura, unsafe_allow_html=True)
+
+    if not df_msgs.empty:
+      for _, row_m in df_msgs.iterrows():
+        is_eu = remetente_atual in str(row_m["remetente"])
+        row_class = "msg-row msg-row-eu" if is_eu else "msg-row msg-row-outro"
+        bubble_class = (
+            "msg-bubble msg-bubble-eu" if is_eu else "msg-bubble msg-bubble-outro"
+        )
+        cor_autor = "#d1fae5" if is_eu else "#047857"
+
+        st.markdown(
+            f"""
+            <div class="{row_class}">
+                <div class="{bubble_class}">
+                    <div style="font-size: 10px; font-weight: 800; color: {cor_autor}; margin-bottom: 4px; display: flex; justify-content: space-between; gap: 15px;">
+                        <span>👤 {row_m['remetente']} ➔ {row_m['destinatario']} &nbsp; • &nbsp; <b>[⋮]</b></span>
+                        <span style="opacity: 0.8;">{row_m['data_envio']}</span>
+                    </div>
+                    <div style="font-size: 13.5px; line-height: 1.4; white-space: pre-wrap;">{row_m['mensagem']}</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        with st.expander(f"⚙️ Opções da Mensagem #{row_m['id']}", expanded=False):
+          col_m1, col_m2, col_m3 = st.columns([1, 2, 1])
+
+          with col_m1:
+            texto_limpo_js = (
+                str(row_m["mensagem"])
+                .replace('"', '\\"')
+                .replace("\n", " ")
+                .replace("\r", " ")
+            )
+            copiar_html_min = f"""
+                    <button onclick="navigator.clipboard.writeText('{texto_limpo_js}'); alert('📋 Copiado!');" style="background:#059669; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; width:100%;">📋 Copiar</button>
+                """
+            components.html(copiar_html_min, height=32)
+
+          with col_m2:
+            if todos_usuarios_db:
+              lista_enc = [
+                  f"👤 {u[1]} — Cargo: {u[2]}" for u in todos_usuarios_db
+              ]
+              destino_fwd = st.selectbox(
+                  "Reencaminhar para:",
+                  ["🌐 Canal Geral"] + lista_enc,
+                  key=f"sel_fwd_{row_m['id']}",
+              )
+              if st.button("🚀 Enviar Reencaminhado", key=f"btn_fwd_{row_m['id']}"):
+                data_env_fwd = datetime.now().strftime("%H:%M — %d/%m")
+                msg_fwd_texto = (
+                    f"[Encaminhado de {row_m['remetente']}]\n{row_m['mensagem']}"
+                )
+                cursor.execute(
+                    "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+                    " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES"
+                    " (?, ?, ?, ?, ?, ?, ?)",
+                    (
+                        f"{remetente_atual} ({cargo_atual})",
+                        destino_fwd,
+                        cargo_atual,
+                        msg_fwd_texto,
+                        "",
+                        "",
+                        data_env_fwd,
+                    ),
+                )
+                conn.commit()
+                st.success("✅ Reencaminhado!")
+                st.rerun()
+
+          with col_m3:
+            if st.button("🗑️ Apagar", key=f"del_b_{row_m['id']}"):
+              cursor.execute(
+                  "DELETE FROM chat_interno WHERE id = ?", (row_m["id"],)
+              )
+              conn.commit()
+              st.rerun()
+
+        if row_m["arquivo_path"] and os.path.exists(str(row_m["arquivo_path"])):
+          if row_m["arquivo_nome"].lower().endswith((".png", ".jpg", ".jpeg")):
+            st.image(
+                row_m["arquivo_path"],
+                caption=f"Mídia de {row_m['remetente']}",
+                width=240,
+            )
+          with open(row_m["arquivo_path"], "rb") as f_down:
+            st.download_button(
+                label=f"📥 Baixar: {row_m['arquivo_nome']}",
+                data=f_down.read(),
+                file_name=row_m["arquivo_nome"],
+                key=f"dl_chat_arq_{row_m['id']}",
+            )
+        st.markdown(
+            "<hr style='margin: 4px 0; border: none; border-top: 1px solid"
+            " #e2e8f0;'>",
+            unsafe_allow_html=True,
+        )
+    else:
+      st.info("Ainda sem mensagens nesta conversa. Envia a primeira abaixo!")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    with st.form("form_chat_direto_pro", clear_on_submit=True):
+      col_msg1, col_msg2 = st.columns([3, 1])
+      with col_msg1:
+        msg_sala_txt = st.text_input(
+            "Escreve a tua mensagem operacional...",
+            placeholder="Mensagem segura...",
+        )
+      with col_msg2:
+        file_sala_up = st.file_uploader(
+            "Anexar Mídia",
+            type=["png", "jpg", "jpeg", "pdf", "docx"],
+            label_visibility="collapsed",
+        )
+
+      btn_enviar_chat = st.form_submit_button("🚀 Enviar Mensagem")
+
+      if btn_enviar_chat:
+        if not msg_sala_txt.strip() and not file_sala_up:
+          st.warning("⚠️ Escreve uma mensagem ou anexa um arquivo.")
+        else:
+          path_s = ""
+          nome_s = ""
+          if file_sala_up is not None:
+            os.makedirs("chat_documentos", exist_ok=True)
+            nome_s = file_sala_up.name
+            path_s = (
+                "chat_documentos/"
+                f"{datetime.now().strftime('%Y%m%d%H%M%S')}_{nome_s}"
+            )
+            with open(path_s, "wb") as f_out_s:
+              f_out_s.write(file_sala_up.getbuffer())
+
+          data_env_s = datetime.now().strftime("%H:%M — %d/%m")
+          cursor.execute(
+              "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+              " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
+              " ?, ?, ?, ?, ?)",
+              (
+                  f"{remetente_atual} ({cargo_atual})",
+                  colab_escolhido_str,
+                  cargo_atual,
+                  msg_sala_txt,
+                  path_s,
+                  nome_s,
+                  data_env_s,
+              ),
+          )
+          conn.commit()
+          st.rerun()
+
+  with tab_videocall:
+    st.markdown("### 📞 Central de Chamada Direta Pessoal")
+    if todos_usuarios_db:
+      alvos_chamada = [f"{u[1]} ({u[2]})" for u in todos_usuarios_db]
+      alvo_selecionado = st.selectbox(
+          "Quem vai receber o convite para a reunião?",
+          alvos_chamada,
+          key="sel_alvo_video",
+      )
+    else:
+      alvo_selecionado = "Equipe Geral"
+
+    nome_sala_direta = f"TabalmixDirectCall{ ''.join(e for e in alvo_selecionado.split()[0] if e.isalnum()) }2026"
+    link_direto_jitsi = f"https://meet.jit.si/{nome_sala_direta}#config.prejoinPageEnabled=false&config.disableDeepLinking=true&config.requireDisplayName=false"
+
+    if st.button("🚀 Criar Sala e Enviar Convite", key="btn_ligar_integ"):
+      remetente_notif = (
+          usuario_atual["apelido"] if usuario_atual else "Administrador"
+      )
+      msg_alerta_chamada = f"🚨 **CHAMADA DE VÍDEO ATIVA:** {remetente_notif} iniciou uma reunião!\n\n🔗 **Clica para entrar:**\n{link_direto_jitsi}"
+      data_env_notif = datetime.now().strftime("%H:%M — %d/%m")
+      try:
+        cursor.execute(
+            "INSERT INTO chat_interno (remetente, destinatario, cargo,"
+            " mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?,"
+            " ?, ?, ?, ?, ?)",
+            (
+                f"{remetente_notif} (Diretoria)",
+                alvo_selecionado,
+                "Alerta",
+                msg_alerta_chamada,
+                "",
+                "",
+                data_env_notif,
+            ),
+        )
+        conn.commit()
+      except Exception:
+        pass
+      st.success("Convite enviado com sucesso para o chat!")
+      st.rerun()
+
+elif menu == "🔍 Consulta / Busca Geral":
+  st.title("🔍 Consulta e Histórico Completo")
+  df_v_busca = pd.read_sql(
+      "SELECT tag_prefixo, categoria_equipamento, modelo, placa FROM veiculos", conn
+  )
+  if not df_v_busca.empty:
+    exibir_tabela_padronizada(df_v_busca, "busca_eq_info")
+  else:
+    st.info("Nenhum registo encontrado para consulta.")
+
+elif menu == "⚙️ Meu Perfil / Dados":
+  st.title("⚙️ Meu Perfil & Gestão da Assinatura")
+  st.markdown("Consulte os detalhes do seu plano contratado, dias restantes e atualize suas informações cadastrais.")
+
+  if usuario_atual:
+    u_id = usuario_atual["id"]
+    cursor.execute("SELECT * FROM usuarios_sistema WHERE id = ?", (u_id,))
+    dados_cad_atuais = cursor.fetchone()
+
+    if dados_cad_atuais:
+      db_nome = dados_cad_atuais[1]
+      db_cpf = dados_cad_atuais[2]
+      db_email = dados_cad_atuais[3]
+      db_senha = dados_cad_atuais[4]
+      db_cel = dados_cad_atuais[5]
+      db_status = dados_cad_atuais[6]
+      db_plano = dados_cad_atuais[7] if len(dados_cad_atuais) > 7 and dados_cad_atuais[7] else "Plano Executivo Enterprise"
+      db_data_cad = dados_cad_atuais[8] if len(dados_cad_atuais) > 8 and dados_cad_atuais[8] else datetime.now().strftime("%Y-%m-%d %H:%M")
+      db_pin = dados_cad_atuais[9] if len(dados_cad_atuais) > 9 and dados_cad_atuais[9] else ""
+      db_apelido = dados_cad_atuais[10] if len(dados_cad_atuais) > 10 and dados_cad_atuais[10] else db_nome.split()[0]
+      db_cargo = dados_cad_atuais[11] if len(dados_cad_atuais) > 11 and dados_cad_atuais[11] else "Diretoria / Gestão"
+
+      dias_restantes_str = "Indeterminado / Vitalício"
+      try:
+        dt_inicio = datetime.strptime(db_data_cad[:10], "%Y-%m-%d")
+        total_dias_plano = 365 if "Anual" in db_plano else 30
+        dt_fim = dt_inicio + timedelta(days=total_dias_plano)
+        dias_delta = (dt_fim - datetime.now()).days
+        dias_restantes_str = f"{max(dias_delta, 0)} dias restantes" if dias_delta >= 0 else "Expirado"
+      except Exception:
+        pass
+
+      st.markdown(
+          f"""
+          <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 22px; color: white; margin-bottom: 20px; box-shadow: 0 10px 25px rgba(5,150,105,0.2);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                  <h3 style="color: white !important; margin: 0; font-size: 18px;">💎 Assinatura & Plano Contratado</h3>
+                  <span style="background: #ffffff; color: #047857; font-weight: 800; padding: 4px 12px; border-radius: 8px; font-size: 12px;">🟢 {db_status}</span>
+              </div>
+              <p style="margin: 4px 0; font-size: 14px; color: #e2e8f0;"><b>Plano Atual:</b> {db_plano}</p>
+              <p style="margin: 4px 0; font-size: 13px; color: #cbd5e1;"><b>Data de Ativação:</b> {db_data_cad} &nbsp;|&nbsp; ⏳ <b>Tempo Restante:</b> {dias_restantes_str}</p>
+          </div>
+          """,
+          unsafe_allow_html=True
+      )
+
+      with st.form("form_atualizar_meu_perfil_pro"):
+        st.markdown("### ✏️ Atualizar Dados Cadastrais, E-mail, PIN ou Cargo")
+        
+        c_p1, c_p2 = st.columns(2)
+        with c_p1:
+          novo_nome_comp = st.text_input("Nome Completo", value=str(db_nome))
+          novo_apelido = st.text_input("Apelido / Primeiro Nome", value=str(db_apelido))
+          novo_email = st.text_input("E-mail Corporativo (Login)", value=str(db_email))
+          novo_cargo = st.selectbox(
+              "Cargo / Função na Empresa",
+              [
+                  "Diretoria / Gestão",
+                  "Engenheiro / Gestor de Obra",
+                  "Mecânico / Oficina",
+                  "Operador / Motorista / Campo",
+              ],
+              index=0 if "Diretoria" in str(db_cargo) else (1 if "Engenheiro" in str(db_cargo) else (2 if "Mecânico" in str(db_cargo) else 3))
+          )
+        with c_p2:
+          novo_cel = st.text_input("Celular / WhatsApp", value=str(db_cel))
+          novo_pin = st.text_input("PIN Rápido (4 dígitos)", value=str(db_pin), max_chars=4, type="password")
+          nova_senha = st.text_input("Senha de Acesso", value=str(db_senha), type="password")
+          st.text_input("CPF (Somente Leitura)", value=str(db_cpf), disabled=True)
+
+        btn_salvar_perfil = st.form_submit_button("💾 Salvar Alterações do Perfil")
+
+        if btn_salvar_perfil:
+          try:
+            cursor.execute(
+                "UPDATE usuarios_sistema SET nome_completo = ?, email = ?, senha = ?, celular_seguranca = ?, pin_rapido = ?, apelido = ?, cargo_setor = ? WHERE id = ?",
+                (novo_nome_comp, novo_email, nova_senha, novo_cel, novo_pin, novo_apelido, novo_cargo, u_id)
+            )
+            conn.commit()
+            st.session_state["usuario_logado"]["apelido"] = novo_apelido
+            st.session_state["usuario_logado"]["cargo"] = novo_cargo
+            st.session_state["usuario_logado"]["email"] = novo_email
+            st.success("✅ Perfil e dados atualizados com sucesso no sistema!")
+            st.rerun()
+          except Exception as e:
+            st.error(f"⚠️ Erro ao atualizar perfil: {e}")
+    else:
+      st.info("Dados de utilizador não encontrados na sessão.")
+  else:
+    st.info("Nenhum utilizador logado no momento.")
+
+elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
+  st.title("⚙️ Painel Administrativo de Chaves & Licenças & Gestão de Colunas")
+
+  tab_adm_l1, tab_adm_l2 = st.tabs(["🎟️ Gestão de Licenças", "⚙️ Gestão de Colunas (Ocultar)"])
+
+  with tab_adm_l1:
+    df_chaves = pd.read_sql("SELECT * FROM chaves_licenca", conn)
+    if not df_chaves.empty:
+      exibir_tabela_padronizada(df_chaves, "chaves_licenca")
+    else:
+      st.info("Nenhuma chave registada.")
+
+  with tab_adm_l2:
+    st.markdown("### ⚙️ Ocultar Colunas Indesejadas das Tabelas")
+    tabela_escolhida_ocultar = st.selectbox("Selecione a Tabela:", ["veiculos", "manutencoes", "mobilizacoes", "combustivel", "pecas", "clientes"])
+    try:
+      df_ex_cols = pd.read_sql(f"SELECT * FROM {tabela_escolhida_ocultar} LIMIT 1", conn)
+      todas_cols_tabela = list(df_ex_cols.columns)
+    except Exception:
+      todas_cols_tabela = []
+
+    cursor.execute("SELECT ordem_colunas FROM config_colunas WHERE tabela = ?", (tabela_escolhida_ocultar,))
+    res_oc = cursor.fetchone()
+    cols_ja_ocultas = [c.strip() for c in res_oc[0].split(",")] if res_oc and res_oc[0] else []
+
+    colunas_para_ocultar = st.multiselect(
+        "Selecione as colunas que deseja ocultar nas tabelas:",
+        todas_cols_tabela,
+        default=[c for c in cols_ja_ocultas if c in todas_cols_tabela]
+    )
+
+    if st.button("💾 Salvar Configuração de Colunas"):
+      str_ocultas_final = ",".join(colunas_para_ocultar)
+      cursor.execute("INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas) VALUES (?, ?)", (tabela_escolhida_ocultar, str_ocultas_final))
+      conn.commit()
+      st.success("✅ Configuração de colunas atualizada com sucesso!")
+      st.rerun()
