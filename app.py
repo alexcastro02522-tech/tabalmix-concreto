@@ -416,6 +416,7 @@ try:
 except Exception:
   pass
 
+# VERIFICAÇÃO DE PERFIL DE GESTÃO / ENGENHEIRO / ADMIN
 is_gestao_ou_admin = modo_admin_liberado
 if st.session_state["usuario_logado"]:
   cargo_colab = str(st.session_state["usuario_logado"].get("cargo", ""))
@@ -563,6 +564,8 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
       st.markdown("### 📝 Criar Novo Cadastro na Obra")
       c_nome = st.text_input("Nome Completo")
       c_apelido = st.text_input("Apelido / Primeiro Nome")
+      
+      # SELEÇÃO DE CARGO COM SUGESTÃO AUTOMÁTICA DE PLANO
       c_cargo = st.selectbox(
           "Cargo / Função na Empresa",
           [
@@ -573,14 +576,30 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           ],
       )
 
+      # Sugestão automática de plano de acordo com o cargo escolhido
+      if "Diretoria" in c_cargo:
+        plano_sugerido_padrao = "Plano Anual Enterprise (Acesso Master Completo)"
+      elif "Engenheiro" in c_cargo:
+        plano_sugerido_padrao = "Plano Gestão de Obras & Frotas (Completo)"
+      elif "Mecânico" in c_cargo:
+        plano_sugerido_padrao = "Plano Oficina & Manutenção (Mensal)"
+      else:
+        plano_sugerido_padrao = "Plano Operacional Campo (Mensal)"
+
+      st.info(f"💡 **Plano Recomendado p/ {c_cargo}:** {plano_sugerido_padrao}")
+
       with st.form("form_novo_cadastro"):
         c_cpf = st.text_input("CPF")
         c_email = st.text_input("E-mail corporativo de login")
         c_senha = st.text_input("Criar senha", type="password")
         c_cel = st.text_input("Celular / WhatsApp")
+        
         c_vigencia = st.selectbox(
-            "Modalidade de vigência",
-            ["Plano Mensal (30 dias)", "Plano Anual (365 dias)"],
+            "Modalidade de vigência do plano",
+            [
+                "Plano Mensal (30 dias)",
+                "Plano Anual (365 dias — Desconto Aplicado)",
+            ],
         )
         btn_cadastrar = st.form_submit_button(
             "Cadastrar e Prosseguir para Pagamento"
@@ -613,7 +632,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                   ),
               )
               conn.commit()
-              st.success("✅ Conta cadastrada com sucesso!")
+              st.success("✅ Conta cadastrada com sucesso! Podes fazer login agora.")
             except Exception as e:
               st.error(f"⚠️ Erro ao cadastrar: {e}")
 
@@ -890,10 +909,10 @@ elif menu == "🚜 Cadastro de Equipamentos":
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-      # GERSTION TOOLS EXCLUSIVE FOR MANAGERS / ADMINS EMBEDDED CLEANLY BELOW
+      # PAINEL DE GESTÃO RESTRITO EXCLUSIVAMENTE A GESTORES / ENGENHEIROS / ADMIN
       if is_gestao_ou_admin:
         st.markdown("---")
-        with st.expander("⚙️ Painel de Gestão Avançada de Equipamentos (Exclusivo Gestores)", expanded=False):
+        with st.expander("⚙️ Painel de Gestão Avançada de Equipamentos (Exclusivo Gestão / Engenharia)", expanded=False):
           sub_gestao_op = st.selectbox("Escolha a ação de gestão:", ["🗑️ Excluir Equipamento", "⚙️ Gerir e Ocultar Colunas"])
           
           if sub_gestao_op == "🗑️ Excluir Equipamento":
