@@ -24,12 +24,18 @@ try:
 except Exception:
   sdk_mp = None
 
-# Configuração da Página
+# Controle de Estado da Barra Lateral (Expandida / Recolhida)
+if "sidebar_visivel" not in st.session_state:
+  st.session_state["sidebar_visivel"] = True
+
+estado_inicial_sidebar = "expanded" if st.session_state["sidebar_visivel"] else "collapsed"
+
+# Configuração da Página com o estado dinâmico
 st.set_page_config(
     page_title="Tabalmix Concreto - Enterprise Fleet & Operations Pro X",
     page_icon="🚀",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state=estado_inicial_sidebar,
 )
 
 # ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE
@@ -791,6 +797,15 @@ def exibir_tabela_padronizada(df, nome_tabela):
 
 
 with st.sidebar:
+  # Botão exclusivo no topo para recolher/fechar a barra lateral e ocupar 100% da tela
+  col_sb_t1, col_sb_t2 = st.columns([3, 1])
+  with col_sb_t1:
+    st.markdown("🎛️ **Painel**")
+  with col_sb_t2:
+    if st.button("◀", help="Recolher barra lateral e ocupar 100% da tela"):
+      st.session_state["sidebar_visivel"] = False
+      st.rerun()
+
   try:
     with open("caminhoes.jpg", "rb") as image_file:
       encoded_logo_side = base64.b64encode(image_file.read()).decode()
@@ -829,6 +844,12 @@ with st.sidebar:
         pass
       st.rerun()
   st.markdown("---")
+
+# Botão flutuante no topo da tela principal para reabrir a barra lateral quando ela estiver recolhida
+if not st.session_state["sidebar_visivel"]:
+  if st.button("▶️ Abrir Barra Lateral", help="Clique para restaurar a navegação lateral"):
+    st.session_state["sidebar_visivel"] = True
+    st.rerun()
 
 lista_menus = [
     "📊 Visão Geral",
