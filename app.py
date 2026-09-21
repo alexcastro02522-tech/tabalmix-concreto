@@ -869,24 +869,13 @@ elif menu == "🚜 Cadastro de Equipamentos":
   st.title("🚜 Cadastro de Equipamentos & Vistoria Fotográfica")
   st.markdown("Gira a frota, atribua a Linha do Equipamento e execute a vistoria fotográfica completa.")
 
-  if is_gestao_ou_admin:
-    tab_eq_lista, tab_eq_cad, tab_eq_edit, tab_eq_exc, tab_eq_col, tab_eq_foto = st.tabs([
-        "📋 Frota Cadastrada",
-        "➕ Registar Novo",
-        "✏️ Editar Frota & Histórico",
-        "🗑️ Excluir Equipamento",
-        "⚙️ Gerir Colunas",
-        "📸 Vistoria Fotográfica",
-    ])
-  else:
-    tab_eq_lista, tab_eq_cad, tab_eq_edit, tab_eq_foto = st.tabs([
-        "📋 Frota Cadastrada",
-        "➕ Registar Novo",
-        "✏️ Editar Frota & Histórico",
-        "📸 Vistoria Fotográfica",
-    ])
-    tab_eq_exc = None
-    tab_eq_col = None
+  # EXACT 4 TABS PRESERVED AS REQUESTED
+  tab_eq_lista, tab_eq_cad, tab_eq_edit, tab_eq_foto = st.tabs([
+      "📋 Frota Cadastrada",
+      "➕ Registar Novo",
+      "✏️ Editar Frota & Histórico",
+      "📸 Vistoria Fotográfica",
+  ])
 
   with tab_eq_lista:
     df_f = pd.read_sql("SELECT * FROM veiculos", conn)
@@ -900,6 +889,53 @@ elif menu == "🚜 Cadastro de Equipamentos":
             file_name="frota_tabalmix.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
+
+      # GERSTION TOOLS EXCLUSIVE FOR MANAGERS / ADMINS EMBEDDED CLEANLY BELOW
+      if is_gestao_ou_admin:
+        st.markdown("---")
+        with st.expander("⚙️ Painel de Gestão Avançada de Equipamentos (Exclusivo Gestores)", expanded=False):
+          sub_gestao_op = st.selectbox("Escolha a ação de gestão:", ["🗑️ Excluir Equipamento", "⚙️ Gerir e Ocultar Colunas"])
+          
+          if sub_gestao_op == "🗑️ Excluir Equipamento":
+            try:
+              df_veiculos_exc = pd.read_sql("SELECT id, tag_prefixo, marca, modelo, placa FROM veiculos ORDER BY id DESC", conn)
+            except Exception:
+              df_veiculos_exc = pd.DataFrame()
+            if not df_veiculos_exc.empty:
+              id_exc_sel = st.selectbox(
+                  "Selecione o Equipamento para Excluir Definitivamente:",
+                  df_veiculos_exc["id"].tolist(),
+                  format_func=lambda x: f"ID #{x} — {df_veiculos_exc[df_veiculos_exc['id'] == x]['marca'].values[0]} {df_veiculos_exc[df_veiculos_exc['id'] == x]['modelo'].values[0]} (Placa: {df_veiculos_exc[df_veiculos_exc['id'] == x]['placa'].values[0]})",
+                  key="sel_exc_veiculo_ges"
+              )
+              if st.button("🗑️ Confirmar Exclusão do Equipamento"):
+                cursor.execute("DELETE FROM veiculos WHERE id = ?", (id_exc_sel,))
+                conn.commit()
+                st.success("✅ Equipamento removido com sucesso!")
+                st.rerun()
+            else:
+              st.info("Nenhum veículo registado para excluir.")
+              
+          elif sub_gestao_op == "⚙️ Gerir e Ocultar Colunas":
+            try:
+              df_ex_cols_v = pd.read_sql("SELECT * FROM veiculos LIMIT 1", conn)
+              todas_cols_v = list(df_ex_cols_v.columns)
+            except Exception:
+              todas_cols_v = []
+            cursor.execute("SELECT ordem_colunas FROM config_colunas WHERE tabela = ?", ("veiculos",))
+            res_oc_v = cursor.fetchone()
+            cols_ja_ocultas_v = [c.strip() for c in res_oc_v[0].split(",")] if res_oc_v and res_oc_v[0] else []
+            cols_para_ocultar_v = st.multiselect(
+                "Selecione as colunas que deseja OCULTAR na tabela de frota:",
+                todas_cols_v,
+                default=[c for c in cols_ja_ocultas_v if c in todas_cols_v]
+            )
+            if st.button("💾 Salvar Configuração de Colunas"):
+              str_ocultas_final_v = ",".join(cols_para_ocultar_v)
+              cursor.execute("INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas) VALUES (?, ?)", ("veiculos", str_ocultas_final_v))
+              conn.commit()
+              st.success("✅ Configuração de colunas atualizada com sucesso!")
+              st.rerun()
     else:
       st.info("Nenhum equipamento cadastrado ainda.")
 
@@ -1011,54 +1047,6 @@ elif menu == "🚜 Cadastro de Equipamentos":
             st.rerun()
     else:
       st.info("Nenhum veículo registado para editar.")
-
-  if is_gestao_ou_admin:
-    with tab_eq_exc:
-      st.markdown("### 🗑️ Excluir Equipamento da Frota")
-      try:
-        df_veiculos_exc = pd.read_sql("SELECT id, tag_prefixo, marca, modelo, placa FROM veiculos ORDER BY id DESC", conn)
-      except Exception:
-        df_veiculos_exc = pd.DataFrame()
-
-      if not df_veiculos_exc.empty:
-        id_exc_sel = st.selectbox(
-            "Selecione o Equipamento para Excluir Definitivamente:",
-            df_veiculos_exc["id"].tolist(),
-            format_func=lambda x: f"ID #{x} — {df_veiculos_exc[df_veiculos_exc['id'] == x]['marca'].values[0]} {df_veiculos_exc[df_veiculos_exc['id'] == x]['modelo'].values[0]} (Placa: {df_veiculos_exc[df_veiculos_exc['id'] == x]['placa'].values[0]})",
-            key="sel_exc_veiculo_ges"
-        )
-        if st.button("🗑️ Confirmar Exclusão do Equipamento"):
-          cursor.execute("DELETE FROM veiculos WHERE id = ?", (id_exc_sel,))
-          conn.commit()
-          st.success("✅ Equipamento removido com sucesso!")
-          st.rerun()
-      else:
-        st.info("Nenhum veículo registado para excluir.")
-
-    with tab_eq_col:
-      st.markdown("### ⚙️ Gestão de Colunas Visíveis (Ocultar/Exibir)")
-      try:
-        df_ex_cols_v = pd.read_sql("SELECT * FROM veiculos LIMIT 1", conn)
-        todas_cols_v = list(df_ex_cols_v.columns)
-      except Exception:
-        todas_cols_v = []
-
-      cursor.execute("SELECT ordem_colunas FROM config_colunas WHERE tabela = ?", ("veiculos",))
-      res_oc_v = cursor.fetchone()
-      cols_ja_ocultas_v = [c.strip() for c in res_oc_v[0].split(",")] if res_oc_v and res_oc_v[0] else []
-
-      cols_para_ocultar_v = st.multiselect(
-          "Selecione as colunas que deseja OCULTAR na tabela de frota:",
-          todas_cols_v,
-          default=[c for c in cols_ja_ocultas_v if c in todas_cols_v]
-      )
-
-      if st.button("💾 Salvar Colunas da Frota"):
-        str_ocultas_final_v = ",".join(cols_para_ocultar_v)
-        cursor.execute("INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas) VALUES (?, ?)", ("veiculos", str_ocultas_final_v))
-        conn.commit()
-        st.success("✅ Configuração de colunas atualizada com sucesso!")
-        st.rerun()
 
   with tab_eq_foto:
     st.markdown("### 📸 Vistoria Fotográfica Completa (Até 15 Ângulos)")
