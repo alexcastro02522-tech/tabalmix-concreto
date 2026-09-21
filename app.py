@@ -223,6 +223,7 @@ def init_db():
         CREATE TABLE IF NOT EXISTS veiculos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             tag_prefixo TEXT, categoria_equipamento TEXT,
+            tipo_equipamento TEXT, operador_condutor TEXT,
             marca TEXT, modelo TEXT, ano INTEGER, chassi TEXT, renavam TEXT,
             placa TEXT, crv TEXT, cor TEXT, combustivel TEXT, empresa TEXT,
             horimetro_km INTEGER, status TEXT, historico_edicoes TEXT
@@ -231,6 +232,8 @@ def init_db():
 
   for col_sql in [
       "ALTER TABLE veiculos ADD COLUMN categoria_equipamento TEXT",
+      "ALTER TABLE veiculos ADD COLUMN tipo_equipamento TEXT",
+      "ALTER TABLE veiculos ADD COLUMN operador_condutor TEXT",
       "ALTER TABLE veiculos ADD COLUMN chassi TEXT",
       "ALTER TABLE veiculos ADD COLUMN renavam TEXT",
       "ALTER TABLE veiculos ADD COLUMN crv TEXT",
@@ -1016,6 +1019,8 @@ elif menu == "🚜 Cadastro de Equipamentos":
                 "🚛 Linha Branca / Apoio (Carrocerias, Utilitários)",
             ],
         )
+        f_tipo_eq = st.text_input("Tipo de Equipamento (ex: Caminhão Betoneira, Escavadeira)")
+        f_operador = st.text_input("Operador / Condutor Responsável")
         f_marca = st.text_input("Marca (ex: Mercedes-Benz, Ford, Caterpillar)")
         f_modelo = st.text_input("Modelo (ex: 2423 B, Cargo 2622)")
         f_ano = st.number_input("Ano de Fabricação", value=2020, step=1)
@@ -1033,13 +1038,15 @@ elif menu == "🚜 Cadastro de Equipamentos":
         if f_marca and f_modelo:
           hist_cad_inicial = f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Equipamento cadastrado no sistema."
           cursor.execute(
-              "INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca,"
+              "INSERT INTO veiculos (tag_prefixo, categoria_equipamento, tipo_equipamento, operador_condutor, marca,"
               " modelo, ano, chassi, renavam, placa, crv, cor, combustivel,"
-              " empresa, horimetro_km, status, historico_edicoes) VALUES (?, ?, ?, ?, ?, ?, ?, ?,"
-              " '', ?, ?, ?, ?, 'Ativo', ?)",
+              " empresa, horimetro_km, status, historico_edicoes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?,"
+              " '', ?, ?, ?, ?, ?, 'Ativo', ?)",
               (
                   f_prefixo,
                   f_cat,
+                  f_tipo_eq,
+                  f_operador,
                   f_marca,
                   f_modelo,
                   int(f_ano),
@@ -1054,7 +1061,7 @@ elif menu == "🚜 Cadastro de Equipamentos":
               ),
           )
           conn.commit()
-          st.success("✅ Equipamento e linha operacional registados com sucesso!")
+          st.success("✅ Equipamento, tipo e operador registados com sucesso!")
           st.rerun()
         else:
           st.error("⚠️ Preencha pelo menos a Marca e o Modelo.")
@@ -1077,6 +1084,8 @@ elif menu == "🚜 Cadastro de Equipamentos":
       with st.form(f"form_editar_veiculo_{id_veiculo_sel}"):
         st.markdown(f"#### Editando Veículo ID #{id_veiculo_sel}")
         e_pref = st.text_input("Prefixo / Tag", value=str(veiculo_atual_reg["tag_prefixo"]))
+        e_tipo = st.text_input("Tipo de Equipamento", value=str(veiculo_atual_reg["tipo_equipamento"]) if pd.notnull(veiculo_atual_reg["tipo_equipamento"]) else "")
+        e_operador = st.text_input("Operador / Condutor", value=str(veiculo_atual_reg["operador_condutor"]) if pd.notnull(veiculo_atual_reg["operador_condutor"]) else "")
         e_marca = st.text_input("Marca", value=str(veiculo_atual_reg["marca"]))
         e_modelo = st.text_input("Modelo", value=str(veiculo_atual_reg["modelo"]))
         e_placa = st.text_input("Placa", value=str(veiculo_atual_reg["placa"]))
@@ -1087,7 +1096,7 @@ elif menu == "🚜 Cadastro de Equipamentos":
         st.markdown("🔴 **OBRIGATÓRIO:** Informe abaixo o motivo exato da alteração:")
         motivo_edicao_veiculo = st.text_input(
             "Motivo da Atualização / Troca",
-            placeholder="Ex: Correção de quilometragem, atualização de placa..."
+            placeholder="Ex: Correção de quilometragem, alteração de operador..."
         )
 
         btn_atualizar_veiculo = st.form_submit_button("💾 Salvar Alterações e Histórico")
@@ -1101,8 +1110,8 @@ elif menu == "🚜 Cadastro de Equipamentos":
             hist_atualizado_final = hist_anterior + novo_item_hist
 
             cursor.execute(
-                "UPDATE veiculos SET tag_prefixo = ?, marca = ?, modelo = ?, placa = ?, cor = ?, horimetro_km = ?, historico_edicoes = ? WHERE id = ?",
-                (e_pref, e_marca, e_modelo, e_placa, e_cor, int(e_km), hist_atualizado_final, int(id_veiculo_sel))
+                "UPDATE veiculos SET tag_prefixo = ?, tipo_equipamento = ?, operador_condutor = ?, marca = ?, modelo = ?, placa = ?, cor = ?, horimetro_km = ?, historico_edicoes = ? WHERE id = ?",
+                (e_pref, e_tipo, e_operador, e_marca, e_modelo, e_placa, e_cor, int(e_km), hist_atualizado_final, int(id_veiculo_sel))
             )
             conn.commit()
             st.success("✅ Veículo atualizado com sucesso!")
@@ -2016,7 +2025,7 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     except Exception:
       todas_cols_tabela = []
 
-    cursor.execute("SELECT ordem_colunas FROM config_colunas WHERE tabela = ?", (tabela_escolhida_ocultar,))
+    cursor.execute("SELECT ordem_colunas FROM config_colunas WHERE tabela = ?", (tabela_escolh_ocultar,))
     res_oc = cursor.fetchone()
     cols_ja_ocultas = [c.strip() for c in res_oc[0].split(",")] if res_oc and res_oc[0] else []
 
