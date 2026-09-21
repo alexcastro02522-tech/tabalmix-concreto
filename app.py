@@ -315,12 +315,6 @@ def init_db():
         )
     """)
 
-  try:
-    cursor.execute("DELETE FROM config_colunas WHERE tabela = 'veiculos'")
-    conn.commit()
-  except Exception:
-    pass
-
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS chat_interno (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -425,7 +419,7 @@ except Exception:
 is_gestao_ou_admin = modo_admin_liberado
 if st.session_state["usuario_logado"]:
   cargo_colab = str(st.session_state["usuario_logado"].get("cargo", ""))
-  if "Diretoria" in cargo_colab or "Gestão" in cargo_colab:
+  if "Diretoria" in cargo_colab or "Gestão" in cargo_colab or "Engenheiro" in cargo_colab:
     is_gestao_ou_admin = True
 
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
@@ -875,12 +869,24 @@ elif menu == "🚜 Cadastro de Equipamentos":
   st.title("🚜 Cadastro de Equipamentos & Vistoria Fotográfica")
   st.markdown("Gira a frota, atribua a Linha do Equipamento e execute a vistoria fotográfica completa.")
 
-  tab_eq_lista, tab_eq_cad, tab_eq_edit, tab_eq_foto = st.tabs([
-      "📋 Frota Cadastrada",
-      "➕ Registar Novo Equipamento",
-      "✏️ Editar Frota & Histórico",
-      "📸 Vistoria Fotográfica (Até 15 Imagens)",
-  ])
+  if is_gestao_ou_admin:
+    tab_eq_lista, tab_eq_cad, tab_eq_edit, tab_eq_exc, tab_eq_col, tab_eq_foto = st.tabs([
+        "📋 Frota Cadastrada",
+        "➕ Registar Novo",
+        "✏️ Editar Frota & Histórico",
+        "🗑️ Excluir Equipamento",
+        "⚙️ Gerir Colunas",
+        "📸 Vistoria Fotográfica",
+    ])
+  else:
+    tab_eq_lista, tab_eq_cad, tab_eq_edit, tab_eq_foto = st.tabs([
+        "📋 Frota Cadastrada",
+        "➕ Registar Novo",
+        "✏️ Editar Frota & Histórico",
+        "📸 Vistoria Fotográfica",
+    ])
+    tab_eq_exc = None
+    tab_eq_col = None
 
   with tab_eq_lista:
     df_f = pd.read_sql("SELECT * FROM veiculos", conn)
@@ -980,20 +986,20 @@ elif menu == "🚜 Cadastro de Equipamentos":
         e_km = st.number_input("Km / Horímetro", value=int(veiculo_atual_reg["horimetro_km"]) if pd.notnull(veiculo_atual_reg["horimetro_km"]) else 0, step=100)
 
         st.markdown("---")
-        st.markdown("🔴 **OBRIGATÓRIO:** Informe abaixo o motivo exato da alteração (Ex: troca de motorista responsável, atualização de placa, correção de quilometragem):")
+        st.markdown("🔴 **OBRIGATÓRIO:** Informe abaixo o motivo exato da alteração:")
         motivo_edicao_veiculo = st.text_input(
             "Motivo da Atualização / Troca",
-            placeholder="Ex: Motorista anterior desistiu, novo motorista assumiu o veículo..."
+            placeholder="Ex: Correção de quilometragem, atualização de placa..."
         )
 
         btn_atualizar_veiculo = st.form_submit_button("💾 Salvar Alterações e Histórico")
 
         if btn_atualizar_veiculo:
           if not motivo_edicao_veiculo.strip():
-            st.error("⚠️ O campo 'Motivo da Atualização' é obrigatório para guardar na base de dados!")
+            st.error("⚠️ O campo 'Motivo da Atualização' é obrigatório!")
           else:
             hist_anterior = str(veiculo_atual_reg["historico_edicoes"]) if pd.notnull(veiculo_atual_reg["historico_edicoes"]) else ""
-            novo_item_hist = f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Atualizado por {usuario_atual['apelido'] if usuario_atual else 'Admin'}. Motivo: {motivo_edicao_veiculo}"
+            novo_item_hist = f"\n[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Atualizado por {usuario_atual['apelido'] if usuario_atual else 'Gestão'}. Motivo: {motivo_edicao_veiculo}"
             hist_atualizado_final = hist_anterior + novo_item_hist
 
             cursor.execute(
@@ -1001,10 +1007,58 @@ elif menu == "🚜 Cadastro de Equipamentos":
                 (e_pref, e_marca, e_modelo, e_placa, e_cor, int(e_km), hist_atualizado_final, int(id_veiculo_sel))
             )
             conn.commit()
-            st.success("✅ Veículo atualizado com sucesso e motivo guardado no histórico!")
+            st.success("✅ Veículo atualizado com sucesso!")
             st.rerun()
     else:
       st.info("Nenhum veículo registado para editar.")
+
+  if is_gestao_ou_admin:
+    with tab_eq_exc:
+      st.markdown("### 🗑️ Excluir Equipamento da Frota")
+      try:
+        df_veiculos_exc = pd.read_sql("SELECT id, tag_prefixo, marca, modelo, placa FROM veiculos ORDER BY id DESC", conn)
+      except Exception:
+        df_veiculos_exc = pd.DataFrame()
+
+      if not df_veiculos_exc.empty:
+        id_exc_sel = st.selectbox(
+            "Selecione o Equipamento para Excluir Definitivamente:",
+            df_veiculos_exc["id"].tolist(),
+            format_func=lambda x: f"ID #{x} — {df_veiculos_exc[df_veiculos_exc['id'] == x]['marca'].values[0]} {df_veiculos_exc[df_veiculos_exc['id'] == x]['modelo'].values[0]} (Placa: {df_veiculos_exc[df_veiculos_exc['id'] == x]['placa'].values[0]})",
+            key="sel_exc_veiculo_ges"
+        )
+        if st.button("🗑️ Confirmar Exclusão do Equipamento"):
+          cursor.execute("DELETE FROM veiculos WHERE id = ?", (id_exc_sel,))
+          conn.commit()
+          st.success("✅ Equipamento removido com sucesso!")
+          st.rerun()
+      else:
+        st.info("Nenhum veículo registado para excluir.")
+
+    with tab_eq_col:
+      st.markdown("### ⚙️ Gestão de Colunas Visíveis (Ocultar/Exibir)")
+      try:
+        df_ex_cols_v = pd.read_sql("SELECT * FROM veiculos LIMIT 1", conn)
+        todas_cols_v = list(df_ex_cols_v.columns)
+      except Exception:
+        todas_cols_v = []
+
+      cursor.execute("SELECT ordem_colunas FROM config_colunas WHERE tabela = ?", ("veiculos",))
+      res_oc_v = cursor.fetchone()
+      cols_ja_ocultas_v = [c.strip() for c in res_oc_v[0].split(",")] if res_oc_v and res_oc_v[0] else []
+
+      cols_para_ocultar_v = st.multiselect(
+          "Selecione as colunas que deseja OCULTAR na tabela de frota:",
+          todas_cols_v,
+          default=[c for c in cols_ja_ocultas_v if c in todas_cols_v]
+      )
+
+      if st.button("💾 Salvar Colunas da Frota"):
+        str_ocultas_final_v = ",".join(cols_para_ocultar_v)
+        cursor.execute("INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas) VALUES (?, ?)", ("veiculos", str_ocultas_final_v))
+        conn.commit()
+        st.success("✅ Configuração de colunas atualizada com sucesso!")
+        st.rerun()
 
   with tab_eq_foto:
     st.markdown("### 📸 Vistoria Fotográfica Completa (Até 15 Ângulos)")
@@ -1045,7 +1099,7 @@ elif menu == "🚜 Cadastro de Equipamentos":
 
           st.success("✅ Vistoria fotográfica armazenada com sucesso no sistema e pronta para auditoria!")
     else:
-      st.info("Registe primeiro um veículo na aba 'Registar Novo Equipamento' para poder realizar a vistoria.")
+      st.info("Registe primeiro um veículo na aba 'Registar Novo' para poder realizar a vistoria.")
 
 elif menu == "⛽ Abastecimentos & Combustível":
   st.title("⛽ Controle de Abastecimento e Combustível")
@@ -1698,7 +1752,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
     else:
       st.info("Ainda sem mensagens nesta conversa. Envia a primeira abaixo!")
 
-    st.markdown("</div>", unsafe_allow_html=True,)
+    st.markdown("</div>", unsafe_allow_html=True)
 
     with st.form("form_chat_direto_pro", clear_on_submit=True):
       col_msg1, col_msg2 = st.columns([3, 1])
