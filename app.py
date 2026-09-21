@@ -13,7 +13,6 @@ import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import streamlit as st
-import streamlit.components.v1 as components
 
 # CONFIGURAÇÃO DO MERCADO PAGO
 MERCADO_PAGO_ACCESS_TOKEN = (
@@ -32,7 +31,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL LIMPA & TOTALMENTE RESPONSIVA (PC, Notebook, Tablet e Smartphone)
+# ESTILIZAÇÃO VISUAL LIMPA E ESTÁVEL (Compatível com PC, Notebook, Tablet e Smartphone)
 st.markdown(
     """
     <style>
@@ -48,14 +47,13 @@ st.markdown(
         max-width: 100% !important;
     }
     
-    /* Configuração da barra lateral para todas as telas */
+    /* Configuração padrão da barra lateral */
     [data-testid="stSidebar"] {
         background: #f8fafc !important;
         border-right: 1px solid #e2e8f0;
-        z-index: 999999 !important;
     }
     
-    /* Máscara limpa aplicada apenas em computadores/notebooks grandes */
+    /* Oculta o texto residual no topo de forma limpa apenas via CSS em telas grandes */
     @media (min-width: 769px) {
         [data-testid="stSidebar"]::before {
             content: "";
@@ -65,25 +63,16 @@ st.markdown(
             right: 0;
             height: 35px;
             background: #f8fafc !important;
-            z-index: 99999;
+            z-index: 999;
             pointer-events: none;
-        }
-        [data-testid="stSidebar"] > div:first-child {
-            margin-top: -10px !important;
         }
     }
     
-    /* Telemóveis e Tablets: liberta totalmente os cliques nos menus, rádio e botões */
+    /* Garante total interatividade e cliques livres em telemóveis e tablets (Android/iOS) */
     @media (max-width: 768px) {
         [data-testid="stSidebar"] {
             width: 85% !important;
             max-width: 320px !important;
-        }
-        [data-testid="stSidebar"]::before {
-            display: none !important;
-        }
-        [data-testid="stSidebar"] > div:first-child {
-            margin-top: 0px !important;
         }
         div[data-baseweb="select"], .stRadio, .stButton, label {
             pointer-events: auto !important;
@@ -143,24 +132,6 @@ st.markdown(
     </style>
 """,
     unsafe_allow_html=True,
-)
-
-# Script JavaScript para remover automaticamente qualquer resquício indesejado no smartphone/tablet
-components.html(
-    """
-    <script>
-    function limparResquiciosMobile() {
-        const elementos = window.parent.document.querySelectorAll('p, span, div');
-        elementos.forEach(el => {
-            if (el.innerText && el.innerText.includes('keyboard_double_arrow_left')) {
-                el.style.display = 'none';
-            }
-        });
-    }
-    setInterval(limparResquiciosMobile, 250);
-    </script>
-""",
-    height=0,
 )
 
 
@@ -847,7 +818,7 @@ def exibir_tabela_padronizada(df, nome_tabela):
   st.dataframe(df, use_container_width=True, hide_index=True)
 
 
-# BARRA LATERAL COM SUPORTE TOTAL A COMPUTADOR, TABLET E SMARTPHONE
+# BARRA LATERAL ESTÁVEL E FUNCIONAL EM QUALQUER DISPOSITIVO
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
@@ -1782,7 +1753,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             copiar_html_min = f"""
                     <button onclick="navigator.clipboard.writeText('{texto_limpo_js}'); alert('📋 Copiado!');" style="background:#059669; color:white; border:none; padding:6px 10px; border-radius:6px; font-size:11px; font-weight:700; cursor:pointer; width:100%;">📋 Copiar</button>
                 """
-            components.html(copiar_html_min, height=32)
+            st.components.v1.html(copiar_html_min, height=32)
 
           with col_m2:
             if todos_usuarios_db:
