@@ -15,7 +15,7 @@ from reportlab.pdfgen import canvas
 import streamlit as st
 import streamlit.components.v1 as components
 
-# CONFIGURAÇÃO DO MERCADO PAGO (Token Oficial de Produção Integrado)
+# CONFIGURAÇÃO DO MERCADO PAGO
 MERCADO_PAGO_ACCESS_TOKEN = (
     "APP_USR-7480302560366070-091611-1118388bbc787e8f88ea1da583096dbc-2919829212"
 )
@@ -32,7 +32,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE & RESPONSIVA (Elimina textos indesejados e adapta-se a celular/tablet)
+# ESTILIZAÇÃO VISUAL LIMPA (Oculta o botão/texto corrompido do topo e ajusta o layout)
 st.markdown(
     """
     <style>
@@ -41,13 +41,18 @@ st.markdown(
     header[data-testid="stHeader"] {
         background: transparent !important;
     }
+    
+    /* REMOVE DEFINITIVAMENTE O TEXTO/ÍCONE INDEVIDO DO TOPO DA BARRA LATERAL */
+    [data-testid="collapsedControl"], section[data-testid="stSidebar"] [data-testid="stSidebarNav"] {
+        display: none !important;
+    }
+    
     .block-container {
         padding-top: 1.2rem !important;
         padding-bottom: 3rem !important;
         max-width: 100% !important;
     }
     
-    /* Configuração responsiva e limpa da barra lateral para Computador, Tablet e Telemóvel */
     [data-testid="stSidebar"] {
         min-width: 280px !important;
         width: 280px !important;
@@ -55,7 +60,6 @@ st.markdown(
         border-right: 1px solid #e2e8f0;
     }
     
-    /* Adaptação inteligente para telas menores (Tablets e Telemóveis) */
     @media (max-width: 768px) {
         [data-testid="stSidebar"] {
             width: 100% !important;
@@ -801,9 +805,8 @@ def exibir_tabela_padronizada(df, nome_tabela):
   st.dataframe(df, use_container_width=True, hide_index=True)
 
 
-# BARRA LATERAL ELEGANTE E RESPONSIVA (Com margem superior limpa para evitar sobreposição)
+# BARRA LATERAL ELEGANTE E ALINHADA AO TOPO
 with st.sidebar:
-  st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
   try:
     with open("caminhoes.jpg", "rb") as image_file:
       encoded_logo_side = base64.b64encode(image_file.read()).decode()
