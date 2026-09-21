@@ -339,6 +339,19 @@ def init_db():
             pin_rapido TEXT
         )
     """)
+  # Garantir colunas na tabela usuarios_sistema se já existia
+  for col_u in [
+      "ALTER TABLE usuarios_sistema ADD COLUMN nome_completo TEXT",
+      "ALTER TABLE usuarios_sistema ADD COLUMN email TEXT",
+      "ALTER TABLE usuarios_sistema ADD COLUMN senha TEXT",
+      "ALTER TABLE usuarios_sistema ADD COLUMN cargo TEXT",
+      "ALTER TABLE usuarios_sistema ADD COLUMN pin_rapido TEXT",
+  ]:
+    try:
+      cursor.execute(col_u)
+    except Exception:
+      pass
+
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS config_colunas (
             tabela TEXT PRIMARY KEY,
@@ -595,7 +608,6 @@ elif menu == "🚚 Frota e Maquinários":
     st.subheader("Frota Registrada no Sistema")
     df_f = pd.read_sql("SELECT * FROM veiculos", conn)
     if not df_f.empty:
-      # Aplicar filtro de colunas personalizadas se houver
       try:
         cursor.execute(
             "SELECT colunas_permitidas FROM config_colunas WHERE tabela = ?",
