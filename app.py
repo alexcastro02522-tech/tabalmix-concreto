@@ -32,7 +32,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL LIMPA (Ajusta o topo da barra lateral cobrindo o texto indesejado)
+# ESTILIZAÇÃO VISUAL LIMPA (Máscara definitiva cobrindo o topo da barra lateral sem afetar o sistema)
 st.markdown(
     """
     <style>
@@ -48,16 +48,30 @@ st.markdown(
         max-width: 100% !important;
     }
     
-    /* Configuração da barra lateral e margem negativa para puxar o conteúdo para cima */
+    /* Configuração da barra lateral e máscara sólida no topo */
     [data-testid="stSidebar"] {
         min-width: 280px !important;
         width: 280px !important;
         background: #f8fafc !important;
         border-right: 1px solid #e2e8f0;
+        position: relative;
+    }
+    
+    /* Máscara exata para ocultar qualquer resquício de texto no topo da barra lateral */
+    [data-testid="stSidebar"]::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 35px;
+        background: #f8fafc !important;
+        z-index: 99999;
+        pointer-events: none;
     }
     
     [data-testid="stSidebar"] > div:first-child {
-        margin-top: -38px !important;
+        margin-top: -10px !important;
     }
     
     @media (max-width: 768px) {
@@ -65,8 +79,8 @@ st.markdown(
             width: 100% !important;
             min-width: 100% !important;
         }
-        [data-testid="stSidebar"] > div:first-child {
-            margin-top: 0px !important;
+        [data-testid="stSidebar"]::before {
+            display: none !important;
         }
     }
 
@@ -808,7 +822,7 @@ def exibir_tabela_padronizada(df, nome_tabela):
   st.dataframe(df, use_container_width=True, hide_index=True)
 
 
-# BARRA LATERAL ENCOSTADA NO TOPO (Cobre o espaço e mantém todas as funções ativas)
+# BARRA LATERAL COM MÁSCARA LIMPA NO TOPO
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
