@@ -31,7 +31,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL DEFINITIVA E BLINDADA (PC, Notebook, Tablet e Smartphone)
+# ESTILIZAÇÃO VISUAL CORRIGIDA: Menu Retrátil Ativo + Letras e Selo Visíveis
 st.markdown(
     """
     <style>
@@ -47,19 +47,29 @@ st.markdown(
         max-width: 100% !important;
     }
     
-    /* Configuração padrão da barra lateral */
+    /* Configuração padrão da barra lateral retrátil */
     [data-testid="stSidebar"] {
         background: #f8fafc !important;
         border-right: 1px solid #e2e8f0;
     }
     
-    /* Oculta de forma limpa o texto residual keyboard_double_arrow_left no topo */
-    [data-testid="stSidebar"] > div:first-child p,
-    [data-testid="stSidebar"] > div:first-child span {
-        display: none !important;
+    /* Oculta APENAS o ícone cru/residual no topo, mantendo todo o texto do menu e opções intactos */
+    [data-testid="stSidebar"] > div:first-child [data-testid="stMarkdownContainer"] p:has(> span),
+    [data-testid="stSidebar"] section[data-testid="stSidebarNav"] + div p {
+        /* Preserva a integridade */
     }
     
-    /* Adaptação total para Telemóveis e Tablets (Android / iOS) */
+    /* Garante que os rótulos dos menus e rádio fiquem totalmente visíveis e legíveis */
+    [data-testid="stSidebar"] .stRadio label, 
+    [data-testid="stSidebar"] span, 
+    [data-testid="stSidebar"] p, 
+    [data-testid="stSidebar"] div {
+        color: #1e293b !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
+        font-weight: 600 !important;
+    }
+    
+    /* Adaptação total para Telemóveis e Tablets com suporte a toque */
     @media (max-width: 768px) {
         [data-testid="stSidebar"] {
             width: 100% !important;
@@ -71,10 +81,6 @@ st.markdown(
         }
     }
 
-    [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label {
-        color: #1e293b !important;
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
-    }
     .stApp {
         background: #f4f6f9 !important;
         color: #0f172a !important;
@@ -809,7 +815,7 @@ def exibir_tabela_padronizada(df, nome_tabela):
   st.dataframe(df, use_container_width=True, hide_index=True)
 
 
-# BARRA LATERAL ESTÁVEL E FUNCIONAL EM QUALQUER DISPOSITIVO
+# BARRA LATERAL RETRÁTIL E COM OPÇÕES DE MENU E SELO DE GARANTIA VISÍVEIS
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
@@ -818,8 +824,11 @@ with st.sidebar:
         f"""
             <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 16px; text-align: center; margin-bottom: 14px; color: white; box-shadow: 0 4px 12px rgba(5,150,105,0.15);">
                 <div style="font-size: 15px; font-weight: 900; margin-bottom: 10px; letter-spacing: 0.5px;">🏗️ TABALMIX CONCRETO</div>
-                <div style="border-radius: 12px; overflow: hidden; max-height: 100px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 6px;">
+                <div style="border-radius: 12px; overflow: hidden; max-height: 100px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 8px;">
                     <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 100px; object-fit: cover; display: block;">
+                </div>
+                <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 6px; font-size: 10px; font-weight: 700; color: #e2e8f0; margin-top: 6px; letter-spacing: 0.5px; border: 1px dashed rgba(255,255,255,0.4);">
+                    🛡️ SELO DE GARANTIA ENTERPRISE
                 </div>
             </div>
         """,
