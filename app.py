@@ -24,21 +24,15 @@ try:
 except Exception:
   sdk_mp = None
 
-# Controle de Estado da Barra Lateral (Expandida / Recolhida)
-if "sidebar_visivel" not in st.session_state:
-  st.session_state["sidebar_visivel"] = True
-
-estado_inicial_sidebar = "expanded" if st.session_state["sidebar_visivel"] else "collapsed"
-
-# Configuração da Página com o estado dinâmico
+# Configuração da Página com layout limpo e barra lateral nativa expansível
 st.set_page_config(
     page_title="Tabalmix Concreto - Enterprise Fleet & Operations Pro X",
     page_icon="🚀",
     layout="wide",
-    initial_sidebar_state=estado_inicial_sidebar,
+    initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE
+# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE (Limpa, Moderna e Sofisticada)
 st.markdown(
     """
     <style>
@@ -48,13 +42,13 @@ st.markdown(
         background: transparent !important;
     }
     .block-container {
-        padding-top: 1rem !important;
+        padding-top: 1.2rem !important;
         padding-bottom: 3rem !important;
         max-width: 100% !important;
     }
     [data-testid="stSidebar"] {
-        min-width: 310px !important;
-        width: 310px !important;
+        min-width: 300px !important;
+        width: 300px !important;
         background: #f8fafc !important;
         border-right: 1px solid #e2e8f0;
     }
@@ -796,25 +790,17 @@ def exibir_tabela_padronizada(df, nome_tabela):
   st.dataframe(df, use_container_width=True, hide_index=True)
 
 
+# BARRA LATERAL ELEGANTE E LIMPA (SEM ERROS OU TEXTOS TÉCNICOS)
 with st.sidebar:
-  # Botão exclusivo no topo para recolher/fechar a barra lateral e ocupar 100% da tela
-  col_sb_t1, col_sb_t2 = st.columns([3, 1])
-  with col_sb_t1:
-    st.markdown("🎛️ **Painel**")
-  with col_sb_t2:
-    if st.button("◀", help="Recolher barra lateral e ocupar 100% da tela"):
-      st.session_state["sidebar_visivel"] = False
-      st.rerun()
-
   try:
     with open("caminhoes.jpg", "rb") as image_file:
       encoded_logo_side = base64.b64encode(image_file.read()).decode()
     st.markdown(
         f"""
-            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 14px; text-align: center; margin-bottom: 12px; color: white;">
-                <div style="font-size: 15px; font-weight: 900; margin-bottom: 8px;">🏗️ TABALMIX CONCRETO</div>
-                <div style="border-radius: 12px; overflow: hidden; max-height: 105px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 8px;">
-                    <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 100px; object-fit: cover;">
+            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 16px; text-align: center; margin-bottom: 14px; color: white; box-shadow: 0 4px 12px rgba(5,150,105,0.15);">
+                <div style="font-size: 15px; font-weight: 900; margin-bottom: 10px; letter-spacing: 0.5px;">🏗️ TABALMIX CONCRETO</div>
+                <div style="border-radius: 12px; overflow: hidden; max-height: 100px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 6px;">
+                    <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 100px; object-fit: cover; display: block;">
                 </div>
             </div>
         """,
@@ -828,28 +814,22 @@ with st.sidebar:
   elif usuario_atual:
     st.markdown(
         f"""
-            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px; margin-bottom: 12px;">
-                <p style="margin: 0; font-weight: bold; color: #0f172a; font-size: 14px;">👤 {usuario_atual['apelido']}</p>
-                <p style="margin: 3px 0 4px 0; font-size: 11.5px; color: #047857; font-weight: 700;">{usuario_atual['cargo']}</p>
-                <span style="color: #059669; font-weight: bold; font-size: 11px; background: #ecfdf5; padding: 2px 8px; border-radius: 6px; display: inline-block;">🟢 Sessão Ativa</span>
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px; margin-bottom: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                <p style="margin: 0; font-weight: 800; color: #0f172a; font-size: 14px;">👤 {usuario_atual['apelido']}</p>
+                <p style="margin: 3px 0 6px 0; font-size: 11.5px; color: #047857; font-weight: 700;">{usuario_atual['cargo']}</p>
+                <span style="color: #059669; font-weight: 700; font-size: 11px; background: #ecfdf5; padding: 3px 10px; border-radius: 6px; display: inline-block;">🟢 Sessão Ativa</span>
             </div>
         """,
         unsafe_allow_html=True,
     )
-    if st.button("🚪 Encerrar Sessão"):
+    if st.button("🚪 Encerrar Sessão", use_container_width=True):
       st.session_state["usuario_logado"] = None
       try:
         st.query_params.clear()
       except Exception:
         pass
       st.rerun()
-  st.markdown("---")
-
-# Botão flutuante no topo da tela principal para reabrir a barra lateral quando ela estiver recolhida
-if not st.session_state["sidebar_visivel"]:
-  if st.button("▶️ Abrir Barra Lateral", help="Clique para restaurar a navegação lateral"):
-    st.session_state["sidebar_visivel"] = True
-    st.rerun()
+  st.markdown("<hr style='margin: 10px 0; border: none; border-top: 1px solid #e2e8f0;'>", unsafe_allow_html=True)
 
 lista_menus = [
     "📊 Visão Geral",
