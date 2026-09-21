@@ -32,7 +32,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL LIMPA (Máscara definitiva cobrindo o topo da barra lateral sem afetar o sistema)
+# ESTILIZAÇÃO VISUAL LIMPA (Resolve o visual no PC e liberta os cliques no telemóvel)
 st.markdown(
     """
     <style>
@@ -48,7 +48,7 @@ st.markdown(
         max-width: 100% !important;
     }
     
-    /* Configuração da barra lateral e máscara sólida no topo */
+    /* Configuração da barra lateral */
     [data-testid="stSidebar"] {
         min-width: 280px !important;
         width: 280px !important;
@@ -57,23 +57,25 @@ st.markdown(
         position: relative;
     }
     
-    /* Máscara exata para ocultar qualquer resquício de texto no topo da barra lateral */
-    [data-testid="stSidebar"]::before {
-        content: "";
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 35px;
-        background: #f8fafc !important;
-        z-index: 99999;
-        pointer-events: none;
+    /* Máscara aplicada apenas em computadores e tablets grandes */
+    @media (min-width: 769px) {
+        [data-testid="stSidebar"]::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 35px;
+            background: #f8fafc !important;
+            z-index: 99999;
+            pointer-events: none;
+        }
+        [data-testid="stSidebar"] > div:first-child {
+            margin-top: -10px !important;
+        }
     }
     
-    [data-testid="stSidebar"] > div:first-child {
-        margin-top: -10px !important;
-    }
-    
+    /* Telemóveis: garante que os cliques nos menus funcionem perfeitamente */
     @media (max-width: 768px) {
         [data-testid="stSidebar"] {
             width: 100% !important;
@@ -81,6 +83,9 @@ st.markdown(
         }
         [data-testid="stSidebar"]::before {
             display: none !important;
+        }
+        [data-testid="stSidebar"] > div:first-child {
+            margin-top: 0px !important;
         }
     }
 
@@ -822,7 +827,7 @@ def exibir_tabela_padronizada(df, nome_tabela):
   st.dataframe(df, use_container_width=True, hide_index=True)
 
 
-# BARRA LATERAL COM MÁSCARA LIMPA NO TOPO
+# BARRA LATERAL COM SUPORTE TOTAL A COMPUTADOR E TELEMÓVEL
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
