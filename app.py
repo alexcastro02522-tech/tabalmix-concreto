@@ -1695,4 +1695,4 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
           params=(f"%{nome_colab_alvo}%", f"%{nome_colab_alvo}%"),
       )
 
-    st.markdown('<div class="chat-container
+    chat_container_abertura = '<div class="
