@@ -1,4 +1,4 @@
-From datetime import datetime, timedelta
+from datetime import datetime, timedelta
 import base64
 import csv
 import glob
@@ -314,7 +314,7 @@ def init_db():
             ordem_colunas TEXT
         )
     """)
-  
+
   try:
     cursor.execute("DELETE FROM config_colunas WHERE tabela = 'veiculos'")
     conn.commit()
@@ -714,7 +714,7 @@ def exibir_tabela_padronizada(df, nome_tabela):
   if df.empty:
     st.info("Nenhum registro encontrado.")
     return
-  
+
   try:
     cursor.execute("SELECT ordem_colunas FROM config_colunas WHERE tabela = ?", (nome_tabela,))
     res_conf = cursor.fetchone()
@@ -848,7 +848,7 @@ if menu == "📊 Visão Geral":
   st.markdown("### 📋 Resumo Geral da Frota em Operação")
   if not df_veiculos.empty:
     exibir_tabela_padronizada(df_veiculos, "veiculos")
-    
+
     col_dl1, col_dl2 = st.columns(2)
     with col_dl1:
       if st.button("📄 Gerar Relatório Executivo Geral em PDF"):
@@ -1060,10 +1060,10 @@ elif menu == "⛽ Abastecimentos & Combustível":
     df_c = pd.read_sql("SELECT * FROM combustivel ORDER BY id DESC", conn)
     if not df_c.empty:
       exibir_tabela_padronizada(df_c, "combustivel")
-      
+
       col_bc1, col_bc2 = st.columns(2)
       with col_bc1:
-        if st.button("📄 Gerar Relatório em PDF de Combustível"):
+        if st.button("📄 Gerar Relatório in PDF de Combustível"):
           pdf_c = gerar_pdf_relatorio("Relatório de Abastecimento", df_c)
           st.download_button(
               label="📥 Baixar PDF Certificado",
@@ -1189,7 +1189,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
 
           str_fotos_final = " | ".join(caminhos_fotos_salvas)
           hist_inicial = f"[{datetime.now().strftime('%d/%m/%Y %H:%M')}] Criado por {resp if resp else 'Operacional'} — Motivo inicial: {motivo_inicial}"
-          
+
           cursor.execute(
               "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
               " destino_origem, responsavel, data, motivo_condicao, observacao,"
@@ -1224,7 +1224,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
 
     if not df_mobs_edit.empty:
       exibir_tabela_padronizada(df_mobs_edit, "mobilizacoes")
-      
+
       if st.button("📊 Exportar Mobilizações em Excel"):
         excel_mob = gerar_excel_formatado(df_mobs_edit, "Mobilizacoes")
         st.download_button(
@@ -1318,7 +1318,7 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
     df_os = pd.read_sql("SELECT * FROM manutencoes ORDER BY id DESC", conn)
     if not df_os.empty:
       exibir_tabela_padronizada(df_os, "manutencoes")
-      
+
       col_os1, col_os2 = st.columns(2)
       with col_os1:
         if st.button("📄 Gerar Relatório in PDF de OS"):
@@ -1698,7 +1698,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
     else:
       st.info("Ainda sem mensagens nesta conversa. Envia a primeira abaixo!")
 
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True,)
 
     with st.form("form_chat_direto_pro", clear_on_submit=True):
       col_msg1, col_msg2 = st.columns([3, 1])
@@ -1848,9 +1848,9 @@ elif menu == "⚙️ Meu Perfil / Dados":
 
 elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
   st.title("⚙️ Painel Administrativo de Chaves & Licenças & Gestão de Colunas")
-  
+
   tab_adm_l1, tab_adm_l2 = st.tabs(["🎟️ Gestão de Licenças", "⚙️ Gestão de Colunas (Ocultar)"])
-  
+
   with tab_adm_l1:
     df_chaves = pd.read_sql("SELECT * FROM chaves_licenca", conn)
     if not df_chaves.empty:
