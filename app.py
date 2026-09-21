@@ -32,7 +32,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL LIMPA (Oculta o botão/texto corrompido do topo e ajusta o layout)
+# ESTILIZAÇÃO VISUAL LIMPA (Ajusta o topo da barra lateral cobrindo o texto indesejado)
 st.markdown(
     """
     <style>
@@ -42,17 +42,13 @@ st.markdown(
         background: transparent !important;
     }
     
-    /* REMOVE DEFINITIVAMENTE O TEXTO/ÍCONE INDEVIDO DO TOPO DA BARRA LATERAL */
-    [data-testid="collapsedControl"], section[data-testid="stSidebar"] [data-testid="stSidebarNav"] {
-        display: none !important;
-    }
-    
     .block-container {
         padding-top: 1.2rem !important;
         padding-bottom: 3rem !important;
         max-width: 100% !important;
     }
     
+    /* Configuração da barra lateral e margem negativa para puxar o conteúdo para cima */
     [data-testid="stSidebar"] {
         min-width: 280px !important;
         width: 280px !important;
@@ -60,10 +56,17 @@ st.markdown(
         border-right: 1px solid #e2e8f0;
     }
     
+    [data-testid="stSidebar"] > div:first-child {
+        margin-top: -38px !important;
+    }
+    
     @media (max-width: 768px) {
         [data-testid="stSidebar"] {
             width: 100% !important;
             min-width: 100% !important;
+        }
+        [data-testid="stSidebar"] > div:first-child {
+            margin-top: 0px !important;
         }
     }
 
@@ -805,7 +808,7 @@ def exibir_tabela_padronizada(df, nome_tabela):
   st.dataframe(df, use_container_width=True, hide_index=True)
 
 
-# BARRA LATERAL ELEGANTE E ALINHADA AO TOPO
+# BARRA LATERAL ENCOSTADA NO TOPO (Cobre o espaço e mantém todas as funções ativas)
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
