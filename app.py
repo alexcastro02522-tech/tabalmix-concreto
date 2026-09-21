@@ -15,7 +15,7 @@ from reportlab.pdfgen import canvas
 import streamlit as st
 import streamlit.components.v1 as components
 
-# CONFIGURAÇÃO DO MERCADO PAGO
+# CONFIGURAÇÃO DO MERCADO PAGO (Token Oficial de Produção Integrado)
 MERCADO_PAGO_ACCESS_TOKEN = (
     "APP_USR-7480302560366070-091611-1118388bbc787e8f88ea1da583096dbc-2919829212"
 )
@@ -24,7 +24,7 @@ try:
 except Exception:
   sdk_mp = None
 
-# Configuração da Página
+# Configuração da Página com layout limpo e responsivo
 st.set_page_config(
     page_title="Tabalmix Concreto - Enterprise Fleet & Operations Pro X",
     page_icon="🚀",
@@ -32,7 +32,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL LIMPA (Sem fontes de ícones corrompidas)
+# ESTILIZAÇÃO VISUAL PREMIUM ENTERPRISE & RESPONSIVA (Elimina textos indesejados e adapta-se a celular/tablet)
 st.markdown(
     """
     <style>
@@ -46,12 +46,23 @@ st.markdown(
         padding-bottom: 3rem !important;
         max-width: 100% !important;
     }
+    
+    /* Configuração responsiva e limpa da barra lateral para Computador, Tablet e Telemóvel */
     [data-testid="stSidebar"] {
-        min-width: 300px !important;
-        width: 300px !important;
+        min-width: 280px !important;
+        width: 280px !important;
         background: #f8fafc !important;
         border-right: 1px solid #e2e8f0;
     }
+    
+    /* Adaptação inteligente para telas menores (Tablets e Telemóveis) */
+    @media (max-width: 768px) {
+        [data-testid="stSidebar"] {
+            width: 100% !important;
+            min-width: 100% !important;
+        }
+    }
+
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label {
         color: #1e293b !important;
         font-family: 'Plus Jakarta Sans', sans-serif !important;
@@ -790,8 +801,9 @@ def exibir_tabela_padronizada(df, nome_tabela):
   st.dataframe(df, use_container_width=True, hide_index=True)
 
 
-# BARRA LATERAL NATIVA LIMPA (Sem ícones quebrados)
+# BARRA LATERAL ELEGANTE E RESPONSIVA (Com margem superior limpa para evitar sobreposição)
 with st.sidebar:
+  st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
   try:
     with open("caminhoes.jpg", "rb") as image_file:
       encoded_logo_side = base64.b64encode(image_file.read()).decode()
