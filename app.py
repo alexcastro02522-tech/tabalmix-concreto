@@ -416,7 +416,6 @@ try:
 except Exception:
   pass
 
-# VERIFICAÇÃO DE PERFIL DE GESTÃO / ENGENHEIRO / ADMIN
 is_gestao_ou_admin = modo_admin_liberado
 if st.session_state["usuario_logado"]:
   cargo_colab = str(st.session_state["usuario_logado"].get("cargo", ""))
@@ -472,8 +471,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
         btn_pin_sub = st.form_submit_button("Entrar com PIN")
         if btn_pin_sub:
           cursor.execute(
-              "SELECT * FROM usuarios_sistema WHERE email = ? AND pin_rapido ="
-              " ?",
+              "SELECT * FROM usuarios_sistema WHERE email = ? AND pin_rapido = ?",
               (email_pin, pin_dig),
           )
           user_pin = cursor.fetchone()
@@ -738,8 +736,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
         btn_rec = st.form_submit_button("Consultar Senha")
         if btn_rec:
           cursor.execute(
-              "SELECT senha, nome_completo FROM usuarios_sistema WHERE email ="
-              " ?",
+              "SELECT senha, nome_completo FROM usuarios_sistema WHERE email = ?",
               (rec_email,),
           )
           res_rec = cursor.fetchone()
@@ -1681,8 +1678,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
 
     if termo_busca_chat.strip():
       df_msgs = pd.read_sql(
-          "SELECT * FROM chat_interno WHERE mensagem LIKE ? ORDER BY id ASC LIMIT"
-          " 60",
+          "SELECT * FROM chat_interno WHERE mensagem LIKE ? ORDER BY id ASC LIMIT 60",
           conn,
           params=(f"%{termo_busca_chat}%",),
       )
@@ -1698,4 +1694,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
           "SELECT * FROM chat_interno WHERE destinatario LIKE ? OR remetente"
           " LIKE ? ORDER BY id ASC LIMIT 60",
           conn,
-          params=(f"%{nome_colab_alv
+          params=(f"%{nome_colab_alvo}%", f"%{nome_colab_alvo}%"),
+      )
+
+    st.markdown('<div class="chat-container">', unsafe_allow_h
