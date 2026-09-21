@@ -2005,32 +2005,20 @@ elif menu == "⚙️ Meu Perfil / Dados":
     st.info("Nenhum utilizador logado no momento.")
 
 elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
-  st.title("⚙️ Painel Administrativo de Cadastros & Licenças")
+  st.title("⚙️ Painel Administrativo — Cadastros & Licenças Blindadas")
 
   tab_adm_l1, tab_adm_l2, tab_adm_l3 = st.tabs([
-      "👥 Gestão de Cadastros & Ativações",
+      "👥 Cadastros Realizados (Protegidos)",
       "🎟️ Gestão de Licenças",
       "⚙️ Gestão de Colunas (Ocultar)",
   ])
 
   with tab_adm_l1:
-    st.markdown("### 👥 Cadastros Realizados no Sistema")
+    st.markdown("### 👥 Lista Oficial de Cadastros no Sistema")
+    st.info("ℹ️ Por motivos de segurança operacional, os cadastros realizados no sistema são permanentes e protegidos contra exclusão.")
     df_users_adm = pd.read_sql("SELECT id, nome_completo, email, cpf, status_assinatura, plano_atual, data_cadastro, cargo_setor FROM usuarios_sistema ORDER BY id DESC", conn)
     if not df_users_adm.empty:
       exibir_tabela_padronizada(df_users_adm, "usuarios_sistema")
-      
-      st.markdown("---")
-      st.markdown("### 🗑️ Excluir ou Gerir Utilizador Cadastrado")
-      id_user_exc = st.selectbox(
-          "Selecione o Utilizador para Excluir Definitivamente:",
-          df_users_adm["id"].tolist(),
-          format_func=lambda x: f"ID #{x} — {df_users_adm[df_users_adm['id'] == x]['nome_completo'].values[0]} ({df_users_adm[df_users_adm['id'] == x]['email'].values[0]})"
-      )
-      if st.button("🗑️ Confirmar Exclusão do Utilizador"):
-        cursor.execute("DELETE FROM usuarios_sistema WHERE id = ?", (id_user_exc,))
-        conn.commit()
-        st.success("✅ Utilizador removido com sucesso!")
-        st.rerun()
     else:
       st.info("Nenhum utilizador cadastrado.")
 
@@ -2045,7 +2033,7 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     st.markdown("### ⚙️ Ocultar Colunas Indesejadas das Tabelas")
     tabela_escolhida_ocultar = st.selectbox("Selecione a Tabela:", ["veiculos", "manutencoes", "mobilizacoes", "combustivel", "pecas", "clientes"])
     try:
-      df_ex_cols = pd.read_sql(f"SELECT * FROM {tabela_escolhida_ocultar} LIMIT 1", conn)
+      df_ex_cols = pd.read_sql(f"SELECT * FROM {tabela_escolh_ocultar} LIMIT 1", conn)
       todas_cols_tabela = list(df_ex_cols.columns)
     except Exception:
       todas_cols_tabela = []
