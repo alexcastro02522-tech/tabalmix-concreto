@@ -31,7 +31,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL CORRIGIDA: Menu Retrátil Ativo + Letras e Selo Visíveis
+# ESTILIZAÇÃO VISUAL CORRIGIDA: Menu Retrátil Ativo + Gestão de Ativação de Cadastros
 st.markdown(
     """
     <style>
@@ -51,12 +51,6 @@ st.markdown(
     [data-testid="stSidebar"] {
         background: #f8fafc !important;
         border-right: 1px solid #e2e8f0;
-    }
-    
-    /* Oculta APENAS o ícone cru/residual no topo, mantendo todo o texto do menu e opções intactos */
-    [data-testid="stSidebar"] > div:first-child [data-testid="stMarkdownContainer"] p:has(> span),
-    [data-testid="stSidebar"] section[data-testid="stSidebarNav"] + div p {
-        /* Preserva a integridade */
     }
     
     /* Garante que os rótulos dos menus e rádio fiquem totalmente visíveis e legíveis */
@@ -382,6 +376,10 @@ def init_db():
         "UPDATE usuarios_sistema SET cargo_setor = 'Operacional' WHERE"
         " cargo_setor IS NULL OR cargo_setor = '' OR cargo_setor = 'None'"
     )
+    cursor.execute(
+        "UPDATE usuarios_sistema SET status_assinatura = 'Ativo' WHERE"
+        " status_assinatura IS NULL OR status_assinatura = '' OR status_assinatura = 'None'"
+    )
     conn.commit()
   except Exception:
     pass
@@ -504,31 +502,34 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           )
           user_pin = cursor.fetchone()
           if user_pin:
-            st.session_state["usuario_logado"] = {
-                "id": user_pin[0],
-                "nome": user_pin[1],
-                "cpf": user_pin[2],
-                "email": user_pin[3],
-                "status": user_pin[6],
-                "apelido": (
-                    user_pin[9]
-                    if len(user_pin) > 9 and user_pin[9] != "None"
-                    else user_pin[1].split()[0]
-                ),
-                "cargo": (
-                    user_pin[10]
-                    if len(user_pin) > 10
-                    and user_pin[10]
-                    and user_pin[10] != "None"
-                    else "Colaborador"
-                ),
-            }
-            try:
-              st.query_params["user_id"] = str(user_pin[0])
-            except Exception:
-              pass
-            st.success("✅ Login por PIN validado!")
-            st.rerun()
+            if str(user_pin[6]).strip().lower() != "ativo":
+              st.error("⚠️ Esta conta encontra-se INATIVA. Contacte a diretoria.")
+            else:
+              st.session_state["usuario_logado"] = {
+                  "id": user_pin[0],
+                  "nome": user_pin[1],
+                  "cpf": user_pin[2],
+                  "email": user_pin[3],
+                  "status": user_pin[6],
+                  "apelido": (
+                      user_pin[9]
+                      if len(user_pin) > 9 and user_pin[9] != "None"
+                      else user_pin[1].split()[0]
+                  ),
+                  "cargo": (
+                      user_pin[10]
+                      if len(user_pin) > 10
+                      and user_pin[10]
+                      and user_pin[10] != "None"
+                      else "Colaborador"
+                  ),
+              }
+              try:
+                st.query_params["user_id"] = str(user_pin[0])
+              except Exception:
+                pass
+              st.success("✅ Login por PIN validado!")
+              st.rerun()
           else:
             st.error("⚠️ E-mail ou PIN inválidos.")
 
@@ -551,38 +552,41 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           )
           user_data = cursor.fetchone()
           if user_data:
-            if cadastrar_pin and len(cadastrar_pin) == 4:
-              cursor.execute(
-                  "UPDATE usuarios_sistema SET pin_rapido = ? WHERE id = ?",
-                  (cadastrar_pin, user_data[0]),
-              )
-              conn.commit()
+            if str(user_data[6]).strip().lower() != "ativo":
+              st.error("⚠️ Esta conta encontra-se INATIVA. Contacte o administrador.")
+            else:
+              if cadastrar_pin and len(cadastrar_pin) == 4:
+                cursor.execute(
+                    "UPDATE usuarios_sistema SET pin_rapido = ? WHERE id = ?",
+                    (cadastrar_pin, user_data[0]),
+                )
+                conn.commit()
 
-            st.session_state["usuario_logado"] = {
-                "id": user_data[0],
-                "nome": user_data[1],
-                "cpf": user_data[2],
-                "email": user_data[3],
-                "status": user_data[6],
-                "apelido": (
-                    user_data[9]
-                    if len(user_data) > 9 and user_data[9] != "None"
-                    else user_data[1].split()[0]
-                ),
-                "cargo": (
-                    user_data[10]
-                    if len(user_data) > 10
-                    and user_data[10]
-                    and user_data[10] != "None"
-                    else "Colaborador"
-                ),
-            }
-            try:
-              st.query_params["user_id"] = str(user_data[0])
-            except Exception:
-              pass
-            st.success("✅ Login realizado com sucesso!")
-            st.rerun()
+              st.session_state["usuario_logado"] = {
+                  "id": user_data[0],
+                  "nome": user_data[1],
+                  "cpf": user_data[2],
+                  "email": user_data[3],
+                  "status": user_data[6],
+                  "apelido": (
+                      user_data[9]
+                      if len(user_data) > 9 and user_data[9] != "None"
+                      else user_data[1].split()[0]
+                  ),
+                  "cargo": (
+                      user_data[10]
+                      if len(user_data) > 10
+                      and user_data[10]
+                      and user_data[10] != "None"
+                      else "Colaborador"
+                  ),
+              }
+              try:
+                st.query_params["user_id"] = str(user_data[0])
+              except Exception:
+                pass
+              st.success("✅ Login realizado com sucesso!")
+              st.rerun()
           else:
             st.error("⚠️ E-mail ou senha incorretos.")
 
@@ -606,10 +610,10 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             """
             <div style="background: #ecfdf5; border: 1px solid #059669; border-radius: 12px; padding: 14px; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
                 <p style="margin: 0 0 6px 0; font-weight: 800; color: #047857; font-size: 14px;">💎 Plano Master Concreto & Diretoria</p>
-                <p style="margin: 0 0 6px 0; font-size: 12px; color: #1e293b;"><b>Privilégios:</b> Acesso executivo total, painel master de frotas, relatórios certificados em PDF, painel de licenças/financeiro, exclusão/limpeza de duplicados e comunicação P2P.</p>
+                <p style="margin: 0 0 6px 0; font-size: 12px; color: #1e293b;"><b>Privilégios:</b> Acesso executivo total, painel master de frotas, relatórios certificados em PDF, painel de licenças/financeiro e comunicação P2P.</p>
                 <div style="display: flex; gap: 15px; font-size: 12px; font-weight: 700; color: #059669;">
                     <span>📅 Mensal: R$ 299,90 / mês</span>
-                    <span>🌟 Anual: R$ 2.999,00 / ano (~R$ 249,90/mês)</span>
+                    <span>🌟 Anual: R$ 2.999,00 / ano</span>
                 </div>
             </div>
             """,
@@ -621,7 +625,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             """
             <div style="background: #f0fdf4; border: 1px solid #16a34a; border-radius: 12px; padding: 14px; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
                 <p style="margin: 0 0 6px 0; font-weight: 800; color: #15803d; font-size: 14px;">🏗️ Plano Engenharia & Obra Pro</p>
-                <p style="margin: 0 0 6px 0; font-size: 12px; color: #1e293b;"><b>Privilégios:</b> Gestão de ordens de serviço (OS), mobilizações e desmobilizações de equipamentos, consultas gerais, chat e chamadas P2P com alarme no canteiro.</p>
+                <p style="margin: 0 0 6px 0; font-size: 12px; color: #1e293b;"><b>Privilégios:</b> Gestão de ordens de serviço (OS), mobilizações e desmobilizações de equipamentos, consultas gerais e chat corporativo.</p>
                 <div style="display: flex; gap: 15px; font-size: 12px; font-weight: 700; color: #16a34a;">
                     <span>📅 Mensal: R$ 189,90 / mês</span>
                     <span>🌟 Anual: R$ 1.899,00 / ano</span>
@@ -636,7 +640,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             """
             <div style="background: #eff6ff; border: 1px solid #3b82f6; border-radius: 12px; padding: 14px; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
                 <p style="margin: 0 0 6px 0; font-weight: 800; color: #1d4ed8; font-size: 14px;">🛠️ Plano Oficina & Mecânica X</p>
-                <p style="margin: 0 0 6px 0; font-size: 12px; color: #1e293b;"><b>Privilégios:</b> Foco total no histórico técnico das máquinas, gestão de peças e ferramentas, abertura/fechamento de manutenções e suporte técnico via chat.</p>
+                <p style="margin: 0 0 6px 0; font-size: 12px; color: #1e293b;"><b>Privilégios:</b> Foco no histórico técnico das máquinas, gestão de peças e ferramentas e abertura/fechamento de manutenções.</p>
                 <div style="display: flex; gap: 15px; font-size: 12px; font-weight: 700; color: #2563eb;">
                     <span>📅 Mensal: R$ 119,90 / mês</span>
                     <span>🌟 Anual: R$ 1.199,00 / ano</span>
@@ -651,7 +655,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             """
             <div style="background: #fdf4ff; border: 1px solid #c084fc; border-radius: 12px; padding: 14px; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
                 <p style="margin: 0 0 6px 0; font-weight: 800; color: #7e22ce; font-size: 14px;">🚜 Plano Operacional Campo & Frota</p>
-                <p style="margin: 0 0 6px 0; font-size: 12px; color: #1e293b;"><b>Privilégios:</b> Registo de abastecimentos de combustível, envio de fotos de check-list e participação ativa no chat interno e chamadas P2P de emergência.</p>
+                <p style="margin: 0 0 6px 0; font-size: 12px; color: #1e293b;"><b>Privilégios:</b> Registo de abastecimentos de combustível, envio de fotos de check-list e chat interno.</p>
                 <div style="display: flex; gap: 15px; font-size: 12px; font-weight: 700; color: #9333ea;">
                     <span>📅 Mensal: R$ 69,90 / mês</span>
                     <span>🌟 Anual: R$ 699,00 / ano</span>
@@ -785,6 +789,17 @@ status_usuario_ativo = (
         else False
     )
 )
+
+if not status_usuario_ativo and not modo_admin_liberado:
+  st.error("⚠️ A sua conta encontra-se atualmente INATIVA no sistema. Contacte a diretoria.")
+  if st.button("🚪 Terminar Sessão"):
+    st.session_state["usuario_logado"] = None
+    try:
+      st.query_params.clear()
+    except Exception:
+      pass
+    st.rerun()
+  st.stop()
 
 if usuario_atual and (
     not usuario_atual.get("apelido") or usuario_atual["apelido"] == "None"
@@ -2017,17 +2032,42 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
   st.title("⚙️ Painel Administrativo — Cadastros & Licenças Blindadas")
 
   tab_adm_l1, tab_adm_l2, tab_adm_l3 = st.tabs([
-      "👥 Cadastros Realizados (Protegidos)",
+      "👥 Gestão de Cadastros & Ativação",
       "🎟️ Gestão de Licenças",
       "⚙️ Gestão de Colunas (Ocultar)",
   ])
 
   with tab_adm_l1:
-    st.markdown("### 👥 Lista Oficial de Cadastros no Sistema")
-    st.info("ℹ️ Por motivos de segurança operacional, os cadastros realizados no sistema são permanentes e protegidos contra exclusão.")
+    st.markdown("### 👥 Lista Oficial de Cadastros e Controlo de Ativação")
+    st.info("ℹ️ Os cadastros são protegidos contra exclusão física. Podes ativar ou inativar o acesso de qualquer utilizador em tempo real.")
+    
     df_users_adm = pd.read_sql("SELECT id, nome_completo, email, cpf, status_assinatura, plano_atual, data_cadastro, cargo_setor FROM usuarios_sistema ORDER BY id DESC", conn)
     if not df_users_adm.empty:
       exibir_tabela_padronizada(df_users_adm, "usuarios_sistema")
+      
+      st.markdown("---")
+      st.markdown("#### 🔄 Alterar Status de Acesso de um Utilizador")
+      
+      lista_sel_users = [f"ID #{r['id']} — {r['nome_completo']} ({r['email']}) [Status atual: {r['status_assinatura']}]" for _, r in df_users_adm.iterrows()]
+      user_escolhido_gestao = st.selectbox("Selecionar Utilizador:", lista_sel_users)
+      
+      if user_escolhido_gestao:
+        id_extraido = int(user_escolhido_gestao.split("—")[0].replace("ID #", "").strip())
+        reg_u_sel = df_users_adm[df_users_adm["id"] == id_extraido].iloc[0]
+        status_atual_reg = str(reg_u_sel["status_assinatura"])
+        
+        novo_status_escolhido = st.radio(
+            "Definir Status de Acesso:",
+            ["Ativo", "Inativo"],
+            index=0 if "ativo" in status_atual_reg.lower() else 1,
+            horizontal=True
+        )
+        
+        if st.button("💾 Atualizar Status do Cadastro"):
+          cursor.execute("UPDATE usuarios_sistema SET status_assinatura = ? WHERE id = ?", (novo_status_escolhido, id_extraido))
+          conn.commit()
+          st.success(f"✅ Status do utilizador ID #{id_extraido} alterado para **{novo_status_escolhido}** com sucesso!")
+          st.rerun()
     else:
       st.info("Nenhum utilizador cadastrado.")
 
