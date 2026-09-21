@@ -15,12 +15,8 @@ import streamlit as st
 MERCADO_PAGO_ACCESS_TOKEN = (
     "APP_USR-7480302560366070-091611-1118388bbc787e8f88ea1da583096dbc-2919829212"
 )
-try:
-  sdk_mp = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
-except Exception:
-  sdk_mp = None
 
-# Configuração da Página
+# Configuração da Página com Menu Fixo Expandido
 st.set_page_config(
     page_title="Tabalmix Concreto - Gestão de Frota e Oficina Pro",
     page_icon="🚚",
@@ -28,20 +24,16 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Estilização Visual Corporativa Avançada + Correção Mobile
+# Estilização Visual Corporativa Avançada + Blindagem Anti-F12 / Inspeção
 st.markdown(
     """
     <style>
     header[data-testid="stHeader"] {
         background: transparent !important;
     }
-    button[kind="header"], [data-testid="collapsedControl"] svg {
-        color: #2ecc71 !important;
-    }
     .block-container {
         padding-top: 1.5rem !important;
         padding-bottom: 1.5rem !important;
-        max-width: 100% !important;
     }
     [data-testid="stSidebar"] {
         min-width: 310px !important;
@@ -136,6 +128,17 @@ st.markdown(
         box-shadow: 0 10px 30px rgba(0,0,0,0.4);
     }
     </style>
+    <script>
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && e.key === 'I') || (e.ctrlKey && e.key === 'u')) {
+            e.preventDefault();
+            alert('Acesso restrito pelo sistema de segurança.');
+        }
+    });
+    document.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+    });
+    </script>
 """,
     unsafe_allow_html=True,
 )
@@ -186,7 +189,7 @@ def gerar_pdf_relatorio(titulo, dataframe):
   c.rect(margem_esq, y - 4, largura_util, altura_linha, fill=1, stroke=0)
   c.setFillColorRGB(1, 1, 1)
   c.setFont("Helvetica-Bold", 8.5)
-  largura_coluna = largura_util / max(len(colunas_amigables), 1)
+  largura_coluna = largura_util / len(colunas_amigables)
 
   for i, col_nome in enumerate(colunas_amigables):
     c.drawString(margem_esq + (i * largura_coluna) + 5, y + 3, col_nome[:14])
@@ -220,8 +223,7 @@ def gerar_pdf_relatorio(titulo, dataframe):
   c.drawString(
       margem_esq,
       30,
-      "TABALMIX CONCRETO — Todos os direitos reservados. Tecnologia Castro"
-      " Tech.",
+      "TABALMIX CONCRETO — Todos os direitos reservados. Tecnologia Castro Tech.",
   )
   c.drawRightString(
       largura - margem_esq,
@@ -330,29 +332,6 @@ def init_db():
         )
     """)
   cursor.execute("""
-        CREATE TABLE IF NOT EXISTS usuarios_sistema (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            nome_completo TEXT,
-            email TEXT UNIQUE,
-            senha TEXT,
-            cargo TEXT,
-            pin_rapido TEXT
-        )
-    """)
-  # Garantir colunas na tabela usuarios_sistema se já existia
-  for col_u in [
-      "ALTER TABLE usuarios_sistema ADD COLUMN nome_completo TEXT",
-      "ALTER TABLE usuarios_sistema ADD COLUMN email TEXT",
-      "ALTER TABLE usuarios_sistema ADD COLUMN senha TEXT",
-      "ALTER TABLE usuarios_sistema ADD COLUMN cargo TEXT",
-      "ALTER TABLE usuarios_sistema ADD COLUMN pin_rapido TEXT",
-  ]:
-    try:
-      cursor.execute(col_u)
-    except Exception:
-      pass
-
-  cursor.execute("""
         CREATE TABLE IF NOT EXISTS config_colunas (
             tabela TEXT PRIMARY KEY,
             colunas_permitidas TEXT
@@ -367,26 +346,6 @@ def init_db():
             chave_pix TEXT
         )
     """)
-
-  # Inserir usuário Alex se não existir
-  cursor.execute(
-      "SELECT COUNT(*) FROM usuarios_sistema WHERE email = ?",
-      ("alexcastro02522@gmail.com",),
-  )
-  if cursor.fetchone()[0] == 0:
-    cursor.execute(
-        "INSERT INTO usuarios_sistema (nome_completo, email, senha, cargo,"
-        " pin_rapido) VALUES (?, ?, ?, ?, ?)",
-        (
-            "Alex de Castro Bernardino",
-            "alexcastro02522@gmail.com",
-            "Alex275612@",
-            "Diretoria / Gestão / Engenharia",
-            "2756",
-        ),
-    )
-    conn.commit()
-
   cursor.execute("SELECT COUNT(*) FROM licenca")
   if cursor.fetchone()[0] == 0:
     vencimento_padrao = (datetime.now() + timedelta(days=30)).strftime(
@@ -395,7 +354,17 @@ def init_db():
     cursor.execute(
         "INSERT INTO licenca (status_assinatura, plano_atual, data_vencimento,"
         " chave_pix) VALUES (?, ?, ?, ?)",
-        ("Ativo", "Mensal (R$ 250,00)", vencimento_padrao, "alex@tabalmix.com"),
+        (
+            "Inativo",
+            "Mensal (R$ 250,00)",
+            vencimento_padrao,
+            "seu-email-pix@dominio.com",
+        ),
+    )
+    conn.commit()
+  else:
+    cursor.execute(
+        "UPDATE licenca SET status_assinatura = 'Inativo' WHERE id = 1"
     )
     conn.commit()
   conn.commit()
@@ -405,11 +374,30 @@ def init_db():
 conn = init_db()
 cursor = conn.cursor()
 
-# Sessão do Usuário
-if "usuario_logado" not in st.session_state:
-  st.session_state["usuario_logado"] = None
+df_licenca = pd.read_sql("SELECT * FROM licenca", conn)
+status_atual = (
+    df_licenca.iloc[0]["status_assinatura"] if not df_licenca.empty else "Inativo"
+)
+plano_atual = (
+    df_licenca.iloc[0]["plano_atual"]
+    if not df_licenca.empty and "plano_atual" in df_licenca.columns
+    else "Mensal"
+)
+chave_pix_recebimento = (
+    df_licenca.iloc[0]["chave_pix"]
+    if not df_licenca.empty
+    else "seu-pix@email.com"
+)
 
-# Menu Lateral & Identidade Visual com Selo Oficial
+# Verificação invisível de Administrador via URL param (?admin=tabalmix_master_2026)
+query_params = st.query_params
+admin_token_url = query_params.get("admin", "")
+
+modo_admin_liberado = False
+if admin_token_url == "tabalmix_master_2026":
+  modo_admin_liberado = True
+
+# Menu Lateral & Blindagem com Selo Oficial
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
@@ -450,44 +438,104 @@ with st.sidebar:
         unsafe_allow_html=True,
     )
 
-  if st.session_state["usuario_logado"]:
-    user_ativo = st.session_state["usuario_logado"]
-    st.success(f"👤 **Logado:** {user_ativo['nome_completo']}")
-    st.info(f"🔑 **Cargo:** {user_ativo['cargo']}")
-    if st.button("🚪 Encerrar Sessão"):
-      st.session_state["usuario_logado"] = None
-      st.rerun()
-  else:
-    st.warning("🔒 Faça login para acesso completo.")
+  if modo_admin_liberado:
+    st.success("🔓 **Modo Admin Ativo:** Sistema Liberado")
 
   st.markdown("---")
 
-  lista_menus = [
-      "📊 Visão Geral",
-      "🚚 Frota e Maquinários",
-      "⛽ Abastecimentos & Combustível",
-      "🏗️ Mobilização / Desmobilização",
-      "🛠️ Ordens de Serviço (OS)",
-      "🔩 Peças e Ferramentas",
-      "👥 Gestão de Clientes",
-      "🔍 Consulta / Busca Geral",
-      "🔑 Login / Autenticação",
-      "⚙️ Painel de Licença (Admin)",
-  ]
 
-  menu = st.sidebar.radio("Navegação do Sistema", lista_menus, label_visibility="collapsed")
+def verificar_licenca_para_acao():
+  if modo_admin_liberado:
+    return True
 
-# Verificação de privilégios de Gestão / Engenharia
-def verificar_permissao_gestor():
-  if st.session_state["usuario_logado"] is not None:
-    cargo = st.session_state["usuario_logado"].get("cargo", "")
-    if any(
-        termo in cargo
-        for termo in ["Diretoria", "Gestão", "Engenharia", "Chefe"]
-    ):
-      return True
+  st.warning(
+      "🔒 **Ação Bloqueada:** O sistema está operando no modo restrito para"
+      " colaboradores. Para efetuar cadastros ou liberar o acesso completo,"
+      " escolha um plano de assinatura abaixo:"
+  )
+
+  col_p1, col_p2 = st.columns(2)
+  with col_p1:
+    if st.button("💳 Pagar Plano Mensal (R$ 250,00)", key="btn_mensal_geral"):
+      try:
+        sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+        preference_data = {
+            "items": [{
+                "title": "Tabalmix Concreto - Assinatura Mensal",
+                "quantity": 1,
+                "unit_price": 250.0,
+                "currency_id": "BRL",
+            }],
+            "back_urls": {
+                "success": "https://tabalmix-concreto.streamlit.app",
+                "failure": "https://tabalmix-concreto.streamlit.app",
+                "pending": "https://tabalmix-concreto.streamlit.app",
+            },
+            "auto_return": "approved",
+        }
+        preference_response = sdk.preference().create(preference_data)
+        checkout_url = (
+            preference_response["response"].get("init_point")
+            if "response" in preference_response
+            else ""
+        )
+        if checkout_url:
+          st.markdown(
+              f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO MENSAL (PIX / CARTÃO)"
+              f"]({checkout_url})**"
+          )
+      except Exception as e:
+        st.error(f"Erro ao gerar link de pagamento: {e}")
+
+  with col_p2:
+    if st.button("🌟 Pagar Plano Anual (R$ 2.400,00)", key="btn_anual_geral"):
+      try:
+        sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+        preference_data = {
+            "items": [{
+                "title": "Tabalmix Concreto - Assinatura Anual",
+                "quantity": 1,
+                "unit_price": 2400.0,
+                "currency_id": "BRL",
+            }],
+            "back_urls": {
+                "success": "https://tabalmix-concreto.streamlit.app",
+                "failure": "https://tabalmix-concreto.streamlit.app",
+                "pending": "https://tabalmix-concreto.streamlit.app",
+            },
+            "auto_return": "approved",
+        }
+        preference_response = sdk.preference().create(preference_data)
+        checkout_url = (
+            preference_response["response"].get("init_point")
+            if "response" in preference_response
+            else ""
+        )
+        if checkout_url:
+          st.markdown(
+              f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO ANUAL (PIX / CARTÃO)"
+              f"]({checkout_url})**"
+          )
+      except Exception as e:
+        st.error(f"Erro ao gerar link de pagamento: {e}")
   return False
 
+
+menu = st.sidebar.radio(
+    "Navegação do Sistema",
+    [
+        "📊 Visão Geral",
+        "🚚 Frota e Maquinários",
+        "⛽ Abastecimentos & Combustível",
+        "🏗️ Mobilização / Desmobilização",
+        "🛠️ Ordens de Serviço (OS)",
+        "🔩 Peças e Ferramentas",
+        "👥 Gestão de Clientes",
+        "🔍 Consulta / Busca Geral",
+        "⚙️ Painel de Licença (Admin)",
+    ],
+    label_visibility="collapsed",
+)
 
 if menu == "📊 Visão Geral":
   try:
@@ -565,24 +613,30 @@ if menu == "📊 Visão Geral":
 
     st.dataframe(df_filtrado, use_container_width=True)
 
-    col_down1, col_down2 = st.columns(2)
-    with col_down1:
-      pdf_buffer = gerar_pdf_relatorio(
-          f"RELATÓRIO DE FROTA ({filtro_status}) - TABALMIX", df_filtrado
-      )
-      st.download_button(
-          label="📥 Baixar Relatório Filtrado em PDF",
-          data=pdf_buffer,
-          file_name="relatorio_frota_tabalmix.pdf",
-          mime="application/pdf",
-      )
-    with col_down2:
-      csv_buffer = gerar_csv_relatorio(df_filtrado)
-      st.download_button(
-          label="📊 Baixar Relatório Filtrado em Planilha (.csv)",
-          data=csv_buffer,
-          file_name="relatorio_frota_tabalmix.csv",
-          mime="text/csv",
+    if modo_admin_liberado:
+      col_down1, col_down2 = st.columns(2)
+      with col_down1:
+        pdf_buffer = gerar_pdf_relatorio(
+            f"RELATÓRIO DE FROTA ({filtro_status}) - TABALMIX", df_filtrado
+        )
+        st.download_button(
+            label="📥 Baixar Relatório Filtrado em PDF",
+            data=pdf_buffer,
+            file_name="relatorio_frota_tabalmix.pdf",
+            mime="application/pdf",
+        )
+      with col_down2:
+        csv_buffer = gerar_csv_relatorio(df_filtrado)
+        st.download_button(
+            label="📊 Baixar Relatório Filtrado em Planilha (.csv)",
+            data=csv_buffer,
+            file_name="relatorio_frota_tabalmix.csv",
+            mime="text/csv",
+        )
+    else:
+      st.info(
+          "🔒 *Os botões de download de relatórios estão disponíveis apenas"
+          " para assinantes/administradores do sistema.*"
       )
   else:
     st.info("Nenhum equipamento cadastrado.")
@@ -590,22 +644,24 @@ if menu == "📊 Visão Geral":
 elif menu == "🚚 Frota e Maquinários":
   st.title("🚚 Cadastro Completo de Veículos e Maquinário Pesado")
 
-  # Abas com restrições exclusivas para chefes, gestores e engenheiros
-  eh_gestor = verificar_permissao_gestor()
-
-  tabs_lista = ["📋 Frota Cadastrada"]
-  if eh_gestor:
-    tabs_lista.extend([
+  # Abas com restrições exclusivas para chefes, gestores e engenheiros (modo_admin_liberado)
+  if modo_admin_liberado:
+    tab_f1, tab_f2, tab_f3, tab_f4, tab_f5 = st.tabs([
+        "📋 Frota Cadastrada",
         "➕ Registar Novo Ativo",
         "✏️ Editar Ativo",
         "🗑️ Excluir Ativo",
         "⚙️ Gerir Colunas",
     ])
+  else:
+    tab_f1 = st.container()
+    tab_f2 = None
+    tab_f3 = None
+    tab_f4 = None
+    tab_f5 = None
 
-  abas_criadas = st.tabs(tabs_lista)
-
-  with abas_criadas[0]:
-    st.subheader("Frota Registrada no Sistema")
+  with tab_f1:
+    st.subheader("Frota Registrada & Gerenciamento")
     df_f = pd.read_sql("SELECT * FROM veiculos", conn)
     if not df_f.empty:
       try:
@@ -624,11 +680,30 @@ elif menu == "🚚 Frota e Maquinários":
       except Exception:
         pass
 
-      st.dataframe(df_f, use_container_width=True)
+      filtro_status_frota = st.selectbox(
+          "🔍 Filtrar Tabela por Status",
+          [
+              "Todos os Status",
+              "Ativo",
+              "Mobilizado",
+              "Em manutenção",
+              "Parado",
+              "Desmobilizado",
+              "Inativo",
+          ],
+          key="filtro_frota_aba",
+      )
+
+      df_f_filtrado = df_f.copy()
+      if filtro_status_frota != "Todos os Status" and "status" in df_f.columns:
+        df_f_filtrado = df_f[df_f["status"] == filtro_status_frota]
+
+      st.dataframe(df_f_filtrado, use_container_width=True)
+
       col_down1, col_down2 = st.columns(2)
       with col_down1:
         pdf_buffer = gerar_pdf_relatorio(
-            "RELATÓRIO DE FROTA PRO - TABALMIX", df_f
+            "RELATÓRIO DE FROTA PRO - TABALMIX", df_f_filtrado
         )
         st.download_button(
             label="📥 Baixar Relatório em PDF",
@@ -637,7 +712,7 @@ elif menu == "🚚 Frota e Maquinários":
             mime="application/pdf",
         )
       with col_down2:
-        csv_buffer = gerar_csv_relatorio(df_f)
+        csv_buffer = gerar_csv_relatorio(df_f_filtrado)
         st.download_button(
             label="📊 Baixar Relatório em Planilha (.csv)",
             data=csv_buffer,
@@ -647,10 +722,10 @@ elif menu == "🚚 Frota e Maquinários":
     else:
       st.info("Nenhum equipamento cadastrado na frota.")
 
-  if eh_gestor:
-    with abas_criadas[1]:
+  if modo_admin_liberado:
+    with tab_f2:
       st.subheader("➕ Registar Novo Ativo na Frota")
-      with st.form("form_frota", clear_on_submit=False):
+      with st.form("form_frota_novo", clear_on_submit=False):
         col1, col2 = st.columns(2)
         with col1:
           codigo_patrimonio = st.text_input(
@@ -733,9 +808,11 @@ elif menu == "🚚 Frota e Maquinários":
           else:
             st.error("⚠️ Preencha o Código de Patrimônio e o Modelo.")
 
-    with abas_criadas[2]:
+    with tab_f3:
       st.subheader("✏️ Editar Ativo Existente")
-      df_edit = pd.read_sql("SELECT id, codigo_patrimonio, modelo FROM veiculos", conn)
+      df_edit = pd.read_sql(
+          "SELECT id, codigo_patrimonio, modelo FROM veiculos", conn
+      )
       if not df_edit.empty:
         id_sel = st.selectbox(
             "Selecione o Ativo para Editar",
@@ -746,7 +823,7 @@ elif menu == "🚚 Frota e Maquinários":
             "SELECT * FROM veiculos WHERE id = ?", conn, params=(id_sel,)
         ).iloc[0]
 
-        with st.form("form_edicao_ativo"):
+        with st.form("form_edicao_ativo_gestor"):
           e_pat = st.text_input(
               "Código de Patrimônio",
               value=str(ativo_reg["codigo_patrimonio"]),
@@ -770,7 +847,7 @@ elif menu == "🚚 Frota e Maquinários":
               index=0,
           )
 
-          salvar_edicao = st.form_submit_button("Salvar Alterações")
+          salvar_edicao = st.form_submit_button("Salvar Alterações do Ativo")
           if salvar_edicao:
             cursor.execute(
                 "UPDATE veiculos SET codigo_patrimonio = ?, modelo = ?,"
@@ -783,17 +860,19 @@ elif menu == "🚚 Frota e Maquinários":
       else:
         st.info("Nenhum ativo para editar.")
 
-    with abas_criadas[3]:
+    with tab_f4:
       st.subheader("🗑️ Excluir Ativo da Frota")
-      df_exc = pd.read_sql("SELECT id, codigo_patrimonio, modelo FROM veiculos", conn)
+      df_exc = pd.read_sql(
+          "SELECT id, codigo_patrimonio, modelo FROM veiculos", conn
+      )
       if not df_exc.empty:
         id_exc = st.selectbox(
             "Selecione o Ativo para Excluir",
             df_exc["id"].tolist(),
             format_func=lambda x: f"ID #{x} — {df_exc[df_exc['id'] == x]['codigo_patrimonio'].values[0]} ({df_exc[df_exc['id'] == x]['modelo'].values[0]})",
-            key="sel_exc_ativo",
+            key="sel_exc_ativo_g",
         )
-        if st.button("🗑️ Confirmar Exclusão do Ativo"):
+        if st.button("🗑️ Confirmar Exclusão Definitiva"):
           cursor.execute("DELETE FROM veiculos WHERE id = ?", (id_exc,))
           conn.commit()
           st.success("✅ Ativo excluído com sucesso!")
@@ -801,11 +880,11 @@ elif menu == "🚚 Frota e Maquinários":
       else:
         st.info("Nenhum ativo para excluir.")
 
-    with abas_criadas[4]:
-      st.subheader("⚙️ Gerir Colunas Visíveis na Tabela")
+    with tab_f5:
+      st.subheader("⚙️ Gerir e Criar Colunas Visíveis na Tabela")
       st.markdown(
-          "Selecione quais colunas devem aparecer na tabela de frota para"
-          " toda a equipe."
+          "Selecione abaixo quais colunas devem aparecer na tabela de frota"
+          " para toda a equipa (Exclusivo para Gestores e Engenheiros)."
       )
       try:
         df_cols_ex = pd.read_sql("SELECT * FROM veiculos LIMIT 1", conn)
@@ -825,7 +904,7 @@ elif menu == "🚚 Frota e Maquinários":
       )
 
       cols_selecionadas = st.multiselect(
-          "Colunas Ativas:", todas_cols, default=cols_atuais
+          "Colunas Ativas na Tabela:", todas_cols, default=cols_atuais
       )
       if st.button("Salvar Configuração de Colunas"):
         str_cols = ",".join(cols_selecionadas)
@@ -835,8 +914,13 @@ elif menu == "🚚 Frota e Maquinários":
             ("veiculos", str_cols),
         )
         conn.commit()
-        st.success("✅ Configuração de colunas salva com sucesso!")
+        st.success("✅ Configuração de colunas guardada com sucesso!")
         st.rerun()
+  else:
+    st.info(
+        "🔒 *As abas de Criar, Editar, Excluir Ativos e Gerir Colunas são"
+        " exclusivas para Chefes, Gestores e Engenheiros autorizados.*"
+    )
 
 elif menu == "⛽ Abastecimentos & Combustível":
   st.title("⛽ Controle de Abastecimento e Consumo de Combustível")
@@ -844,71 +928,130 @@ elif menu == "⛽ Abastecimentos & Combustível":
   if df_v.empty:
     st.warning("Cadastre equipamentos na frota antes de registrar abastecimentos.")
   else:
-    with st.form("form_combustivel", clear_on_submit=False):
-      col1, col2 = st.columns(2)
-      with col1:
-        equipamento_comb = st.selectbox(
-            "Equipamento / Patrimônio", df_v["codigo_patrimonio"].tolist()
-        )
-        litros = st.number_input(
-            "Quantidade de Litros Abastecidos",
-            min_value=0.1,
-            value=100.0,
-            format="%.2f",
-        )
-        valor_total = st.number_input(
-            "Valor Total Pago (R$)", min_value=0.0, value=600.0, format="%.2f"
-        )
-      with col2:
-        km_horimetro = st.text_input("KM ou Horímetro Atual do Veículo")
-        posto = st.text_input("Posto / Fornecedor de Combustível")
-        motorista = st.text_input("Motorista / Responsável")
-        data_abastecimento = st.date_input("Data do Abastecimento")
+    if modo_admin_liberado:
+      with st.form("form_combustivel", clear_on_submit=False):
+        col1, col2 = st.columns(2)
+        with col1:
+          equipamento_comb = st.selectbox(
+              "Equipamento / Patrimônio", df_v["codigo_patrimonio"].tolist()
+          )
+          litros = st.number_input(
+              "Quantidade de Litros Abastecidos",
+              min_value=0.1,
+              value=100.0,
+              format="%.2f",
+          )
+          valor_total = st.number_input(
+              "Valor Total Pago (R$)", min_value=0.0, value=600.0, format="%.2f"
+          )
+        with col2:
+          km_horimetro = st.text_input("KM ou Horímetro Atual do Veículo")
+          posto = st.text_input("Posto / Fornecedor de Combustível")
+          motorista = st.text_input("Motorista / Responsável")
+          data_abastecimento = st.date_input("Data do Abastecimento")
 
-      salvar_comb = st.form_submit_button("Registrar Abastecimento")
-      if salvar_comb:
-        cursor.execute(
-            "INSERT INTO combustivel (equipamento, litros, valor_total,"
-            " km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?,"
-            " ?, ?, ?, ?)",
-            (
-                equipamento_comb,
-                float(litros),
-                float(valor_total),
-                str(km_horimetro),
-                posto,
-                motorista,
-                str(data_abastecimento),
-            ),
-        )
-        conn.commit()
-        st.success("✅ Abastecimento registrado com sucesso!")
-        st.rerun()
+        salvar_comb = st.form_submit_button("Registrar Abastecimento")
+        if salvar_comb:
+          cursor.execute(
+              "INSERT INTO combustivel (equipamento, litros, valor_total,"
+              " km_horimetro, posto_posto, motorista, data) VALUES (?, ?, ?,"
+              " ?, ?, ?, ?)",
+              (
+                  equipamento_comb,
+                  float(litros),
+                  float(valor_total),
+                  str(km_horimetro),
+                  posto,
+                  motorista,
+                  str(data_abastecimento),
+              ),
+          )
+          conn.commit()
+          st.success("✅ Abastecimento registrado com sucesso!")
+    else:
+      verificar_licenca_para_acao()
 
   st.divider()
   st.subheader("Histórico de Abastecimentos Registrados")
   df_c_hist = pd.read_sql("SELECT * FROM combustivel", conn)
   if not df_c_hist.empty:
-    st.dataframe(df_c_hist, use_container_width=True)
-    col_down1, col_down2 = st.columns(2)
-    with col_down1:
-      pdf_buffer = gerar_pdf_relatorio(
-          "RELATÓRIO DE COMBUSTÍVEL - TABALMIX", df_c_hist
+    st.markdown("##### 📅 Filtrar Histórico por Período")
+    col_f1, col_f2 = st.columns(2)
+    with col_f1:
+      usar_filtro_data = st.checkbox(
+          "Ativar Filtro de Datas em Abastecimentos"
       )
-      st.download_button(
-          label="📥 Baixar Histórico em PDF",
-          data=pdf_buffer,
-          file_name="relatorio_combustivel_tabalmix.pdf",
-          mime="application/pdf",
-      )
-    with col_down2:
-      csv_buffer = gerar_csv_relatorio(df_c_hist)
-      st.download_button(
-          label="📊 Baixar Histórico em Planilha (.csv)",
-          data=csv_buffer,
-          file_name="relatorio_combustivel_tabalmix.csv",
-          mime="text/csv",
-      )
+      if usar_filtro_data:
+        col_d1, col_d2 = st.columns(2)
+        with col_d1:
+          data_inicio = st.date_input(
+              "Data Inicial", datetime.now() - timedelta(days=30)
+          )
+        with col_d2:
+          data_fim = st.date_input("Data Final", datetime.now())
+
+    df_c_hist["data_dt"] = pd.to_datetime(
+        df_c_hist["data"], errors="coerce"
+    )
+    if "usar_filtro_data" in locals() and usar_filtro_data:
+      df_c_filtrado = df_c_hist[
+          (df_c_hist["data_dt"].dt.date >= data_inicio)
+          & (df_c_hist["data_dt"].dt.date <= data_fim)
+      ]
+    else:
+      df_c_filtrado = df_c_hist
+
+    st.dataframe(
+        df_c_filtrado.drop(columns=["data_dt"], errors="ignore"),
+        use_container_width=True,
+    )
+
+    total_litros_filtrado = df_c_filtrado["litros"].sum()
+    total_gasto_filtrado = df_c_filtrado["valor_total"].sum()
+    st.info(
+        f"📊 **Resumo do Período Selecionado:** {total_litros_filtrado:,.2f}"
+        f" Litros | **Gasto Total:** R$ {total_gasto_filtrado:,.2f}"
+    )
+
+    if modo_admin_liberado:
+      col_dc1, col_dc2 = st.columns([2, 1])
+      with col_dc1:
+        comb_para_excluir = st.selectbox(
+            "Selecione o ID para Remover do Histórico",
+            df_c_hist["id"].tolist(),
+        )
+      with col_dc2:
+        st.write("")
+        st.write("")
+        if st.button("🗑️ Excluir Abastecimento"):
+          cursor.execute(
+              "DELETE FROM combustivel WHERE id = ?", (comb_para_excluir,)
+          )
+          conn.commit()
+          st.success("✅ Registro removido!")
+          st.rerun()
+
+      col_down1, col_down2 = st.columns(2)
+      with col_down1:
+        pdf_buffer = gerar_pdf_relatorio(
+            "RELATÓRIO DE COMBUSTÍVEL - TABALMIX", df_c_filtrado
+        )
+        st.download_button(
+            label="📥 Baixar Histórico Filtrado em PDF",
+            data=pdf_buffer,
+            file_name="relatorio_combustivel_tabalmix.pdf",
+            mime="application/pdf",
+        )
+      with col_down2:
+        csv_buffer = gerar_csv_relatorio(df_c_filtrado)
+        st.download_button(
+            label="📊 Baixar Histórico Filtrado em Planilha (.csv)",
+            data=csv_buffer,
+            file_name="relatorio_combustivel_tabalmix.csv",
+            mime="text/csv",
+        )
+    else:
+      st.info("🔒 *Baixe relatórios exclusivos com a conta Pro.*")
   else:
     st.info("Nenhum abastecimento registrado até o momento.")
 
@@ -918,140 +1061,298 @@ elif menu == "🏗️ Mobilização / Desmobilização":
   if df_v.empty:
     st.warning("Cadastre equipamentos na frota antes de registrar mobilizações.")
   else:
-    with st.form("form_mob", clear_on_submit=False):
-      col1, col2 = st.columns(2)
-      with col1:
-        equipamento_mob = st.selectbox(
-            "Equipamento (Patrimônio / Modelo)",
-            df_v["codigo_patrimonio"].tolist(),
-        )
-        tipo_movimento = st.selectbox(
-            "Tipo de Movimentação",
-            [
-                "Mobilização (Envio para Obra)",
-                "Desmobilização (Retorno de Obra)",
-                "Remanejamento entre Frentes",
-            ],
-        )
-        destino_origem = st.text_input("Nome da Obra / Local de Destino-Origem")
-        horimetro_km_mov = st.text_input(
-            "Horímetro / KM no Momento da Movimentação"
-        )
-      with col2:
-        responsavel = st.text_input("Responsável pela Liberação")
-        data_mob = st.date_input("Data da Movimentação")
-        motivo_condicao = st.text_input(
-            "Motivo da Saída / Condição do Equipamento"
-        )
-        observacao = st.text_input("Observações Gerais")
+    if modo_admin_liberado:
+      with st.form("form_mob", clear_on_submit=False):
+        col1, col2 = st.columns(2)
+        with col1:
+          equipamento_mob = st.selectbox(
+              "Equipamento (Patrimônio / Modelo)",
+              df_v["codigo_patrimonio"].tolist(),
+          )
+          tipo_movimento = st.selectbox(
+              "Tipo de Movimentação",
+              [
+                  "Mobilização (Envio para Obra)",
+                  "Desmobilização (Retorno de Obra)",
+                  "Remanejamento entre Frentes",
+              ],
+          )
+          destino_origem = st.text_input("Nome da Obra / Local de Destino-Origem")
+          horimetro_km_mov = st.text_input(
+              "Horímetro / KM no Momento da Movimentação"
+          )
+        with col2:
+          responsavel = st.text_input("Responsável pela Liberação")
+          data_mob = st.date_input("Data da Movimentação")
+          motivo_condicao = st.text_input(
+              "Motivo da Saída / Condição do Equipamento"
+          )
+          observacao = st.text_input("Observações Gerais")
 
-      salvar_mob = st.form_submit_button("Registrar Movimentação de Obra")
-      if salvar_mob:
-        cursor.execute(
-            "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
-            " destino_origem, responsavel, data, horimetro_km_mov,"
-            " motivo_condicao, observacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-            (
-                equipamento_mob,
-                tipo_movimento,
-                destino_origem,
-                responsavel,
-                str(data_mob),
-                str(horimetro_km_mov),
-                motivo_condicao,
-                observacao,
-            ),
-        )
-        conn.commit()
-        st.success("✅ Histórico de mobilização registrado com sucesso!")
-        st.rerun()
+        salvar_mob = st.form_submit_button("Registrar Movimentação de Obra")
+        if salvar_mob:
+          cursor.execute(
+              "INSERT INTO mobilizacoes (equipamento, tipo_movimento,"
+              " destino_origem, responsavel, data, horimetro_km_mov,"
+              " motivo_condicao, observacao) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+              (
+                  equipamento_mob,
+                  tipo_movimento,
+                  destino_origem,
+                  responsavel,
+                  str(data_mob),
+                  str(horimetro_km_mov),
+                  motivo_condicao,
+                  observacao,
+              ),
+          )
+          conn.commit()
+          st.success("✅ Histórico de mobilização registrado com sucesso!")
+    else:
+      verificar_licenca_para_acao()
 
   st.divider()
   st.subheader("Histórico de Mobilizações e Desmobilizações")
   df_mob_hist = pd.read_sql("SELECT * FROM mobilizacoes", conn)
   if not df_mob_hist.empty:
     st.dataframe(df_mob_hist, use_container_width=True)
+    if modo_admin_liberado:
+      col_dm1, col_dm2 = st.columns([2, 1])
+      with col_dm1:
+        mob_para_excluir = st.selectbox(
+            "Selecione o ID para Remover do Histórico",
+            df_mob_hist["id"].tolist(),
+        )
+      with col_dm2:
+        st.write("")
+        st.write("")
+        if st.button("🗑️ Excluir Registro de Mobilização"):
+          cursor.execute(
+              "DELETE FROM mobilizacoes WHERE id = ?", (mob_para_excluir,)
+          )
+          conn.commit()
+          st.success("✅ Registro removido!")
+          st.rerun()
+
+      col_down1, col_down2 = st.columns(2)
+      with col_down1:
+        pdf_buffer = gerar_pdf_relatorio(
+            "HISTÓRICO DE MOBILIZAÇÕES - TABALMIX", df_mob_hist
+        )
+        st.download_button(
+            label="📥 Baixar Histórico em PDF",
+            data=pdf_buffer,
+            file_name="historico_mobilizacoes_tabalmix.pdf",
+            mime="application/pdf",
+        )
+      with col_down2:
+        csv_buffer = gerar_csv_relatorio(df_mob_hist)
+        st.download_button(
+            label="📊 Baixar Histórico em Planilha (.csv)",
+            data=csv_buffer,
+            file_name="historico_mobilizacoes_tabalmix.csv",
+            mime="text/csv",
+        )
+    else:
+      st.info("🔒 *Downloads bloqueados para contas não assinantes.*")
   else:
     st.info("Nenhuma mobilização registrada até o momento.")
 
 elif menu == "🛠️ Ordens de Serviço (OS)":
   st.title("🛠️ Gestão de Ordens de Serviço (OS) e Manutenções")
+
+  df_m_resumo = pd.read_sql("SELECT * FROM manutencoes", conn)
+  if not df_m_resumo.empty:
+    custo_total_pecas = df_m_resumo["custo_pecas"].sum()
+    custo_total_mo = df_m_resumo["mao_de_obra"].sum()
+    custo_geral_os = df_m_resumo["custo"].sum()
+
+    m1, m2, m3 = st.columns(3)
+    m1.metric("Total Gasto em Peças", f"R$ {custo_total_pecas:,.2f}")
+    m2.metric("Total Mão de Obra", f"R$ {custo_total_mo:,.2f}")
+    m3.metric("Custo Geral Manutenção", f"R$ {custo_geral_os:,.2f}")
+    st.divider()
+
   df_v = pd.read_sql("SELECT codigo_patrimonio, modelo FROM veiculos", conn)
   if df_v.empty:
     st.warning(
         "Cadastre pelo menos um equipamento antes de abrir uma Ordem de Serviço."
     )
   else:
-    with st.form("form_os", clear_on_submit=False):
-      col1, col2 = st.columns(2)
-      with col1:
-        equipamento_escolhido = st.selectbox(
-            "Equipamento / Patrimônio", df_v["codigo_patrimonio"].tolist()
-        )
-        tipo_manutencao = st.selectbox(
-            "Tipo de Manutenção",
-            ["Preventiva", "Corretiva", "Preditiva", "Revisão Geral"],
-        )
-        horimetro_km_manut = st.text_input("Horímetro / KM na Entrada")
-        problema = st.text_area("Solicitação / Defeito Apresentado / Problema")
-        servico_realizado = st.text_area("Serviços a Realizar / Realizados")
-      with col2:
-        pecas_utilizadas = st.text_input("Peças Utilizadas / Necessárias")
-        custo_pecas = st.number_input(
-            "Valor Total das Peças (R$)", min_value=0.0, format="%.2f"
-        )
-        mao_de_obra = st.number_input(
-            "Valor da Mão de Obra (R$)", min_value=0.0, format="%.2f"
-        )
-        oficina = st.text_input("Oficina / Fornecedor Responsável")
-        responsavel_os = st.text_input("Responsável Técnico / Mecânico")
-        status_os = st.selectbox(
-            "Status da OS",
-            [
-                "Aberta",
-                "Em análise",
-                "Aguardando peça",
-                "Em manutenção",
-                "Concluída",
-                "Cancelada",
-            ],
-        )
-        data_os = st.date_input("Data de Abertura")
+    if modo_admin_liberado:
+      with st.form("form_os", clear_on_submit=False):
+        col1, col2 = st.columns(2)
+        with col1:
+          equipamento_escolhido = st.selectbox(
+              "Equipamento / Patrimônio", df_v["codigo_patrimonio"].tolist()
+          )
+          tipo_manutencao = st.selectbox(
+              "Tipo de Manutenção",
+              ["Preventiva", "Corretiva", "Preditiva", "Revisão Geral"],
+          )
+          horimetro_km_manut = st.text_input("Horímetro / KM na Entrada")
+          problema = st.text_area(
+              "Solicitação / Defeito Apresentado / Problema"
+          )
+          servico_realizado = st.text_area(
+              "Serviços a Realizar / Realizados"
+          )
+        with col2:
+          pecas_utilizadas = st.text_input(
+              "Peças Utilizadas / Necessárias"
+          )
+          custo_pecas = st.number_input(
+              "Valor Total das Peças (R$)", min_value=0.0, format="%.2f"
+          )
+          mao_de_obra = st.number_input(
+              "Valor da Mão de Obra (R$)", min_value=0.0, format="%.2f"
+          )
+          oficina = st.text_input("Oficina / Fornecedor Responsável")
+          responsavel_os = st.text_input("Responsável Técnico / Mecânico")
+          status_os = st.selectbox(
+              "Status da OS",
+              [
+                  "Aberta",
+                  "Em análise",
+                  "Aguardando peça",
+                  "Em manutenção",
+                  "Aguardando aprovação",
+                  "Concluída",
+                  "Cancelada",
+              ],
+          )
+          data_os = st.date_input("Data de Abertura")
 
-      abrir_os = st.form_submit_button("Salvar e Emitir Ordem de Serviço (OS)")
-      if abrir_os:
-        custo_total = custo_pecas + mao_de_obra
-        cursor.execute(
-            "INSERT INTO manutencoes (equipamento, tipo_manutencao,"
-            " horimetro_km_manut, problema, servico_realizado,"
-            " pecas_utilizadas, custo_pecas, mao_de_obra, custo, oficina,"
-            " responsavel, status_os, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?,"
-            " ?, ?, ?, ?, ?)",
-            (
-                equipamento_escolhido,
-                tipo_manutencao,
-                horimetro_km_manut,
-                problema,
-                servico_realizado,
-                pecas_utilizadas,
-                custo_pecas,
-                mao_de_obra,
-                custo_total,
-                oficina,
-                responsavel_os,
-                status_os,
-                str(data_os),
-            ),
+        abrir_os = st.form_submit_button(
+            "Salvar e Emitir Ordem de Serviço (OS)"
         )
-        conn.commit()
-        st.success("✅ Ordem de Serviço gerada e salva com sucesso!")
-        st.rerun()
+        if abrir_os:
+          custo_total = custo_pecas + mao_de_obra
+          cursor.execute(
+              "INSERT INTO manutencoes (equipamento, tipo_manutencao,"
+              " horimetro_km_manut, problema, servico_realizado,"
+              " pecas_utilizadas, custo_pecas, mao_de_obra, custo, oficina,"
+              " responsavel, status_os, data) VALUES (?, ?, ?, ?, ?, ?, ?, ?,"
+              " ?, ?, ?, ?, ?)",
+              (
+                  equipamento_escolhido,
+                  tipo_manutencao,
+                  horimetro_km_manut,
+                  problema,
+                  servico_realizado,
+                  pecas_utilizadas,
+                  custo_pecas,
+                  mao_de_obra,
+                  custo_total,
+                  oficina,
+                  responsavel_os,
+                  status_os,
+                  str(data_os),
+              ),
+          )
+          conn.commit()
+          st.success("✅ Ordem de Serviço gerada e salva com sucesso!")
+    else:
+      verificar_licenca_para_acao()
 
   st.divider()
-  st.subheader("🗓️ Histórico de Ordens de Serviço")
+  st.subheader("🗓️ Histórico de Ordens de Serviço & Recibo Oficial")
   df_m = pd.read_sql("SELECT * FROM manutencoes", conn)
   if not df_m.empty:
-    st.dataframe(df_m, use_container_width=True)
+    st.markdown("##### 📅 Filtrar Ordens de Serviço por Período")
+    col_fm1, col_fm2 = st.columns(2)
+    with col_fm1:
+      usar_filtro_os = st.checkbox(
+          "Ativar Filtro de Datas em Ordens de Serviço"
+      )
+      if usar_filtro_os:
+        col_od1, col_od2 = st.columns(2)
+        with col_od1:
+          os_data_inicio = st.date_input(
+              "Início do Período", datetime.now() - timedelta(days=30), key="os_ini"
+          )
+        with col_od2:
+          os_data_fim = st.date_input(
+              "Fim do Período", datetime.now(), key="os_fim"
+          )
+
+    df_m["data_dt"] = pd.to_datetime(df_m["data"], errors="coerce")
+    if "usar_filtro_os" in locals() and usar_filtro_os:
+      df_m_filtrado = df_m[
+          (df_m["data_dt"].dt.date >= os_data_inicio)
+          & (df_m["data_dt"].dt.date <= os_data_fim)
+      ]
+    else:
+      df_m_filtrado = df_m
+
+    st.dataframe(
+        df_m_filtrado.drop(columns=["data_dt"], errors="ignore"),
+        use_container_width=True,
+    )
+
+    custo_periodo_filtrado = df_m_filtrado["custo"].sum()
+    st.info(
+        f"🛠️ **Custo de Manutenção no Período Selecionado:** R$"
+        f" {custo_periodo_filtrado:,.2f}"
+    )
+
+    if modo_admin_liberado:
+      col_os1, col_os2 = st.columns([2, 1])
+      with col_os1:
+        os_para_excluir = st.selectbox(
+            "Selecione o ID da OS para Excluir", df_m["id"].tolist()
+        )
+      with col_os2:
+        st.write("")
+        st.write("")
+        if st.button("🗑️ Excluir OS Selecionada"):
+          cursor.execute(
+              "DELETE FROM manutencoes WHERE id = ?", (os_para_excluir,)
+          )
+          conn.commit()
+          st.success("✅ Ordem de Serviço excluída!")
+          st.rerun()
+
+      st.markdown("### Gerar Comprovante / Recibo da OS para Impressão")
+      os_ids = df_m["id"].tolist()
+      os_selecionada = st.selectbox(
+          "Selecione o ID da OS para gerar o documento PDF/HTML", os_ids
+      )
+      if os_selecionada:
+        os_dados = df_m[df_m["id"] == os_selecionada].iloc[0]
+        recibo_html = f"""
+                <div style="background-color: #ffffff; color: #000000; padding: 30px; border-radius: 10px; font-family: Arial, sans-serif; border: 2px solid #2ecc71;">
+                    <h2 style="text-align: center; color: #1b7a3e; margin-bottom: 5px;">TABALMIX CONCRETO - ORDEM DE SERVIÇO #{os_dados['id']}</h2>
+                    <p style="text-align: center; color: #555; font-size: 14px;">Controle Oficial de Manutenção e Oficina de Frotas | Castro Technology</p>
+                    <hr style="border: 1px solid #ccc; margin: 20px 0;">
+                    <p><b>Equipamento / Patrimônio:</b> {os_dados['equipamento']}</p>
+                    <p><b>Data de Abertura:</b> {os_dados['data']} | <b>Tipo:</b> {os_dados['tipo_manutencao']}</p>
+                    <p><b>Status Atual:</b> <span style="color: #1b7a3e; font-weight: bold;">{os_dados['status_os']}</span></p>
+                    <p><b>Oficina / Fornecedor:</b> {os_dados['oficina']} | <b>Responsável:</b> {os_dados['responsavel']}</p>
+                    <hr style="border: 1px solid #eee; margin: 15px 0;">
+                    <p><b>Problema Relatado:</b> {os_dados['problema']}</p>
+                    <p><b>Serviços Realizados:</b> {os_dados['servico_realizado']}</p>
+                    <p><b>Peças Utilizadas:</b> {os_dados['pecas_utilizadas']}</p>
+                    <hr style="border: 1px solid #eee; margin: 15px 0;">
+                    <p><b>Custo de Peças:</b> R$ {os_dados['custo_pecas']:,.2f} | <b>Mão de Obra:</b> R$ {os_dados['mao_de_obra']:,.2f}</p>
+                    <p style="font-size: 16px; color: #1b7a3e;"><b>Custo Total da Manutenção: R$ {os_dados['custo']:,.2f}</b></p>
+                </div>
+            """
+        st.markdown(recibo_html, unsafe_allow_html=True)
+        col_down1, col_down2 = st.columns(2)
+        with col_down1:
+          st.info(
+              "💡 **Dica para imprimir:** Pressione as teclas **Ctrl + P** no"
+              " seu teclado."
+          )
+        with col_down2:
+          csv_buffer = gerar_csv_relatorio(pd.DataFrame([os_dados]))
+          st.download_button(
+              label="📊 Baixar OS em Planilha (.csv)",
+              data=csv_buffer,
+              file_name=f"ordem_servico_{os_dados['id']}_tabalmix.csv",
+              mime="text/csv",
+          )
   else:
     st.info("Nenhuma Ordem de Serviço cadastrada ainda.")
 
@@ -1059,77 +1360,161 @@ elif menu == "🔩 Peças e Ferramentas":
   st.title("🔩 Controle de Peças, Insumos e Ferramentas de Oficina")
   tab1, tab2 = st.tabs(["Cadastrar Item", "Inventário Atual"])
   with tab1:
-    with st.form("form_estoque", clear_on_submit=False):
-      col1, col2 = st.columns(2)
-      with col1:
-        nome_item = st.text_input(
-            "Nome da Peça, Filtro ou Ferramenta (Ex: Óleo 15W40)"
-        )
-        categoria = st.selectbox(
-            "Categoria",
-            [
-                "Peça de Reposição",
-                "Filtro e Lubrificante",
-                "Ferramenta de Oficina",
-                "Insumo de Concretagem",
-            ],
-        )
-      with col2:
-        quantidade = st.number_input("Quantidade em Estoque", min_value=1, value=1)
-        valor_unitario = st.number_input(
-            "Valor Unitário (R$)", min_value=0.0, format="%.2f"
-        )
-      salvar_item = st.form_submit_button("Adicionar ao Estoque")
-      if salvar_item:
-        if nome_item:
-          cursor.execute(
-              "INSERT INTO pecas (nome_item, categoria, quantidade,"
-              " valor_unitario) VALUES (?, ?, ?, ?)",
-              (nome_item, categoria, quantidade, valor_unitario),
+    if modo_admin_liberado:
+      with st.form("form_estoque", clear_on_submit=False):
+        col1, col2 = st.columns(2)
+        with col1:
+          nome_item = st.text_input(
+              "Nome da Peça, Filtro ou Ferramenta (Ex: Óleo 15W40)"
           )
-          conn.commit()
-          st.success(f"✅ Item '{nome_item}' cadastrado com sucesso no estoque!")
-          st.rerun()
-        else:
-          st.error("⚠️ Informe o nome da peça.")
+          categoria = st.selectbox(
+              "Categoria",
+              [
+                  "Peça de Reposição",
+                  "Filtro e Lubrificante",
+                  "Ferramenta de Oficina",
+                  "Insumo de Concretagem",
+              ],
+          )
+        with col2:
+          quantidade = st.number_input(
+              "Quantidade em Estoque", min_value=1, value=1
+          )
+          valor_unitario = st.number_input(
+              "Valor Unitário (R$)", min_value=0.0, format="%.2f"
+          )
+        salvar_item = st.form_submit_button("Adicionar ao Estoque")
+        if salvar_item:
+          if nome_item:
+            cursor.execute(
+                "INSERT INTO pecas (nome_item, categoria, quantidade,"
+                " valor_unitario) VALUES (?, ?, ?, ?)",
+                (nome_item, categoria, quantidade, valor_unitario),
+            )
+            conn.commit()
+            st.success(
+                f"✅ Item '{nome_item}' cadastrado com sucesso no estoque!"
+            )
+          else:
+            st.error("⚠️ Informe o nome da peça.")
+    else:
+      verificar_licenca_para_acao()
   with tab2:
     df_p = pd.read_sql("SELECT * FROM pecas", conn)
     if not df_p.empty:
       st.dataframe(df_p, use_container_width=True)
+      if modo_admin_liberado:
+        col_p1, col_p2 = st.columns([2, 1])
+        with col_p1:
+          peca_para_excluir = st.selectbox(
+              "Selecione o ID do Item para Remover", df_p["id"].tolist()
+          )
+        with col_p2:
+          st.write("")
+          st.write("")
+          if st.button("🗑️ Excluir Item"):
+            cursor.execute(
+                "DELETE FROM pecas WHERE id = ?", (peca_para_excluir,)
+            )
+            conn.commit()
+            st.success("✅ Item removido!")
+            st.rerun()
+
+        col_down1, col_down2 = st.columns(2)
+        with col_down1:
+          pdf_buffer = gerar_pdf_relatorio(
+              "INVENTÁRIO DE PEÇAS - TABALMIX", df_p
+          )
+          st.download_button(
+              label="📥 Baixar Inventário em PDF",
+              data=pdf_buffer,
+              file_name="inventario_pecas_tabalmix.pdf",
+              mime="application/pdf",
+          )
+        with col_down2:
+          csv_buffer = gerar_csv_relatorio(df_p)
+          st.download_button(
+              label="📊 Baixar Inventário em Planilha (.csv)",
+              data=csv_buffer,
+              file_name="inventario_pecas_tabalmix.csv",
+              mime="text/csv",
+          )
+      else:
+        st.info("🔒 *Inventário disponível para download apenas para assinantes.*")
     else:
       st.info("Nenhuma peça cadastrada no estoque.")
 
 elif menu == "👥 Gestão de Clientes":
-  st.title("👥 Cadastro de Clientes e Terceiros")
-  with st.form("form_cliente_prof", clear_on_submit=False):
-    col1, col2 = st.columns(2)
-    with col1:
-      nome = st.text_input("Nome Completo / Razão Social")
-      empresa = st.text_input("Nome Fantasia da Empresa")
-      telefone = st.text_input("Telefone / WhatsApp de Contato")
-    with col2:
-      documento = st.text_input("CPF ou CNPJ")
-      email = st.text_input("E-mail Comercial")
-      endereco = st.text_input("Endereço Completo / Cidade")
-    salvar_cliente = st.form_submit_button("Salvar Cadastro de Cliente")
-    if salvar_cliente:
-      if nome:
-        cursor.execute(
-            "INSERT INTO clientes (nome, empresa, telefone, documento, email,"
-            " endereco) VALUES (?, ?, ?, ?, ?, ?)",
-            (nome, empresa, telefone, documento, email, endereco),
-        )
-        conn.commit()
-        st.success(f"✅ Cliente '{nome}' cadastrado com sucesso!")
-        st.rerun()
-      else:
-        st.error("⚠️ O nome do cliente é obrigatório.")
+  st.title("👥 Cadastro de Clientes e Terceiros (Opcional)")
+  if modo_admin_liberado:
+    with st.form("form_cliente_prof", clear_on_submit=False):
+      col1, col2 = st.columns(2)
+      with col1:
+        nome = st.text_input("Nome Completo / Razão Social")
+        empresa = st.text_input("Nome Fantasia da Empresa")
+        telefone = st.text_input("Telefone / WhatsApp de Contato")
+      with col2:
+        documento = st.text_input("CPF ou CNPJ")
+        email = st.text_input("E-mail Comercial")
+        endereco = st.text_input("Endereço Completo / Cidade")
+      salvar_cliente = st.form_submit_button("Salvar Cadastro de Cliente")
+      if salvar_cliente:
+        if nome:
+          cursor.execute(
+              "INSERT INTO clientes (nome, empresa, telefone, documento, email,"
+              " endereco) VALUES (?, ?, ?, ?, ?, ?)",
+              (nome, empresa, telefone, documento, email, endereco),
+          )
+          conn.commit()
+          st.success(f"✅ Cliente '{nome}' cadastrado com sucesso!")
+        else:
+          st.error("⚠️ O nome do cliente é obrigatório.")
+  else:
+    verificar_licenca_para_acao()
 
   st.divider()
   st.subheader("Base de Clientes Cadastrados")
   df_cli = pd.read_sql("SELECT * FROM clientes", conn)
   if not df_cli.empty:
     st.dataframe(df_cli, use_container_width=True)
+    if modo_admin_liberado:
+      col_c1, col_c2 = st.columns([2, 1])
+      with col_c1:
+        cliente_para_excluir = st.selectbox(
+            "Selecione o ID do Cliente para Remover", df_cli["id"].tolist()
+        )
+      with col_c2:
+        st.write("")
+        st.write("")
+        if st.button("🗑️ Excluir Cliente"):
+          cursor.execute(
+              "DELETE FROM clientes WHERE id = ?", (cliente_para_excluir,)
+          )
+          conn.commit()
+          st.success("✅ Cliente removido!")
+          st.rerun()
+
+      col_down1, col_down2 = st.columns(2)
+      with col_down1:
+        pdf_buffer = gerar_pdf_relatorio(
+            "BASE DE CLIENTES - TABALMIX", df_cli
+        )
+        st.download_button(
+            label="📥 Baixar Lista de Clientes em PDF",
+            data=pdf_buffer,
+            file_name="lista_clientes_tabalmix.pdf",
+            mime="application/pdf",
+        )
+      with col_down2:
+        csv_buffer = gerar_csv_relatorio(df_cli)
+        st.download_button(
+            label="📊 Baixar Clientes em Planilha (.csv)",
+            data=csv_buffer,
+            file_name="lista_clientes_tabalmix.csv",
+            mime="text/csv",
+        )
+    else:
+      st.info("🔒 *Baixe relatórios exclusivos com a conta Pro.*")
   else:
     st.info("Nenhum cliente cadastrado no momento.")
 
@@ -1153,47 +1538,122 @@ elif menu == "🔍 Consulta / Busca Geral":
     else:
       st.info("Nenhum equipamento encontrado com este termo.")
 
-elif menu == "🔑 Login / Autenticação":
-  st.title("🔑 Acesso ao Sistema — Tabalmix Concreto")
-  st.markdown("Entre com suas credenciais para liberar as funções gerenciais.")
-
-  with st.form("form_login_sistema"):
-    email_input = st.text_input(
-        "E-mail corporativo", value="alexcastro02522@gmail.com"
+    st.subheader("🛠️ Resultados em Ordens de Serviço (OS)")
+    df_b_manut = pd.read_sql(
+        "SELECT * FROM manutencoes WHERE id LIKE ? OR equipamento LIKE ? OR"
+        " problema LIKE ? OR servico_realizado LIKE ? OR oficina LIKE ?",
+        conn,
+        params=(termo_like, termo_like, termo_like, termo_like, termo_like),
     )
-    senha_input = st.text_input(
-        "Senha de acesso", type="password", value="Alex275612@"
+    if not df_b_manut.empty:
+      st.dataframe(df_b_manut, use_container_width=True)
+    else:
+      st.info("Nenhuma Ordem de Serviço encontrada com este termo.")
+  else:
+    st.info(
+        "👆 Digite um termo no campo acima para iniciar a busca em todo o"
+        " sistema da Tabalmix."
     )
-    btn_entrar = st.form_submit_button("Entrar no Sistema")
-
-    if btn_entrar:
-      cursor.execute(
-          "SELECT * FROM usuarios_sistema WHERE email = ? AND senha = ?",
-          (email_input.strip(), senha_input.strip()),
-      )
-      usuario_encontrado = cursor.fetchone()
-      if usuario_encontrado:
-        st.session_state["usuario_logado"] = {
-            "id": usuario_encontrado[0],
-            "nome_completo": usuario_encontrado[1],
-            "email": usuario_encontrado[2],
-            "cargo": usuario_encontrado[4],
-        }
-        st.success(
-            f"✅ Bem-vindo de volta, {usuario_encontrado[1]}! Acesso liberado."
-        )
-        st.rerun()
-      else:
-        st.error("⚠️ E-mail ou senha incorretos.")
 
 elif menu == "⚙️ Painel de Licença (Admin)":
-  st.title("⚙️ Painel Administrativo Master")
-  df_lic = pd.read_sql("SELECT * FROM licenca", conn)
-  if not df_lic.empty:
+  if modo_admin_liberado:
+    st.title("⚙️ Painel de Controle de Licença, Planos e Assinaturas")
     st.markdown(
-        f"**Status da Licença:** {df_lic.iloc[0]['status_assinatura']}"
+        "Gerencie o status de acesso padrão para os colaboradores e defina o"
+        " modelo comercial."
     )
-    st.markdown(f"**Plano Ativo:** {df_lic.iloc[0]['plano_atual']}")
-  st.info(
-      "Painel de controle corporativo Castro Tech para a Tabalmix Concreto."
-  )
+
+    with st.form("form_licenca"):
+      novo_status = st.selectbox(
+          "Status Padrão (Para visitantes e colaboradores)",
+          ["Inativo", "Ativo"],
+      )
+      escolha_plano = st.selectbox(
+          "Plano Comercial Exibido",
+          [
+              "Mensal (R$ 250,00)",
+              "Trimestral (R$ 700,00)",
+              "Semestral (R$ 1.300,00)",
+              "Anual (R$ 2.400,00)",
+          ],
+      )
+      nova_chave_pix = st.text_input(
+          "Sua Chave Pix (E-mail, CPF ou CNPJ)", value=chave_pix_recebimento
+      )
+      atualizar_licenca = st.form_submit_button("Salvar Configurações")
+      if atualizar_licenca:
+        cursor.execute(
+            "UPDATE licenca SET status_assinatura = ?, plano_atual = ?, chave_pix"
+            " = ? WHERE id = 1",
+            (novo_status, escolha_plano, nova_chave_pix),
+        )
+        conn.commit()
+        st.success("✅ Configurações atualizadas!")
+        st.rerun()
+
+    st.divider()
+    st.subheader("💳 Área de Pagamento e Checkout Mercado Pago")
+    col_m1, col_m2 = st.columns(2)
+    with col_m1:
+      if st.button("Pagar Plano Mensal (R$ 250,00)", key="btn_adm_mensal"):
+        try:
+          sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+          preference_data = {
+              "items": [{
+                  "title": "Tabalmix Concreto - Mensal",
+                  "quantity": 1,
+                  "unit_price": 250.0,
+                  "currency_id": "BRL",
+              }],
+              "back_urls": {
+                  "success": "https://tabalmix-concreto.streamlit.app",
+                  "failure": "https://tabalmix-concreto.streamlit.app",
+                  "pending": "https://tabalmix-concreto.streamlit.app",
+              },
+              "auto_return": "approved",
+          }
+          preference_response = sdk.preference().create(preference_data)
+          checkout_url = (
+              preference_response["response"].get("init_point")
+              if "response" in preference_response
+              else ""
+          )
+          if checkout_url:
+            st.markdown(
+                f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO]({checkout_url})**"
+            )
+        except Exception as e:
+          st.error(f"Erro ao conectar com Mercado Pago: {e}")
+
+    with col_m2:
+      if st.button("Pagar Plano Anual (R$ 2.400,00)", key="btn_adm_anual"):
+        try:
+          sdk = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
+          preference_data = {
+              "items": [{
+                  "title": "Tabalmix Concreto - Anual",
+                  "quantity": 1,
+                  "unit_price": 2400.0,
+                  "currency_id": "BRL",
+              }],
+              "back_urls": {
+                  "success": "https://tabalmix-concreto.streamlit.app",
+                  "failure": "https://tabalmix-concreto.streamlit.app",
+                  "pending": "https://tabalmix-concreto.streamlit.app",
+              },
+              "auto_return": "approved",
+          }
+          preference_response = sdk.preference().create(preference_data)
+          checkout_url = (
+              preference_response["response"].get("init_point")
+              if "response" in preference_response
+              else ""
+          )
+          if checkout_url:
+            st.markdown(
+                f"🔗 **[👉 CLIQUE AQUI PARA ABRIR O PAGAMENTO]({checkout_url})**"
+            )
+        except Exception as e:
+          st.error(f"Erro ao conectar com Mercado Pago: {e}")
+  else:
+    st.error("⚠️ Acesso restrito. Utilize o link de administrador autorizado.")
