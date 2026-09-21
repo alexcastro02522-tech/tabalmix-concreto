@@ -1589,8 +1589,7 @@ elif menu == "👥 Gestão de Clientes":
           st.error("⚠️ Informe o nome do cliente.")
 
 elif menu == "💬 Chat Tabalmix Pro & Rede":
-  st.markdown(
-      """
+  chat_css_estilo = """
         <style>
         .chat-container {
             display: flex;
@@ -1634,9 +1633,8 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             border-top-left-radius: 3px;
         }
         </style>
-    """,
-      unsafe_allow_html=True,
-  )
+    """
+  st.markdown(chat_css_estilo, unsafe_allow_html=True)
 
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
   st.markdown("Comunicação em tempo real com balões limpos estilo WhatsApp.")
@@ -1697,4 +1695,4 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
           params=(f"%{nome_colab_alvo}%", f"%{nome_colab_alvo}%"),
       )
 
-    st.markdown('<div class="chat-container">', unsafe_allow_h
+    st.markdown('<div class="chat-container
