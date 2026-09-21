@@ -32,7 +32,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL LIMPA (Resolve o visual no PC e liberta os cliques no telemóvel)
+# ESTILIZAÇÃO VISUAL LIMPA & TOTALMENTE RESPONSIVA (PC, Notebook, Tablet e Smartphone)
 st.markdown(
     """
     <style>
@@ -48,16 +48,14 @@ st.markdown(
         max-width: 100% !important;
     }
     
-    /* Configuração da barra lateral */
+    /* Configuração da barra lateral para todas as telas */
     [data-testid="stSidebar"] {
-        min-width: 280px !important;
-        width: 280px !important;
         background: #f8fafc !important;
         border-right: 1px solid #e2e8f0;
-        position: relative;
+        z-index: 999999 !important;
     }
     
-    /* Máscara aplicada apenas em computadores e tablets grandes */
+    /* Máscara limpa aplicada apenas em computadores/notebooks grandes */
     @media (min-width: 769px) {
         [data-testid="stSidebar"]::before {
             content: "";
@@ -75,17 +73,21 @@ st.markdown(
         }
     }
     
-    /* Telemóveis: garante que os cliques nos menus funcionem perfeitamente */
+    /* Telemóveis e Tablets: liberta totalmente os cliques nos menus, rádio e botões */
     @media (max-width: 768px) {
         [data-testid="stSidebar"] {
-            width: 100% !important;
-            min-width: 100% !important;
+            width: 85% !important;
+            max-width: 320px !important;
         }
         [data-testid="stSidebar"]::before {
             display: none !important;
         }
         [data-testid="stSidebar"] > div:first-child {
             margin-top: 0px !important;
+        }
+        div[data-baseweb="select"], .stRadio, .stButton, label {
+            pointer-events: auto !important;
+            cursor: pointer !important;
         }
     }
 
@@ -141,6 +143,24 @@ st.markdown(
     </style>
 """,
     unsafe_allow_html=True,
+)
+
+# Script JavaScript para remover automaticamente qualquer resquício indesejado no smartphone/tablet
+components.html(
+    """
+    <script>
+    function limparResquiciosMobile() {
+        const elementos = window.parent.document.querySelectorAll('p, span, div');
+        elementos.forEach(el => {
+            if (el.innerText && el.innerText.includes('keyboard_double_arrow_left')) {
+                el.style.display = 'none';
+            }
+        });
+    }
+    setInterval(limparResquiciosMobile, 250);
+    </script>
+""",
+    height=0,
 )
 
 
@@ -827,7 +847,7 @@ def exibir_tabela_padronizada(df, nome_tabela):
   st.dataframe(df, use_container_width=True, hide_index=True)
 
 
-# BARRA LATERAL COM SUPORTE TOTAL A COMPUTADOR E TELEMÓVEL
+# BARRA LATERAL COM SUPORTE TOTAL A COMPUTADOR, TABLET E SMARTPHONE
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
