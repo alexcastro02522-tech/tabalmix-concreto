@@ -31,7 +31,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL LIMPA E ESTÁVEL (Compatível com PC, Notebook, Tablet e Smartphone)
+# ESTILIZAÇÃO VISUAL DEFINITIVA E BLINDADA (PC, Notebook, Tablet e Smartphone)
 st.markdown(
     """
     <style>
@@ -53,26 +53,17 @@ st.markdown(
         border-right: 1px solid #e2e8f0;
     }
     
-    /* Oculta o texto residual no topo de forma limpa apenas via CSS em telas grandes */
-    @media (min-width: 769px) {
-        [data-testid="stSidebar"]::before {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 35px;
-            background: #f8fafc !important;
-            z-index: 999;
-            pointer-events: none;
-        }
+    /* Oculta de forma limpa o texto residual keyboard_double_arrow_left no topo */
+    [data-testid="stSidebar"] > div:first-child p,
+    [data-testid="stSidebar"] > div:first-child span {
+        display: none !important;
     }
     
-    /* Garante total interatividade e cliques livres em telemóveis e tablets (Android/iOS) */
+    /* Adaptação total para Telemóveis e Tablets (Android / iOS) */
     @media (max-width: 768px) {
         [data-testid="stSidebar"] {
-            width: 85% !important;
-            max-width: 320px !important;
+            width: 100% !important;
+            min-width: 100% !important;
         }
         div[data-baseweb="select"], .stRadio, .stButton, label {
             pointer-events: auto !important;
