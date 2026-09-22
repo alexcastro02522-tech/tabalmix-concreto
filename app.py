@@ -12,20 +12,157 @@ import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import streamlit as st
+import sqlite3
 
-# LIGAÇÃO NATIVA BLINDADA AO SUPABASE VIA STREAMLIT CONNECTION (RESOLVE QUALQUER BLOQUEIO DE FIREWALL)
-try:
-    conn = st.connection("supabase", type="sql")
-    # Teste rápido de conectividade
-    conn.query("SELECT 1;", ttl=0)
-except Exception:
-    import psycopg2
-    # Fallback direto caso o conector nativo exija configuração de secrets
-    SUPABASE_DB_URL = "postgresql://postgres.ctibigorhywnwkuzqfjm:bz8VNak7mmgXO05i@aws-0-sa-east-1.pooler.supabase.co:6543/postgres?sslmode=require"
-    conn_psycopg2 = psycopg2.connect(SUPABASE_DB_URL)
-    cursor_p = conn_psycopg2.cursor()
+# LIGAÇÃO BLINDADA NATIVA LOCAL (GARANTE ZERO ERROS DE FIREWALL NA NUVEM)
+DB_FILE = "tabalmix_enterprise.db"
 
-# CONFIGURAÇÃO DO MERCADO PAGO
+def init_db():
+  conn = sqlite3.connect(DB_FILE)
+  cursor = conn.cursor()
+  
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS veiculos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tag_prefixo TEXT, categoria_equipamento TEXT,
+            tipo_equipamento TEXT, operador_condutor TEXT,
+            marca TEXT, modelo TEXT, ano INTEGER, chassi TEXT, renavam TEXT,
+            placa TEXT, crv TEXT, cor TEXT, combustivel TEXT, empresa TEXT,
+            horimetro_km INTEGER, status TEXT, historico_edicoes TEXT
+        )
+    """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS manutencoes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tag_prefixo TEXT, tipo_manutencao TEXT, horimetro_km_manut TEXT,
+            origem_falha TEXT, descricao_problema TEXT, data_abertura TEXT,
+            hora_abertura TEXT, pecas_utilizadas TEXT, custo_pecas REAL,
+            mao_de_obra REAL, custo REAL, oficina TEXT, tecnico_mecanico TEXT,
+            data_fechamento TEXT, hora_fechamento TEXT, status_os TEXT
+        )
+    """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS pecas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome_item TEXT, categoria TEXT, quantidade INTEGER, valor_unitario REAL
+        )
+    """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS clientes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT, empresa TEXT, telefone TEXT, documento TEXT, email TEXT, endereco TEXT
+        )
+    """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS mobilizacoes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            equipamento TEXT, tipo_movimento TEXT, destino_origem TEXT,
+            responsavel TEXT, data TEXT, horimetro_km_mov TEXT,
+            motivo_condicao TEXT, observacao TEXT, foto_checklist TEXT,
+            historico_edicoes TEXT
+        )
+    """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS combustivel (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            equipamento TEXT, litros REAL, valor_total REAL,
+            km_horimetro TEXT, posto_posto TEXT, motorista TEXT, data TEXT
+        )
+    """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS usuarios_sistema (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome_completo TEXT, cpf TEXT, email TEXT UNIQUE, senha TEXT,
+            celular_seguranca TEXT, status_assinatura TEXT, plano_atual TEXT,
+            data_cadastro TEXT, pin_rapido TEXT, apelido TEXT, cargo_setor TEXT
+        )
+    """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS config_colunas (
+            tabela TEXT PRIMARY KEY,
+            ordem_colunas TEXT
+        )
+    """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chat_interno (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            remetente TEXT,
+            destinatario TEXT,
+            cargo TEXT,
+            mensagem TEXT,
+            arquivo_path TEXT,
+            arquivo_nome TEXT,
+            data_envio TEXT
+        )
+    """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chaves_licenca (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            codigo_chave TEXT UNIQUE,
+            cargo_atribuido TEXT,
+            modalidade TEXT,
+            status_uso TEXT,
+            usado_por TEXT,
+            data_criacao TEXT
+        )
+    """)
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS multas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            equipamento_placa TEXT,
+            orgao_autuador TEXT,
+            local_infracao TEXT,
+            data_infracao TEXT,
+            valor_multa REAL,
+            descricao_infracao TEXT,
+            condutor_responsable TEXT,
+            data_vencimento TEXT,
+            status_multa TEXT
+        )
+    """)
+  
+  try:
+    cursor.execute("UPDATE usuarios_sistema SET apelido = 'Colaborador' WHERE apelido IS NULL OR apelido = '' OR apelido = 'None'")
+    cursor.execute("UPDATE usuarios_sistema SET cargo_setor = 'Operacional' WHERE cargo_setor IS NULL OR cargo_setor = '' OR cargo_setor = 'None'")
+    cursor.execute("UPDATE usuarios_sistema SET status_assinatura = 'Ativo' WHERE status_assinatura IS NULL OR status_assinatura = '' OR status_assinatura = 'None'")
+    conn.commit()
+  except Exception:
+    pass
+
+  cursor.execute("SELECT COUNT(*) FROM usuarios_sistema")
+  if cursor.fetchone()[0] == 0:
+    cursor.execute(
+        "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("Alex de Castro Bernardino", "000.000.000-00", "alexcastro02522@gmail.com", "admin2026", "(92) 99999-9999", "Ativo", "Plano Master Concreto & Diretoria", datetime.now().strftime("%Y-%m-%d %H:%M"), "Alex", "Diretoria / Gestão")
+    )
+    conn.commit()
+  
+  conn.commit()
+  conn.close()
+
+init_db()
+
+def ler_tabelas_sql(query_str):
+  conn = sqlite3.connect(DB_FILE)
+  df = pd.read_sql(query_str, conn)
+  conn.close()
+  return df
+
+def executar_comando_sql(query_str, params=None):
+  try:
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    if params:
+      cursor.execute(query_str, params)
+    else:
+      cursor.execute(query_str)
+    conn.commit()
+    conn.close()
+    return True
+  except Exception as e:
+    print(f"Erro SQLite: {e}")
+    return False
+
 MERCADO_PAGO_ACCESS_TOKEN = (
     "APP_USR-7480302560366070-091611-1118388bbc787e8f88ea1da583096dbc-2919829212"
 )
@@ -204,162 +341,6 @@ def gerar_pdf_relatorio(titulo, dataframe):
   return buffer
 
 
-@st.cache_resource
-def init_db_tables():
-  import psycopg2
-  SUPABASE_DB_URL = "postgresql://postgres.ctibigorhywnwkuzqfjm:bz8VNak7mmgXO05i@aws-0-sa-east-1.pooler.supabase.co:6543/postgres?sslmode=require"
-  conn_db = psycopg2.connect(SUPABASE_DB_URL)
-  cur = conn_db.cursor()
-  cur.execute("""
-        CREATE TABLE IF NOT EXISTS veiculos (
-            id SERIAL PRIMARY KEY,
-            tag_prefixo TEXT, categoria_equipamento TEXT,
-            tipo_equipamento TEXT, operador_condutor TEXT,
-            marca TEXT, modelo TEXT, ano INTEGER, chassi TEXT, renavam TEXT,
-            placa TEXT, crv TEXT, cor TEXT, combustivel TEXT, empresa TEXT,
-            horimetro_km INTEGER, status TEXT, historico_edicoes TEXT
-        )
-    """)
-  cur.execute("""
-        CREATE TABLE IF NOT EXISTS manutencoes (
-            id SERIAL PRIMARY KEY,
-            tag_prefixo TEXT, tipo_manutencao TEXT, horimetro_km_manut TEXT,
-            origem_falha TEXT, descricao_problema TEXT, data_abertura TEXT,
-            hora_abertura TEXT, pecas_utilizadas TEXT, custo_pecas REAL,
-            mao_de_obra REAL, custo REAL, oficina TEXT, tecnico_mecanico TEXT,
-            data_fechamento TEXT, hora_fechamento TEXT, status_os TEXT
-        )
-    """)
-  cur.execute("""
-        CREATE TABLE IF NOT EXISTS pecas (
-            id SERIAL PRIMARY KEY,
-            nome_item TEXT, categoria TEXT, quantidade INTEGER, valor_unitario REAL
-        )
-    """)
-  cur.execute("""
-        CREATE TABLE IF NOT EXISTS clientes (
-            id SERIAL PRIMARY KEY,
-            nome TEXT, empresa TEXT, telefone TEXT, documento TEXT, email TEXT, endereco TEXT
-        )
-    """)
-  cur.execute("""
-        CREATE TABLE IF NOT EXISTS mobilizacoes (
-            id SERIAL PRIMARY KEY,
-            equipamento TEXT, tipo_movimento TEXT, destino_origem TEXT,
-            responsavel TEXT, data TEXT, horimetro_km_mov TEXT,
-            motivo_condicao TEXT, observacao TEXT, foto_checklist TEXT,
-            historico_edicoes TEXT
-        )
-    """)
-  cur.execute("""
-        CREATE TABLE IF NOT EXISTS combustivel (
-            id SERIAL PRIMARY KEY,
-            equipamento TEXT, litros REAL, valor_total REAL,
-            km_horimetro TEXT, posto_posto TEXT, motorista TEXT, data TEXT
-        )
-    """)
-  cur.execute("""
-        CREATE TABLE IF NOT EXISTS usuarios_sistema (
-            id SERIAL PRIMARY KEY,
-            nome_completo TEXT, cpf TEXT, email TEXT UNIQUE, senha TEXT,
-            celular_seguranca TEXT, status_assinatura TEXT, plano_atual TEXT,
-            data_cadastro TEXT, pin_rapido TEXT, apelido TEXT, cargo_setor TEXT
-        )
-    """)
-  cur.execute("""
-        CREATE TABLE IF NOT EXISTS config_colunas (
-            tabela TEXT PRIMARY KEY,
-            ordem_colunas TEXT
-        )
-    """)
-  cur.execute("""
-        CREATE TABLE IF NOT EXISTS chat_interno (
-            id SERIAL PRIMARY KEY,
-            remetente TEXT,
-            destinatario TEXT,
-            cargo TEXT,
-            mensagem TEXT,
-            arquivo_path TEXT,
-            arquivo_nome TEXT,
-            data_envio TEXT
-        )
-    """)
-  cur.execute("""
-        CREATE TABLE IF NOT EXISTS chaves_licenca (
-            id SERIAL PRIMARY KEY,
-            codigo_chave TEXT UNIQUE,
-            cargo_atribuido TEXT,
-            modalidade TEXT,
-            status_uso TEXT,
-            usado_por TEXT,
-            data_criacao TEXT
-        )
-    """)
-  cur.execute("""
-        CREATE TABLE IF NOT EXISTS multas (
-            id SERIAL PRIMARY KEY,
-            equipamento_placa TEXT,
-            orgao_autuador TEXT,
-            local_infracao TEXT,
-            data_infracao TEXT,
-            valor_multa REAL,
-            descricao_infracao TEXT,
-            condutor_responsable TEXT,
-            data_vencimento TEXT,
-            status_multa TEXT
-        )
-    """)
-  try:
-    cur.execute("UPDATE usuarios_sistema SET apelido = 'Colaborador' WHERE apelido IS NULL OR apelido = '' OR apelido = 'None'")
-    cur.execute("UPDATE usuarios_sistema SET cargo_setor = 'Operacional' WHERE cargo_setor IS NULL OR cargo_setor = '' OR cargo_setor = 'None'")
-    cur.execute("UPDATE usuarios_sistema SET status_assinatura = 'Ativo' WHERE status_assinatura IS NULL OR status_assinatura = '' OR status_assinatura = 'None'")
-    conn_db.commit()
-  except Exception:
-    pass
-
-  cur.execute("SELECT COUNT(*) FROM usuarios_sistema")
-  if cur.fetchone()[0] == 0:
-    cur.execute(
-        "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-        ("Alex de Castro Bernardino", "000.000.000-00", "alexcastro02522@gmail.com", "admin2026", "(92) 99999-9999", "Ativo", "Plano Master Concreto & Diretoria", datetime.now().strftime("%Y-%m-%d %H:%M"), "Alex", "Diretoria / Gestão")
-    )
-    conn_db.commit()
-  conn_db.commit()
-  conn_db.close()
-  return True
-
-init_db_tables()
-
-# Helper de execução de queries seguro com Pandas e Conector Nativo
-def ler_tabelas_sql(query_str):
-  try:
-    import psycopg2
-    SUPABASE_DB_URL = "postgresql://postgres.ctibigorhywnwkuzqfjm:bz8VNak7mmgXO05i@aws-0-sa-east-1.pooler.supabase.co:6543/postgres?sslmode=require"
-    cnn = psycopg2.connect(SUPABASE_DB_URL)
-    df_res = pd.read_sql(query_str, cnn)
-    cnn.close()
-    return df_res
-  except Exception:
-    return pd.DataFrame()
-
-def executar_comando_sql(query_str, params=None):
-  try:
-    import psycopg2
-    SUPABASE_DB_URL = "postgresql://postgres.ctibigorhywnwkuzqfjm:bz8VNak7mmgXO05i@aws-0-sa-east-1.pooler.supabase.co:6543/postgres?sslmode=require"
-    cnn = psycopg2.connect(SUPABASE_DB_URL)
-    cur = cnn.cursor()
-    if params:
-      cur.execute(query_str, params)
-    else:
-      cur.execute(query_str)
-    cnn.commit()
-    cur.close()
-    cnn.close()
-    return True
-  except Exception as e:
-    print(f"Erro SQL: {e}")
-    return False
-
 modo_admin_liberado = False
 try:
   query_params = st.query_params
@@ -497,7 +478,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           if c_nome and c_email and c_senha:
             apelido_f = c_apelido if c_apelido else c_nome.split()[0]
             sucesso_ins = executar_comando_sql(
-                "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (%s, %s, %s, %s, %s, 'Ativo', %s, %s, %s, %s)",
+                "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?)",
                 (c_nome, c_cpf, c_email, c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), apelido_f, cargo_banco_str)
             )
             if sucesso_ins:
@@ -596,7 +577,7 @@ elif menu == "🚜 Cadastro de Equipamentos":
       mod = st.text_input("Modelo")
       p = st.text_input("Placa")
       if st.form_submit_button("Salvar") and m:
-        executar_comando_sql("INSERT INTO veiculos (marca, modelo, placa, status, horimetro_km) VALUES (%s, %s, %s, 'Ativo', 0)", (m, mod, p))
+        executar_comando_sql("INSERT INTO veiculos (marca, modelo, placa, status, horimetro_km) VALUES (?, ?, ?, 'Ativo', 0)", (m, mod, p))
         st.success("Salvo com sucesso!")
         st.rerun()
   with t_e:
@@ -641,7 +622,7 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
     msg = st.text_input("Escreva a sua mensagem...")
     if st.form_submit_button("Enviar") and msg:
       rem_nome = usuario_atual['apelido'] if usuario_atual else "Alex"
-      executar_comando_sql("INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, data_envio) VALUES (%s, 'Geral', 'Operacional', %s, %s)", (rem_nome, msg, datetime.now().strftime("%H:%M")))
+      executar_comando_sql("INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, data_envio) VALUES (?, 'Geral', 'Operacional', ?, ?)", (rem_nome, msg, datetime.now().strftime("%H:%M")))
       st.rerun()
 
 elif menu == "🔍 Consulta / Busca Geral":
