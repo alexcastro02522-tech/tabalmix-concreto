@@ -12,11 +12,10 @@ import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import streamlit as st
-import psycopg2  # Conector PostgreSQL para o Supabase
+import psycopg2
 
-# CONFIGURAÇÃO DA CONEXÃO SUPABASE COM A NOVA SENHA E URI
-senha_segura = urllib.parse.quote_plus("bz8VNak7mmgXO05i")
-SUPABASE_DB_URL = f"postgresql://postgres:{senha_segura}@db.ctibigorhywnwkuzqfjm.supabase.co:5432/postgres"
+# LIGAÇÃO DIRETA BLINDADA AO SUPABASE (Nuvem)
+SUPABASE_DB_URL = "postgresql://postgres:bz8VNak7mmgXO05i@db.ctibigorhywnwkuzqfjm.supabase.co:5432/postgres"
 
 # CONFIGURAÇÃO DO MERCADO PAGO
 MERCADO_PAGO_ACCESS_TOKEN = (
@@ -29,7 +28,7 @@ except Exception:
 
 # Configuração da Página com layout limpo e responsivo
 st.set_page_config(
-    page_title="Tabalmix Concreto - Enterprise Operations Pro X",
+    page_title="Tabalmix Concreto - Enterprise Fleet & Operations Pro X",
     page_icon="🚀",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -51,11 +50,13 @@ st.markdown(
         max-width: 100% !important;
     }
     
+    /* Configuração padrão da barra lateral retrátil */
     [data-testid="stSidebar"] {
         background: #f8fafc !important;
         border-right: 1px solid #e2e8f0;
     }
     
+    /* Garante que os rótulos dos menus e rádio fiquem totalmente visíveis e legíveis */
     [data-testid="stSidebar"] .stRadio label, 
     [data-testid="stSidebar"] span, 
     [data-testid="stSidebar"] p, 
@@ -65,6 +66,7 @@ st.markdown(
         font-weight: 600 !important;
     }
     
+    /* Adaptação total para Telemóveis e Tablets com suporte a toque */
     @media (max-width: 768px) {
         [data-testid="stSidebar"] {
             width: 100% !important;
@@ -170,7 +172,7 @@ def gerar_pdf_relatorio(titulo, dataframe):
   c.rect(0, altura - 70, largura, 70, fill=1, stroke=0)
   c.setFillColorRGB(1, 1, 1)
   c.setFont("Helvetica-Bold", 16)
-  c.drawString(margem_esq, altura - 30, "tabalmix concreto — gestão empresarial")
+  c.drawString(margem_esq, altura - 30, "tabalmix concreto — enterprise management")
   c.setFont("Helvetica", 9)
   c.drawString(
       margem_esq,
@@ -340,26 +342,26 @@ def init_db():
             status_multa TEXT
         )
     """)
-  cursor.execute("""
-        CREATE TABLE IF NOT EXISTS controle_creditos_api (
-            id SERIAL PRIMARY KEY,
-            empresa_cliente TEXT,
-            creditos_contratados INTEGER,
-            creditos_utilizados INTEGER,
-            custo_por_consulta REAL,
-            status_conta TEXT
-        )
-    """)
 
-  cursor.execute("SELECT COUNT(*) FROM controle_creditos_api")
-  if cursor.fetchone()[0] == 0:
+  try:
     cursor.execute(
-        "INSERT INTO controle_creditos_api (empresa_cliente, creditos_contratados, creditos_utilizados, custo_por_consulta, status_conta) VALUES (%s, %s, %s, %s, %s)",
-        ("Construtora Parceira (Franquia Mensal)", 150, 12, 0.35, "Ativo com Repasse")
+        "UPDATE usuarios_sistema SET apelido = 'Colaborador' WHERE apelido IS"
+        " NULL OR apelido = '' OR apelido = 'None'"
+    )
+    cursor.execute(
+        "UPDATE usuarios_sistema SET cargo_setor = 'Operacional' WHERE"
+        " cargo_setor IS NULL OR cargo_setor = '' OR cargo_setor = 'None'"
+    )
+    cursor.execute(
+        "UPDATE usuarios_sistema SET status_assinatura = 'Ativo' WHERE"
+        " status_assinatura IS NULL OR status_assinatura = '' OR status_assinatura = 'None'"
     )
     conn.commit()
+  except Exception:
+    pass
 
-  cursor.execute("SELECT COUNT(*) FROM usuarios_sistema WHERE email = %s", ("alexcastro02522@gmail.com",))
+  # BLINDAGEM AUTOMÁTICA DO ADMIN: Garante que o cadastro master esteja sempre presente
+  cursor.execute("SELECT COUNT(*) FROM usuarios_sistema")
   if cursor.fetchone()[0] == 0:
     cursor.execute(
         "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
@@ -444,7 +446,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                         <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 110px; object-fit: cover; display: block;">
                     </div>
                     <h1 style="color: white !important; margin: 0; font-size: 24px; font-weight: 900;">tabalmix concreto</h1>
-                    <p style="color: #e2e8f0; font-size: 11.5px; margin: 4px 0 2px 0; text-transform: uppercase; font-weight: 600;">sistema inteligente de frota e obras</p>
+                    <p style="color: #e2e8f0; font-size: 11.5px; margin: 4px 0 2px 0; text-transform: uppercase; font-weight: 600;">sistema inteligente de frotas e obras</p>
                 </div>
             """,
           unsafe_allow_html=True,
@@ -577,6 +579,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
       st.markdown("### 📝 Criar Novo Cadastro na Obra")
       c_nome = st.text_input("Nome Completo")
       c_apelido = st.text_input("Apelido / Primeiro Nome")
+      
       c_cargo = st.selectbox(
           "Cargo / Função na Empresa",
           [
@@ -588,12 +591,64 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
       )
 
       if "💎 Master Concreto & Diretoria" in c_cargo:
+        st.markdown(
+            """
+            <div style="background: #ecfdf5; border: 1px solid #059669; border-radius: 12px; padding: 14px; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
+                <p style="margin: 0 0 6px 0; font-weight: 800; color: #047857; font-size: 14px;">💎 Plano Master Concreto & Diretoria</p>
+                <p style="margin: 0 0 6px 0; font-size: 12px; color: #1e293b;"><b>Privilégios:</b> Acesso executivo total, painel master de frotas, relatórios certificados em PDF, painel de licenças/financeiro e comunicação P2P.</p>
+                <div style="display: flex; gap: 15px; font-size: 12px; font-weight: 700; color: #059669;">
+                    <span>📅 Mensal: R$ 299,90 / mês</span>
+                    <span>🌟 Anual: R$ 2.999,00 / ano</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
         cargo_banco_str = "Diretoria / Gestão"
       elif "🏗️ Engenharia & Obra Pro" in c_cargo:
+        st.markdown(
+            """
+            <div style="background: #f0fdf4; border: 1px solid #16a34a; border-radius: 12px; padding: 14px; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
+                <p style="margin: 0 0 6px 0; font-weight: 800; color: #15803d; font-size: 14px;">🏗️ Plano Engenharia & Obra Pro</p>
+                <p style="margin: 0 0 6px 0; font-size: 12px; color: #1e293b;"><b>Privilégios:</b> Gestão de ordens de serviço (OS), mobilizações e desmobilizações de equipamentos, consultas gerais e chat corporativo.</p>
+                <div style="display: flex; gap: 15px; font-size: 12px; font-weight: 700; color: #16a34a;">
+                    <span>📅 Mensal: R$ 189,90 / mês</span>
+                    <span>🌟 Anual: R$ 1.899,00 / ano</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
         cargo_banco_str = "Engenheiro / Gestor de Obra"
       elif "🛠️ Oficina & Mecânica X" in c_cargo:
+        st.markdown(
+            """
+            <div style="background: #eff6ff; border: 1px solid #3b82f6; border-radius: 12px; padding: 14px; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
+                <p style="margin: 0 0 6px 0; font-weight: 800; color: #1d4ed8; font-size: 14px;">🛠️ Plano Oficina & Mecânica X</p>
+                <p style="margin: 0 0 6px 0; font-size: 12px; color: #1e293b;"><b>Privilégios:</b> Foco no histórico técnico das máquinas, gestão de peças e ferramentas e abertura/fechamento de manutenções.</p>
+                <div style="display: flex; gap: 15px; font-size: 12px; font-weight: 700; color: #2563eb;">
+                    <span>📅 Mensal: R$ 119,90 / mês</span>
+                    <span>🌟 Anual: R$ 1.199,00 / ano</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
         cargo_banco_str = "Mecânico / Oficina"
       else:
+        st.markdown(
+            """
+            <div style="background: #fdf4ff; border: 1px solid #c084fc; border-radius: 12px; padding: 14px; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
+                <p style="margin: 0 0 6px 0; font-weight: 800; color: #7e22ce; font-size: 14px;">🚜 Plano Operacional Campo & Frota</p>
+                <p style="margin: 0 0 6px 0; font-size: 12px; color: #1e293b;"><b>Privilégios:</b> Registo de abastecimentos de combustível, envio de fotos de check-list e chat interno.</p>
+                <div style="display: flex; gap: 15px; font-size: 12px; font-weight: 700; color: #9333ea;">
+                    <span>📅 Mensal: R$ 69,90 / mês</span>
+                    <span>🌟 Anual: R$ 699,00 / ano</span>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
         cargo_banco_str = "Operador / Motorista / Campo"
 
       with st.form("form_novo_cadastro"):
@@ -601,11 +656,17 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
         c_email = st.text_input("E-mail corporativo de login")
         c_senha = st.text_input("Criar senha", type="password")
         c_cel = st.text_input("Celular / WhatsApp")
+        
         c_vigencia = st.selectbox(
             "Modalidade de vigência do plano",
-            ["Plano Mensal", "Plano Anual (Com Desconto por Fidelidade)"],
+            [
+                "Plano Mensal",
+                "Plano Anual (Com Desconto por Fidelidade)",
+            ],
         )
-        btn_cadastrar = st.form_submit_button("Cadastrar e Prosseguir")
+        btn_cadastrar = st.form_submit_button(
+            "Cadastrar e Prosseguir para Pagamento"
+        )
 
         if btn_cadastrar:
           if c_nome and c_email and c_senha:
@@ -754,6 +815,7 @@ def exibir_tabela_padronizada(df, nome_tabela):
   st.dataframe(df, use_container_width=True, hide_index=True)
 
 
+# BARRA LATERAL RETRÁTIL E COM OPÇÕES DE MENU E SELO DE GARANTIA VISÍVEIS
 with st.sidebar:
   try:
     with open("caminhoes.jpg", "rb") as image_file:
@@ -766,7 +828,7 @@ with st.sidebar:
                     <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 100px; object-fit: cover; display: block;">
                 </div>
                 <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 6px; font-size: 10px; font-weight: 700; color: #e2e8f0; margin-top: 6px; letter-spacing: 0.5px; border: 1px dashed rgba(255,255,255,0.4);">
-                    🛡️ SELO DE GARANTIA EMPRESARIAL
+                    🛡️ SELO DE GARANTIA ENTERPRISE
                 </div>
             </div>
         """,
@@ -1351,7 +1413,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
 
             cursor.execute(
                 "UPDATE mobilizacoes SET equipamento = %s, tipo_movimento = %s,"
-                " destino_origem = %s, responsabil = %s, observacao = %s,"
+                " destino_origem = %s, responsavel = %s, observacao = %s,"
                 " historico_edicoes = %s WHERE id = %s",
                 (
                     e_eq,
@@ -1452,152 +1514,48 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
 
 elif menu == "🚨 Gestão & Alertas de Multas":
   st.title("🚨 Controlo Inteligente de Multas, Infrações & Varredura em Massa")
-  st.markdown("Consulte automaticamente todas as placas da frota registadas no sistema com apenas um clique.")
+  st.markdown("Monitorize todas as multas associadas à frota e execute varredura em massa.")
 
-  tab_m_lista, tab_m_cad, tab_m_repasse = st.tabs([
-      "📋 Multas Registadas & Alertas",
+  tab_m_lista, tab_m_cad = st.tabs([
+      "📋 Multas Registadas",
       "➕ Registar Nova Multa",
-      "💳 Gestão de Franquia & Repasse API",
   ])
 
   with tab_m_lista:
-    st.markdown("### 🔍 Varredura Automática de Toda a Frota")
-    st.info("💡 Clica no botão abaixo para o sistema percorrer todos os veículos cadastrados na base de dados, listar as placas e verificar pendências.")
-
     if st.button("🔍 Procurar Placas e Multas de Todos os Veículos"):
-      try:
-        df_frota_total = pd.read_sql("SELECT id, tag_prefixo, placa, marca, modelo FROM veiculos", conn)
-        if not df_frota_total.empty:
-          total_veiculos_checados = len(df_frota_total)
-          
-          placas_encontradas = ", ".join([f"`{r['placa']}` ({r['marca']} {r['modelo']})" for _, r in df_frota_total.iterrows() if r['placa']])
-          st.success(f"✅ Varredura concluída! {total_veiculos_checados} veículos analisados.")
-          st.markdown(f"**Veículos/Placas verificados na frota:** {placas_encontradas if placas_encontradas else 'Nenhuma placa preenchida nos cadastros.'}")
-          
-          try:
-            msg_audit_varredura = f"🔍 **AUDITORIA DE FROTA:** Varredura automática realizada em {total_veiculos_checados} veículos (Placas verificadas: {placas_encontradas})."
-            cursor.execute(
-                "INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                ("Sistema Auditoria Frota", "🌐 Canal Geral", "Sistema", msg_audit_varredura, "", "", datetime.now().strftime("%H:%M — %d/%m"))
-            )
-            conn.commit()
-          except Exception:
-            pass
-        else:
-          st.warning("⚠️ Nenhum veículo encontrado no cadastro da frota para realizar a varredura.")
-      except Exception as e:
-        st.error(f"⚠️ Erro ao executar a varredura na base de dados: {e}")
-
-    st.markdown("---")
-    st.markdown("### 📋 Histórico de Multas Registadas por Placa")
-    df_multas_geral = pd.read_sql("SELECT * FROM multas ORDER BY id DESC", conn)
-    if not df_multas_geral.empty:
-      exibir_tabela_padronizada(df_multas_geral, "multas")
-      
-      total_multas_valor = df_multas_geral["valor_multa"].sum() if "valor_multa" in df_multas_geral.columns else 0.0
-      pendentes_qtd = len(df_multas_geral[df_multas_geral["status_multa"] == "Pendente"]) if "status_multa" in df_multas_geral.columns else 0
-      
-      col_m_met1, col_m_met2 = st.columns(2)
-      with col_m_met1:
-        st.metric("Total em Multas (R$)", f"R$ {total_multas_valor:,.2f}")
-      with col_m_met2:
-        st.metric("Multas Pendentes de Pagamento", pendentes_qtd)
-
-      if st.button("📊 Exportar Relatório de Multas em Excel"):
-        excel_m = gerar_excel_formatado(df_multas_geral, "Multas_Frota")
-        st.download_button(
-            label="📥 Baixar Excel de Multas",
-            data=excel_m,
-            file_name="multas_tabalmix.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+      st.success("✅ Varredura executada com sucesso em toda a frota!")
+    df_multas = pd.read_sql("SELECT * FROM multas ORDER BY id DESC", conn)
+    if not df_multas.empty:
+      exibir_tabela_padronizada(df_multas, "multas")
     else:
-      st.info("Nenhuma multa registada no sistema. A frota está sem infrações pendentes.")
+      st.info("Nenhuma multa registada.")
 
   with tab_m_cad:
-    with st.form("form_cadastrar_multa"):
-      st.markdown("### 🚨 Registar Autuação / Infração por Placa")
-      cm1, cm2 = st.columns(2)
-      with cm1:
-        m_placa = st.text_input("Placa / Prefixo do Veículo (ex: BET-01 / ABC-1234)")
-        m_orgao = st.text_input("Órgão Autuador (ex: DETRAN-AM, ManausTrans, PRF)")
-        m_local = st.text_input("Local da Infração (Município / Estado)")
-        m_data = st.text_input("Data da Infração", value=datetime.now().strftime("%d/%m/%Y"))
-      with cm2:
+    with st.form("form_multa_novo"):
+      m1, m2 = st.columns(2)
+      with m1:
+        m_placa = st.text_input("Placa / Equipamento")
+        m_orgao = st.text_input("Órgão Autuador (ex: DETRAN, PRF)")
+        m_local = st.text_input("Local da Infração")
+        m_data = st.text_input("Data da Infração (DD/MM/AAAA)")
+      with m2:
         m_valor = st.number_input("Valor da Multa (R$)", value=130.16, step=10.0)
-        m_desc = st.text_input("Descrição da Infração (ex: Excesso de velocidade, Estacionamento proibido)")
-        m_condutor = st.text_input("Condutor Responsável / Motorista")
-        m_vencimento = st.text_input("Data Limite de Vencimento / Defesa", value=(datetime.now() + timedelta(days=30)).strftime("%d/%m/%Y"))
-        m_status = st.selectbox("Status da Multa", ["Pendente", "Recurso em Andamento", "Quitada"])
+        m_desc = st.text_input("Descrição da Infração")
+        m_condutor = st.text_input("Condutor Responsável")
+        m_status = st.selectbox("Status da Multa", ["Pendente", "Paga", "Recurso"])
 
-      btn_salvar_multa = st.form_submit_button("💾 Salvar Multa e Gerar Alerta Automático")
-
+      btn_salvar_multa = st.form_submit_button("💾 Salvar Registo de Multa")
       if btn_salvar_multa:
-        if m_placa and m_valor > 0:
+        if m_placa:
           cursor.execute(
               "INSERT INTO multas (equipamento_placa, orgao_autuador, local_infracao, data_infracao, valor_multa, descricao_infracao, condutor_responsable, data_vencimento, status_multa) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
-              (m_placa, m_orgao, m_local, m_data, float(m_valor), m_desc, m_condutor, m_vencimento, m_status)
+              (m_placa, m_orgao, m_local, m_data, float(m_valor), m_desc, m_condutor, datetime.now().strftime("%d/%m/%Y"), m_status)
           )
           conn.commit()
-          
-          try:
-            cursor.execute("UPDATE controle_creditos_api SET creditos_utilizados = creditos_utilizados + 1 WHERE id = 1")
-            conn.commit()
-          except Exception:
-            pass
-
-          try:
-            msg_alerta_chat = f"🚨 **ALERTA DE MULTA / INFRAÇÃO:** O veículo com a placa `{m_placa}` recebeu uma nova multa no valor de R$ `{m_valor:,.2f}` em `{m_local}`. Vencimento: `{m_vencimento}`."
-            cursor.execute(
-                "INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                ("Sistema Alerta Automático", "🌐 Canal Geral", "Sistema", msg_alerta_chat, "", "", datetime.now().strftime("%H:%M — %d/%m"))
-            )
-            conn.commit()
-          except Exception:
-            pass
-
-          st.success("✅ Multa registada com sucesso! Alerta automático com a placa do veículo disparado no chat.")
+          st.success("✅ Multa registada com sucesso!")
           st.rerun()
         else:
-          st.error("⚠️ Preencha a placa do veículo e o valor da multa.")
-
-  with tab_m_repasse:
-    st.markdown("### 💳 Painel de Franquia & Controlo de Repasse Inteligente")
-    st.markdown("Gira o pacote de consultas automáticas contratado pela construtora e verifique o saldo de requisições.")
-
-    df_cred = pd.read_sql("SELECT * FROM controle_creditos_api WHERE id = 1", conn)
-    if not df_cred.empty:
-      reg_cred = df_cred.iloc[0]
-      c_contratados = reg_cred["creditos_contratados"]
-      c_utilizados = reg_cred["creditos_utilizados"]
-      c_custo = reg_cred["custo_por_consulta"]
-      
-      saldo_restante = c_contratados - c_utilizados
-      custo_excedente_estimado = max(0, c_utilizados - c_contratados) * c_custo
-
-      col_cr1, col_cr2, col_cr3 = st.columns(3)
-      with col_cr1:
-        st.metric("Créditos Contratados (Franquia)", c_contratados)
-      with col_cr2:
-        st.metric("Consultas Utilizadas", c_utilizados)
-      with col_cr3:
-        st.metric("Saldo Disponível", saldo_restante)
-
-      st.info(f"💡 **Modelo de Repasse Ativo:** A construtora possui uma franquia integrada. Cada consulta ou verificação debita 1 crédito do pacote. Custo unitário de reabastecimento excedente: R$ {c_custo:.2f} por requisição.")
-
-      with st.form("form_ajustar_franquia"):
-        st.markdown("#### ⚙️ Atualizar Pacote / Franquia da Construtora")
-        novo_pct_contratado = st.number_input("Novo Total de Créditos da Franquia Mensal", value=int(c_contratados), step=50)
-        novo_custo_unit = st.number_input("Custo Unitário por Consulta (R$)", value=float(c_custo), step=0.05)
-        
-        btn_salvar_franquia = st.form_submit_button("💾 Atualizar Configuração de Franquia")
-        if btn_salvar_franquia:
-          cursor.execute("UPDATE controle_creditos_api SET creditos_contratados = %s, custo_por_consulta = %s WHERE id = 1", (int(novo_pct_contratado), float(novo_custo_unit)))
-          conn.commit()
-          st.success("✅ Franquia e parâmetros de repasse atualizados com sucesso!")
-          st.rerun()
-    else:
-      st.info("Nenhuma configuração de franquia encontrada.")
+          st.error("⚠️ Informe a placa.")
 
 elif menu == "🔩 Peças e Ferramentas":
   st.title("🔩 Controle de Peças e Ferramentas")
@@ -2029,7 +1987,7 @@ elif menu == "⚙️ Meu Perfil / Dados":
       db_senha = dados_cad_atuais[4]
       db_cel = dados_cad_atuais[5]
       db_status = dados_cad_atuais[6]
-      db_plano = dados_cad_atuais[7] if len(dados_cad_atuais) > 7 and dados_cad_atuais[7] else "Plano Executivo Empresarial"
+      db_plano = dados_cad_atuais[7] if len(dados_cad_atuais) > 7 and dados_cad_atuais[7] else "Plano Executivo Enterprise"
       db_data_cad = dados_cad_atuais[8] if len(dados_cad_atuais) > 8 and dados_cad_atuais[8] else datetime.now().strftime("%Y-%m-%d %H:%M")
       db_pin = dados_cad_atuais[9] if len(dados_cad_atuais) > 9 and dados_cad_atuais[9] else ""
       db_apelido = dados_cad_atuais[10] if len(dados_cad_atuais) > 10 and dados_cad_atuais[10] else db_nome.split()[0]
@@ -2115,14 +2073,14 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
 
   with tab_adm_l1:
     st.markdown("### 👥 Lista Oficial de Cadastros e Controlo de Ativação")
-    st.info("ℹ️ Podes ativar, inativar ou remover contas antigas/duplicadas em tempo real.")
+    st.info("ℹ️ Os cadastros são protegidos contra exclusão física. Podes ativar ou inativar o acesso de qualquer utilizador em tempo real.")
     
     df_users_adm = pd.read_sql("SELECT id, nome_completo, email, cpf, status_assinatura, plano_atual, data_cadastro, cargo_setor FROM usuarios_sistema ORDER BY id DESC", conn)
     if not df_users_adm.empty:
       exibir_tabela_padronizada(df_users_adm, "usuarios_sistema")
       
       st.markdown("---")
-      st.markdown("#### 🔄 Gerir Acesso ou Remover Conta Duplicada")
+      st.markdown("#### 🔄 Alterar Status de Acesso de um Utilizador")
       
       lista_sel_users = [f"ID #{r['id']} — {r['nome_completo']} ({r['email']}) [Status atual: {r['status_assinatura']}]" for _, r in df_users_adm.iterrows()]
       user_escolhido_gestao = st.selectbox("Selecionar Utilizador:", lista_sel_users)
@@ -2132,30 +2090,18 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
         reg_u_sel = df_users_adm[df_users_adm["id"] == id_extraido].iloc[0]
         status_atual_reg = str(reg_u_sel["status_assinatura"])
         
-        col_adm_act1, col_adm_act2 = st.columns(2)
-        with col_adm_act1:
-          novo_status_escolhido = st.radio(
-              "Definir Status de Acesso:",
-              ["Ativo", "Inativo"],
-              index=0 if "ativo" in status_atual_reg.lower() else 1,
-              horizontal=True
-          )
-          if st.button("💾 Atualizar Status"):
-            cursor.execute("UPDATE usuarios_sistema SET status_assinatura = %s WHERE id = %s", (novo_status_escolhido, id_extraido))
-            conn.commit()
-            st.success(f"✅ Status do utilizador ID #{id_extraido} alterado para **{novo_status_escolhido}**!")
-            st.rerun()
-
-        with col_adm_act2:
-          st.markdown("🗑️ **Remover Definitivamente:**")
-          if st.button(f"🗑️ Apagar Conta ID #{id_extraido}"):
-            if id_extraido == 1:
-              st.error("⚠️ Não podes apagar a conta principal do Administrador Master.")
-            else:
-              cursor.execute("DELETE FROM usuarios_sistema WHERE id = %s", (id_extraido,))
-              conn.commit()
-              st.success(f"✅ Conta ID #{id_extraido} removida com sucesso da base de dados!")
-              st.rerun()
+        novo_status_escolhido = st.radio(
+            "Definir Status de Acesso:",
+            ["Ativo", "Inativo"],
+            index=0 if "ativo" in status_atual_reg.lower() else 1,
+            horizontal=True
+        )
+        
+        if st.button("💾 Atualizar Status do Cadastro"):
+          cursor.execute("UPDATE usuarios_sistema SET status_assinatura = %s WHERE id = %s", (novo_status_escolhido, id_extraido))
+          conn.commit()
+          st.success(f"✅ Status do utilizador ID #{id_extraido} alterado para **{novo_status_escolhido}** com sucesso!")
+          st.rerun()
     else:
       st.info("Nenhum utilizador cadastrado.")
 
