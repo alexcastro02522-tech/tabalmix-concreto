@@ -31,7 +31,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ESTILIZAÇÃO VISUAL CORRIGIDA: Menu Retrátil Ativo + Gestão de Ativação de Cadastros
+# ESTILIZAÇÃO VISUAL BLINDADA: Menu Retrátil + Letras Nítidas + Selo de Garantia
 st.markdown(
     """
     <style>
@@ -238,6 +238,7 @@ def gerar_pdf_relatorio(titulo, dataframe):
 def init_db():
   conn = sqlite3.connect("frota_profissional.db", check_same_thread=False)
   cursor = conn.cursor()
+  
   cursor.execute("""
         CREATE TABLE IF NOT EXISTS veiculos (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -383,6 +384,15 @@ def init_db():
     conn.commit()
   except Exception:
     pass
+
+  # BLINDAGEM AUTOMÁTICA DO ADMIN: Garante que o cadastro master esteja sempre presente
+  cursor.execute("SELECT COUNT(*) FROM usuarios_sistema")
+  if cursor.fetchone()[0] == 0:
+    cursor.execute(
+        "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("Alex de Castro Bernardino", "000.000.000-00", "alexcastro02522@gmail.com", "admin2026", "(92) 99999-9999", "Ativo", "Plano Master Concreto & Diretoria", datetime.now().strftime("%Y-%m-%d %H:%M"), "Alex", "Diretoria / Gestão")
+    )
+    conn.commit()
 
   conn.commit()
   return conn
