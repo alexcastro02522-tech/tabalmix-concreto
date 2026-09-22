@@ -136,6 +136,14 @@ def init_db():
         )
         conn.commit()
 
+    cursor.execute("SELECT COUNT(*) FROM veiculos")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute("INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca, modelo, placa, ano, status, horimetro_km) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                       ("BET-01", "Betoneira", "Mercedes-Benz", "Atego 2730", "PHX-8821", 2023, "Ativo", 14200))
+        cursor.execute("INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca, modelo, placa, ano, status, horimetro_km) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                       ("BOM-02", "Bomba de Concreto", "Putzmeister", "BSA 1409 D", "TRK-4910", 2022, "Ativo", 8950))
+        conn.commit()
+
     conn.commit()
     conn.close()
 
@@ -444,15 +452,35 @@ if menu == "📊 Visão Geral":
     with c4: st.metric("Gasto Combust.", f"R$ {df_comb['valor_total'].sum() if not df_comb.empty else 0.0:,.2f}")
     with c5: st.metric("Total Litros", f"{df_comb['litros'].sum() if not df_comb.empty else 0.0:,.1f} L")
     st.divider()
+
+    st.markdown("### 📈 Estatísticas & Desempenho Executivo")
+    if not df_veiculos.empty:
+        col_st1, col_st2 = st.columns(2)
+        with col_st1:
+            st.markdown("#### Distribuição de Equipamentos por Categoria")
+            if "categoria_equipamento" in df_veiculos.columns:
+                st.bar_chart(df_veiculos["categoria_equipamento"].value_counts())
+        with col_st2:
+            st.markdown("#### Estado Operacional da Frota")
+            if "status" in df_veiculos.columns:
+                st.bar_chart(df_veiculos["status"].value_counts())
+    
+    st.divider()
+    st.markdown("### 📋 Gestão de Frotas & Relatórios Executivos")
     if not df_veiculos.empty:
         exibir_tabela_padronizada(df_veiculos, "veiculos")
-        col_dl1, col_dl2 = st.columns(2)
+        
+        st.markdown("#### 📤 Partilha e Exportação de Relatórios")
+        col_dl1, col_dl2, col_dl3 = st.columns(3)
         with col_dl1:
-            pdf_geral = gerar_pdf_relatorio("Relatório Geral de Frota", df_veiculos)
-            st.download_button("📥 Baixar Relatório em PDF", data=pdf_geral, file_name="relatorio_frota.pdf", mime="application/pdf")
+            pdf_geral = gerar_pdf_relatorio("Relatório Executivo Geral de Frota", df_veiculos)
+            st.download_button("📥 Baixar Relatório PDF", data=pdf_geral, file_name="relatorio_frota.pdf", mime="application/pdf")
         with col_dl2:
-            excel_geral = gerar_excel_formatado(df_veiculos, "Frota")
-            st.download_button("📊 Baixar Relatório em Excel", data=excel_geral, file_name="relatorio_frota.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            excel_geral = gerar_excel_formatado(df_veiculos, "Frota_Tabalmix")
+            st.download_button("📊 Baixar Relatório Excel", data=excel_geral, file_name="relatorio_frota.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        with col_dl3:
+            msg_wpp = urllib.parse.quote("🏗️ *RELATÓRIO EXECUTIVO TABALMIX CONCRETO*\nFrota total: " + str(len(df_veiculos)) + " equipamentos ativos e em conformidade.")
+            st.markdown(f'<a href="https://api.whatsapp.com/send?text={msg_wpp}" target="_blank"><button style="background:linear-gradient(135deg, #25D366 0%, #128C7E 100%); color:white; font-weight:700; border-radius:12px; border:none; padding:0.65rem 1.8rem; width:100%; box-shadow:0 6px 16px rgba(37,211,102,0.3); cursor:pointer;">📱 Partilhar no WhatsApp</button></a>', unsafe_allow_html=True)
     else:
         st.info("Nenhum veículo registado na frota.")
 
