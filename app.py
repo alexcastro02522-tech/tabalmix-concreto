@@ -57,9 +57,8 @@ def init_db():
         CREATE TABLE IF NOT EXISTS mobilizacoes (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             equipamento TEXT, tipo_movimento TEXT, destino_origem TEXT,
-            responsavel TEXT, data TEXT, horimetro_km_mov TEXT,
-            motivo_condicao TEXT, observacao TEXT, foto_checklist TEXT,
-            historico_edicoes TEXT
+            encarregado_responsavel TEXT, data_movimento TEXT, km_horimetro_atual TEXT,
+            observacao TEXT, foto_checklist TEXT
         )
     """)
     cursor.execute("""
@@ -547,25 +546,64 @@ elif menu == "🚜 Cadastro de Equipamentos":
                 st.rerun()
 
 elif menu == "🏗️ Mobilização / Desmobilização":
-    st.title("🏗️ Controlo de Mobilização, Desmobilização & Vistoria Fotográfica")
-    t_mob1, t_mob2 = st.tabs(["📋 Registos", "➕ Nova Mobilização com Vistoria"])
-    with t_mob1:
-        exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM mobilizacoes ORDER BY id DESC"), "mobilizacoes")
-    with t_mob2:
-        with st.form("form_mob"):
-            eq_m = st.text_input("Equipamento / Prefixo")
-            tipo_mov = st.selectbox("Tipo de Movimento", ["Mobilização para Obra", "Desmobilização", "Remanejamento"])
-            destino = st.text_input("Destino / Obra de Chegada")
-            resp = st.text_input("Responsável pelo Movimento")
-            obs = st.text_area("Condições Gerais / Observações do Equipamento")
-            
-            st.markdown("---")
-            st.markdown("### 📸 Vistoria Fotográfica da Movimentação")
-            st.file_uploader("Carregar Fotografias da Vistoria (Checklist de Campo)", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
+    st.title("🏗️ Controlo de Mobilização, Desmobilização & Vistoria")
+    
+    df_frota_mob = ler_tabelas_sql("SELECT tag_prefixo, marca_modelo, placa FROM veiculos")
+    lista_tags_mob = df_frota_mob["tag_prefixo"].tolist() if not df_frota_mob.empty else ["BET-01", "ESC-02"]
 
-            if st.form_submit_button("Registar Mobilização & Vistoria"):
-                executar_comando_sql("INSERT INTO mobilizacoes (equipamento, tipo_movimento, destino_origem, responsavel, observacao, data) VALUES (?, ?, ?, ?, ?, ?)", (eq_m, tipo_mov, destino, resp, obs, datetime.now().strftime("%d/%m/%Y")))
-                st.success("Mobilização e vistoria registadas com sucesso!")
+    t_mob_reg, t_mob_mais, t_mob_menos = st.tabs(["📋 Registos Gerais", "➕ Nova Mobilização (+)", "➖ Nova Desmobilização (-)"])
+    
+    with t_mob_reg:
+        exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM mobilizacoes ORDER BY id DESC"), "mobilizacoes")
+        
+    with t_mob_mais:
+        with st.form("form_mobilizacao_mais"):
+            st.markdown("### ➕ Registar Nova Mobilização")
+            c_m1, c_m2 = st.columns(2)
+            with c_m1:
+                eq_tag_m = st.selectbox("TAG / Prefixo do Equipamento", lista_tags_mob, key="tag_mob")
+                destino_m = st.text_input("Destino / Obra de Chegada")
+                encarregado_m = st.text_input("Encarregado Responsável")
+            with c_m2:
+                data_mov_m = st.text_input("Data de Mobilização", value=datetime.now().strftime("%d/%m/%Y"))
+                km_atual_m = st.text_input("KM Atual ou Horímetro")
+            
+            obs_m = st.text_area("Observações / Condições Gerais do Equipamento")
+            st.markdown("---")
+            st.markdown("### 📸 Vistoria Fotográfica da Mobilização")
+            st.file_uploader("Carregar Imagens de Vistoria (Mobilização)", accept_multiple_files=True, type=["jpg", "png", "jpeg"], key="foto_mob")
+
+            if st.form_submit_button("Registar Mobilização"):
+                executar_comando_sql(
+                    "INSERT INTO mobilizacoes (equipamento, tipo_movimento, destino_origem, encarregado_responsavel, data_movimento, km_horimetro_atual, observacao) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (eq_tag_m, "➕ Mobilização (+)", destino_m, encarregado_m, data_mov_m, km_atual_m, obs_m)
+                )
+                st.success("Mobilização registada com sucesso!")
+                st.rerun()
+
+    with t_mob_menos:
+        with st.form("form_desmobilizacao_menos"):
+            st.markdown("### ➖ Registar Nova Desmobilização")
+            c_d1, c_d2 = st.columns(2)
+            with c_d1:
+                eq_tag_d = st.selectbox("TAG / Prefixo do Equipamento", lista_tags_mob, key="tag_desmob")
+                origem_d = st.text_input("Origem / Obra de Saída")
+                encarregado_d = st.text_input("Encarregado Responsável", key="enc_desm")
+            with c_d2:
+                data_mov_d = st.text_input("Data de Desmobilização", value=datetime.now().strftime("%d/%m/%Y"), key="data_desm")
+                km_atual_d = st.text_input("KM Atual ou Horímetro", key="km_desm")
+            
+            obs_d = st.text_area("Observações / Condições Gerais no Retorno", key="obs_desm")
+            st.markdown("---")
+            st.markdown("### 📸 Vistoria Fotográfica da Desmobilização")
+            st.file_uploader("Carregar Imagens de Vistoria (Desmobilização)", accept_multiple_files=True, type=["jpg", "png", "jpeg"], key="foto_desm")
+
+            if st.form_submit_button("Registar Desmobilização"):
+                executar_comando_sql(
+                    "INSERT INTO mobilizacoes (equipamento, tipo_movimento, destino_origem, encarregado_responsavel, data_movimento, km_horimetro_atual, observacao) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (eq_tag_d, "➖ Desmobilização (-)", origem_d, encarregado_d, data_mov_d, km_atual_d, obs_d)
+                )
+                st.success("Desmobilização registada com sucesso!")
                 st.rerun()
 
 elif menu == "🔧 Controlo de Manutenção":
@@ -633,7 +671,7 @@ elif menu == "📋 Chamada de Controlo":
         with st.form("form_chamada"):
             c_colab = st.selectbox("Colaborador / Operador", lista_nomes)
             c_status = st.selectbox("Estado da Presenca", ["Presente", "Falta Justificada", "Falta Injustificada", "Atestado / Licença", "Em Viagem / Campo"])
-            c_obs = st.text_area("Observações do Dia / Atividade")
+            c_obs = st.text_area("Observações du Dia / Atividade")
             
             if st.form_submit_button("Registar Chamada"):
                 cargo_cad = "Operacional"
