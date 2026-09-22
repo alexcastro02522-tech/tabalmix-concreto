@@ -525,7 +525,7 @@ elif menu == "🔍 Consulta / Busca Geral":
 
 elif menu == "🚜 Cadastro de Equipamentos":
     st.title("🚜 Cadastro de Equipamentos")
-    t_l, t_c, t_f = st.tabs(["📋 Frota", "➕ Registar", "📸 Vistoria"])
+    t_l, t_c = st.tabs(["📋 Frota", "➕ Registar"])
     with t_l:
         exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM veiculos"), "veiculos")
     with t_c:
@@ -569,26 +569,27 @@ elif menu == "🚜 Cadastro de Equipamentos":
                 )
                 st.success("Equipamento registado com sucesso!")
                 st.rerun()
-    with t_f:
-        st.markdown("### 📸 Vistoria Fotográfica Completa (Até 15 Ângulos)")
-        st.info("Módulo de vistorias fotográficas e checklist de campo ativado.")
-        st.file_uploader("Carregar Fotografias da Vistoria", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
 
 elif menu == "🏗️ Mobilização / Desmobilização":
-    st.title("🏗️ Controlo de Mobilização de Obras")
-    t_mob1, t_mob2 = st.tabs(["📋 Registos", "➕ Nova Mobilização"])
+    st.title("🏗️ Controlo de Mobilização, Desmobilização & Vistoria Fotográfica")
+    t_mob1, t_mob2 = st.tabs(["📋 Registos", "➕ Nova Mobilização com Vistoria"])
     with t_mob1:
         exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM mobilizacoes ORDER BY id DESC"), "mobilizacoes")
     with t_mob2:
         with st.form("form_mob"):
-            eq_m = st.text_input("Equipamento")
+            eq_m = st.text_input("Equipamento / Prefixo")
             tipo_mov = st.selectbox("Tipo de Movimento", ["Mobilização para Obra", "Desmobilização", "Remanejamento"])
-            destino = st.text_input("Destino / Origem")
-            resp = st.text_input("Responsável")
-            obs = st.text_area("Observações / Condições")
-            if st.form_submit_button("Registar Movimento"):
+            destino = st.text_input("Destino / Obra de Chegada")
+            resp = st.text_input("Responsável pelo Movimento")
+            obs = st.text_area("Condições Gerais / Observações do Equipamento")
+            
+            st.markdown("---")
+            st.markdown("### 📸 Vistoria Fotográfica da Movimentação")
+            st.file_uploader("Carregar Fotografias da Vistoria (Checklist de Campo)", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
+
+            if st.form_submit_button("Registar Mobilização & Vistoria"):
                 executar_comando_sql("INSERT INTO mobilizacoes (equipamento, tipo_movimento, destino_origem, responsavel, observacao, data) VALUES (?, ?, ?, ?, ?, ?)", (eq_m, tipo_mov, destino, resp, obs, datetime.now().strftime("%d/%m/%Y")))
-                st.success("Mobilização registada com sucesso!")
+                st.success("Mobilização e vistoria registadas com sucesso!")
                 st.rerun()
 
 elif menu == "🔧 Controlo de Manutenção":
