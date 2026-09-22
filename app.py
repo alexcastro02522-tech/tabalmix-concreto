@@ -140,12 +140,12 @@ def init_db():
     cursor.execute("SELECT COUNT(*) FROM veiculos")
     if cursor.fetchone()[0] == 0:
         cursor.execute(
-            "INSERT INTO veiculos (tag_prefixo, placa, categoria_equipamento, ano_fabricacao, renavam, crv, marca_modelo, tipo, cor, combustivel, chassi, empresa, operador_condutor, horimetro_km, status, tipo_controle, ultima_revisao, intervalo_revisao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            ("BET-01", "PHX-8821", "Linha Branca", 2023, "123456789", "987654", "Mercedes-Benz Atego 2730", "Caminhão Betoneira", "Branco", "Diesel", "9BM384...", "Tabalmix Concreto", "João Silva", 14200, "Ativo", "KM", 10000, 10000)
+            "INSERT INTO veiculos (tag_prefixo, placa, categoria_equipamento, ano_fabricacao, renavam, crv, marca_modelo, tipo, cor, combustivel, chassi, empresa, operador_condutor, horimetro_km, status, tipo_controle, ultima_revisao, intervalo_revisao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?)",
+            ("BET-01", "PHX-8821", "Linha Branca", 2023, "123456789", "987654", "Mercedes-Benz Atego 2730", "Caminhão Betoneira", "Branco", "Diesel", "9BM384...", "Tabalmix Concreto", "João Silva", 14200, "KM", 10000, 10000)
         )
         cursor.execute(
-            "INSERT INTO veiculos (tag_prefixo, placa, categoria_equipamento, ano_fabricacao, renavam, crv, marca_modelo, tipo, cor, combustivel, chassi, empresa, operador_condutor, horimetro_km, status, tipo_controle, ultima_revisao, intervalo_revisao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            ("ESC-02", "EQP-9920", "Linha Amarela", 2022, "987654321", "123456", "Caterpillar 320D", "Escavadeira Hidráulica", "Amarelo", "Diesel", "CAT320...", "Tabalmix Concreto", "Carlos Souza", 4850, "Ativo", "Horas (Horímetro)", 4500, 500)
+            "INSERT INTO veiculos (tag_prefixo, placa, categoria_equipamento, ano_fabricacao, renavam, crv, marca_modelo, tipo, cor, combustivel, chassi, empresa, operador_condutor, horimetro_km, status, tipo_controle, ultima_revisao, intervalo_revisao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?)",
+            ("ESC-02", "EQP-9920", "Linha Amarela", 2022, "987654321", "123456", "Caterpillar 320D", "Escavadeira Hidráulica", "Amarelo", "Diesel", "CAT320...", "Tabalmix Concreto", "Carlos Souza", 4850, "Horas (Horímetro)", 4500, 500)
         )
         conn.commit()
 
@@ -554,10 +554,11 @@ elif menu == "🚜 Cadastro de Equipamentos":
                 st.rerun()
     with t_e:
         st.markdown("### Atualizar KM / Horímetro e Estado")
-        df_ed = ler_tabelas_sql("SELECT id, tag_prefixo, placa, marca_modelo, horimetro_km FROM veiculos")
+        df_ed = ler_tabelas_sql("SELECT id, tag_prefixo, placa, marca_modelo FROM veiculos")
         if not df_ed.empty:
-            eq_sel = st.selectbox("Selecione o Equipamento", df_ed["tag_prefixo"] + " - " + df_ed["marca_modelo"] + " (" + df_ed["placa"] + ")")
-            id_eq = df_ed.iloc[df_ed[df_ed["tag_prefixo"] + " - " + df_ed["marca_modelo"] + " (" + df_ed["placa"] + ") == eq_sel"].index[0]]["id"]
+            df_ed["rotulo"] = df_ed["tag_prefixo"] + " - " + df_ed["marca_modelo"] + " (" + df_ed["placa"] + ")"
+            eq_sel = st.selectbox("Selecione o Equipamento", df_ed["rotulo"])
+            id_eq = int(df_ed[df_ed["rotulo"] == eq_sel]["id"].values[0])
             
             novo_medidor = st.number_input("Novo KM ou Horímetro Atual", min_value=0, value=0)
             novo_status = st.selectbox("Alterar Estado", ["Ativo", "Em Manutenção", "Baixado"])
