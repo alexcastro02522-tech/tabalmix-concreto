@@ -513,7 +513,7 @@ elif menu == "🔍 Consulta / Busca Geral":
 
 elif menu == "🚜 Cadastro de Equipamentos":
     st.title("🚜 Cadastro de Equipamentos")
-    t_l, t_c = st.tabs(["📋 Frota", "➕ Registar"])
+    t_l, t_c, t_limpar = st.tabs(["📋 Frota", "➕ Registar", "🗑️ Limpar Testes"])
     with t_l:
         exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM veiculos"), "veiculos")
     with t_c:
@@ -557,6 +557,13 @@ elif menu == "🚜 Cadastro de Equipamentos":
                 )
                 st.success("Equipamento registado com sucesso!")
                 st.rerun()
+    with t_limpar:
+        st.markdown("### 🗑️ Limpeza de Registos de Teste")
+        st.warning("Se ainda restarem veículos antigos ou de teste na tua base de dados, clica no botão abaixo para esvaziar totalmente a tabela de veículos e começar do zero.")
+        if st.button("🚨 Apagar Todos os Veículos da Base"):
+            executar_comando_sql("DELETE FROM veiculos")
+            st.success("Todos os veículos de teste foram apagados com sucesso! A tabela está limpa.")
+            st.rerun()
 
 elif menu == "🏗️ Mobilização / Desmobilização":
     st.title("🏗️ Controlo de Mobilização, Desmobilização & Vistoria Fotográfica")
