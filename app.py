@@ -12,10 +12,155 @@ import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import streamlit as st
-import psycopg2
+import sqlite3
 
-# LIGAÇÃO VIA POOLER DO SUPABASE (PORTA 6543 - CONTorna O BLOQUEIO DE FIREWALL)
-SUPABASE_DB_URL = "postgresql://postgres.ctibigorhywnwkuzqfjm:Bz8VNak7mmgXO05i@aws-0-us-east-2.pooler.supabase.com:6543/postgres?sslmode=require"
+DB_FILE = "tabalmix_enterprise.db"
+
+def init_db():
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS veiculos (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tag_prefixo TEXT, categoria_equipamento TEXT,
+            tipo_equipamento TEXT, operador_condutor TEXT,
+            marca TEXT, modelo TEXT, ano INTEGER, chassi TEXT, renavam TEXT,
+            placa TEXT, crv TEXT, cor TEXT, combustivel TEXT, empresa TEXT,
+            horimetro_km INTEGER, status TEXT, historico_edicoes TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS manutencoes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            tag_prefixo TEXT, tipo_manutencao TEXT, horimetro_km_manut TEXT,
+            origem_falha TEXT, descricao_problema TEXT, data_abertura TEXT,
+            hora_abertura TEXT, pecas_utilizadas TEXT, custo_pecas REAL,
+            mao_de_obra REAL, custo REAL, oficina TEXT, tecnico_mecanico TEXT,
+            data_fechamento TEXT, hora_fechamento TEXT, status_os TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS pecas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome_item TEXT, categoria TEXT, quantidade INTEGER, valor_unitario REAL
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS clientes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT, empresa TEXT, telefone TEXT, documento TEXT, email TEXT, endereco TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS mobilizacoes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            equipamento TEXT, tipo_movimento TEXT, destino_origem TEXT,
+            responsavel TEXT, data TEXT, horimetro_km_mov TEXT,
+            motivo_condicao TEXT, observacao TEXT, foto_checklist TEXT,
+            historico_edicoes TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS combustivel (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            equipamento TEXT, litros REAL, valor_total REAL,
+            km_horimetro TEXT, posto_posto TEXT, motorista TEXT, data TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS usuarios_sistema (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome_completo TEXT, cpf TEXT, email TEXT UNIQUE, senha TEXT,
+            celular_seguranca TEXT, status_assinatura TEXT, plano_atual TEXT,
+            data_cadastro TEXT, pin_rapido TEXT, apelido TEXT, cargo_setor TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS config_colunas (
+            tabela TEXT PRIMARY KEY,
+            ordem_colunas TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chat_interno (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            remetente TEXT,
+            destinatario TEXT,
+            cargo TEXT,
+            mensagem TEXT,
+            arquivo_path TEXT,
+            arquivo_nome TEXT,
+            data_envio TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chaves_licenca (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            codigo_chave TEXT UNIQUE,
+            cargo_atribuido TEXT,
+            modalidade TEXT,
+            status_uso TEXT,
+            usado_por TEXT,
+            data_criacao TEXT
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS multas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            equipamento_placa TEXT,
+            orgao_autuador TEXT,
+            local_infracao TEXT,
+            data_infracao TEXT,
+            valor_multa REAL,
+            descricao_infracao TEXT,
+            condutor_responsable TEXT,
+            data_vencimento TEXT,
+            status_multa TEXT
+        )
+    """)
+    
+    try:
+        cursor.execute("UPDATE usuarios_sistema SET apelido = 'Colaborador' WHERE apelido IS NULL OR apelido = '' OR apelido = 'None'")
+        cursor.execute("UPDATE usuarios_sistema SET cargo_setor = 'Operacional' WHERE cargo_setor IS NULL OR cargo_setor = '' OR cargo_setor = 'None'")
+        cursor.execute("UPDATE usuarios_sistema SET status_assinatura = 'Ativo' WHERE status_assinatura IS NULL OR status_assinatura = '' OR status_assinatura = 'None'")
+        conn.commit()
+    except Exception:
+        pass
+
+    cursor.execute("SELECT COUNT(*) FROM usuarios_sistema")
+    if cursor.fetchone()[0] == 0:
+        cursor.execute(
+            "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ("Alex de Castro Bernardino", "000.000.000-00", "alexcastro02522@gmail.com", "admin2026", "(92) 99999-9999", "Ativo", "Plano Master Concreto & Diretoria", datetime.now().strftime("%Y-%m-%d %H:%M"), "Alex", "Diretoria / Gestão")
+        )
+        conn.commit()
+
+    conn.commit()
+    conn.close()
+
+init_db()
+
+def ler_tabelas_sql(query_str):
+    conn = sqlite3.connect(DB_FILE)
+    df = pd.read_sql(query_str, conn)
+    conn.close()
+    return df
+
+def executar_comando_sql(query_str, params=None):
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+        if params:
+            cursor.execute(query_str, params)
+        else:
+            cursor.execute(query_str)
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"Erro SQLite: {e}")
+        return False
 
 MERCADO_PAGO_ACCESS_TOKEN = "APP_USR-7480302560366070-091611-1118388bbc787e8f88ea1da583096dbc-2919829212"
 try:
@@ -126,128 +271,6 @@ def gerar_pdf_relatorio(titulo, dataframe):
     buffer.seek(0)
     return buffer
 
-@st.cache_resource
-def init_db():
-    conn = psycopg2.connect(SUPABASE_DB_URL)
-    cursor = conn.cursor()
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS veiculos (
-            id SERIAL PRIMARY KEY,
-            tag_prefixo TEXT, categoria_equipamento TEXT,
-            tipo_equipamento TEXT, operador_condutor TEXT,
-            marca TEXT, modelo TEXT, ano INTEGER, chassi TEXT, renavam TEXT,
-            placa TEXT, crv TEXT, cor TEXT, combustivel TEXT, empresa TEXT,
-            horimetro_km INTEGER, status TEXT, historico_edicoes TEXT
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS manutencoes (
-            id SERIAL PRIMARY KEY,
-            tag_prefixo TEXT, tipo_manutencao TEXT, horimetro_km_manut TEXT,
-            origem_falha TEXT, descricao_problema TEXT, data_abertura TEXT,
-            hora_abertura TEXT, pecas_utilizadas TEXT, custo_pecas REAL,
-            mao_de_obra REAL, custo REAL, oficina TEXT, tecnico_mecanico TEXT,
-            data_fechamento TEXT, hora_fechamento TEXT, status_os TEXT
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS pecas (
-            id SERIAL PRIMARY KEY,
-            nome_item TEXT, categoria TEXT, quantidade INTEGER, valor_unitario REAL
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS clientes (
-            id SERIAL PRIMARY KEY,
-            nome TEXT, empresa TEXT, telefone TEXT, documento TEXT, email TEXT, endereco TEXT
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS mobilizacoes (
-            id SERIAL PRIMARY KEY,
-            equipamento TEXT, tipo_movimento TEXT, destino_origem TEXT,
-            responsavel TEXT, data TEXT, horimetro_km_mov TEXT,
-            motivo_condicao TEXT, observacao TEXT, foto_checklist TEXT,
-            historico_edicoes TEXT
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS combustivel (
-            id SERIAL PRIMARY KEY,
-            equipamento TEXT, litros REAL, valor_total REAL,
-            km_horimetro TEXT, posto_posto TEXT, motorista TEXT, data TEXT
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS usuarios_sistema (
-            id SERIAL PRIMARY KEY,
-            nome_completo TEXT, cpf TEXT, email TEXT UNIQUE, senha TEXT,
-            celular_seguranca TEXT, status_assinatura TEXT, plano_atual TEXT,
-            data_cadastro TEXT, pin_rapido TEXT, apelido TEXT, cargo_setor TEXT
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS config_colunas (
-            tabela TEXT PRIMARY KEY,
-            ordem_colunas TEXT
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS chat_interno (
-            id SERIAL PRIMARY KEY,
-            remetente TEXT,
-            destinatario TEXT,
-            cargo TEXT,
-            mensagem TEXT,
-            arquivo_path TEXT,
-            arquivo_nome TEXT,
-            data_envio TEXT
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS chaves_licenca (
-            id SERIAL PRIMARY KEY,
-            codigo_chave TEXT UNIQUE,
-            cargo_atribuido TEXT,
-            modalidade TEXT,
-            status_uso TEXT,
-            usado_por TEXT,
-            data_criacao TEXT
-        )
-    """)
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS multas (
-            id SERIAL PRIMARY KEY,
-            equipamento_placa TEXT,
-            orgao_autuador TEXT,
-            local_infracao TEXT,
-            data_infracao TEXT,
-            valor_multa REAL,
-            descricao_infracao TEXT,
-            condutor_responsable TEXT,
-            data_vencimento TEXT,
-            status_multa TEXT
-        )
-    """)
-    try:
-        cursor.execute("UPDATE usuarios_sistema SET apelido = 'Colaborador' WHERE apelido IS NULL OR apelido = '' OR apelido = 'None'")
-        cursor.execute("UPDATE usuarios_sistema SET cargo_setor = 'Operacional' WHERE cargo_setor IS NULL OR cargo_setor = '' OR cargo_setor = 'None'")
-        cursor.execute("UPDATE usuarios_sistema SET status_assinatura = 'Ativo' WHERE status_assinatura IS NULL OR status_assinatura = '' OR status_assinatura = 'None'")
-        conn.commit()
-    except Exception:
-        pass
-
-    cursor.execute("SELECT COUNT(*) FROM usuarios_sistema")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
-                       ("Alex de Castro Bernardino", "000.000.000-00", "alexcastro02522@gmail.com", "admin2026", "(92) 99999-9999", "Ativo", "Plano Master Concreto & Diretoria", datetime.now().strftime("%Y-%m-%d %H:%M"), "Alex", "Diretoria / Gestão"))
-        conn.commit()
-    conn.commit()
-    return conn
-
-conn = init_db()
-cursor = conn.cursor()
-
 modo_admin_liberado = False
 try:
     query_params = st.query_params
@@ -264,14 +287,17 @@ try:
         qp = st.query_params
         saved_user_id = qp.get("user_id")
         if saved_user_id:
-            cursor.execute("SELECT * FROM usuarios_sistema WHERE id = %s", (saved_user_id,))
-            res_persist = cursor.fetchone()
-            if res_persist:
+            df_pers = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE id = {int(saved_user_id)}")
+            if not df_pers.empty:
+                res_persist = df_pers.iloc[0]
                 st.session_state["usuario_logado"] = {
-                    "id": res_persist[0], "nome": res_persist[1], "cpf": res_persist[2],
-                    "email": res_persist[3], "status": res_persist[6],
-                    "apelido": res_persist[9] if len(res_persist) > 9 and res_persist[9] and res_persist[9] != 'None' else res_persist[1].split()[0],
-                    "cargo": res_persist[10] if len(res_persist) > 10 and res_persist[10] and res_persist[10] != 'None' else "Colaborador"
+                    "id": res_persist["id"],
+                    "nome": res_persist["nome_completo"],
+                    "cpf": res_persist["cpf"],
+                    "email": res_persist["email"],
+                    "status": res_persist["status_assinatura"],
+                    "apelido": res_persist["apelido"] if pd.notnull(res_persist["apelido"]) and res_persist["apelido"] != 'None' else str(res_persist["nome_completo"]).split()[0],
+                    "cargo": res_persist["cargo_setor"] if pd.notnull(res_persist["cargo_setor"]) and res_persist["cargo_setor"] != 'None' else "Colaborador"
                 }
 except Exception:
     pass
@@ -312,14 +338,14 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 email_pin = st.text_input("E-mail corporativo")
                 pin_dig = st.text_input("PIN numérico (4 dígitos)", max_chars=4, type="password")
                 if st.form_submit_button("Entrar com PIN"):
-                    cursor.execute("SELECT * FROM usuarios_sistema WHERE email = %s AND pin_rapido = %s", (email_pin, pin_dig))
-                    user_pin = cursor.fetchone()
-                    if user_pin:
+                    df_pin = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_pin}' AND pin_rapido = '{pin_dig}'")
+                    if not df_pin.empty:
+                        user_pin = df_pin.iloc[0]
                         st.session_state["usuario_logado"] = {
-                            "id": user_pin[0], "nome": user_pin[1], "cpf": user_pin[2],
-                            "email": user_pin[3], "status": user_pin[6],
-                            "apelido": user_pin[9] if len(user_pin) > 9 and user_pin[9] != 'None' else user_pin[1].split()[0],
-                            "cargo": user_pin[10] if len(user_pin) > 10 and user_pin[10] != 'None' else "Colaborador"
+                            "id": user_pin["id"], "nome": user_pin["nome_completo"], "cpf": user_pin["cpf"],
+                            "email": user_pin["email"], "status": user_pin["status_assinatura"],
+                            "apelido": user_pin["apelido"] if pd.notnull(user_pin["apelido"]) else str(user_pin["nome_completo"]).split()[0],
+                            "cargo": user_pin["cargo_setor"] if pd.notnull(user_pin["cargo_setor"]) else "Colaborador"
                         }
                         st.success("✅ Login por PIN validado!")
                         st.rerun()
@@ -332,14 +358,14 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 email_login = st.text_input("E-mail corporativo")
                 senha_login = st.text_input("Senha de acesso", type="password")
                 if st.form_submit_button("Entrar no Sistema"):
-                    cursor.execute("SELECT * FROM usuarios_sistema WHERE email = %s AND senha = %s", (email_login, senha_login))
-                    user_data = cursor.fetchone()
-                    if user_data:
+                    df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_login}' AND senha = '{senha_login}'")
+                    if not df_log.empty:
+                        user_data = df_log.iloc[0]
                         st.session_state["usuario_logado"] = {
-                            "id": user_data[0], "nome": user_data[1], "cpf": user_data[2],
-                            "email": user_data[3], "status": user_data[6],
-                            "apelido": user_data[9] if len(user_data) > 9 and user_data[9] != 'None' else user_data[1].split()[0],
-                            "cargo": user_data[10] if len(user_data) > 10 and user_data[10] != 'None' else "Colaborador"
+                            "id": user_data["id"], "nome": user_data["nome_completo"], "cpf": user_data["cpf"],
+                            "email": user_data["email"], "status": user_data["status_assinatura"],
+                            "apelido": user_data["apelido"] if pd.notnull(user_data["apelido"]) else str(user_data["nome_completo"]).split()[0],
+                            "cargo": user_data["cargo_setor"] if pd.notnull(user_data["cargo_setor"]) else "Colaborador"
                         }
                         st.success("✅ Login realizado com sucesso!")
                         st.rerun()
@@ -359,13 +385,12 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 c_cel = st.text_input("Celular / WhatsApp")
                 if st.form_submit_button("Cadastrar"):
                     if c_nome and c_email and c_senha:
-                        try:
-                            cursor.execute("INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (%s, %s, %s, %s, %s, 'Ativo', %s, %s, %s, %s)",
-                                           (c_nome, c_cpf, c_email, c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), c_apelido or c_nome.split()[0], cargo_banco_str))
-                            conn.commit()
-                            st.success("✅ Conta cadastrada com sucesso! Podes fazer login.")
-                        except Exception as e:
-                            st.error(f"⚠️ Erro ao registar: {e}")
+                        apelido_f = c_apelido if c_apelido else c_nome.split()[0]
+                        executar_comando_sql(
+                            "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?)",
+                            (c_nome, c_cpf, c_email, c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), apelido_f, cargo_banco_str)
+                        )
+                        st.success("✅ Conta cadastrada com sucesso! Podes fazer login.")
     st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
@@ -407,10 +432,10 @@ menu = st.sidebar.radio("Navegação", lista_menus, label_visibility="collapsed"
 
 if menu == "📊 Visão Geral":
     st.title("🏗️ Painel Executivo e Indicadores de Frota")
-    df_veiculos = pd.read_sql("SELECT * FROM veiculos", conn)
-    df_manut = pd.read_sql("SELECT * FROM manutencoes", conn)
-    df_comb = pd.read_sql("SELECT * FROM combustivel", conn)
-    df_multas = pd.read_sql("SELECT * FROM multas", conn)
+    df_veiculos = ler_tabelas_sql("SELECT * FROM veiculos")
+    df_manut = ler_tabelas_sql("SELECT * FROM manutencoes")
+    df_comb = ler_tabelas_sql("SELECT * FROM combustivel")
+    df_multas = ler_tabelas_sql("SELECT * FROM multas")
 
     c1, c2, c3, c4, c5 = st.columns(5)
     with c1: st.metric("Total Frota", len(df_veiculos))
@@ -435,7 +460,7 @@ elif menu == "🚜 Cadastro de Equipamentos":
     st.title("🚜 Cadastro de Equipamentos & Vistoria Fotográfica")
     t_l, t_c, t_e, t_f = st.tabs(["📋 Frota", "➕ Registar", "✏️ Editar", "📸 Vistoria"])
     with t_l:
-        exibir_tabela_padronizada(pd.read_sql("SELECT * FROM veiculos", conn), "veiculos")
+        exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM veiculos"), "veiculos")
     with t_c:
         with st.form("form_eq_novo"):
             st.markdown("### Registar Novo Equipamento / Veículo")
@@ -446,20 +471,18 @@ elif menu == "🚜 Cadastro de Equipamentos":
             f_placa = st.text_input("Placa")
             f_ano = st.number_input("Ano", min_value=1980, max_value=2030, value=2024)
             if st.form_submit_button("Guardar Equipamento") and f_marca:
-                cursor.execute("INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca, modelo, placa, ano, status, horimetro_km) VALUES (%s, %s, %s, %s, %s, %s, 'Ativo', 0)", (f_tag, f_cat, f_marca, f_modelo, f_placa, f_ano))
-                conn.commit()
+                executar_comando_sql("INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca, modelo, placa, ano, status, horimetro_km) VALUES (?, ?, ?, ?, ?, ?, 'Ativo', 0)", (f_tag, f_cat, f_marca, f_modelo, f_placa, f_ano))
                 st.success("Equipamento registado com sucesso!")
                 st.rerun()
     with t_e:
         st.markdown("### Editar Dados de Equipamentos")
-        df_ed = pd.read_sql("SELECT id, tag_prefixo, placa, modelo FROM veiculos", conn)
+        df_ed = ler_tabelas_sql("SELECT id, tag_prefixo, placa, modelo FROM veiculos")
         if not df_ed.empty:
             eq_sel = st.selectbox("Selecione o Equipamento para Editar", df_ed["tag_prefixo"] + " - " + df_ed["placa"])
             id_eq = df_ed.iloc[df_ed[df_ed["tag_prefixo"] + " - " + df_ed["placa"] == eq_sel].index[0]]["id"]
             novo_status = st.selectbox("Alterar Estado", ["Ativo", "Em Manutenção", "Baixado"])
             if st.button("Atualizar Estado"):
-                cursor.execute("UPDATE veiculos SET status = %s WHERE id = %s", (novo_status, id_eq))
-                conn.commit()
+                executar_comando_sql("UPDATE veiculos SET status = ? WHERE id = ?", (novo_status, id_eq))
                 st.success("Estado atualizado com sucesso!")
                 st.rerun()
     with t_f:
@@ -471,7 +494,7 @@ elif menu == "⛽ Abastecimentos & Combustível":
     st.title("⛽ Registo de Abastecimentos")
     t_cab1, t_cab2 = st.tabs(["📋 Histórico", "➕ Novo Abastecimento"])
     with t_cab1:
-        exibir_tabela_padronizada(pd.read_sql("SELECT * FROM combustivel ORDER BY id DESC", conn), "combustivel")
+        exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM combustivel ORDER BY id DESC"), "combustivel")
     with t_cab2:
         with st.form("form_comb"):
             eq_comb = st.text_input("Equipamento / Placa")
@@ -480,8 +503,7 @@ elif menu == "⛽ Abastecimentos & Combustível":
             posto = st.text_input("Posto de Combustível")
             motorista = st.text_input("Motorista / Responsável")
             if st.form_submit_button("Registar Abastecimento"):
-                cursor.execute("INSERT INTO combustivel (equipamento, litros, valor_total, posto_posto, motorista, data) VALUES (%s, %s, %s, %s, %s, %s)", (eq_comb, litros, v_total, posto, motorista, datetime.now().strftime("%d/%m/%Y %H:%M")))
-                conn.commit()
+                executar_comando_sql("INSERT INTO combustivel (equipamento, litros, valor_total, posto_posto, motorista, data) VALUES (?, ?, ?, ?, ?, ?)", (eq_comb, litros, v_total, posto, motorista, datetime.now().strftime("%d/%m/%Y %H:%M")))
                 st.success("Abastecimento registado!")
                 st.rerun()
 
@@ -489,7 +511,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
     st.title("🏗️ Controlo de Mobilização de Obras")
     t_mob1, t_mob2 = st.tabs(["📋 Registos", "➕ Nova Mobilização"])
     with t_mob1:
-        exibir_tabela_padronizada(pd.read_sql("SELECT * FROM mobilizacoes ORDER BY id DESC", conn), "mobilizacoes")
+        exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM mobilizacoes ORDER BY id DESC"), "mobilizacoes")
     with t_mob2:
         with st.form("form_mob"):
             eq_m = st.text_input("Equipamento")
@@ -498,8 +520,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
             resp = st.text_input("Responsável")
             obs = st.text_area("Observações / Condições")
             if st.form_submit_button("Registar Movimento"):
-                cursor.execute("INSERT INTO mobilizacoes (equipamento, tipo_movimento, destino_origem, responsavel, observacao, data) VALUES (%s, %s, %s, %s, %s, %s)", (eq_m, tipo_mov, destino, resp, obs, datetime.now().strftime("%d/%m/%Y")))
-                conn.commit()
+                executar_comando_sql("INSERT INTO mobilizacoes (equipamento, tipo_movimento, destino_origem, responsavel, observacao, data) VALUES (?, ?, ?, ?, ?, ?)", (eq_m, tipo_mov, destino, resp, obs, datetime.now().strftime("%d/%m/%Y")))
                 st.success("Mobilização registada com sucesso!")
                 st.rerun()
 
@@ -507,7 +528,7 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
     st.title("🛠️ Gestão de Ordens de Serviço (OS)")
     t_os1, t_os2 = st.tabs(["📋 Listagem de OS", "➕ Abrir Nova OS"])
     with t_os1:
-        exibir_tabela_padronizada(pd.read_sql("SELECT * FROM manutencoes ORDER BY id DESC", conn), "manutencoes")
+        exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM manutencoes ORDER BY id DESC"), "manutencoes")
     with t_os2:
         with st.form("form_os"):
             tag_os = st.text_input("Tag / Prefixo do Equipamento")
@@ -516,8 +537,7 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
             oficina = st.text_input("Oficina / Fornecedor")
             custo = st.number_input("Custo Total Estimado (R$)", min_value=0.0, format="%.2f")
             if st.form_submit_button("Abrir Ordem de Serviço"):
-                cursor.execute("INSERT INTO manutencoes (tag_prefixo, tipo_manutencao, descricao_problema, oficina, custo, data_abertura, status_os) VALUES (%s, %s, %s, %s, %s, %s, 'aberta')", (tag_os, tipo_man, desc, oficina, custo, datetime.now().strftime("%d/%m/%Y %H:%M")))
-                conn.commit()
+                executar_comando_sql("INSERT INTO manutencoes (tag_prefixo, tipo_manutencao, descricao_problema, oficina, custo, data_abertura, status_os) VALUES (?, ?, ?, ?, ?, ?, 'aberta')", (tag_os, tipo_man, desc, oficina, custo, datetime.now().strftime("%d/%m/%Y %H:%M")))
                 st.success("Ordem de Serviço aberta com sucesso!")
                 st.rerun()
 
@@ -525,7 +545,7 @@ elif menu == "🚨 Gestão & Alertas de Multas":
     st.title("🚨 Controlo Inteligente de Multas")
     if st.button("🔍 Varredura em Massa de Toda a Frota"):
         st.success("Varredura executada com sucesso! Nenhuma nova infração detetada nos órgãos autuadores.")
-    exibir_tabela_padronizada(pd.read_sql("SELECT * FROM multas ORDER BY id DESC", conn), "multas")
+    exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM multas ORDER BY id DESC"), "multas")
     with st.form("form_multa"):
         st.markdown("### Registar Nova Multa")
         m_placa = st.text_input("Placa do Equipamento")
@@ -534,14 +554,13 @@ elif menu == "🚨 Gestão & Alertas de Multas":
         m_valor = st.number_input("Valor da Multa (R$)", min_value=0.0, format="%.2f")
         m_venc = st.text_input("Data de Vencimento (DD/MM/AAAA)")
         if st.form_submit_button("Registar Multa"):
-            cursor.execute("INSERT INTO multas (equipamento_placa, orgao_autuador, local_infracao, valor_multa, data_vencimento, status_multa) VALUES (%s, %s, %s, %s, %s, 'Pendente')", (m_placa, m_orgao, m_local, m_valor, m_venc))
-            conn.commit()
+            executar_comando_sql("INSERT INTO multas (equipamento_placa, orgao_autuador, local_infracao, valor_multa, data_vencimento, status_multa) VALUES (?, ?, ?, ?, ?, 'Pendente')", (m_placa, m_orgao, m_local, m_valor, m_venc))
             st.success("Multa registada com sucesso!")
             st.rerun()
 
 elif menu == "🔩 Peças e Ferramentas":
     st.title("🔩 Stock de Peças e Ferramentas")
-    exibir_tabela_padronizada(pd.read_sql("SELECT * FROM pecas ORDER BY id DESC", conn), "pecas")
+    exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM pecas ORDER BY id DESC"), "pecas")
     with st.form("form_peca"):
         st.markdown("### Adicionar Item ao Stock")
         p_nome = st.text_input("Nome da Peça / Item")
@@ -549,14 +568,13 @@ elif menu == "🔩 Peças e Ferramentas":
         p_qtd = st.number_input("Quantidade em Stock", min_value=1, value=1)
         p_val = st.number_input("Valor Unitário (R$)", min_value=0.0, format="%.2f")
         if st.form_submit_button("Adicionar Peça"):
-            cursor.execute("INSERT INTO pecas (nome_item, categoria, quantidade, valor_unitario) VALUES (%s, %s, %s, %s)", (p_nome, p_cat, p_qtd, p_val))
-            conn.commit()
+            executar_comando_sql("INSERT INTO pecas (nome_item, categoria, quantidade, valor_unitario) VALUES (?, ?, ?, ?)", (p_nome, p_cat, p_qtd, p_val))
             st.success("Item adicionado ao stock!")
             st.rerun()
 
 elif menu == "👥 Gestão de Clientes":
     st.title("👥 Gestão de Clientes")
-    exibir_tabela_padronizada(pd.read_sql("SELECT * FROM clientes ORDER BY id DESC", conn), "clientes")
+    exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM clientes ORDER BY id DESC"), "clientes")
     with st.form("form_cli"):
         st.markdown("### Registar Novo Cliente")
         cl_nome = st.text_input("Nome / Razão Social")
@@ -565,31 +583,31 @@ elif menu == "👥 Gestão de Clientes":
         cl_doc = st.text_input("CPF / CNPJ")
         cl_end = st.text_input("Endereço")
         if st.form_submit_button("Registar Cliente"):
-            cursor.execute("INSERT INTO clientes (nome, empresa, telefone, documento, endereco) VALUES (%s, %s, %s, %s, %s)", (cl_nome, cl_emp, cl_tel, cl_doc, cl_end))
-            conn.commit()
+            executar_comando_sql("INSERT INTO clientes (nome, empresa, telefone, documento, endereco) VALUES (?, ?, ?, ?, ?)", (cl_nome, cl_emp, cl_tel, cl_doc, cl_end))
             st.success("Cliente registado com sucesso!")
             st.rerun()
 
 elif menu == "💬 Chat Tabalmix Pro & Rede":
     st.title("💬 Central Pro Enterprise — Chat & Live Ops")
-    df_chat = pd.read_sql("SELECT * FROM chat_interno ORDER BY id ASC LIMIT 50", conn)
-    for _, r in df_chat.iterrows():
-        st.markdown(f"**{r['remetente']}**: {r['mensagem']}")
+    df_chat = ler_tabelas_sql("SELECT * FROM chat_interno ORDER BY id ASC LIMIT 50")
+    if not df_chat.empty:
+        for _, r in df_chat.iterrows():
+            st.markdown(f"**{r['remetente']}**: {r['mensagem']}")
     with st.form("form_chat", clear_on_submit=True):
         msg = st.text_input("Escreva a sua mensagem para a equipa...")
         if st.form_submit_button("Enviar Mensagem") and msg:
-            cursor.execute("INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, data_envio) VALUES (%s, 'Geral', 'Operacional', %s, %s)", (usuario_atual['apelido'] if usuario_atual else "Alex", msg, datetime.now().strftime("%H:%M")))
-            conn.commit()
+            rem_nome = usuario_atual['apelido'] if usuario_atual else "Alex"
+            executar_comando_sql("INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, data_envio) VALUES (?, 'Geral', 'Operacional', ?, ?)", (rem_nome, msg, datetime.now().strftime("%H:%M")))
             st.rerun()
 
 elif menu == "🔍 Consulta / Busca Geral":
     st.title("🔍 Consulta e Histórico Completo")
     termo_busca = st.text_input("Pesquisar por placa, marca ou modelo na frota:")
     if termo_busca:
-        df_busca = pd.read_sql(f"SELECT * FROM veiculos WHERE placa ILIKE '%%{termo_busca}%%' OR marca ILIKE '%%{termo_busca}%%' OR modelo ILIKE '%%{termo_busca}%%'", conn)
+        df_busca = ler_tabelas_sql(f"SELECT * FROM veiculos WHERE placa LIKE '%{termo_busca}%' OR marca LIKE '%{termo_busca}%' OR modelo LIKE '%{termo_busca}%'")
         exibir_tabela_padronizada(df_busca, "veiculos")
     else:
-        exibir_tabela_padronizada(pd.read_sql("SELECT tag_prefixo, marca, modelo, placa, status FROM veiculos", conn), "veiculos")
+        exibir_tabela_padronizada(ler_tabelas_sql("SELECT tag_prefixo, marca, modelo, placa, status FROM veiculos"), "veiculos")
 
 elif menu == "⚙️ Meu Perfil / Dados":
     st.title("⚙️ Meu Perfil & Gestão da Assinatura")
@@ -607,7 +625,7 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     st.title("⚙️ Painel Administrativo — Gestão Master & Controlo de Contas")
     
     st.markdown("### 👥 Gestão de Colaboradores e Contas no Banco de Dados")
-    df_users = pd.read_sql("SELECT id, nome_completo, email, cargo_setor, status_assinatura, pin_rapido FROM usuarios_sistema", conn)
+    df_users = ler_tabelas_sql("SELECT id, nome_completo, email, cargo_setor, status_assinatura, pin_rapido FROM usuarios_sistema")
     exibir_tabela_padronizada(df_users, "usuarios_sistema")
     
     col_adm1, col_adm2 = st.columns(2)
@@ -617,9 +635,8 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
             id_u_alvo = st.number_input("ID do Utilizador", min_value=1, step=1)
             novo_status_u = st.selectbox("Novo Estado", ["Ativo", "Inativo"])
             if st.form_submit_button("Atualizar Estado do Utilizador"):
-                cursor.execute("UPDATE usuarios_sistema SET status_assinatura = %s WHERE id = %s", (novo_status_u, id_u_alvo))
-                conn.commit()
-                st.success("Estado do utilizador atualizado no Supabase!")
+                executar_comando_sql("UPDATE usuarios_sistema SET status_assinatura = ? WHERE id = ?", (novo_status_u, id_u_alvo))
+                st.success("Estado do utilizador atualizado!")
                 st.rerun()
                 
     with col_adm2:
@@ -627,8 +644,7 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
             st.markdown("#### 🗑️ Remover Utilizador do Sistema")
             id_u_del = st.number_input("ID do Utilizador a Remover", min_value=1, step=1, key="del_u")
             if st.form_submit_button("Eliminar Utilizador"):
-                cursor.execute("DELETE FROM usuarios_sistema WHERE id = %s", (id_u_del,))
-                conn.commit()
+                executar_comando_sql("DELETE FROM usuarios_sistema WHERE id = ?", (id_u_del,))
                 st.success("Utilizador removido com sucesso!")
                 st.rerun()
 
@@ -639,7 +655,6 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     with st.form("form_config_col"):
         cols_ocultar_str = st.text_input("Colunas para Ocultar (separadas por vírgula, ex: chassi,renavam)")
         if st.form_submit_button("Salvar Configuração de Colunas"):
-            cursor.execute("INSERT INTO config_colunas (tabela, ordem_colunas) VALUES (%s, %s) ON CONFLICT (tabela) DO UPDATE SET ordem_colunas = EXCLUDED.ordem_colunas", (tabela_escolhida, cols_ocultar_str))
-            conn.commit()
-            st.success("Configuração de colunas atualizada e salva no Supabase!")
+            executar_comando_sql("INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas) VALUES (?, ?)", (tabela_escolhida, cols_ocultar_str))
+            st.success("Configuração de colunas atualizada!")
             st.rerun()
