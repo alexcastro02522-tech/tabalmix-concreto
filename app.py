@@ -513,7 +513,7 @@ elif menu == "🔍 Consulta / Busca Geral":
 
 elif menu == "🚜 Cadastro de Equipamentos":
     st.title("🚜 Cadastro de Equipamentos")
-    t_l, t_c, t_limpar = st.tabs(["📋 Frota", "➕ Registar", "🗑️ Limpar Testes"])
+    t_l, t_c = st.tabs(["📋 Frota", "➕ Registar"])
     with t_l:
         exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM veiculos"), "veiculos")
     with t_c:
@@ -557,13 +557,6 @@ elif menu == "🚜 Cadastro de Equipamentos":
                 )
                 st.success("Equipamento registado com sucesso!")
                 st.rerun()
-    with t_limpar:
-        st.markdown("### 🗑️ Limpeza de Registos de Teste")
-        st.warning("Se ainda restarem veículos antigos ou de teste na tua base de dados, clica no botão abaixo para esvaziar totalmente a tabela de veículos e começar do zero.")
-        if st.button("🚨 Apagar Todos os Veículos da Base"):
-            executar_comando_sql("DELETE FROM veiculos")
-            st.success("Todos os veículos de teste foram apagados com sucesso! A tabela está limpa.")
-            st.rerun()
 
 elif menu == "🏗️ Mobilização / Desmobilização":
     st.title("🏗️ Controlo de Mobilização, Desmobilização & Vistoria Fotográfica")
@@ -794,6 +787,27 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
                 executar_comando_sql("DELETE FROM usuarios_sistema WHERE id = ?", (id_u_del,))
                 st.success("Utilizador removido com sucesso!")
                 st.rerun()
+
+    st.divider()
+    st.markdown("### 🗄️ Gestão Global e Limpeza de Dados de Todos os Sistemas")
+    st.info("Aqui podes limpar ou esvaziar qualquer tabela/sistema do banco de dados (ideal para apagar registos antigos ou de teste de qualquer aba).")
+    
+    tabelas_sistema_disponiveis = [
+        "veiculos", "manutencoes", "pecas", "clientes", 
+        "mobilizacoes", "chamada_controlo", "combustivel", 
+        "multas", "usuarios_sistema", "chat_interno"
+    ]
+    tabela_alvo_limpeza = st.selectbox("Selecione o Sistema / Tabela para Gerir", tabelas_sistema_disponiveis)
+    
+    col_l_1, col_l_2 = st.columns(2)
+    with col_l_1:
+        if st.button(f"🗑️ Apagar/Esvaziar Todos os Registos de '{tabela_alvo_limpeza}'"):
+            try:
+                executar_comando_sql(f"DELETE FROM {tabela_alvo_limpeza}")
+                st.success(f"Todos os registos da tabela '{tabela_alvo_limpeza}' foram eliminados com sucesso!")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erro ao limpar tabela: {e}")
 
     st.divider()
     st.markdown("### 🛠️ Gestão de Colunas e Estrutura de Tabelas")
