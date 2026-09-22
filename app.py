@@ -538,24 +538,12 @@ elif menu == "🚜 Cadastro de Equipamentos":
                 f_empresa = st.text_input("Empresa Proprietária", value="Tabalmix Concreto")
                 f_operador = st.text_input("Operador / Condutor Principal")
 
-            st.markdown("---")
-            st.markdown("### ⚙️ Configuração Inicial de Revisão (Opcional)")
-            c_rev1, c_rev2, c_rev3, c_rev4 = st.columns(4)
-            with c_rev1:
-                f_tipo_cont = st.selectbox("Tipo de Medidor", ["KM", "Horas (Horímetro)"])
-            with c_rev2:
-                f_atual = st.number_input("KM ou Horímetro Atual", min_value=0, value=0)
-            with c_rev3:
-                f_ult_rev = st.number_input("Última Revisão Feita", min_value=0, value=0)
-            with c_rev4:
-                f_int_rev = st.number_input("Intervalo da Revisão", min_value=100, value=10000)
-
             if st.form_submit_button("Guardar Equipamento") and f_tag:
                 executar_comando_sql(
-                    "INSERT INTO veiculos (tag_prefixo, placa, categoria_equipamento, ano_fabricacao, renavam, crv, marca_modelo, tipo, cor, combustivel, chassi, empresa, operador_condutor, horimetro_km, status, tipo_controle, ultima_revisao, intervalo_revisao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?)",
-                    (f_tag, f_placa, f_cat, f_ano, f_renavam, f_crv, f_marca_modelo, f_tipo, f_cor, f_combustivel, f_chassi, f_empresa, f_operador, f_atual, f_tipo_cont, f_ult_rev, f_int_rev)
+                    "INSERT INTO veiculos (tag_prefixo, placa, categoria_equipamento, ano_fabricacao, renavam, crv, marca_modelo, tipo, cor, combustivel, chassi, empresa, operador_condutor, horimetro_km, status, tipo_controle, ultima_revisao, intervalo_revisao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo', 'KM', 0, 10000)",
+                    (f_tag, f_placa, f_cat, f_ano, f_renavam, f_crv, f_marca_modelo, f_tipo, f_cor, f_combustivel, f_chassi, f_empresa, f_operador, 0)
                 )
-                st.success("Equipamento registado com sucesso!")
+                st.success("Equipamento registado com sucesso! Agora configure a revisão na aba 'Controlo de Manutenção'.")
                 st.rerun()
 
 elif menu == "🏗️ Mobilização / Desmobilização":
@@ -581,8 +569,8 @@ elif menu == "🏗️ Mobilização / Desmobilização":
                 st.rerun()
 
 elif menu == "🔧 Controlo de Manutenção":
-    st.title("🔧 Controlo Preventivo de Manutenção & Alertas de Revisão")
-    st.info("Atualize o KM ou Horímetro atual dos equipamentos e consulte os alertas automáticos de revisão para a diretoria.")
+    st.title("🔧 Controlo Preventivo de Manutenção & Configuração Inicial de Revisão")
+    st.info("Selecione qualquer equipamento da frota, configure a sua revisão inicial e acompanhe os alertas automáticos em tempo real.")
     
     df_rev = ler_tabelas_sql("SELECT id, tag_prefixo, placa, marca_modelo, horimetro_km, tipo_controle, ultima_revisao, intervalo_revisao FROM veiculos")
     if not df_rev.empty:
@@ -606,25 +594,27 @@ elif menu == "🔧 Controlo de Manutenção":
             st.success("✅ Todos os equipamentos da frota estão em dia com as manutenções preventivas!")
 
         st.divider()
-        st.markdown("### ✏️ Atualizar KM, Horímetro ou Registo de Revisão Feita")
+        st.markdown("### ⚙️ Configuração Inicial e Atualização de Manutenção por Equipamento")
         df_rev["rotulo"] = df_rev["tag_prefixo"] + " - " + df_rev["marca_modelo"] + " (" + df_rev["placa"] + ")"
-        eq_sel_rev = st.selectbox("Selecione o Equipamento / Veículo", df_rev["rotulo"])
+        eq_sel_rev = st.selectbox("Selecione o Equipamento / Veículo Registado", df_rev["rotulo"])
         
         equip_escolhido = df_rev[df_rev["rotulo"] == eq_sel_rev].iloc[0]
         id_eq_r = int(equip_escolhido["id"])
         
         with st.form("form_atu_manut"):
-            c_m1, c_m2, c_m3 = st.columns(3)
+            c_m1, c_m2, c_m3, c_m4 = st.columns(4)
             with c_m1:
-                novo_hor_km = st.number_input("KM ou Horímetro Atual", min_value=0, value=int(equip_escolhido["horimetro_km"] or 0))
+                novo_tipo_cont = st.selectbox("Tipo de Medidor", ["KM", "Horas (Horímetro)"], index=0 if equip_escolhido["tipo_controle"] == "KM" else 1)
             with c_m2:
-                nova_ult_rev = st.number_input("Última Revisão Feita", min_value=0, value=int(equip_escolhido["ultima_revisao"] or 0))
+                novo_hor_km = st.number_input("KM ou Horímetro Atual", min_value=0, value=int(equip_escolhido["horimetro_km"] or 0))
             with c_m3:
-                novo_int_rev = st.number_input("Intervalo Previsto", min_value=100, value=int(equip_escolhido["intervalo_revisao"] or 10000))
+                nova_ult_rev = st.number_input("Última Revisão Feita", min_value=0, value=int(equip_escolhido["ultima_revisao"] or 0))
+            with c_m4:
+                novo_int_rev = st.number_input("Intervalo da Revisão", min_value=100, value=int(equip_escolhido["intervalo_revisao"] or 10000))
             
-            if st.form_submit_button("Guardar Atualização de Manutenção"):
-                executar_comando_sql("UPDATE veiculos SET horimetro_km = ?, ultima_revisao = ?, intervalo_revisao = ? WHERE id = ?", (novo_hor_km, nova_ult_rev, novo_int_rev, id_eq_r))
-                st.success("Dados de manutenção e medidores atualizados com sucesso!")
+            if st.form_submit_button("Guardar Configuração de Revisão"):
+                executar_comando_sql("UPDATE veiculos SET tipo_controle = ?, horimetro_km = ?, ultima_revisao = ?, intervalo_revisao = ? WHERE id = ?", (novo_tipo_cont, novo_hor_km, nova_ult_rev, novo_int_rev, id_eq_r))
+                st.success("Configuração de manutenção e revisão atualizada com sucesso!")
                 st.rerun()
     else:
         st.info("Nenhum equipamento registado na frota.")
