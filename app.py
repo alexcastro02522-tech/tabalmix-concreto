@@ -368,6 +368,22 @@ def init_db():
         )
     """)
 
+  # NOVA TABELA PARA GESTÃO E ALERTAS DE MULTAS E INFRAÇÕES
+  cursor.execute("""
+        CREATE TABLE IF NOT EXISTS multas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            equipamento_placa TEXT,
+            orgao_autuador TEXT,
+            local_infracao TEXT,
+            data_infracao TEXT,
+            valor_multa REAL,
+            descricao_infracao TEXT,
+            condutor_responsable TEXT,
+            data_vencimento TEXT,
+            status_multa TEXT
+        )
+    """)
+
   try:
     cursor.execute(
         "UPDATE usuarios_sistema SET apelido = 'Colaborador' WHERE apelido IS"
@@ -385,7 +401,7 @@ def init_db():
   except Exception:
     pass
 
-  # BLINDAGEM AUTOMÁTICA DO ADMIN: Garante que o cadastro master esteja sempre presente
+  # BLINDAGEM AUTOMÁTICA DO ADMIN
   cursor.execute("SELECT COUNT(*) FROM usuarios_sistema")
   if cursor.fetchone()[0] == 0:
     cursor.execute(
@@ -616,64 +632,12 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
       )
 
       if "💎 Master Concreto & Diretoria" in c_cargo:
-        st.markdown(
-            """
-            <div style="background: #ecfdf5; border: 1px solid #059669; border-radius: 12px; padding: 14px; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
-                <p style="margin: 0 0 6px 0; font-weight: 800; color: #047857; font-size: 14px;">💎 Plano Master Concreto & Diretoria</p>
-                <p style="margin: 0 0 6px 0; font-size: 12px; color: #1e293b;"><b>Privilégios:</b> Acesso executivo total, painel master de frotas, relatórios certificados em PDF, painel de licenças/financeiro e comunicação P2P.</p>
-                <div style="display: flex; gap: 15px; font-size: 12px; font-weight: 700; color: #059669;">
-                    <span>📅 Mensal: R$ 299,90 / mês</span>
-                    <span>🌟 Anual: R$ 2.999,00 / ano</span>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
         cargo_banco_str = "Diretoria / Gestão"
       elif "🏗️ Engenharia & Obra Pro" in c_cargo:
-        st.markdown(
-            """
-            <div style="background: #f0fdf4; border: 1px solid #16a34a; border-radius: 12px; padding: 14px; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
-                <p style="margin: 0 0 6px 0; font-weight: 800; color: #15803d; font-size: 14px;">🏗️ Plano Engenharia & Obra Pro</p>
-                <p style="margin: 0 0 6px 0; font-size: 12px; color: #1e293b;"><b>Privilégios:</b> Gestão de ordens de serviço (OS), mobilizações e desmobilizações de equipamentos, consultas gerais e chat corporativo.</p>
-                <div style="display: flex; gap: 15px; font-size: 12px; font-weight: 700; color: #16a34a;">
-                    <span>📅 Mensal: R$ 189,90 / mês</span>
-                    <span>🌟 Anual: R$ 1.899,00 / ano</span>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
         cargo_banco_str = "Engenheiro / Gestor de Obra"
       elif "🛠️ Oficina & Mecânica X" in c_cargo:
-        st.markdown(
-            """
-            <div style="background: #eff6ff; border: 1px solid #3b82f6; border-radius: 12px; padding: 14px; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
-                <p style="margin: 0 0 6px 0; font-weight: 800; color: #1d4ed8; font-size: 14px;">🛠️ Plano Oficina & Mecânica X</p>
-                <p style="margin: 0 0 6px 0; font-size: 12px; color: #1e293b;"><b>Privilégios:</b> Foco no histórico técnico das máquinas, gestão de peças e ferramentas e abertura/fechamento de manutenções.</p>
-                <div style="display: flex; gap: 15px; font-size: 12px; font-weight: 700; color: #2563eb;">
-                    <span>📅 Mensal: R$ 119,90 / mês</span>
-                    <span>🌟 Anual: R$ 1.199,00 / ano</span>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
         cargo_banco_str = "Mecânico / Oficina"
       else:
-        st.markdown(
-            """
-            <div style="background: #fdf4ff; border: 1px solid #c084fc; border-radius: 12px; padding: 14px; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif;">
-                <p style="margin: 0 0 6px 0; font-weight: 800; color: #7e22ce; font-size: 14px;">🚜 Plano Operacional Campo & Frota</p>
-                <p style="margin: 0 0 6px 0; font-size: 12px; color: #1e293b;"><b>Privilégios:</b> Registo de abastecimentos de combustível, envio de fotos de check-list e chat interno.</p>
-                <div style="display: flex; gap: 15px; font-size: 12px; font-weight: 700; color: #9333ea;">
-                    <span>📅 Mensal: R$ 69,90 / mês</span>
-                    <span>🌟 Anual: R$ 699,00 / ano</span>
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
         cargo_banco_str = "Operador / Motorista / Campo"
 
       with st.form("form_novo_cadastro"):
@@ -681,17 +645,11 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
         c_email = st.text_input("E-mail corporativo de login")
         c_senha = st.text_input("Criar senha", type="password")
         c_cel = st.text_input("Celular / WhatsApp")
-        
         c_vigencia = st.selectbox(
             "Modalidade de vigência do plano",
-            [
-                "Plano Mensal",
-                "Plano Anual (Com Desconto por Fidelidade)",
-            ],
+            ["Plano Mensal", "Plano Anual (Com Desconto por Fidelidade)"],
         )
-        btn_cadastrar = st.form_submit_button(
-            "Cadastrar e Prosseguir para Pagamento"
-        )
+        btn_cadastrar = st.form_submit_button("Cadastrar e Prosseguir")
 
         if btn_cadastrar:
           if c_nome and c_email and c_senha:
@@ -890,6 +848,7 @@ lista_menus = [
     "⛽ Abastecimentos & Combustível",
     "🏗️ Mobilização / Desmobilização",
     "🛠️ Ordens de Serviço (OS)",
+    "🚨 Gestão & Alertas de Multas",
     "🔩 Peças e Ferramentas",
     "👥 Gestão de Clientes",
     "💬 Chat Tabalmix Pro & Rede",
@@ -909,6 +868,7 @@ if menu == "📊 Visão Geral":
   df_veiculos = pd.read_sql("SELECT * FROM veiculos", conn)
   df_manut = pd.read_sql("SELECT * FROM manutencoes", conn)
   df_comb = pd.read_sql("SELECT * FROM combustivel", conn)
+  df_multas = pd.read_sql("SELECT * FROM multas", conn)
   df_pecas = pd.read_sql("SELECT * FROM pecas", conn)
   df_cli = pd.read_sql("SELECT * FROM clientes", conn)
 
@@ -924,8 +884,10 @@ if menu == "📊 Visão Geral":
     )
   with col3:
     st.metric(
-        "Custo Manut.",
-        f"R$ {df_manut['custo'].sum() if not df_manut.empty else 0.0:,.2f}",
+        "Multas Em Aberto",
+        len(df_multas[df_multas["status_multa"] == "Pendente"])
+        if not df_multas.empty
+        else 0,
     )
   with col4:
     st.metric(
@@ -1532,6 +1494,84 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
           st.rerun()
         else:
           st.error("⚠️ Informe o equipamento.")
+
+elif menu == "🚨 Gestão & Alertas de Multas":
+  st.title("🚨 Controlo Inteligente de Multas e Infrações de Trânsito")
+  st.markdown("Registe autuações estaduais/municipais com cálculo automático de prazos de vencimento e alertas operacionais.")
+
+  tab_m_lista, tab_m_cad = st.tabs([
+      "📋 Multas Registadas & Alertas",
+      "➕ Registar Nova Multa",
+  ])
+
+  with tab_m_lista:
+    df_multas_geral = pd.read_sql("SELECT * FROM multas ORDER BY id DESC", conn)
+    if not df_multas_geral.empty:
+      exibir_tabela_padronizada(df_multas_geral, "multas")
+      
+      st.markdown("---")
+      st.markdown("### 📊 Alertas de Prazos e Custos")
+      total_multas_valor = df_multas_geral["valor_multa"].sum() if "valor_multa" in df_multas_geral.columns else 0.0
+      pendentes_qtd = len(df_multas_geral[df_multas_geral["status_multa"] == "Pendente"]) if "status_multa" in df_multas_geral.columns else 0
+      
+      col_m_met1, col_m_met2 = st.columns(2)
+      with col_m_met1:
+        st.metric("Total em Multas (R$)", f"R$ {total_multas_valor:,.2f}")
+      with col_m_met2:
+        st.metric("Multas Pendentes de Pagamento", pendentes_qtd)
+
+      if st.button("📊 Exportar Relatório de Multas em Excel"):
+        excel_m = gerar_excel_formatado(df_multas_geral, "Multas_Frota")
+        st.download_button(
+            label="📥 Baixar Excel de Multas",
+            data=excel_m,
+            file_name="multas_tabalmix.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+    else:
+      st.info("Nenhuma multa registada no sistema. A frota está sem infrações pendentes.")
+
+  with tab_m_cad:
+    with st.form("form_cadastrar_multa"):
+      st.markdown("### 🚨 Registar Autuação / Infração")
+      cm1, cm2 = st.columns(2)
+      with cm1:
+        m_placa = st.text_input("Placa / Prefixo do Veículo (ex: BET-01 / ABC-1234)")
+        m_orgao = st.text_input("Órgão Autuador (ex: DETRAN-AM, ManausTrans, PRF)")
+        m_local = st.text_input("Local da Infração (Município / Estado)")
+        m_data = st.text_input("Data da Infração", value=datetime.now().strftime("%d/%m/%Y"))
+      with cm2:
+        m_valor = st.number_input("Valor da Multa (R$)", value=130.16, step=10.0)
+        m_desc = st.text_input("Descrição da Infração (ex: Excesso de velocidade, Estacionamento proibido)")
+        m_condutor = st.text_input("Condutor Responsável / Motorista")
+        m_vencimento = st.text_input("Data Limite de Vencimento / Defesa", value=(datetime.now() + timedelta(days=30)).strftime("%d/%m/%Y"))
+        m_status = st.selectbox("Status da Multa", ["Pendente", "Recurso em Andamento", "Quitada"])
+
+      btn_salvar_multa = st.form_submit_button("💾 Salvar Multa e Gerar Alerta Automático")
+
+      if btn_salvar_multa:
+        if m_placa and m_valor > 0:
+          cursor.execute(
+              "INSERT INTO multas (equipamento_placa, orgao_autuador, local_infracao, data_infracao, valor_multa, descricao_infracao, condutor_responsable, data_vencimento, status_multa) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              (m_placa, m_orgao, m_local, m_data, float(m_valor), m_desc, m_condutor, m_vencimento, m_status)
+          )
+          conn.commit()
+          
+          # Dispara automaticamente um alerta notificação no chat interno da equipe
+          try:
+            msg_alerta_chat = f"🚨 **ALERTA DE MULTA / INFRAÇÃO:** Nova multa registada para o veículo `{m_placa}` no valor de R$ `{m_valor:,.2f}` ({m_local}). Vencimento: `{m_vencimento}`."
+            cursor.execute(
+                "INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                ("Sistema Alerta Automático", "🌐 Canal Geral", "Sistema", msg_alerta_chat, "", "", datetime.now().strftime("%H:%M — %d/%m"))
+            )
+            conn.commit()
+          except Exception:
+            pass
+
+          st.success("✅ Multa registada com sucesso! Alerta automático disparado no sistema e no chat.")
+          st.rerun()
+        else:
+          st.error("⚠️ Preencha a placa do veículo e o valor da multa.")
 
 elif menu == "🔩 Peças e Ferramentas":
   st.title("🔩 Controle de Peças e Ferramentas")
