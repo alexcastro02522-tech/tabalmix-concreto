@@ -27,7 +27,8 @@ def init_db():
             tipo_equipamento TEXT, operador_condutor TEXT,
             marca TEXT, modelo TEXT, ano INTEGER, chassi TEXT, renavam TEXT,
             placa TEXT, crv TEXT, cor TEXT, combustivel TEXT, empresa TEXT,
-            horimetro_km INTEGER, status TEXT, historico_edicoes TEXT
+            horimetro_km INTEGER, status TEXT, historico_edicoes TEXT,
+            tipo_controle TEXT, ultima_revisao REAL, intervalo_revisao REAL
         )
     """)
     cursor.execute("""
@@ -138,10 +139,10 @@ def init_db():
 
     cursor.execute("SELECT COUNT(*) FROM veiculos")
     if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca, modelo, placa, ano, status, horimetro_km) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                       ("BET-01", "Betoneira", "Mercedes-Benz", "Atego 2730", "PHX-8821", 2023, "Ativo", 14200))
-        cursor.execute("INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca, modelo, placa, ano, status, horimetro_km) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                       ("BOM-02", "Bomba de Concreto", "Putzmeister", "BSA 1409 D", "TRK-4910", 2022, "Ativo", 8950))
+        cursor.execute("INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca, modelo, placa, ano, status, horimetro_km, tipo_controle, ultima_revisao, intervalo_revisao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                       ("BET-01", "Betoneira", "Mercedes-Benz", "Atego 2730", "PHX-8821", 2023, "Ativo", 14200, "KM", 10000, 10000))
+        cursor.execute("INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca, modelo, placa, ano, status, horimetro_km, tipo_controle, ultima_revisao, intervalo_revisao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                       ("ESC-02", "Linha Amarela (Escavadeira)", "Caterpillar", "320D", "EQP-9920", 2022, "Ativo", 4850, "Horas (Horímetro)", 4500, 500))
         conn.commit()
 
     conn.commit()
@@ -444,6 +445,25 @@ if menu == "📊 Visão Geral":
     df_comb = ler_tabelas_sql("SELECT * FROM combustivel")
     df_multas = ler_tabelas_sql("SELECT * FROM multas")
 
+    # ALERTA INTELIGENTE DE REVISÃO PRÓXIMA (DIRETORIA / CHEFIAS)
+    if not df_veiculos.empty:
+        alertas_revisao = []
+        for _, row in df_veiculos.iterrows():
+            atual = row.get("horimetro_km", 0) or 0
+            ultima = row.get("ultima_revisao", 0) or 0
+            intervalo = row.get("intervalo_revisao", 0) or 1000
+            tipo = row.get("tipo_controle", "KM")
+            
+            # Se faltar menos de 10% para o intervalo ou já passou
+            proxima_rev = ultima + intervalo
+            if atual >= (proxima_rev - (intervalo * 0.1)):
+                falta = proxima_rev - atual
+                status_txt = f"🚨 VENCIDA (Passou {abs(falta)} {tipo})" if falta < 0 else f"⚠️ ATENÇÃO: Faltam apenas {falta} {tipo} para a revisão!"
+                alertas_revisao.append(f"• **{row['tag_prefixo']} ({row['marca']} {row['modelo']})** — {status_txt}")
+
+        if alertas_revisao:
+            st.error("🚨 **ALERTA EXECUTIVO: EQUIPAMENTOS PRÓXIMOS OU EM ATRASO DE REVISÃO!**\n\n" + "\n".join(alertas_revisao))
+
     c1, c2, c3, c4, c5 = st.columns(5)
     with c1: st.metric("Total Frota", len(df_veiculos))
     with c2: st.metric("OS Abertas", len(df_manut[df_manut["status_os"] == "aberta"]) if not df_manut.empty else 0)
@@ -484,33 +504,47 @@ if menu == "📊 Visão Geral":
         st.info("Nenhum veículo registado na frota.")
 
 elif menu == "🚜 Cadastro de Equipamentos":
-    st.title("🚜 Cadastro de Equipamentos & Vistoria Fotográfica")
-    t_l, t_c, t_e, t_f = st.tabs(["📋 Frota", "➕ Registar", "✏️ Editar", "📸 Vistoria"])
+    st.title("🚜 Cadastro de Equipamentos, Linha Amarela & Manutenção")
+    t_l, t_c, t_e, t_f = st.tabs(["📋 Frota", "➕ Registar", "✏️ Atualizar KM/Horímetro", "📸 Vistoria"])
     with t_l:
         exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM veiculos"), "veiculos")
     with t_c:
         with st.form("form_eq_novo"):
-            st.markdown("### Registar Novo Equipamento / Veículo")
-            f_tag = st.text_input("Tag / Prefixo (ex: CA-01)")
-            f_cat = st.selectbox("Categoria", ["Betoneira", "Bomba de Concreto", "Caminhão Carroceria", "Veículo Leve", "Outros"])
+            st.markdown("### Registar Novo Equipamento / Linha Amarela / Veículo Leve")
+            f_tag = st.text_input("Tag / Prefixo (ex: ESC-01 ou CA-05)")
+            f_cat = st.selectbox("Categoria", ["Betoneira", "Bomba de Concreto", "Linha Amarela (Escavadeira/Pá Carregadeira)", "Caminhão Carroceria", "Veículo Leve", "Outros"])
             f_marca = st.text_input("Marca")
             f_modelo = st.text_input("Modelo")
-            f_placa = st.text_input("Placa")
+            f_placa = st.text_input("Placa / ID")
             f_ano = st.number_input("Ano", min_value=1980, max_value=2030, value=2024)
+            
+            st.markdown("---")
+            st.markdown("#### ⚙️ Controlo Preventivo de Revisões (KM ou Horas)")
+            f_tipo_cont = st.selectbox("Tipo de Medidor", ["KM", "Horas (Horímetro)"])
+            f_atual = st.number_input("KM ou Horímetro Atual", min_value=0, value=0)
+            f_ult_rev = st.number_input("Última Revisão Feita (KM ou Horas)", min_value=0, value=0)
+            f_int_rev = st.number_input("Intervalo para Próxima Revisão (ex: 10000 km ou 500 horas)", min_value=100, value=10000)
+
             if st.form_submit_button("Guardar Equipamento") and f_marca:
-                executar_comando_sql("INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca, modelo, placa, ano, status, horimetro_km) VALUES (?, ?, ?, ?, ?, ?, 'Ativo', 0)", (f_tag, f_cat, f_marca, f_modelo, f_placa, f_ano))
-                st.success("Equipamento registado com sucesso!")
+                executar_comando_sql(
+                    "INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca, modelo, placa, ano, status, horimetro_km, tipo_controle, ultima_revisao, intervalo_revisao) VALUES (?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?)",
+                    (f_tag, f_cat, f_marca, f_modelo, f_placa, f_ano, f_atual, f_tipo_cont, f_ult_rev, f_int_rev)
+                )
+                st.success("Equipamento registado com sucesso com controlo preventivo!")
                 st.rerun()
     with t_e:
-        st.markdown("### Editar Dados de Equipamentos")
-        df_ed = ler_tabelas_sql("SELECT id, tag_prefixo, placa, modelo FROM veiculos")
+        st.markdown("### Atualizar KM / Horímetro e Estado")
+        df_ed = ler_tabelas_sql("SELECT id, tag_prefixo, placa, modelo, horimetro_km FROM veiculos")
         if not df_ed.empty:
-            eq_sel = st.selectbox("Selecione o Equipamento para Editar", df_ed["tag_prefixo"] + " - " + df_ed["placa"])
+            eq_sel = st.selectbox("Selecione o Equipamento", df_ed["tag_prefixo"] + " - " + df_ed["placa"])
             id_eq = df_ed.iloc[df_ed[df_ed["tag_prefixo"] + " - " + df_ed["placa"] == eq_sel].index[0]]["id"]
+            
+            novo_medidor = st.number_input("Novo KM ou Horímetro Atual", min_value=0, value=0)
             novo_status = st.selectbox("Alterar Estado", ["Ativo", "Em Manutenção", "Baixado"])
-            if st.button("Atualizar Estado"):
-                executar_comando_sql("UPDATE veiculos SET status = ? WHERE id = ?", (novo_status, id_eq))
-                st.success("Estado atualizado com sucesso!")
+            
+            if st.button("Atualizar Medidores e Estado"):
+                executar_comando_sql("UPDATE veiculos SET horimetro_km = ?, status = ? WHERE id = ?", (novo_medidor, novo_status, id_eq))
+                st.success("Registo atualizado com sucesso!")
                 st.rerun()
     with t_f:
         st.markdown("### 📸 Vistoria Fotográfica Completa (Até 15 Ângulos)")
