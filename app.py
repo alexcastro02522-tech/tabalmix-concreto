@@ -423,7 +423,7 @@ lista_menus = [
     "🔍 Consulta / Busca Geral",
     "🚜 Cadastro de Equipamentos",
     "🏗️ Mobilização / Desmobilização",
-    "🔧 Controlo de Manutenção",
+    "🔧 Configuração Inicial de Controle de Revisão",
     "📋 Chamada de Controlo",
     "⛽ Abastecimentos & Combustível",
     "🛠️ Ordens de Serviço (OS)",
@@ -542,7 +542,7 @@ elif menu == "🚜 Cadastro de Equipamentos":
                     "INSERT INTO veiculos (tag_prefixo, placa, categoria_equipamento, ano_fabricacao, renavam, crv, marca_modelo, tipo, cor, combustivel, chassi, empresa, operador_condutor, horimetro_km, status, tipo_controle, ultima_revisao, intervalo_revisao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo', 'KM', 0, 10000)",
                     (f_tag, f_placa, f_cat, f_ano, f_renavam, f_crv, f_marca_modelo, f_tipo, f_cor, f_combustivel, f_chassi, f_empresa, f_operador, 0)
                 )
-                st.success("Equipamento registado com sucesso! Agora configure a revisão na aba 'Controlo de Manutenção'.")
+                st.success("Equipamento registado com sucesso! Agora configure a revisão na aba 'Configuração Inicial de Controle de Revisão'.")
                 st.rerun()
 
 elif menu == "🏗️ Mobilização / Desmobilização":
@@ -606,8 +606,8 @@ elif menu == "🏗️ Mobilização / Desmobilização":
                 st.success("Desmobilização registada com sucesso!")
                 st.rerun()
 
-elif menu == "🔧 Controlo de Manutenção":
-    st.title("🔧 Controlo Preventivo de Manutenção & Configuração Inicial de Revisão")
+elif menu == "🔧 Configuração Inicial de Controle de Revisão":
+    st.title("🔧 Configuração Inicial de Controle de Revisão & Alertas Automáticos")
     st.info("Selecione qualquer equipamento da frota, configure a sua revisão inicial e acompanhe os alertas automáticos em tempo real.")
     
     df_rev = ler_tabelas_sql("SELECT id, tag_prefixo, placa, marca_modelo, horimetro_km, tipo_controle, ultima_revisao, intervalo_revisao FROM veiculos")
@@ -671,7 +671,7 @@ elif menu == "📋 Chamada de Controlo":
         with st.form("form_chamada"):
             c_colab = st.selectbox("Colaborador / Operador", lista_nomes)
             c_status = st.selectbox("Estado da Presenca", ["Presente", "Falta Justificada", "Falta Injustificada", "Atestado / Licença", "Em Viagem / Campo"])
-            c_obs = st.text_area("Observações du Dia / Atividade")
+            c_obs = st.text_area("Observações do Dia / Atividade")
             
             if st.form_submit_button("Registar Chamada"):
                 cargo_cad = "Operacional"
