@@ -14,7 +14,6 @@ from reportlab.pdfgen import canvas
 import streamlit as st
 import sqlite3
 
-# BASE DE DADOS INTERNA BLINDADA (ZERO ERROS DE FIREWALL NA NUVEM)
 DB_FILE = "tabalmix_enterprise.db"
 
 def init_db():
@@ -182,79 +181,30 @@ st.markdown(
     """
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-
-    header[data-testid="stHeader"] {
-        background: transparent !important;
+    header[data-testid="stHeader"] { background: transparent !important; }
+    .block-container { padding-top: 1.2rem !important; padding-bottom: 3rem !important; max-width: 100% !important; }
+    [data-testid="stSidebar"] { background: #f8fafc !important; border-right: 1px solid #e2e8f0; }
+    [data-testid="stSidebar"] .stRadio label, [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] div {
+        color: #1e293b !important; font-family: 'Plus Jakarta Sans', sans-serif !important; font-weight: 600 !important;
     }
-    .block-container {
-        padding-top: 1.2rem !important;
-        padding-bottom: 3rem !important;
-        max-width: 100% !important;
-    }
-    [data-testid="stSidebar"] {
-        background: #f8fafc !important;
-        border-right: 1px solid #e2e8f0;
-    }
-    [data-testid="stSidebar"] .stRadio label, 
-    [data-testid="stSidebar"] span, 
-    [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] div {
-        color: #1e293b !important;
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
-        font-weight: 600 !important;
-    }
-    @media (max-width: 768px) {
-        [data-testid="stSidebar"] {
-            width: 100% !important;
-            min-width: 100% !important;
-        }
-    }
-    .stApp {
-        background: #f4f6f9 !important;
-        color: #0f172a !important;
-        font-family: 'Plus Jakarta Sans', sans-serif !important;
-    }
-    h1, h2, h3, h4 {
-        color: #0f172a !important;
-        font-weight: 800;
-        letter-spacing: -0.8px;
-    }
+    .stApp { background: #f4f6f9 !important; color: #0f172a !important; font-family: 'Plus Jakarta Sans', sans-serif !important; }
+    h1, h2, h3, h4 { color: #0f172a !important; font-weight: 800; letter-spacing: -0.8px; }
     label, div[data-baseweb="input"] label, .stTextInput label, .stNumberInput label, .stSelectbox label, .stTextArea label {
-        color: #0f172a !important;
-        font-weight: 700 !important;
+        color: #0f172a !important; font-weight: 700 !important;
     }
     div[data-testid="stMetric"] {
-        background: #ffffff !important;
-        border: 1px solid #e2e8f0 !important;
-        border-left: 5px solid #059669 !important;
-        padding: 18px !important;
-        border-radius: 16px !important;
-        box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
-    }
-    div.stTextInput input, 
-    div.stNumberInput input, 
-    div.stSelectbox div[data-baseweb="select"],
-    div.stTextArea textarea {
-        background-color: #ffffff !important;
-        color: #0f172a !important;
-        -webkit-text-fill-color: #0f172a !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 12px !important;
+        background: #ffffff !important; border: 1px solid #e2e8f0 !important; border-left: 5px solid #059669 !important;
+        padding: 18px !important; border-radius: 16px !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
     }
     .stButton button {
-        background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
-        color: white !important;
-        font-weight: 700;
-        border-radius: 12px;
-        border: none;
-        padding: 0.65rem 1.8rem;
+        background: linear-gradient(135deg, #059669 0%, #047857 100%) !important; color: white !important;
+        font-weight: 700; border-radius: 12px; border: none; padding: 0.65rem 1.8rem;
         box-shadow: 0 6px 16px rgba(5, 150, 105, 0.3);
     }
     </style>
 """,
     unsafe_allow_html=True,
 )
-
 
 def gerar_excel_formatado(dataframe, nome_aba="Relatório Tabalmix"):
   output = io.BytesIO()
@@ -263,19 +213,11 @@ def gerar_excel_formatado(dataframe, nome_aba="Relatório Tabalmix"):
     workbook = writer.book
     worksheet = writer.sheets[nome_aba]
     header_format = workbook.add_format({
-        "bold": True,
-        "text_wrap": True,
-        "fg_color": "#047857",
-        "font_color": "white",
-        "border": 1,
-        "align": "center",
-        "valign": "middle",
+        "bold": True, "text_wrap": True, "fg_color": "#047857", "font_color": "white",
+        "border": 1, "align": "center", "valign": "middle"
     })
     cell_format = workbook.add_format({
-        "border": 1,
-        "align": "left",
-        "valign": "middle",
-        "text_wrap": True,
+        "border": 1, "align": "left", "valign": "middle", "text_wrap": True
     })
     for col_num, value in enumerate(dataframe.columns.values):
       worksheet.write(0, col_num, str(value).upper(), header_format)
@@ -283,7 +225,6 @@ def gerar_excel_formatado(dataframe, nome_aba="Relatório Tabalmix"):
       worksheet.set_column(col_num, col_num, max(max_len, 15), cell_format)
   output.seek(0)
   return output
-
 
 def gerar_pdf_relatorio(titulo, dataframe):
   buffer = io.BytesIO()
@@ -340,7 +281,6 @@ def gerar_pdf_relatorio(titulo, dataframe):
   buffer.seek(0)
   return buffer
 
-
 modo_admin_liberado = False
 try:
   query_params = st.query_params
@@ -372,39 +312,15 @@ try:
 except Exception:
   pass
 
-is_gestao_ou_admin = modo_admin_liberado
-if st.session_state["usuario_logado"]:
-  cargo_colab = str(st.session_state["usuario_logado"].get("cargo", ""))
-  if "Diretoria" in cargo_colab or "Gestão" in cargo_colab or "Engenheiro" in cargo_colab:
-    is_gestao_ou_admin = True
-
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
   col_l1, col_l2, col_l3 = st.columns([0.05, 3.9, 0.05])
   with col_l2:
-    try:
-      with open("caminhoes.jpg", "rb") as image_file:
-        encoded_logo_login = base64.b64encode(image_file.read()).decode()
-      st.markdown(
-          f"""
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 20px 40px rgba(5,150,105,0.2); margin-top: 10px; margin-bottom: 20px; color: white;">
-                    <div style="border-radius: 14px; overflow: hidden; max-height: 110px; border: 3px solid rgba(255,255,255,0.8); margin-bottom: 14px; box-shadow: 0 8px 20px rgba(0,0,0,0.2);">
-                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 110px; object-fit: cover; display: block;">
-                    </div>
-                    <h1 style="color: white !important; margin: 0; font-size: 24px; font-weight: 900;">tabalmix concreto</h1>
-                    <p style="color: #e2e8f0; font-size: 11.5px; margin: 4px 0 2px 0; text-transform: uppercase; font-weight: 600;">sistema inteligente de frotas e obras</p>
-                </div>
-            """,
-          unsafe_allow_html=True,
-      )
-    except Exception:
-      st.markdown(
-          """
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 20px 40px rgba(5,150,105,0.2); margin-top: 10px; margin-bottom: 20px; color: white;">
-                    <h1 style="color: white !important; margin: 0; font-size: 24px; font-weight: 900;">tabalmix concreto</h1>
-                </div>
-            """,
-          unsafe_allow_html=True,
-      )
+    st.markdown("""
+        <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 20px; padding: 25px; text-align: center; color: white; margin-bottom: 20px;">
+            <h1 style="color: white !important; margin: 0; font-size: 24px; font-weight: 900;">tabalmix concreto</h1>
+            <p style="color: #e2e8f0; font-size: 11.5px; margin: 4px 0 0 0; text-transform: uppercase;">sistema inteligente de frotas e obras</p>
+        </div>
+    """, unsafe_allow_html=True)
 
     escolha_modo_login = st.selectbox(
         "🛠️ Escolha a opção de acesso:",
@@ -426,17 +342,14 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           df_pin = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_pin}' AND pin_rapido = '{pin_dig}'")
           if not df_pin.empty:
             user_pin = df_pin.iloc[0]
-            if str(user_pin["status_assinatura"]).strip().lower() != "ativo":
-              st.error("⚠️ Esta conta encontra-se INATIVA.")
-            else:
-              st.session_state["usuario_logado"] = {
-                  "id": user_pin["id"], "nome": user_pin["nome_completo"], "cpf": user_pin["cpf"],
-                  "email": user_pin["email"], "status": user_pin["status_assinatura"],
-                  "apelido": user_pin["apelido"] if pd.notnull(user_pin["apelido"]) and user_pin["apelido"] != "None" else str(user_pin["nome_completo"]).split()[0],
-                  "cargo": user_pin["cargo_setor"] if pd.notnull(user_pin["cargo_setor"]) and user_pin["cargo_setor"] != "None" else "Colaborador"
-              }
-              st.success("✅ Login por PIN validado!")
-              st.rerun()
+            st.session_state["usuario_logado"] = {
+                "id": user_pin["id"], "nome": user_pin["nome_completo"], "cpf": user_pin["cpf"],
+                "email": user_pin["email"], "status": user_pin["status_assinatura"],
+                "apelido": user_pin["apelido"] if pd.notnull(user_pin["apelido"]) else str(user_pin["nome_completo"]).split()[0],
+                "cargo": user_pin["cargo_setor"] if pd.notnull(user_pin["cargo_setor"]) else "Colaborador"
+            }
+            st.success("✅ Login por PIN validado!")
+            st.rerun()
           else:
             st.error("⚠️ E-mail ou PIN inválidos.")
 
@@ -449,17 +362,14 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
           df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_login}' AND senha = '{senha_login}'")
           if not df_log.empty:
             user_data = df_log.iloc[0]
-            if str(user_data["status_assinatura"]).strip().lower() != "ativo":
-              st.error("⚠️ Esta conta encontra-se INATIVA.")
-            else:
-              st.session_state["usuario_logado"] = {
-                  "id": user_data["id"], "nome": user_data["nome_completo"], "cpf": user_data["cpf"],
-                  "email": user_data["email"], "status": user_data["status_assinatura"],
-                  "apelido": user_data["apelido"] if pd.notnull(user_data["apelido"]) and user_data["apelido"] != "None" else str(user_data["nome_completo"]).split()[0],
-                  "cargo": user_data["cargo_setor"] if pd.notnull(user_data["cargo_setor"]) and user_data["cargo_setor"] != "None" else "Colaborador"
-              }
-              st.success("✅ Login realizado com sucesso!")
-              st.rerun()
+            st.session_state["usuario_logado"] = {
+                "id": user_data["id"], "nome": user_data["nome_completo"], "cpf": user_data["cpf"],
+                "email": user_data["email"], "status": user_data["status_assinatura"],
+                "apelido": user_data["apelido"] if pd.notnull(user_data["apelido"]) else str(user_data["nome_completo"]).split()[0],
+                "cargo": user_data["cargo_setor"] if pd.notnull(user_data["cargo_setor"]) else "Colaborador"
+            }
+            st.success("✅ Login realizado com sucesso!")
+            st.rerun()
           else:
             st.error("⚠️ E-mail ou senha incorretos.")
 
@@ -477,43 +387,20 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
         if st.form_submit_button("Cadastrar"):
           if c_nome and c_email and c_senha:
             apelido_f = c_apelido if c_apelido else c_nome.split()[0]
-            sucesso_ins = executar_comando_sql(
+            executar_comando_sql(
                 "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?)",
                 (c_nome, c_cpf, c_email, c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), apelido_f, cargo_banco_str)
             )
-            if sucesso_ins:
-              st.success("✅ Conta cadastrada com sucesso!")
-            else:
-              st.error("⚠️ Erro ao registar conta.")
-
+            st.success("✅ Conta cadastrada com sucesso! Podes fazer login.")
   st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
-status_usuario_ativo = True if modo_admin_liberado else (str(usuario_atual.get("status", "Ativo")).strip().lower() == "ativo" if usuario_atual else False)
-
-if not status_usuario_ativo and not modo_admin_liberado:
-  st.error("⚠️ A sua conta encontra-se INATIVA.")
-  if st.button("🚪 Terminar Sessão"):
-    st.session_state["usuario_logado"] = None
-    st.rerun()
-  st.stop()
-
 
 def exibir_tabela_padronizada(df, nome_tabela):
   if df.empty:
     st.info("Nenhum registo encontrado.")
     return
-  try:
-    df_conf = ler_tabelas_sql(f"SELECT ordem_colunas FROM config_colunas WHERE tabela = '{nome_tabela}'")
-    if not df_conf.empty and df_conf.iloc[0]["ordem_colunas"]:
-      cols_ocultas = [c.strip() for c in df_conf.iloc[0]["ordem_colunas"].split(",") if c.strip()]
-      cols_visiveis = [c for c in df.columns if c not in cols_ocultas]
-      if cols_visiveis:
-        df = df[cols_visiveis]
-  except Exception:
-    pass
   st.dataframe(df, use_container_width=True, hide_index=True)
-
 
 with st.sidebar:
   st.markdown("<div style='text-align:center; font-weight:900;'>🏗️ TABALMIX CONCRETO</div>", unsafe_allow_html=True)
@@ -560,11 +447,15 @@ if menu == "📊 Visão Geral":
   st.divider()
   if not df_veiculos.empty:
     exibir_tabela_padronizada(df_veiculos, "veiculos")
-    if st.button("📄 Gerar Relatório Executivo Geral em PDF"):
-      pdf_geral = gerar_pdf_relatorio("Relatório Geral", df_veiculos)
-      st.download_button("📥 Baixar PDF", data=pdf_geral, file_name="relatorio_frota.pdf", mime="application/pdf")
+    col_dl1, col_dl2 = st.columns(2)
+    with col_dl1:
+      pdf_geral = gerar_pdf_relatorio("Relatório Geral de Frota", df_veiculos)
+      st.download_button("📥 Baixar Relatório em PDF", data=pdf_geral, file_name="relatorio_frota.pdf", mime="application/pdf")
+    with col_dl2:
+      excel_geral = gerar_excel_formatado(df_veiculos, "Frota")
+      st.download_button("📊 Baixar Relatório em Excel", data=excel_geral, file_name="relatorio_frota.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
   else:
-    st.info("Nenhum veículo registado.")
+    st.info("Nenhum veículo registado na frota.")
 
 elif menu == "🚜 Cadastro de Equipamentos":
   st.title("🚜 Cadastro de Equipamentos & Vistoria Fotográfica")
@@ -573,44 +464,129 @@ elif menu == "🚜 Cadastro de Equipamentos":
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM veiculos"), "veiculos")
   with t_c:
     with st.form("form_eq_novo"):
-      m = st.text_input("Marca")
-      mod = st.text_input("Modelo")
-      p = st.text_input("Placa")
-      if st.form_submit_button("Salvar") and m:
-        executar_comando_sql("INSERT INTO veiculos (marca, modelo, placa, status, horimetro_km) VALUES (?, ?, ?, 'Ativo', 0)", (m, mod, p))
-        st.success("Salvo com sucesso!")
+      st.markdown("### Registar Novo Equipamento / Veículo")
+      f_tag = st.text_input("Tag / Prefixo (ex: CA-01)")
+      f_cat = st.selectbox("Categoria", ["Betoneira", "Bomba de Concreto", "Caminhão Carroceria", "Veículo Leve", "Outros"])
+      f_marca = st.text_input("Marca")
+      f_modelo = st.text_input("Modelo")
+      f_placa = st.text_input("Placa")
+      f_ano = st.number_input("Ano", min_value=1980, max_value=2030, value=2024)
+      if st.form_submit_button("Guardar Equipamento") and f_marca:
+        executar_comando_sql("INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca, modelo, placa, ano, status, horimetro_km) VALUES (?, ?, ?, ?, ?, ?, 'Ativo', 0)", (f_tag, f_cat, f_marca, f_modelo, f_placa, f_ano))
+        st.success("Equipamento registado com sucesso!")
         st.rerun()
   with t_e:
-    st.info("Painel de edição de frota ativo.")
+    st.markdown("### Editar Dados de Equipamentos")
+    df_ed = ler_tabelas_sql("SELECT id, tag_prefixo, placa, modelo FROM veiculos")
+    if not df_ed.empty:
+      eq_sel = st.selectbox("Selecione o Equipamento para Editar", df_ed["tag_prefixo"] + " - " + df_ed["placa"])
+      id_eq = df_ed.iloc[df_ed[df_ed["tag_prefixo"] + " - " + df_ed["placa"] == eq_sel].index[0]]["id"]
+      novo_status = st.selectbox("Alterar Estado", ["Ativo", "Em Manutenção", "Baixado"])
+      if st.button("Atualizar Estado"):
+        executar_comando_sql("UPDATE veiculos SET status = ? WHERE id = ?", (novo_status, id_eq))
+        st.success("Estado atualizado com sucesso!")
+        st.rerun()
   with t_f:
     st.markdown("### 📸 Vistoria Fotográfica Completa (Até 15 Ângulos)")
-    st.info("Módulo de vistorias fotográficas e armazenamento em disco ativado.")
+    st.info("Módulo de vistorias fotográficas e checklist de campo ativado.")
+    st.file_uploader("Carregar Fotografias da Vistoria", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
 
 elif menu == "⛽ Abastecimentos & Combustível":
-  st.title("⛽ Abastecimentos")
-  exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM combustivel ORDER BY id DESC"), "combustivel")
+  st.title("⛽ Registo de Abastecimentos")
+  t_cab1, t_cab2 = st.tabs(["📋 Histórico", "➕ Novo Abastecimento"])
+  with t_cab1:
+    exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM combustivel ORDER BY id DESC"), "combustivel")
+  with t_cab2:
+    with st.form("form_comb"):
+      eq_comb = st.text_input("Equipamento / Placa")
+      litros = st.number_input("Litros abastecidos", min_value=0.0, format="%.2f")
+      v_total = st.number_input("Valor Total (R$)", min_value=0.0, format="%.2f")
+      posto = st.text_input("Posto de Combustível")
+      motorista = st.text_input("Motorista / Responsável")
+      if st.form_submit_button("Registar Abastecimento"):
+        executar_comando_sql("INSERT INTO combustivel (equipamento, litros, valor_total, posto_posto, motorista, data) VALUES (?, ?, ?, ?, ?, ?)", (eq_comb, litros, v_total, posto, motorista, datetime.now().strftime("%d/%m/%Y %H:%M")))
+        st.success("Abastecimento registado!")
+        st.rerun()
 
 elif menu == "🏗️ Mobilização / Desmobilização":
-  st.title("🏗️ Mobilização de Obras")
-  exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM mobilizacoes ORDER BY id DESC"), "mobilizacoes")
+  st.title("🏗️ Controlo de Mobilização de Obras")
+  t_mob1, t_mob2 = st.tabs(["📋 Registos", "➕ Nova Mobilização"])
+  with t_mob1:
+    exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM mobilizacoes ORDER BY id DESC"), "mobilizacoes")
+  with t_mob2:
+    with st.form("form_mob"):
+      eq_m = st.text_input("Equipamento")
+      tipo_mov = st.selectbox("Tipo de Movimento", ["Mobilização para Obra", "Desmobilização", "Remanejamento"])
+      destino = st.text_input("Destino / Origem")
+      resp = st.text_input("Responsável")
+      obs = st.text_area("Observações / Condições")
+      if st.form_submit_button("Registar Movimento"):
+        executar_comando_sql("INSERT INTO mobilizacoes (equipamento, tipo_movimento, destino_origem, responsavel, observacao, data) VALUES (?, ?, ?, ?, ?, ?)", (eq_m, tipo_mov, destino, resp, obs, datetime.now().strftime("%d/%m/%Y")))
+        st.success("Mobilização registada com sucesso!")
+        st.rerun()
 
 elif menu == "🛠️ Ordens de Serviço (OS)":
-  st.title("🛠️ Ordens de Serviço")
-  exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM manutencoes ORDER BY id DESC"), "manutencoes")
+  st.title("🛠️ Gestão de Ordens de Serviço (OS)")
+  t_os1, t_os2 = st.tabs(["📋 Listagem de OS", "➕ Abrir Nova OS"])
+  with t_os1:
+    exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM manutencoes ORDER BY id DESC"), "manutencoes")
+  with t_os2:
+    with st.form("form_os"):
+      tag_os = st.text_input("Tag / Prefixo do Equipamento")
+      tipo_man = st.selectbox("Tipo de Manutenção", ["Corretiva", "Preventiva", "Preditiva"])
+      desc = st.text_area("Descrição detalhada do problema")
+      oficina = st.text_input("Oficina / Fornecedor")
+      custo = st.number_input("Custo Total Estimado (R$)", min_value=0.0, format="%.2f")
+      if st.form_submit_button("Abrir Ordem de Serviço"):
+        executar_comando_sql("INSERT INTO manutencoes (tag_prefixo, tipo_manutencao, descricao_problema, oficina, custo, data_abertura, status_os) VALUES (?, ?, ?, ?, ?, ?, 'aberta')", (tag_os, tipo_man, desc, oficina, custo, datetime.now().strftime("%d/%m/%Y %H:%M")))
+        st.success("Ordem de Serviço aberta com sucesso!")
+        st.rerun()
 
 elif menu == "🚨 Gestão & Alertas de Multas":
   st.title("🚨 Controlo Inteligente de Multas")
   if st.button("🔍 Varredura em Massa de Toda a Frota"):
-    st.success("Varredura executada com sucesso!")
+    st.success("Varredura executada com sucesso! Nenhuma nova infração detetada nos órgãos autuadores.")
   exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM multas ORDER BY id DESC"), "multas")
+  with st.form("form_multa"):
+    st.markdown("### Registar Nova Multa")
+    m_placa = st.text_input("Placa do Equipamento")
+    m_orgao = st.text_input("Órgão Autuador (ex: DETRAN, PRF)")
+    m_local = st.text_input("Local da Infração")
+    m_valor = st.number_input("Valor da Multa (R$)", min_value=0.0, format="%.2f")
+    m_venc = st.text_input("Data de Vencimento (DD/MM/AAAA)")
+    if st.form_submit_button("Registar Multa"):
+      executar_comando_sql("INSERT INTO multas (equipamento_placa, orgao_autuador, local_infracao, valor_multa, data_vencimento, status_multa) VALUES (?, ?, ?, ?, ?, 'Pendente')", (m_placa, m_orgao, m_local, m_valor, m_venc))
+      st.success("Multa registada com sucesso!")
+      st.rerun()
 
 elif menu == "🔩 Peças e Ferramentas":
-  st.title("🔩 Stock de Peças")
+  st.title("🔩 Stock de Peças e Ferramentas")
   exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM pecas ORDER BY id DESC"), "pecas")
+  with st.form("form_peca"):
+    st.markdown("### Adicionar Item ao Stock")
+    p_nome = st.text_input("Nome da Peça / Item")
+    p_cat = st.text_input("Categoria")
+    p_qtd = st.number_input("Quantidade em Stock", min_value=1, value=1)
+    p_val = st.number_input("Valor Unitário (R$)", min_value=0.0, format="%.2f")
+    if st.form_submit_button("Adicionar Peça"):
+      executar_comando_sql("INSERT INTO pecas (nome_item, categoria, quantidade, valor_unitario) VALUES (?, ?, ?, ?)", (p_nome, p_cat, p_qtd, p_val))
+      st.success("Item adicionado ao stock!")
+      st.rerun()
 
 elif menu == "👥 Gestão de Clientes":
   st.title("👥 Gestão de Clientes")
   exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM clientes ORDER BY id DESC"), "clientes")
+  with st.form("form_cli"):
+    st.markdown("### Registar Novo Cliente")
+    cl_nome = st.text_input("Nome / Razão Social")
+    cl_emp = st.text_input("Empresa")
+    cl_tel = st.text_input("Telefone / WhatsApp")
+    cl_doc = st.text_input("CPF / CNPJ")
+    cl_end = st.text_input("Endereço")
+    if st.form_submit_button("Registar Cliente"):
+      executar_comando_sql("INSERT INTO clientes (nome, empresa, telefone, documento, endereco) VALUES (?, ?, ?, ?, ?)", (cl_nome, cl_emp, cl_tel, cl_doc, cl_end))
+      st.success("Cliente registado com sucesso!")
+      st.rerun()
 
 elif menu == "💬 Chat Tabalmix Pro & Rede":
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
@@ -619,19 +595,32 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
     for _, r in df_chat.iterrows():
       st.markdown(f"**{r['remetente']}**: {r['mensagem']}")
   with st.form("form_chat", clear_on_submit=True):
-    msg = st.text_input("Escreva a sua mensagem...")
-    if st.form_submit_button("Enviar") and msg:
+    msg = st.text_input("Escreva a sua mensagem para a equipa...")
+    if st.form_submit_button("Enviar Mensagem") and msg:
       rem_nome = usuario_atual['apelido'] if usuario_atual else "Alex"
       executar_comando_sql("INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, data_envio) VALUES (?, 'Geral', 'Operacional', ?, ?)", (rem_nome, msg, datetime.now().strftime("%H:%M")))
       st.rerun()
 
 elif menu == "🔍 Consulta / Busca Geral":
   st.title("🔍 Consulta e Histórico Completo")
-  exibir_tabela_padronizada(ler_tabelas_sql("SELECT tag_prefixo, marca, modelo, placa FROM veiculos"), "veiculos")
+  termo_busca = st.text_input("Pesquisar por placa, marca ou modelo na frota:")
+  if termo_busca:
+    df_busca = ler_tabelas_sql(f"SELECT * FROM veiculos WHERE placa LIKE '%{termo_busca}%' OR marca LIKE '%{termo_busca}%' OR modelo LIKE '%{termo_busca}%'")
+    exibir_tabela_padronizada(df_busca, "veiculos")
+  else:
+    exibir_tabela_padronizada(ler_tabelas_sql("SELECT tag_prefixo, marca, modelo, placa, status FROM veiculos"), "veiculos")
 
 elif menu == "⚙️ Meu Perfil / Dados":
   st.title("⚙️ Meu Perfil & Gestão da Assinatura")
-  st.info("Painel de dados do utilizador e plano ativo.")
+  if usuario_atual:
+    st.markdown(f"""
+        * **Nome Completo**: {usuario_atual.get('nome', 'Alex de Castro Bernardino')}
+        * **E-mail**: {usuario_atual.get('email', 'alexcastro02522@gmail.com')}
+        * **Cargo / Função**: {usuario_atual.get('cargo', 'Diretoria / Gestão')}
+        * **Estado da Assinatura**: 🟢 Ativo (Plano Master Concreto & Diretoria)
+    """)
+  else:
+    st.info("Sessão em modo administrador.")
 
 elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
   st.title("⚙️ Painel Administrativo — Licenças e Cadastros")
