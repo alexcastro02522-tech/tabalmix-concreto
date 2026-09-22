@@ -241,13 +241,6 @@ def init_db():
         cursor.execute("INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
                        ("Alex de Castro Bernardino", "000.000.000-00", "alexcastro02522@gmail.com", "admin2026", "(92) 99999-9999", "Ativo", "Plano Master Concreto & Diretoria", datetime.now().strftime("%Y-%m-%d %H:%M"), "Alex", "Diretoria / Gestão"))
         conn.commit()
-
-    cursor.execute("SELECT COUNT(*) FROM veiculos")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT INTO veiculos (tag_prefixo, categoria_equipamento, marca, modelo, placa, ano, status, horimetro_km) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
-                       ("BET-01", "Betoneira", "Mercedes-Benz", "Atego 2730", "PHX-8821", 2023, "Ativo", 14200))
-        conn.commit()
-
     conn.commit()
     return conn
 
@@ -625,7 +618,7 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
             if st.form_submit_button("Atualizar Estado do Utilizador"):
                 cursor.execute("UPDATE usuarios_sistema SET status_assinatura = %s WHERE id = %s", (novo_status_u, id_u_alvo))
                 conn.commit()
-                st.success("Estado do utilizador atualizado no banco de dados!")
+                st.success("Estado do utilizador atualizado no Supabase!")
                 st.rerun()
                 
     with col_adm2:
@@ -647,5 +640,5 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
         if st.form_submit_button("Salvar Configuração de Colunas"):
             cursor.execute("INSERT INTO config_colunas (tabela, ordem_colunas) VALUES (%s, %s) ON CONFLICT (tabela) DO UPDATE SET ordem_colunas = EXCLUDED.ordem_colunas", (tabela_escolhida, cols_ocultar_str))
             conn.commit()
-            st.success("Configuração de colunas atualizada e salva na base de dados!")
+            st.success("Configuração de colunas atualizada e salva no Supabase!")
             st.rerun()
