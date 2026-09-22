@@ -63,6 +63,13 @@ def init_db():
         )
     """)
     cursor.execute("""
+        CREATE TABLE IF NOT EXISTS chamada_controlo (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            colaborador TEXT, cargo TEXT, data_chamada TEXT,
+            status_presenca TEXT, observacao TEXT
+        )
+    """)
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS combustivel (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             equipamento TEXT, litros REAL, valor_total REAL,
@@ -429,8 +436,10 @@ lista_menus = [
     "🔍 Consulta / Busca Geral",
     "🚜 Cadastro de Equipamentos",
     "🏗️ Mobilização / Desmobilização",
-    "🛠️ Ordens de Serviço (OS)",
+    "🔧 Controlo de Manutenção",
+    "📋 Chamada de Controlo",
     "⛽ Abastecimentos & Combustível",
+    "🛠️ Ordens de Serviço (OS)",
     "🚨 Gestão & Alertas de Multas",
     "🔩 Peças e Ferramentas",
     "👥 Gestão de Clientes",
@@ -515,8 +524,8 @@ elif menu == "🔍 Consulta / Busca Geral":
         exibir_tabela_padronizada(ler_tabelas_sql("SELECT tag_prefixo, placa, categoria_equipamento, marca_modelo, status FROM veiculos"), "veiculos")
 
 elif menu == "🚜 Cadastro de Equipamentos":
-    st.title("🚜 Cadastro de Equipamentos & Controlo de Revisões")
-    t_l, t_c, t_e, t_f = st.tabs(["📋 Frota", "➕ Registar", "✏️ Atualizar KM/Horímetro", "📸 Vistoria"])
+    st.title("🚜 Cadastro de Equipamentos")
+    t_l, t_c, t_f = st.tabs(["📋 Frota", "➕ Registar", "📸 Vistoria"])
     with t_l:
         exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM veiculos"), "veiculos")
     with t_c:
@@ -542,38 +551,23 @@ elif menu == "🚜 Cadastro de Equipamentos":
                 f_operador = st.text_input("Operador / Condutor Principal")
 
             st.markdown("---")
-            st.markdown("### ⚙️ Controlo Preventivo de Revisões")
+            st.markdown("### ⚙️ Configuração Inicial de Revisão (Opcional)")
             c_rev1, c_rev2, c_rev3, c_rev4 = st.columns(4)
             with c_rev1:
                 f_tipo_cont = st.selectbox("Tipo de Medidor", ["KM", "Horas (Horímetro)"])
             with c_rev2:
                 f_atual = st.number_input("KM ou Horímetro Atual", min_value=0, value=0)
             with c_rev3:
-                f_ult_rev = st.number_input("Última Revisão (KM ou Horas)", min_value=0, value=0)
+                f_ult_rev = st.number_input("Última Revisão Feita", min_value=0, value=0)
             with c_rev4:
-                f_int_rev = st.number_input("Intervalo da Revisão (ex: 10000 ou 500)", min_value=100, value=10000)
+                f_int_rev = st.number_input("Intervalo da Revisão", min_value=100, value=10000)
 
-            if st.form_submit_button("Guardar Equipamento Completo") and f_tag:
+            if st.form_submit_button("Guardar Equipamento") and f_tag:
                 executar_comando_sql(
                     "INSERT INTO veiculos (tag_prefixo, placa, categoria_equipamento, ano_fabricacao, renavam, crv, marca_modelo, tipo, cor, combustivel, chassi, empresa, operador_condutor, horimetro_km, status, tipo_controle, ultima_revisao, intervalo_revisao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo', ?, ?, ?)",
                     (f_tag, f_placa, f_cat, f_ano, f_renavam, f_crv, f_marca_modelo, f_tipo, f_cor, f_combustivel, f_chassi, f_empresa, f_operador, f_atual, f_tipo_cont, f_ult_rev, f_int_rev)
                 )
-                st.success("Equipamento registado com sucesso com todos os dados e controlo preventivo!")
-                st.rerun()
-    with t_e:
-        st.markdown("### Atualizar KM / Horímetro e Estado")
-        df_ed = ler_tabelas_sql("SELECT id, tag_prefixo, placa, marca_modelo FROM veiculos")
-        if not df_ed.empty:
-            df_ed["rotulo"] = df_ed["tag_prefixo"] + " - " + df_ed["marca_modelo"] + " (" + df_ed["placa"] + ")"
-            eq_sel = st.selectbox("Selecione o Equipamento", df_ed["rotulo"])
-            id_eq = int(df_ed[df_ed["rotulo"] == eq_sel]["id"].values[0])
-            
-            novo_medidor = st.number_input("Novo KM ou Horímetro Atual", min_value=0, value=0)
-            novo_status = st.selectbox("Alterar Estado", ["Ativo", "Em Manutenção", "Baixado"])
-            
-            if st.button("Atualizar Medidores e Estado"):
-                executar_comando_sql("UPDATE veiculos SET horimetro_km = ?, status = ? WHERE id = ?", (novo_medidor, novo_status, id_eq))
-                st.success("Registo de medidores atualizado com sucesso!")
+                st.success("Equipamento registado com sucesso!")
                 st.rerun()
     with t_f:
         st.markdown("### 📸 Vistoria Fotográfica Completa (Até 15 Ângulos)")
@@ -597,21 +591,80 @@ elif menu == "🏗️ Mobilização / Desmobilização":
                 st.success("Mobilização registada com sucesso!")
                 st.rerun()
 
-elif menu == "🛠️ Ordens de Serviço (OS)":
-    st.title("🛠️ Gestão de Ordens de Serviço (OS)")
-    t_os1, t_os2 = st.tabs(["📋 Listagem de OS", "➕ Abrir Nova OS"])
-    with t_os1:
-        exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM manutencoes ORDER BY id DESC"), "manutencoes")
-    with t_os2:
-        with st.form("form_os"):
-            tag_os = st.text_input("Tag / Prefixo do Equipamento")
-            tipo_man = st.selectbox("Tipo de Manutenção", ["Corretiva", "Preventiva", "Preditiva"])
-            desc = st.text_area("Descrição detalhada do problema")
-            oficina = st.text_input("Oficina / Fornecedor")
-            custo = st.number_input("Custo Total Estimado (R$)", min_value=0.0, format="%.2f")
-            if st.form_submit_button("Abrir Ordem de Serviço"):
-                executar_comando_sql("INSERT INTO manutencoes (tag_prefixo, tipo_manutencao, descricao_problema, oficina, custo, data_abertura, status_os) VALUES (?, ?, ?, ?, ?, ?, 'aberta')", (tag_os, tipo_man, desc, oficina, custo, datetime.now().strftime("%d/%m/%Y %H:%M")))
-                st.success("Ordem de Serviço aberta com sucesso!")
+elif menu == "🔧 Controlo de Manutenção":
+    st.title("🔧 Controlo Preventivo de Manutenção & Alertas de Revisão")
+    st.info("Atualize o KM ou Horímetro atual dos equipamentos e consulte os alertas automáticos de revisão para a diretoria.")
+    
+    df_rev = ler_tabelas_sql("SELECT id, tag_prefixo, placa, marca_modelo, horimetro_km, tipo_controle, ultima_revisao, intervalo_revisao FROM veiculos")
+    if not df_rev.empty:
+        st.markdown("### 🚨 Alertas Ativos de Revisão")
+        tem_alerta = False
+        for _, row in df_rev.iterrows():
+            atual = row.get("horimetro_km", 0) or 0
+            ultima = row.get("ultima_revisao", 0) or 0
+            intervalo = row.get("intervalo_revisao", 0) or 1000
+            tipo = row.get("tipo_controle", "KM")
+            
+            proxima_rev = ultima + intervalo
+            if atual >= (proxima_rev - (intervalo * 0.1)):
+                tem_alerta = True
+                falta = proxima_rev - atual
+                if falta < 0:
+                    st.error(f"🚨 **{row['tag_prefixo']} ({row['marca_modelo']} - {row['placa']})**: REVISÃO VENCIDA! Ultrapassou o limite em **{abs(falta)} {tipo}**.")
+                else:
+                    st.warning(f"⚠️ **{row['tag_prefixo']} ({row['marca_modelo']} - {row['placa']})**: Próximo da revisão. Faltam apenas **{falta} {tipo}**.")
+        if not tem_alerta:
+            st.success("✅ Todos os equipamentos da frota estão em dia com as manutenções preventivas!")
+
+        st.divider()
+        st.markdown("### ✏️ Atualizar KM, Horímetro ou Registo de Revisão Feita")
+        df_rev["rotulo"] = df_rev["tag_prefixo"] + " - " + df_rev["marca_modelo"] + " (" + df_rev["placa"] + ")"
+        eq_sel_rev = st.selectbox("Selecione o Equipamento / Veículo", df_rev["rotulo"])
+        
+        equip_escolhido = df_rev[df_rev["rotulo"] == eq_sel_rev].iloc[0]
+        id_eq_r = int(equip_escolhido["id"])
+        
+        with st.form("form_atu_manut"):
+            c_m1, c_m2, c_m3 = st.columns(3)
+            with c_m1:
+                novo_hor_km = st.number_input("KM ou Horímetro Atual", min_value=0, value=int(equip_escolhido["horimetro_km"] or 0))
+            with c_m2:
+                nova_ult_rev = st.number_input("Última Revisão Feita", min_value=0, value=int(equip_escolhido["ultima_revisao"] or 0))
+            with c_m3:
+                novo_int_rev = st.number_input("Intervalo Previsto", min_value=100, value=int(equip_escolhido["intervalo_revisao"] or 10000))
+            
+            if st.form_submit_button("Guardar Atualização de Manutenção"):
+                executar_comando_sql("UPDATE veiculos SET horimetro_km = ?, ultima_revisao = ?, intervalo_revisao = ? WHERE id = ?", (novo_hor_km, nova_ult_rev, novo_int_rev, id_eq_r))
+                st.success("Dados de manutenção e medidores atualizados com sucesso!")
+                st.rerun()
+    else:
+        st.info("Nenhum equipamento registado na frota.")
+
+elif menu == "📋 Chamada de Controlo":
+    st.title("📋 Chamada de Controlo & Presença na Obra")
+    st.info("Registe a presença diária dos operadores, motoristas e encarregados em campo.")
+    
+    t_ch1, t_ch2 = st.tabs(["📋 Histórico de Chamadas", "➕ Registar Presença"])
+    with t_ch1:
+        exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM chamada_controlo ORDER BY id DESC"), "chamada_controlo")
+    with t_ch2:
+        df_func = ler_tabelas_sql("SELECT nome_completo, cargo_setor FROM usuarios_sistema")
+        lista_nomes = df_func["nome_completo"].tolist() if not df_func.empty else ["Alex de Castro Bernardino"]
+        
+        with st.form("form_chamada"):
+            c_colab = st.selectbox("Colaborador / Operador", lista_nomes)
+            c_status = st.selectbox("Estado da Presenca", ["Presente", "Falta Justificada", "Falta Injustificada", "Atestado / Licença", "Em Viagem / Campo"])
+            c_obs = st.text_area("Observações do Dia / Atividade")
+            
+            if st.form_submit_button("Registar Chamada"):
+                cargo_cad = "Operacional"
+                if not df_func.empty:
+                    match_c = df_func[df_func["nome_completo"] == c_colab]
+                    if not match_c.empty:
+                        cargo_cad = match_c.iloc[0]["cargo_setor"]
+                
+                executar_comando_sql("INSERT INTO chamada_controlo (colaborador, cargo, data_chamada, status_presenca, observacao) VALUES (?, ?, ?, ?, ?)", (c_colab, cargo_cad, datetime.now().strftime("%d/%m/%Y"), c_status, c_obs))
+                st.success("Presença registada com sucesso na chamada de controlo!")
                 st.rerun()
 
 elif menu == "⛽ Abastecimentos & Combustível":
@@ -629,6 +682,23 @@ elif menu == "⛽ Abastecimentos & Combustível":
             if st.form_submit_button("Registar Abastecimento"):
                 executar_comando_sql("INSERT INTO combustivel (equipamento, litros, valor_total, posto_posto, motorista, data) VALUES (?, ?, ?, ?, ?, ?)", (eq_comb, litros, v_total, posto, motorista, datetime.now().strftime("%d/%m/%Y %H:%M")))
                 st.success("Abastecimento registado!")
+                st.rerun()
+
+elif menu == "🛠️ Ordens de Serviço (OS)":
+    st.title("🛠️ Gestão de Ordens de Serviço (OS)")
+    t_os1, t_os2 = st.tabs(["📋 Listagem de OS", "➕ Abrir Nova OS"])
+    with t_os1:
+        exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM manutencoes ORDER BY id DESC"), "manutencoes")
+    with t_os2:
+        with st.form("form_os"):
+            tag_os = st.text_input("Tag / Prefixo do Equipamento")
+            tipo_man = st.selectbox("Tipo de Manutenção", ["Corretiva", "Preventiva", "Preditiva"])
+            desc = st.text_area("Descrição detalhada do problema")
+            oficina = st.text_input("Oficina / Fornecedor")
+            custo = st.number_input("Custo Total Estimado (R$)", min_value=0.0, format="%.2f")
+            if st.form_submit_button("Abrir Ordem de Serviço"):
+                executar_comando_sql("INSERT INTO manutencoes (tag_prefixo, tipo_manutencao, descricao_problema, oficina, custo, data_abertura, status_os) VALUES (?, ?, ?, ?, ?, ?, 'aberta')", (tag_os, tipo_man, desc, oficina, custo, datetime.now().strftime("%d/%m/%Y %H:%M")))
+                st.success("Ordem de Serviço aberta com sucesso!")
                 st.rerun()
 
 elif menu == "🚨 Gestão & Alertas de Multas":
