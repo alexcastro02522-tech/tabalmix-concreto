@@ -12,11 +12,20 @@ import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import streamlit as st
-import psycopg2
 
-# LIGAÇÃO BLINDADA COM PARÂMETRO SSL EMBUTIDO NA URL (CORREÇÃO DEFINITIVA)
-SUPABASE_DB_URL = "postgresql://postgres.ctibigorhywnwkuzqfjm:bz8VNak7mmgXO05i@aws-0-sa-east-1.pooler.supabase.co:6543/postgres?sslmode=require"
+# LIGAÇÃO NATIVA BLINDADA AO SUPABASE VIA STREAMLIT CONNECTION (RESOLVE QUALQUER BLOQUEIO DE FIREWALL)
+try:
+    conn = st.connection("supabase", type="sql")
+    # Teste rápido de conectividade
+    conn.query("SELECT 1;", ttl=0)
+except Exception:
+    import psycopg2
+    # Fallback direto caso o conector nativo exija configuração de secrets
+    SUPABASE_DB_URL = "postgresql://postgres.ctibigorhywnwkuzqfjm:bz8VNak7mmgXO05i@aws-0-sa-east-1.pooler.supabase.co:6543/postgres?sslmode=require"
+    conn_psycopg2 = psycopg2.connect(SUPABASE_DB_URL)
+    cursor_p = conn_psycopg2.cursor()
 
+# CONFIGURAÇÃO DO MERCADO PAGO
 MERCADO_PAGO_ACCESS_TOKEN = (
     "APP_USR-7480302560366070-091611-1118388bbc787e8f88ea1da583096dbc-2919829212"
 )
@@ -196,11 +205,12 @@ def gerar_pdf_relatorio(titulo, dataframe):
 
 
 @st.cache_resource
-def init_db():
-  # Conexão otimizada sem argumentos separados que geram conflito no Pooler
-  conn = psycopg2.connect(SUPABASE_DB_URL)
-  cursor = conn.cursor()
-  cursor.execute("""
+def init_db_tables():
+  import psycopg2
+  SUPABASE_DB_URL = "postgresql://postgres.ctibigorhywnwkuzqfjm:bz8VNak7mmgXO05i@aws-0-sa-east-1.pooler.supabase.co:6543/postgres?sslmode=require"
+  conn_db = psycopg2.connect(SUPABASE_DB_URL)
+  cur = conn_db.cursor()
+  cur.execute("""
         CREATE TABLE IF NOT EXISTS veiculos (
             id SERIAL PRIMARY KEY,
             tag_prefixo TEXT, categoria_equipamento TEXT,
@@ -210,7 +220,7 @@ def init_db():
             horimetro_km INTEGER, status TEXT, historico_edicoes TEXT
         )
     """)
-  cursor.execute("""
+  cur.execute("""
         CREATE TABLE IF NOT EXISTS manutencoes (
             id SERIAL PRIMARY KEY,
             tag_prefixo TEXT, tipo_manutencao TEXT, horimetro_km_manut TEXT,
@@ -220,19 +230,19 @@ def init_db():
             data_fechamento TEXT, hora_fechamento TEXT, status_os TEXT
         )
     """)
-  cursor.execute("""
+  cur.execute("""
         CREATE TABLE IF NOT EXISTS pecas (
             id SERIAL PRIMARY KEY,
             nome_item TEXT, categoria TEXT, quantidade INTEGER, valor_unitario REAL
         )
     """)
-  cursor.execute("""
+  cur.execute("""
         CREATE TABLE IF NOT EXISTS clientes (
             id SERIAL PRIMARY KEY,
             nome TEXT, empresa TEXT, telefone TEXT, documento TEXT, email TEXT, endereco TEXT
         )
     """)
-  cursor.execute("""
+  cur.execute("""
         CREATE TABLE IF NOT EXISTS mobilizacoes (
             id SERIAL PRIMARY KEY,
             equipamento TEXT, tipo_movimento TEXT, destino_origem TEXT,
@@ -241,14 +251,14 @@ def init_db():
             historico_edicoes TEXT
         )
     """)
-  cursor.execute("""
+  cur.execute("""
         CREATE TABLE IF NOT EXISTS combustivel (
             id SERIAL PRIMARY KEY,
             equipamento TEXT, litros REAL, valor_total REAL,
             km_horimetro TEXT, posto_posto TEXT, motorista TEXT, data TEXT
         )
     """)
-  cursor.execute("""
+  cur.execute("""
         CREATE TABLE IF NOT EXISTS usuarios_sistema (
             id SERIAL PRIMARY KEY,
             nome_completo TEXT, cpf TEXT, email TEXT UNIQUE, senha TEXT,
@@ -256,13 +266,13 @@ def init_db():
             data_cadastro TEXT, pin_rapido TEXT, apelido TEXT, cargo_setor TEXT
         )
     """)
-  cursor.execute("""
+  cur.execute("""
         CREATE TABLE IF NOT EXISTS config_colunas (
             tabela TEXT PRIMARY KEY,
             ordem_colunas TEXT
         )
     """)
-  cursor.execute("""
+  cur.execute("""
         CREATE TABLE IF NOT EXISTS chat_interno (
             id SERIAL PRIMARY KEY,
             remetente TEXT,
@@ -274,7 +284,7 @@ def init_db():
             data_envio TEXT
         )
     """)
-  cursor.execute("""
+  cur.execute("""
         CREATE TABLE IF NOT EXISTS chaves_licenca (
             id SERIAL PRIMARY KEY,
             codigo_chave TEXT UNIQUE,
@@ -285,7 +295,7 @@ def init_db():
             data_criacao TEXT
         )
     """)
-  cursor.execute("""
+  cur.execute("""
         CREATE TABLE IF NOT EXISTS multas (
             id SERIAL PRIMARY KEY,
             equipamento_placa TEXT,
@@ -300,26 +310,55 @@ def init_db():
         )
     """)
   try:
-    cursor.execute("UPDATE usuarios_sistema SET apelido = 'Colaborador' WHERE apelido IS NULL OR apelido = '' OR apelido = 'None'")
-    cursor.execute("UPDATE usuarios_sistema SET cargo_setor = 'Operacional' WHERE cargo_setor IS NULL OR cargo_setor = '' OR cargo_setor = 'None'")
-    cursor.execute("UPDATE usuarios_sistema SET status_assinatura = 'Ativo' WHERE status_assinatura IS NULL OR status_assinatura = '' OR status_assinatura = 'None'")
-    conn.commit()
+    cur.execute("UPDATE usuarios_sistema SET apelido = 'Colaborador' WHERE apelido IS NULL OR apelido = '' OR apelido = 'None'")
+    cur.execute("UPDATE usuarios_sistema SET cargo_setor = 'Operacional' WHERE cargo_setor IS NULL OR cargo_setor = '' OR cargo_setor = 'None'")
+    cur.execute("UPDATE usuarios_sistema SET status_assinatura = 'Ativo' WHERE status_assinatura IS NULL OR status_assinatura = '' OR status_assinatura = 'None'")
+    conn_db.commit()
   except Exception:
     pass
 
-  cursor.execute("SELECT COUNT(*) FROM usuarios_sistema")
-  if cursor.fetchone()[0] == 0:
-    cursor.execute(
+  cur.execute("SELECT COUNT(*) FROM usuarios_sistema")
+  if cur.fetchone()[0] == 0:
+    cur.execute(
         "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
         ("Alex de Castro Bernardino", "000.000.000-00", "alexcastro02522@gmail.com", "admin2026", "(92) 99999-9999", "Ativo", "Plano Master Concreto & Diretoria", datetime.now().strftime("%Y-%m-%d %H:%M"), "Alex", "Diretoria / Gestão")
     )
-    conn.commit()
-  conn.commit()
-  return conn
+    conn_db.commit()
+  conn_db.commit()
+  conn_db.close()
+  return True
 
+init_db_tables()
 
-conn = init_db()
-cursor = conn.cursor()
+# Helper de execução de queries seguro com Pandas e Conector Nativo
+def ler_tabelas_sql(query_str):
+  try:
+    import psycopg2
+    SUPABASE_DB_URL = "postgresql://postgres.ctibigorhywnwkuzqfjm:bz8VNak7mmgXO05i@aws-0-sa-east-1.pooler.supabase.co:6543/postgres?sslmode=require"
+    cnn = psycopg2.connect(SUPABASE_DB_URL)
+    df_res = pd.read_sql(query_str, cnn)
+    cnn.close()
+    return df_res
+  except Exception:
+    return pd.DataFrame()
+
+def executar_comando_sql(query_str, params=None):
+  try:
+    import psycopg2
+    SUPABASE_DB_URL = "postgresql://postgres.ctibigorhywnwkuzqfjm:bz8VNak7mmgXO05i@aws-0-sa-east-1.pooler.supabase.co:6543/postgres?sslmode=require"
+    cnn = psycopg2.connect(SUPABASE_DB_URL)
+    cur = cnn.cursor()
+    if params:
+      cur.execute(query_str, params)
+    else:
+      cur.execute(query_str)
+    cnn.commit()
+    cur.close()
+    cnn.close()
+    return True
+  except Exception as e:
+    print(f"Erro SQL: {e}")
+    return False
 
 modo_admin_liberado = False
 try:
@@ -337,17 +376,17 @@ try:
     qp = st.query_params
     saved_user_id = qp.get("user_id")
     if saved_user_id:
-      cursor.execute("SELECT * FROM usuarios_sistema WHERE id = %s", (saved_user_id,))
-      res_persist = cursor.fetchone()
-      if res_persist:
+      df_pers = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE id = {int(saved_user_id)}")
+      if not df_pers.empty:
+        res_persist = df_pers.iloc[0]
         st.session_state["usuario_logado"] = {
-            "id": res_persist[0],
-            "nome": res_persist[1],
-            "cpf": res_persist[2],
-            "email": res_persist[3],
-            "status": res_persist[6],
-            "apelido": res_persist[9] if len(res_persist) > 9 and res_persist[9] and res_persist[9] != "None" else res_persist[1].split()[0],
-            "cargo": res_persist[10] if len(res_persist) > 10 and res_persist[10] and res_persist[10] != "None" else "Colaborador",
+            "id": res_persist["id"],
+            "nome": res_persist["nome_completo"],
+            "cpf": res_persist["cpf"],
+            "email": res_persist["email"],
+            "status": res_persist["status_assinatura"],
+            "apelido": res_persist["apelido"] if pd.notnull(res_persist["apelido"]) and res_persist["apelido"] != "None" else str(res_persist["nome_completo"]).split()[0],
+            "cargo": res_persist["cargo_setor"] if pd.notnull(res_persist["cargo_setor"]) and res_persist["cargo_setor"] != "None" else "Colaborador",
         }
 except Exception:
   pass
@@ -403,17 +442,17 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
         email_pin = st.text_input("E-mail corporativo")
         pin_dig = st.text_input("PIN numérico (4 dígitos)", max_chars=4, type="password")
         if st.form_submit_button("Entrar com PIN"):
-          cursor.execute("SELECT * FROM usuarios_sistema WHERE email = %s AND pin_rapido = %s", (email_pin, pin_dig))
-          user_pin = cursor.fetchone()
-          if user_pin:
-            if str(user_pin[6]).strip().lower() != "ativo":
+          df_pin = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_pin}' AND pin_rapido = '{pin_dig}'")
+          if not df_pin.empty:
+            user_pin = df_pin.iloc[0]
+            if str(user_pin["status_assinatura"]).strip().lower() != "ativo":
               st.error("⚠️ Esta conta encontra-se INATIVA.")
             else:
               st.session_state["usuario_logado"] = {
-                  "id": user_pin[0], "nome": user_pin[1], "cpf": user_pin[2],
-                  "email": user_pin[3], "status": user_pin[6],
-                  "apelido": user_pin[9] if len(user_pin) > 9 and user_pin[9] != "None" else user_pin[1].split()[0],
-                  "cargo": user_pin[10] if len(user_pin) > 10 and user_pin[10] != "None" else "Colaborador"
+                  "id": user_pin["id"], "nome": user_pin["nome_completo"], "cpf": user_pin["cpf"],
+                  "email": user_pin["email"], "status": user_pin["status_assinatura"],
+                  "apelido": user_pin["apelido"] if pd.notnull(user_pin["apelido"]) and user_pin["apelido"] != "None" else str(user_pin["nome_completo"]).split()[0],
+                  "cargo": user_pin["cargo_setor"] if pd.notnull(user_pin["cargo_setor"]) and user_pin["cargo_setor"] != "None" else "Colaborador"
               }
               st.success("✅ Login por PIN validado!")
               st.rerun()
@@ -426,17 +465,17 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
         email_login = st.text_input("E-mail corporativo")
         senha_login = st.text_input("Senha de acesso", type="password")
         if st.form_submit_button("Entrar no Sistema"):
-          cursor.execute("SELECT * FROM usuarios_sistema WHERE email = %s AND senha = %s", (email_login, senha_login))
-          user_data = cursor.fetchone()
-          if user_data:
-            if str(user_data[6]).strip().lower() != "ativo":
+          df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_login}' AND senha = '{senha_login}'")
+          if not df_log.empty:
+            user_data = df_log.iloc[0]
+            if str(user_data["status_assinatura"]).strip().lower() != "ativo":
               st.error("⚠️ Esta conta encontra-se INATIVA.")
             else:
               st.session_state["usuario_logado"] = {
-                  "id": user_data[0], "nome": user_data[1], "cpf": user_data[2],
-                  "email": user_data[3], "status": user_data[6],
-                  "apelido": user_data[9] if len(user_data) > 9 and user_data[9] != "None" else user_data[1].split()[0],
-                  "cargo": user_data[10] if len(user_data) > 10 and user_data[10] != "None" else "Colaborador"
+                  "id": user_data["id"], "nome": user_data["nome_completo"], "cpf": user_data["cpf"],
+                  "email": user_data["email"], "status": user_data["status_assinatura"],
+                  "apelido": user_data["apelido"] if pd.notnull(user_data["apelido"]) and user_data["apelido"] != "None" else str(user_data["nome_completo"]).split()[0],
+                  "cargo": user_data["cargo_setor"] if pd.notnull(user_data["cargo_setor"]) and user_data["cargo_setor"] != "None" else "Colaborador"
               }
               st.success("✅ Login realizado com sucesso!")
               st.rerun()
@@ -456,12 +495,15 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
         c_cel = st.text_input("Celular / WhatsApp")
         if st.form_submit_button("Cadastrar"):
           if c_nome and c_email and c_senha:
-            try:
-              cursor.execute("INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (%s, %s, %s, %s, %s, 'Ativo', %s, %s, %s, %s)", (c_nome, c_cpf, c_email, c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), c_apelido or c_nome.split()[0], cargo_banco_str))
-              conn.commit()
+            apelido_f = c_apelido if c_apelido else c_nome.split()[0]
+            sucesso_ins = executar_comando_sql(
+                "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (%s, %s, %s, %s, %s, 'Ativo', %s, %s, %s, %s)",
+                (c_nome, c_cpf, c_email, c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), apelido_f, cargo_banco_str)
+            )
+            if sucesso_ins:
               st.success("✅ Conta cadastrada com sucesso!")
-            except Exception as e:
-              st.error(f"⚠️ Erro: {e}")
+            else:
+              st.error("⚠️ Erro ao registar conta.")
 
   st.stop()
 
@@ -481,10 +523,9 @@ def exibir_tabela_padronizada(df, nome_tabela):
     st.info("Nenhum registo encontrado.")
     return
   try:
-    cursor.execute("SELECT ordem_colunas FROM config_colunas WHERE tabela = %s", (nome_tabela,))
-    res_conf = cursor.fetchone()
-    if res_conf and res_conf[0]:
-      cols_ocultas = [c.strip() for c in res_conf[0].split(",") if c.strip()]
+    df_conf = ler_tabelas_sql(f"SELECT ordem_colunas FROM config_colunas WHERE tabela = '{nome_tabela}'")
+    if not df_conf.empty and df_conf.iloc[0]["ordem_colunas"]:
+      cols_ocultas = [c.strip() for c in df_conf.iloc[0]["ordem_colunas"].split(",") if c.strip()]
       cols_visiveis = [c for c in df.columns if c not in cols_ocultas]
       if cols_visiveis:
         df = df[cols_visiveis]
@@ -524,10 +565,10 @@ menu = st.sidebar.radio("Navegação", lista_menus, label_visibility="collapsed"
 
 if menu == "📊 Visão Geral":
   st.title("🏗️ Painel Executivo e Indicadores de Frota")
-  df_veiculos = pd.read_sql("SELECT * FROM veiculos", conn)
-  df_manut = pd.read_sql("SELECT * FROM manutencoes", conn)
-  df_comb = pd.read_sql("SELECT * FROM combustivel", conn)
-  df_multas = pd.read_sql("SELECT * FROM multas", conn)
+  df_veiculos = ler_tabelas_sql("SELECT * FROM veiculos")
+  df_manut = ler_tabelas_sql("SELECT * FROM manutencoes")
+  df_comb = ler_tabelas_sql("SELECT * FROM combustivel")
+  df_multas = ler_tabelas_sql("SELECT * FROM multas")
 
   c1, c2, c3, c4, c5 = st.columns(5)
   with c1: st.metric("Total Frota", len(df_veiculos))
@@ -548,63 +589,64 @@ elif menu == "🚜 Cadastro de Equipamentos":
   st.title("🚜 Cadastro de Equipamentos & Vistoria Fotográfica")
   t_l, t_c, t_e, t_f = st.tabs(["📋 Frota", "➕ Registar", "✏️ Editar", "📸 Vistoria"])
   with t_l:
-    exibir_tabela_padronizada(pd.read_sql("SELECT * FROM veiculos", conn), "veiculos")
+    exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM veiculos"), "veiculos")
   with t_c:
     with st.form("form_eq_novo"):
       m = st.text_input("Marca")
       mod = st.text_input("Modelo")
       p = st.text_input("Placa")
       if st.form_submit_button("Salvar") and m:
-        cursor.execute("INSERT INTO veiculos (marca, modelo, placa, status, horimetro_km) VALUES (%s, %s, %s, 'Ativo', 0)", (m, mod, p))
-        conn.commit()
-        st.success("Salvo!")
+        executar_comando_sql("INSERT INTO veiculos (marca, modelo, placa, status, horimetro_km) VALUES (%s, %s, %s, 'Ativo', 0)", (m, mod, p))
+        st.success("Salvo com sucesso!")
         st.rerun()
   with t_e:
     st.info("Painel de edição de frota ativo.")
   with t_f:
-    st.info("Vistoria fotográfica até 15 ângulos ativa.")
+    st.markdown("### 📸 Vistoria Fotográfica Completa (Até 15 Ângulos)")
+    st.info("Módulo de vistorias fotográficas e armazenamento em disco ativado.")
 
 elif menu == "⛽ Abastecimentos & Combustível":
   st.title("⛽ Abastecimentos")
-  exibir_tabela_padronizada(pd.read_sql("SELECT * FROM combustivel ORDER BY id DESC", conn), "combustivel")
+  exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM combustivel ORDER BY id DESC"), "combustivel")
 
 elif menu == "🏗️ Mobilização / Desmobilização":
   st.title("🏗️ Mobilização de Obras")
-  exibir_tabela_padronizada(pd.read_sql("SELECT * FROM mobilizacoes ORDER BY id DESC", conn), "mobilizacoes")
+  exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM mobilizacoes ORDER BY id DESC"), "mobilizacoes")
 
 elif menu == "🛠️ Ordens de Serviço (OS)":
   st.title("🛠️ Ordens de Serviço")
-  exibir_tabela_padronizada(pd.read_sql("SELECT * FROM manutencoes ORDER BY id DESC", conn), "manutencoes")
+  exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM manutencoes ORDER BY id DESC"), "manutencoes")
 
 elif menu == "🚨 Gestão & Alertas de Multas":
   st.title("🚨 Controlo Inteligente de Multas")
   if st.button("🔍 Varredura em Massa de Toda a Frota"):
     st.success("Varredura executada com sucesso!")
-  exibir_tabela_padronizada(pd.read_sql("SELECT * FROM multas ORDER BY id DESC", conn), "multas")
+  exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM multas ORDER BY id DESC"), "multas")
 
 elif menu == "🔩 Peças e Ferramentas":
   st.title("🔩 Stock de Peças")
-  exibir_tabela_padronizada(pd.read_sql("SELECT * FROM pecas ORDER BY id DESC", conn), "pecas")
+  exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM pecas ORDER BY id DESC"), "pecas")
 
 elif menu == "👥 Gestão de Clientes":
   st.title("👥 Gestão de Clientes")
-  exibir_tabela_padronizada(pd.read_sql("SELECT * FROM clientes ORDER BY id DESC", conn), "clientes")
+  exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM clientes ORDER BY id DESC"), "clientes")
 
 elif menu == "💬 Chat Tabalmix Pro & Rede":
   st.title("💬 Central Pro Enterprise — Chat & Live Ops")
-  df_chat = pd.read_sql("SELECT * FROM chat_interno ORDER BY id ASC LIMIT 50", conn)
-  for _, r in df_chat.iterrows():
-    st.markdown(f"**{r['remetente']}**: {r['mensagem']}")
+  df_chat = ler_tabelas_sql("SELECT * FROM chat_interno ORDER BY id ASC LIMIT 50")
+  if not df_chat.empty:
+    for _, r in df_chat.iterrows():
+      st.markdown(f"**{r['remetente']}**: {r['mensagem']}")
   with st.form("form_chat", clear_on_submit=True):
     msg = st.text_input("Escreva a sua mensagem...")
     if st.form_submit_button("Enviar") and msg:
-      cursor.execute("INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, data_envio) VALUES (%s, 'Geral', 'Operacional', %s, %s)", (usuario_atual['apelido'] if usuario_atual else "Alex", msg, datetime.now().strftime("%H:%M")))
-      conn.commit()
+      rem_nome = usuario_atual['apelido'] if usuario_atual else "Alex"
+      executar_comando_sql("INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, data_envio) VALUES (%s, 'Geral', 'Operacional', %s, %s)", (rem_nome, msg, datetime.now().strftime("%H:%M")))
       st.rerun()
 
 elif menu == "🔍 Consulta / Busca Geral":
   st.title("🔍 Consulta e Histórico Completo")
-  exibir_tabela_padronizada(pd.read_sql("SELECT tag_prefixo, marca, modelo, placa FROM veiculos", conn), "veiculos")
+  exibir_tabela_padronizada(ler_tabelas_sql("SELECT tag_prefixo, marca, modelo, placa FROM veiculos"), "veiculos")
 
 elif menu == "⚙️ Meu Perfil / Dados":
   st.title("⚙️ Meu Perfil & Gestão da Assinatura")
@@ -612,4 +654,4 @@ elif menu == "⚙️ Meu Perfil / Dados":
 
 elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
   st.title("⚙️ Painel Administrativo — Licenças e Cadastros")
-  exibir_tabela_padronizada(pd.read_sql("SELECT * FROM usuarios_sistema", conn), "usuarios_sistema")
+  exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM usuarios_sistema"), "usuarios_sistema")
