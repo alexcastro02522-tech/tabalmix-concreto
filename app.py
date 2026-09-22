@@ -219,8 +219,7 @@ def gerar_excel_formatado(dataframe, nome_aba="Relatório Tabalmix"):
         cell_format = workbook.add_format({'border': 1, 'align': 'left', 'valign': 'middle', 'text_wrap': True})
         for col_num, value in enumerate(dataframe.columns.values):
             worksheet.write(0, col_num, str(value).upper(), header_format)
-            max_len = max(dataframe[value].astype(str).map(len).max(), len(str(value))) + 4
-            worksheet.set_column(col_num, col_num, max(max_len, 15), cell_format)
+            worksheet.set_column(col_num, col_num, 20, cell_format)
     output.seek(0)
     return output
 
