@@ -14,8 +14,8 @@ from reportlab.pdfgen import canvas
 import streamlit as st
 import psycopg2
 
-# LIGAÇÃO DIRETA BLINDADA AO SUPABASE (COM A SENHA CORRETA E SEM COLCHETES)
-SUPABASE_DB_URL = "postgresql://postgres:bz8VNak7mmgXO05i@db.ctibigorhywnwkuzqfjm.supabase.co:5432/postgres"
+# LIGAÇÃO BLINDADA COM O POOLER DO SUPABASE (PORTA 6543 - NUNCA MAIS DÁ ERRO NO STREAMLIT)
+SUPABASE_DB_URL = "postgresql://postgres.ctibigorhywnwkuzqfjm:bz8VNak7mmgXO05i@aws-0-sa-east-1.pooler.supabase.co:6543/postgres"
 
 # CONFIGURAÇÃO DO MERCADO PAGO
 MERCADO_PAGO_ACCESS_TOKEN = (
