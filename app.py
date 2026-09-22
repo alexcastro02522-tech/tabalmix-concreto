@@ -14,7 +14,8 @@ from reportlab.pdfgen import canvas
 import streamlit as st
 import psycopg2
 
-SUPABASE_DB_URL = "postgresql://postgres:Bz8VNak7mmgXO05i@db.ctibigorhywnwkuzqfjm.supabase.co:5432/postgres?sslmode=require"
+# LIGAÇÃO VIA POOLER DO SUPABASE (PORTA 6543 - CONTorna O BLOQUEIO DE FIREWALL)
+SUPABASE_DB_URL = "postgresql://postgres.ctibigorhywnwkuzqfjm:Bz8VNak7mmgXO05i@aws-0-us-east-2.pooler.supabase.com:6543/postgres?sslmode=require"
 
 MERCADO_PAGO_ACCESS_TOKEN = "APP_USR-7480302560366070-091611-1118388bbc787e8f88ea1da583096dbc-2919829212"
 try:
