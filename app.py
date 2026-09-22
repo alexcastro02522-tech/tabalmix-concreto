@@ -426,15 +426,15 @@ with st.sidebar:
 
 lista_menus = [
     "📊 Visão Geral",
+    "🔍 Consulta / Busca Geral",
     "🚜 Cadastro de Equipamentos",
-    "⛽ Abastecimentos & Combustível",
     "🏗️ Mobilização / Desmobilização",
     "🛠️ Ordens de Serviço (OS)",
+    "⛽ Abastecimentos & Combustível",
     "🚨 Gestão & Alertas de Multas",
     "🔩 Peças e Ferramentas",
     "👥 Gestão de Clientes",
     "💬 Chat Tabalmix Pro & Rede",
-    "🔍 Consulta / Busca Geral",
     "⚙️ Meu Perfil / Dados",
 ]
 if modo_admin_liberado:
@@ -449,7 +449,6 @@ if menu == "📊 Visão Geral":
     df_comb = ler_tabelas_sql("SELECT * FROM combustivel")
     df_multas = ler_tabelas_sql("SELECT * FROM multas")
 
-    # ALERTA INTELIGENTE DE REVISÃO PRÓXIMA (DIRETORIA / CHEFIAS)
     if not df_veiculos.empty:
         alertas_revisao = []
         for _, row in df_veiculos.iterrows():
@@ -505,6 +504,15 @@ if menu == "📊 Visão Geral":
             st.markdown(f'<a href="https://api.whatsapp.com/send?text={msg_wpp}" target="_blank"><button style="background:linear-gradient(135deg, #25D366 0%, #128C7E 100%); color:white; font-weight:700; border-radius:12px; border:none; padding:0.65rem 1.8rem; width:100%; box-shadow:0 6px 16px rgba(37,211,102,0.3); cursor:pointer;">📱 Partilhar no WhatsApp</button></a>', unsafe_allow_html=True)
     else:
         st.info("Nenhum veículo registado na frota.")
+
+elif menu == "🔍 Consulta / Busca Geral":
+    st.title("🔍 Consulta e Histórico Completo")
+    termo_busca = st.text_input("Pesquisar por placa, marca ou modelo na frota:")
+    if termo_busca:
+        df_busca = ler_tabelas_sql(f"SELECT * FROM veiculos WHERE placa LIKE '%{termo_busca}%' OR marca_modelo LIKE '%{termo_busca}%' OR tag_prefixo LIKE '%{termo_busca}%'")
+        exibir_tabela_padronizada(df_busca, "veiculos")
+    else:
+        exibir_tabela_padronizada(ler_tabelas_sql("SELECT tag_prefixo, placa, categoria_equipamento, marca_modelo, status FROM veiculos"), "veiculos")
 
 elif menu == "🚜 Cadastro de Equipamentos":
     st.title("🚜 Cadastro de Equipamentos & Controlo de Revisões")
@@ -572,23 +580,6 @@ elif menu == "🚜 Cadastro de Equipamentos":
         st.info("Módulo de vistorias fotográficas e checklist de campo ativado.")
         st.file_uploader("Carregar Fotografias da Vistoria", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
 
-elif menu == "⛽ Abastecimentos & Combustível":
-    st.title("⛽ Registo de Abastecimentos")
-    t_cab1, t_cab2 = st.tabs(["📋 Histórico", "➕ Novo Abastecimento"])
-    with t_cab1:
-        exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM combustivel ORDER BY id DESC"), "combustivel")
-    with t_cab2:
-        with st.form("form_comb"):
-            eq_comb = st.text_input("Equipamento / Placa")
-            litros = st.number_input("Litros abastecidos", min_value=0.0, format="%.2f")
-            v_total = st.number_input("Valor Total (R$)", min_value=0.0, format="%.2f")
-            posto = st.text_input("Posto de Combustível")
-            motorista = st.text_input("Motorista / Responsável")
-            if st.form_submit_button("Registar Abastecimento"):
-                executar_comando_sql("INSERT INTO combustivel (equipamento, litros, valor_total, posto_posto, motorista, data) VALUES (?, ?, ?, ?, ?, ?)", (eq_comb, litros, v_total, posto, motorista, datetime.now().strftime("%d/%m/%Y %H:%M")))
-                st.success("Abastecimento registado!")
-                st.rerun()
-
 elif menu == "🏗️ Mobilização / Desmobilização":
     st.title("🏗️ Controlo de Mobilização de Obras")
     t_mob1, t_mob2 = st.tabs(["📋 Registos", "➕ Nova Mobilização"])
@@ -621,6 +612,23 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
             if st.form_submit_button("Abrir Ordem de Serviço"):
                 executar_comando_sql("INSERT INTO manutencoes (tag_prefixo, tipo_manutencao, descricao_problema, oficina, custo, data_abertura, status_os) VALUES (?, ?, ?, ?, ?, ?, 'aberta')", (tag_os, tipo_man, desc, oficina, custo, datetime.now().strftime("%d/%m/%Y %H:%M")))
                 st.success("Ordem de Serviço aberta com sucesso!")
+                st.rerun()
+
+elif menu == "⛽ Abastecimentos & Combustível":
+    st.title("⛽ Registo de Abastecimentos")
+    t_cab1, t_cab2 = st.tabs(["📋 Histórico", "➕ Novo Abastecimento"])
+    with t_cab1:
+        exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM combustivel ORDER BY id DESC"), "combustivel")
+    with t_cab2:
+        with st.form("form_comb"):
+            eq_comb = st.text_input("Equipamento / Placa")
+            litros = st.number_input("Litros abastecidos", min_value=0.0, format="%.2f")
+            v_total = st.number_input("Valor Total (R$)", min_value=0.0, format="%.2f")
+            posto = st.text_input("Posto de Combustível")
+            motorista = st.text_input("Motorista / Responsável")
+            if st.form_submit_button("Registar Abastecimento"):
+                executar_comando_sql("INSERT INTO combustivel (equipamento, litros, valor_total, posto_posto, motorista, data) VALUES (?, ?, ?, ?, ?, ?)", (eq_comb, litros, v_total, posto, motorista, datetime.now().strftime("%d/%m/%Y %H:%M")))
+                st.success("Abastecimento registado!")
                 st.rerun()
 
 elif menu == "🚨 Gestão & Alertas de Multas":
@@ -681,15 +689,6 @@ elif menu == "💬 Chat Tabalmix Pro & Rede":
             rem_nome = usuario_atual['apelido'] if usuario_atual else "Alex"
             executar_comando_sql("INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, data_envio) VALUES (?, 'Geral', 'Operacional', ?, ?)", (rem_nome, msg, datetime.now().strftime("%H:%M")))
             st.rerun()
-
-elif menu == "🔍 Consulta / Busca Geral":
-    st.title("🔍 Consulta e Histórico Completo")
-    termo_busca = st.text_input("Pesquisar por placa, marca ou modelo na frota:")
-    if termo_busca:
-        df_busca = ler_tabelas_sql(f"SELECT * FROM veiculos WHERE placa LIKE '%{termo_busca}%' OR marca_modelo LIKE '%{termo_busca}%' OR tag_prefixo LIKE '%{termo_busca}%'")
-        exibir_tabela_padronizada(df_busca, "veiculos")
-    else:
-        exibir_tabela_padronizada(ler_tabelas_sql("SELECT tag_prefixo, placa, categoria_equipamento, marca_modelo, status FROM veiculos"), "veiculos")
 
 elif menu == "⚙️ Meu Perfil / Dados":
     st.title("⚙️ Meu Perfil & Gestão da Assinatura")
