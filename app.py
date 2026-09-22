@@ -14,7 +14,7 @@ from reportlab.pdfgen import canvas
 import streamlit as st
 import psycopg2
 
-# LIGAÇÃO DIRETA BLINDADA AO SUPABASE COM SSL OBRIGATÓRIO
+# LIGAÇÃO DIRETA BLINDADA AO SUPABASE (COM A SENHA CORRETA E SEM COLCHETES)
 SUPABASE_DB_URL = "postgresql://postgres:bz8VNak7mmgXO05i@db.ctibigorhywnwkuzqfjm.supabase.co:5432/postgres"
 
 # CONFIGURAÇÃO DO MERCADO PAGO
