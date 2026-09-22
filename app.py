@@ -14,8 +14,9 @@ from reportlab.pdfgen import canvas
 import streamlit as st
 import psycopg2  # Conector PostgreSQL para o Supabase
 
-# CONFIGURAÇÃO DA CONEXÃO SUPABASE (POSTGRESQL) COM A TUA SENHA
-SUPABASE_DB_URL = "postgresql://postgres:Alex275612@#@db.vbmbntqlmxvcztuyjiqs.supabase.co:5432/postgres"
+# CONFIGURAÇÃO DA CONEXÃO SUPABASE COM TRATAMENTO DE CARACTERES ESPECIAIS NA SENHA
+senha_segura = urllib.parse.quote_plus("Alex275612@#")
+SUPABASE_DB_URL = f"postgresql://postgres:{senha_segura}@db.vbmbntqlmxvcztuyjiqs.supabase.co:5432/postgres"
 
 # CONFIGURAÇÃO DO MERCADO PAGO
 MERCADO_PAGO_ACCESS_TOKEN = (
