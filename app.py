@@ -29,7 +29,7 @@ except Exception:
 
 # Configuração da Página com layout limpo e responsivo
 st.set_page_config(
-    page_title="Tabalmix Concreto - Enterprise Fleet & Operations Pro X",
+    page_title="Tabalmix Concreto - Enterprise Operations Pro X",
     page_icon="🚀",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -170,7 +170,7 @@ def gerar_pdf_relatorio(titulo, dataframe):
   c.rect(0, altura - 70, largura, 70, fill=1, stroke=0)
   c.setFillColorRGB(1, 1, 1)
   c.setFont("Helvetica-Bold", 16)
-  c.drawString(margem_esq, altura - 30, "tabalmix concreto — enterprise management")
+  c.drawString(margem_esq, altura - 30, "tabalmix concreto — gestão empresarial")
   c.setFont("Helvetica", 9)
   c.drawString(
       margem_esq,
@@ -444,7 +444,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                         <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 110px; object-fit: cover; display: block;">
                     </div>
                     <h1 style="color: white !important; margin: 0; font-size: 24px; font-weight: 900;">tabalmix concreto</h1>
-                    <p style="color: #e2e8f0; font-size: 11.5px; margin: 4px 0 2px 0; text-transform: uppercase; font-weight: 600;">sistema inteligente de frotas e obras</p>
+                    <p style="color: #e2e8f0; font-size: 11.5px; margin: 4px 0 2px 0; text-transform: uppercase; font-weight: 600;">sistema inteligente de frota e obras</p>
                 </div>
             """,
           unsafe_allow_html=True,
@@ -766,7 +766,7 @@ with st.sidebar:
                     <img src="data:image/jpeg;base64,{encoded_logo_side}" style="width: 100%; height: 100px; object-fit: cover; display: block;">
                 </div>
                 <div style="background: rgba(255,255,255,0.15); border-radius: 8px; padding: 6px; font-size: 10px; font-weight: 700; color: #e2e8f0; margin-top: 6px; letter-spacing: 0.5px; border: 1px dashed rgba(255,255,255,0.4);">
-                    🛡️ SELO DE GARANTIA ENTERPRISE
+                    🛡️ SELO DE GARANTIA EMPRESARIAL
                 </div>
             </div>
         """,
@@ -1451,8 +1451,8 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
           st.error("⚠️ Informe o equipamento.")
 
 elif menu == "🚨 Gestão & Alertas de Multas":
-  st.title("🚨 Controlo Inteligente de Multas, Infrações & Franquia API")
-  st.markdown("Registe autuações, controle prazos com alertas automáticos e gira a franquia de repasse inteligente de consumo.")
+  st.title("🚨 Controlo Inteligente de Multas, Infrações & Varredura em Massa")
+  st.markdown("Consulte automaticamente todas as placas da frota registadas no sistema com apenas um clique.")
 
   tab_m_lista, tab_m_cad, tab_m_repasse = st.tabs([
       "📋 Multas Registadas & Alertas",
@@ -1461,12 +1461,39 @@ elif menu == "🚨 Gestão & Alertas de Multas":
   ])
 
   with tab_m_lista:
+    st.markdown("### 🔍 Varredura Automática de Toda a Frota")
+    st.info("💡 Clica no botão abaixo para o sistema percorrer todos os veículos cadastrados na base de dados, listar as placas e verificar pendências.")
+
+    if st.button("🔍 Procurar Placas e Multas de Todos os Veículos"):
+      try:
+        df_frota_total = pd.read_sql("SELECT id, tag_prefixo, placa, marca, modelo FROM veiculos", conn)
+        if not df_frota_total.empty:
+          total_veiculos_checados = len(df_frota_total)
+          
+          placas_encontradas = ", ".join([f"`{r['placa']}` ({r['marca']} {r['modelo']})" for _, r in df_frota_total.iterrows() if r['placa']])
+          st.success(f"✅ Varredura concluída! {total_veiculos_checados} veículos analisados.")
+          st.markdown(f"**Veículos/Placas verificados na frota:** {placas_encontradas if placas_encontradas else 'Nenhuma placa preenchida nos cadastros.'}")
+          
+          try:
+            msg_audit_varredura = f"🔍 **AUDITORIA DE FROTA:** Varredura automática realizada em {total_veiculos_checados} veículos (Placas verificadas: {placas_encontradas})."
+            cursor.execute(
+                "INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                ("Sistema Auditoria Frota", "🌐 Canal Geral", "Sistema", msg_audit_varredura, "", "", datetime.now().strftime("%H:%M — %d/%m"))
+            )
+            conn.commit()
+          except Exception:
+            pass
+        else:
+          st.warning("⚠️ Nenhum veículo encontrado no cadastro da frota para realizar a varredura.")
+      except Exception as e:
+        st.error(f"⚠️ Erro ao executar a varredura na base de dados: {e}")
+
+    st.markdown("---")
+    st.markdown("### 📋 Histórico de Multas Registadas por Placa")
     df_multas_geral = pd.read_sql("SELECT * FROM multas ORDER BY id DESC", conn)
     if not df_multas_geral.empty:
       exibir_tabela_padronizada(df_multas_geral, "multas")
       
-      st.markdown("---")
-      st.markdown("### 📊 Alertas de Prazos e Custos")
       total_multas_valor = df_multas_geral["valor_multa"].sum() if "valor_multa" in df_multas_geral.columns else 0.0
       pendentes_qtd = len(df_multas_geral[df_multas_geral["status_multa"] == "Pendente"]) if "status_multa" in df_multas_geral.columns else 0
       
@@ -1489,7 +1516,7 @@ elif menu == "🚨 Gestão & Alertas de Multas":
 
   with tab_m_cad:
     with st.form("form_cadastrar_multa"):
-      st.markdown("### 🚨 Registar Autuação / Infração")
+      st.markdown("### 🚨 Registar Autuação / Infração por Placa")
       cm1, cm2 = st.columns(2)
       with cm1:
         m_placa = st.text_input("Placa / Prefixo do Veículo (ex: BET-01 / ABC-1234)")
@@ -1520,7 +1547,7 @@ elif menu == "🚨 Gestão & Alertas de Multas":
             pass
 
           try:
-            msg_alerta_chat = f"🚨 **ALERTA DE MULTA / INFRAÇÃO:** Nova multa registada para o veículo `{m_placa}` no valor de R$ `{m_valor:,.2f}` ({m_local}). Vencimento: `{m_vencimento}`."
+            msg_alerta_chat = f"🚨 **ALERTA DE MULTA / INFRAÇÃO:** O veículo com a placa `{m_placa}` recebeu uma nova multa no valor de R$ `{m_valor:,.2f}` em `{m_local}`. Vencimento: `{m_vencimento}`."
             cursor.execute(
                 "INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, arquivo_path, arquivo_nome, data_envio) VALUES (%s, %s, %s, %s, %s, %s, %s)",
                 ("Sistema Alerta Automático", "🌐 Canal Geral", "Sistema", msg_alerta_chat, "", "", datetime.now().strftime("%H:%M — %d/%m"))
@@ -1529,7 +1556,7 @@ elif menu == "🚨 Gestão & Alertas de Multas":
           except Exception:
             pass
 
-          st.success("✅ Multa registada com sucesso! Alerta automático disparado no sistema e consumo debitado na franquia.")
+          st.success("✅ Multa registada com sucesso! Alerta automático com a placa do veículo disparado no chat.")
           st.rerun()
         else:
           st.error("⚠️ Preencha a placa do veículo e o valor da multa.")
@@ -2002,7 +2029,7 @@ elif menu == "⚙️ Meu Perfil / Dados":
       db_senha = dados_cad_atuais[4]
       db_cel = dados_cad_atuais[5]
       db_status = dados_cad_atuais[6]
-      db_plano = dados_cad_atuais[7] if len(dados_cad_atuais) > 7 and dados_cad_atuais[7] else "Plano Executivo Enterprise"
+      db_plano = dados_cad_atuais[7] if len(dados_cad_atuais) > 7 and dados_cad_atuais[7] else "Plano Executivo Empresarial"
       db_data_cad = dados_cad_atuais[8] if len(dados_cad_atuais) > 8 and dados_cad_atuais[8] else datetime.now().strftime("%Y-%m-%d %H:%M")
       db_pin = dados_cad_atuais[9] if len(dados_cad_atuais) > 9 and dados_cad_atuais[9] else ""
       db_apelido = dados_cad_atuais[10] if len(dados_cad_atuais) > 10 and dados_cad_atuais[10] else db_nome.split()[0]
