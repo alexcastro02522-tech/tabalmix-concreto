@@ -216,9 +216,16 @@ def gerar_excel_formatado(dataframe, nome_aba="Relatório Tabalmix"):
         worksheet = writer.sheets[nome_aba]
         header_format = workbook.add_format({'bold': True, 'text_wrap': True, 'fg_color': '#047857', 'font_color': 'white', 'border': 1, 'align': 'center', 'valign': 'middle'})
         cell_format = workbook.add_format({'border': 1, 'align': 'left', 'valign': 'middle', 'text_wrap': True})
-        for col_num, value in enumerate(dataframe.columns.values):
-            worksheet.write(0, col_num, str(value).upper(), header_format)
-            worksheet.set_column(col_num, col_num, 20, cell_format)
+        
+        # Auto-ajuste inteligente de largura para evitar que dados ultrapassem as colunas
+        for col_num, col in enumerate(dataframe.columns):
+            max_len = max(
+                dataframe[col].astype(str).map(len).max() if not dataframe.empty else 0,
+                len(str(col))
+            ) + 4
+            worksheet.set_column(col_num, col_num, max(max_len, 15), cell_format)
+            worksheet.write(0, col_num, str(col).upper(), header_format)
+            
     output.seek(0)
     return output
 
@@ -672,7 +679,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
 elif menu == "🔧 Controle de Manutenção":
     st.title("🔧 Controle de Manutenção & Configuração Inicial de Revisão")
     
-    t_man_rev, t_man_ed = st.tabs(["⚙️ Configuração & Alertas", "📝 Editar Revisão"])
+    t_man_rev, t_man_ed, t_man_rel = st.tabs(["⚙️ Configuração & Alertas", "📝 Editar Revisão", "📤 Relatórios & Partilha"])
     
     with t_man_rev:
         st.info("Selecione qualquer equipamento da frota, configure a sua revisão inicial e acompanhe os alertas automáticos em tempo real.")
@@ -748,6 +755,25 @@ elif menu == "🔧 Controle de Manutenção":
                     st.success("✅ Dados de revisão atualizados com sucesso!")
         else:
             st.info("Nenhum equipamento para editar.")
+
+    with t_man_rel:
+        st.markdown("### 📤 Partilha e Exportação de Dados de Manutenção")
+        df_rel_man = ler_tabelas_sql("SELECT tag_prefixo, placa, marca_modelo, horimetro_km, tipo_controle, ultima_revisao, intervalo_revisao FROM veiculos")
+        if not df_rel_man.empty:
+            exibir_tabela_padronizada(df_rel_man, "veiculos")
+            
+            col_m_dl1, col_m_dl2, col_m_dl3 = st.columns(3)
+            with col_m_dl1:
+                pdf_man = gerar_pdf_relatorio("Relatório de Controlo de Manutenção e Revisões", df_rel_man)
+                st.download_button("📥 Baixar Relatório PDF", data=pdf_man, file_name="relatorio_manutencao.pdf", mime="application/pdf")
+            with col_m_dl2:
+                excel_man = gerar_excel_formatado(df_rel_man, "Manutencao_Tabalmix")
+                st.download_button("📊 Baixar Relatório Excel (Auto-ajustado)", data=excel_man, file_name="relatorio_manutencao.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            with col_m_dl3:
+                msg_wpp_m = urllib.parse.quote("🏗️ *RELATÓRIO DE MANUTENÇÃO TABALMIX*\nControlo de frotas e revisões preventivas atualizado.")
+                st.markdown(f'<a href="https://api.whatsapp.com/send?text={msg_wpp_m}" target="_blank"><button style="background:linear-gradient(135deg, #25D366 0%, #128C7E 100%); color:white; font-weight:700; border-radius:12px; border:none; padding:0.65rem 1.8rem; width:100%; box-shadow:0 6px 16px rgba(37,211,102,0.3); cursor:pointer;">📱 Partilhar no WhatsApp</button></a>', unsafe_allow_html=True)
+        else:
+            st.info("Nenhum dado de manutenção disponível para exportação.")
 
 elif menu == "📋 Chamada de Controlo":
     st.title("📋 Chamada de Controlo & Presença na Obra")
