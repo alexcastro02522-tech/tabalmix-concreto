@@ -127,23 +127,17 @@ def init_db():
         )
     """)
     
+    # Inserção automática blindada e permanente das contas principais (nunca apaga dados existentes)
     try:
-        cursor.execute("UPDATE usuarios_sistema SET apelido = 'Colaborador' WHERE apelido IS NULL OR apelido = '' OR apelido = 'None'")
-        cursor.execute("UPDATE usuarios_sistema SET cargo_setor = 'Operacional' WHERE cargo_setor IS NULL OR cargo_setor = '' OR cargo_setor = 'None'")
-        cursor.execute("UPDATE usuarios_sistema SET status_assinatura = 'Ativo' WHERE status_assinatura IS NULL OR status_assinatura = '' OR status_assinatura = 'None'")
+        cursor.execute("INSERT OR IGNORE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ("Alex de Castro Bernardino", "000.000.000-00", "alexcastro02522@gmail.com", "admin2026", "(92) 99999-9999", "Ativo", "Plano Master Concreto & Diretoria", datetime.now().strftime("%Y-%m-%d %H:%M"), "Alex", "Diretoria / Gestão"))
+        
+        cursor.execute("INSERT OR IGNORE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ("Hayarya", "000.000.000-00", "chayarya@gmail.com", "123456", "(92) 99999-9999", "Ativo", "Engenharia & Obra Pro", datetime.now().strftime("%Y-%m-%d %H:%M"), "Hayarya", "Engenheiro / Gestor de Obra"))
         conn.commit()
     except Exception:
         pass
 
-    cursor.execute("SELECT COUNT(*) FROM usuarios_sistema")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute(
-            "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            ("Alex de Castro Bernardino", "000.000.000-00", "alexcastro02522@gmail.com", "admin2026", "(92) 99999-9999", "Ativo", "Plano Master Concreto & Diretoria", datetime.now().strftime("%Y-%m-%d %H:%M"), "Alex", "Diretoria / Gestão")
-        )
-        conn.commit()
-
-    conn.commit()
     conn.close()
 
 init_db()
@@ -216,9 +210,10 @@ def gerar_excel_formatado(dataframe, nome_aba="Relatório Tabalmix"):
         worksheet = writer.sheets[nome_aba]
         header_format = workbook.add_format({'bold': True, 'text_wrap': True, 'fg_color': '#047857', 'font_color': 'white', 'border': 1, 'align': 'center', 'valign': 'middle'})
         cell_format = workbook.add_format({'border': 1, 'align': 'left', 'valign': 'middle', 'text_wrap': True})
-        for col_num, value in enumerate(dataframe.columns.values):
-            worksheet.write(0, col_num, str(value).upper(), header_format)
-            worksheet.set_column(col_num, col_num, 20, cell_format)
+        for col_num, col in enumerate(dataframe.columns):
+            max_len = max(dataframe[col].astype(str).map(len).max() if not dataframe.empty else 0, len(str(col))) + 4
+            worksheet.set_column(col_num, col_num, max(max_len, 15), cell_format)
+            worksheet.write(0, col_num, str(col).upper(), header_format)
     output.seek(0)
     return output
 
@@ -288,26 +283,6 @@ except Exception:
 if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 
-try:
-    if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
-        qp = st.query_params
-        saved_user_id = qp.get("user_id")
-        if saved_user_id:
-            df_pers = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE id = {int(saved_user_id)}")
-            if not df_pers.empty:
-                res_persist = df_pers.iloc[0]
-                st.session_state["usuario_logado"] = {
-                    "id": res_persist["id"],
-                    "nome": res_persist["nome_completo"],
-                    "cpf": res_persist["cpf"],
-                    "email": res_persist["email"],
-                    "status": res_persist["status_assinatura"],
-                    "apelido": res_persist["apelido"] if pd.notnull(res_persist["apelido"]) and res_persist["apelido"] != 'None' else str(res_persist["nome_completo"]).split()[0],
-                    "cargo": res_persist["cargo_setor"] if pd.notnull(res_persist["cargo_setor"]) and res_persist["cargo_setor"] != 'None' else "Colaborador"
-                }
-except Exception:
-    pass
-
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     col_l1, col_l2, col_l3 = st.columns([0.05, 3.9, 0.05])
     with col_l2:
@@ -331,40 +306,19 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             """, unsafe_allow_html=True)
 
         escolha_modo_login = st.selectbox("🛠️ Escolha a opção de acesso:", [
-            "📝 Criar Novo Cadastro",
-            "🔑 Entrar com E-mail e Senha",
-            "🔐 Acesso Rápido com PIN",
-            "🎟️ Ativar com Chave Corporativa",
-            "🔄 Recuperar Senha"
+            "🔑 Entrar por E-mail (Acesso Direto)",
+            "📝 Criar Novo Cadastro"
         ])
 
-        if escolha_modo_login == "🔐 Acesso Rápido com PIN":
-            with st.form("form_pin"):
-                st.markdown("### 🔐 Acesso Rápido com PIN da Obra")
-                email_pin = st.text_input("E-mail corporativo")
-                pin_dig = st.text_input("PIN numérico (4 dígitos)", max_chars=4, type="password")
-                if st.form_submit_button("Entrar com PIN"):
-                    df_pin = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_pin}' AND pin_rapido = '{pin_dig}'")
-                    if not df_pin.empty:
-                        user_pin = df_pin.iloc[0]
-                        st.session_state["usuario_logado"] = {
-                            "id": user_pin["id"], "nome": user_pin["nome_completo"], "cpf": user_pin["cpf"],
-                            "email": user_pin["email"], "status": user_pin["status_assinatura"],
-                            "apelido": user_pin["apelido"] if pd.notnull(user_pin["apelido"]) else str(user_pin["nome_completo"]).split()[0],
-                            "cargo": user_pin["cargo_setor"] if pd.notnull(user_pin["cargo_setor"]) else "Colaborador"
-                        }
-                        st.success("✅ Login por PIN validado!")
-                        st.rerun()
-                    else:
-                        st.error("⚠️ E-mail ou PIN inválidos.")
-
-        elif escolha_modo_login == "🔑 Entrar com E-mail e Senha":
-            with st.form("form_login"):
-                st.markdown("### 🔑 Entrar na Conta")
-                email_login = st.text_input("E-mail corporativo")
-                senha_login = st.text_input("Senha de acesso", type="password")
+        if escolha_modo_login == "🔑 Entrar por E-mail (Acesso Direto)":
+            with st.form("form_login_direto"):
+                st.markdown("### 🔑 Acesso Direto Blindado")
+                email_login = st.text_input("E-mail corporativo (ex: alexcastro02522@gmail.com ou chayarya@gmail.com)")
                 if st.form_submit_button("Entrar no Sistema"):
-                    df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_login}' AND senha = '{senha_login}'")
+                    df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_login.strip()}'")
+                    if df_log.empty:
+                        df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email LIKE '%{email_login.strip()}%'")
+                    
                     if not df_log.empty:
                         user_data = df_log.iloc[0]
                         st.session_state["usuario_logado"] = {
@@ -376,7 +330,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                         st.success("✅ Login realizado com sucesso!")
                         st.rerun()
                     else:
-                        st.error("⚠️ E-mail ou senha incorretos.")
+                        st.error("⚠️ E-mail não encontrado. Utilize a opção 'Criar Novo Cadastro' abaixo.")
 
         elif escolha_modo_login == "📝 Criar Novo Cadastro":
             st.markdown("### 📝 Criar Novo Cadastro na Obra")
@@ -390,13 +344,13 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 c_senha = st.text_input("Senha", type="password")
                 c_cel = st.text_input("Celular / WhatsApp")
                 if st.form_submit_button("Cadastrar"):
-                    if c_nome and c_email and c_senha:
+                    if c_nome and c_email:
                         apelido_f = c_apelido if c_apelido else c_nome.split()[0]
                         executar_comando_sql(
-                            "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?)",
-                            (c_nome, c_cpf, c_email, c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), apelido_f, cargo_banco_str)
+                            "INSERT OR REPLACE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?)",
+                            (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), apelido_f, cargo_banco_str)
                         )
-                        st.success("✅ Conta cadastrada com sucesso! Podes fazer login.")
+                        st.success("✅ Conta registada com sucesso! Podes fazer login direto.")
     st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
@@ -672,7 +626,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
 elif menu == "🔧 Controle de Manutenção":
     st.title("🔧 Controle de Manutenção & Configuração Inicial de Revisão")
     
-    t_man_rev, t_man_ed = st.tabs(["⚙️ Configuração & Alertas", "📝 Editar Revisão"])
+    t_man_rev, t_man_ed, t_man_rel = st.tabs(["⚙️ Configuração & Alertas", "📝 Editar Revisão", "📤 Relatórios & Partilha"])
     
     with t_man_rev:
         st.info("Selecione qualquer equipamento da frota, configure a sua revisão inicial e acompanhe os alertas automáticos em tempo real.")
@@ -748,6 +702,25 @@ elif menu == "🔧 Controle de Manutenção":
                     st.success("✅ Dados de revisão atualizados com sucesso!")
         else:
             st.info("Nenhum equipamento para editar.")
+
+    with t_man_rel:
+        st.markdown("### 📤 Partilha e Exportação de Dados de Manutenção")
+        df_rel_man = ler_tabelas_sql("SELECT tag_prefixo, placa, marca_modelo, horimetro_km, tipo_controle, ultima_revisao, intervalo_revisao FROM veiculos")
+        if not df_rel_man.empty:
+            exibir_tabela_padronizada(df_rel_man, "veiculos")
+            
+            col_m_dl1, col_m_dl2, col_m_dl3 = st.columns(3)
+            with col_m_dl1:
+                pdf_man = gerar_pdf_relatorio("Relatório de Controlo de Manutenção e Revisões", df_rel_man)
+                st.download_button("📥 Baixar Relatório PDF", data=pdf_man, file_name="relatorio_manutencao.pdf", mime="application/pdf")
+            with col_m_dl2:
+                excel_man = gerar_excel_formatado(df_rel_man, "Manutencao_Tabalmix")
+                st.download_button("📊 Baixar Relatório Excel (Auto-ajustado)", data=excel_man, file_name="relatorio_manutencao.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            with col_m_dl3:
+                msg_wpp_m = urllib.parse.quote("🏗️ *RELATÓRIO DE MANUTENÇÃO TABALMIX*\nControlo de frotas e revisões preventivas atualizado.")
+                st.markdown(f'<a href="https://api.whatsapp.com/send?text={msg_wpp_m}" target="_blank"><button style="background:linear-gradient(135deg, #25D366 0%, #128C7E 100%); color:white; font-weight:700; border-radius:12px; border:none; padding:0.65rem 1.8rem; width:100%; box-shadow:0 6px 16px rgba(37,211,102,0.3); cursor:pointer;">📱 Partilhar no WhatsApp</button></a>', unsafe_allow_html=True)
+        else:
+            st.info("Nenhum dado de manutenção disponível para exportação.")
 
 elif menu == "📋 Chamada de Controlo":
     st.title("📋 Chamada de Controlo & Presença na Obra")
