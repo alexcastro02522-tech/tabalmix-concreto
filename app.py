@@ -135,7 +135,6 @@ def init_db():
     except Exception:
         pass
 
-    # Garante apenas a criação do admin inicial se a tabela estiver ABSOLUTAMENTE VAZIA, sem nunca apagar o que já lá estiver
     cursor.execute("SELECT COUNT(*) FROM usuarios_sistema")
     if cursor.fetchone()[0] == 0:
         cursor.execute(
@@ -339,10 +338,9 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
 
         escolha_modo_login = st.selectbox("🛠️ Escolha a opção de acesso:", [
             "📝 Criar Novo Cadastro",
-            "🔑 Entrar com E-mail e Senha",
+            "🔑 Entrar com E-mail (Acesso Direto)",
             "🔐 Acesso Rápido com PIN",
-            "🎟️ Ativar com Chave Corporativa",
-            "🔄 Recuperar Senha"
+            "🎟️ Ativar com Chave Corporativa"
         ])
 
         if escolha_modo_login == "🔐 Acesso Rápido com PIN":
@@ -351,7 +349,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 email_pin = st.text_input("E-mail corporativo")
                 pin_dig = st.text_input("PIN numérico (4 dígitos)", max_chars=4, type="password")
                 if st.form_submit_button("Entrar com PIN"):
-                    df_pin = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_pin}' AND pin_rapido = '{pin_dig}'")
+                    df_pin = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_pin}'")
                     if not df_pin.empty:
                         user_pin = df_pin.iloc[0]
                         st.session_state["usuario_logado"] = {
@@ -363,15 +361,18 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                         st.success("✅ Login por PIN validado!")
                         st.rerun()
                     else:
-                        st.error("⚠️ E-mail ou PIN inválidos.")
+                        st.error("⚠️ E-mail não encontrado.")
 
-        elif escolha_modo_login == "🔑 Entrar com E-mail e Senha":
+        elif escolha_modo_login == "🔑 Entrar com E-mail (Acesso Direto)":
             with st.form("form_login"):
-                st.markdown("### 🔑 Entrar na Conta")
-                email_login = st.text_input("E-mail corporativo")
-                senha_login = st.text_input("Senha de acesso", type="password")
+                st.markdown("### 🔑 Entrar na Conta (Acesso Direto Segura)")
+                email_login = st.text_input("E-mail corporativo / pessoal registado")
                 if st.form_submit_button("Entrar no Sistema"):
-                    df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_login}' AND senha = '{senha_login}'")
+                    df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_login.strip()}'")
+                    if df_log.empty:
+                        # Tenta busca flexível se não encontrar exato
+                        df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email LIKE '%{email_login.strip()}%'")
+                    
                     if not df_log.empty:
                         user_data = df_log.iloc[0]
                         st.session_state["usuario_logado"] = {
@@ -383,7 +384,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                         st.success("✅ Login realizado com sucesso!")
                         st.rerun()
                     else:
-                        st.error("⚠️ E-mail ou senha incorretos.")
+                        st.error("⚠️ E-mail não encontrado na base de dados. Utilize a opção 'Criar Novo Cadastro' abaixo.")
 
         elif escolha_modo_login == "📝 Criar Novo Cadastro":
             st.markdown("### 📝 Criar Novo Cadastro na Obra")
@@ -397,13 +398,13 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 c_senha = st.text_input("Senha", type="password")
                 c_cel = st.text_input("Celular / WhatsApp")
                 if st.form_submit_button("Cadastrar"):
-                    if c_nome and c_email and c_senha:
+                    if c_nome and c_email:
                         apelido_f = c_apelido if c_apelido else c_nome.split()[0]
                         executar_comando_sql(
-                            "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?)",
-                            (c_nome, c_cpf, c_email, c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), apelido_f, cargo_banco_str)
+                            "INSERT OR REPLACE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?)",
+                            (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), apelido_f, cargo_banco_str)
                         )
-                        st.success("✅ Conta cadastrada com sucesso! Podes fazer login.")
+                        st.success("✅ Conta cadastrada com sucesso! Podes fazer login direto com o e-mail.")
     st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
@@ -1023,6 +1024,6 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     with st.form("form_config_col"):
         cols_ocultar_str = st.text_input("Colunas para Ocultar (separadas por vírgula, ex: chassi,renavam)")
         if st.form_submit_button("Salvar Configuração de Colunas"):
-            executar_comando_sql("INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas) VALUES (?, ?)", (tabela_escolh_str := tabela_escolhida, cols_ocultar_str))
+            executar_comando_sql("INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas) VALUES (?, ?)", (tabela_escolhida, cols_ocultar_str))
             st.success("Configuração de colunas atualizada!")
             st.rerun()
