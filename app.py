@@ -551,7 +551,7 @@ elif menu == "🚜 Cadastro de Equipamentos":
         df_edit_eq = ler_tabelas_sql("SELECT id, tag_prefixo, placa, marca_modelo FROM veiculos")
         if not df_edit_eq.empty:
             df_edit_eq["rotulo_edit"] = df_edit_eq["tag_prefixo"] + " - " + df_edit_eq["marca_modelo"] + " (" + df_edit_eq["placa"] + ")"
-            eq_escolhido_edit = st.selectbox("Selecione o Equipamento para Editar", df_edit_eq["rotulo_edit"])
+            eq_escolhido_edit = st.selectbox("Selecione o Equipamento para Editar", df_edit_eq["rotulo_edit"], key="sel_ed_eq_persist")
             
             id_alvo_edit = int(df_edit_eq[df_edit_eq["rotulo_edit"] == eq_escolhido_edit]["id"].values[0])
             dados_atuais = ler_tabelas_sql(f"SELECT * FROM veiculos WHERE id = {id_alvo_edit}").iloc[0]
@@ -576,7 +576,6 @@ elif menu == "🚜 Cadastro de Equipamentos":
                         (e_tag, e_placa, e_marca, e_renavam, e_operador, e_status, e_horimetro, e_empresa, id_alvo_edit)
                     )
                     st.success("✅ Equipamento atualizado com sucesso!")
-                    st.rerun()
         else:
             st.info("Nenhum equipamento disponível para edição.")
 
@@ -646,7 +645,7 @@ elif menu == "🏗️ Mobilização / Desmobilização":
         df_mobs = ler_tabelas_sql("SELECT id, equipamento, tipo_movimento, data_movimento FROM mobilizacoes ORDER BY id DESC")
         if not df_mobs.empty:
             df_mobs["rot_mob"] = df_mobs["id"].astype(str) + " - " + df_mobs["equipamento"] + " (" + df_mobs["tipo_movimento"] + ")"
-            mob_sel = st.selectbox("Selecione o Registo para Editar", df_mobs["rot_mob"])
+            mob_sel = st.selectbox("Selecione o Registo para Editar", df_mobs["rot_mob"], key="sel_ed_mob_persist")
             id_mob_edit = int(df_mobs[df_mobs["rot_mob"] == mob_sel]["id"].values[0])
             d_mob = ler_tabelas_sql(f"SELECT * FROM mobilizacoes WHERE id = {id_mob_edit}").iloc[0]
             
@@ -667,7 +666,6 @@ elif menu == "🏗️ Mobilização / Desmobilização":
                         (ne_eq, ne_dest, ne_enc, ne_data, ne_km, ne_obs, id_mob_edit)
                     )
                     st.success("✅ Registo atualizado com sucesso!")
-                    st.rerun()
         else:
             st.info("Nenhum registo de mobilização encontrado.")
 
@@ -702,7 +700,7 @@ elif menu == "🔧 Controle de Manutenção":
             st.divider()
             st.markdown("### ⚙️ Configuração Inicial e Atualização de Manutenção por Equipamento")
             df_rev["rotulo"] = df_rev["tag_prefixo"] + " - " + df_rev["marca_modelo"] + " (" + df_rev["placa"] + ")"
-            eq_sel_rev = st.selectbox("Selecione o Equipamento / Veículo Registado", df_rev["rotulo"])
+            eq_sel_rev = st.selectbox("Selecione o Equipamento / Veículo Registado", df_rev["rotulo"], key="sel_rev_config_persist")
             
             equip_escolhido = df_rev[df_rev["rotulo"] == eq_sel_rev].iloc[0]
             id_eq_r = int(equip_escolhido["id"])
@@ -721,7 +719,6 @@ elif menu == "🔧 Controle de Manutenção":
                 if st.form_submit_button("Guardar Configuração de Revisão"):
                     executar_comando_sql("UPDATE veiculos SET tipo_controle = ?, horimetro_km = ?, ultima_revisao = ?, intervalo_revisao = ? WHERE id = ?", (novo_tipo_cont, novo_hor_km, nova_ult_rev, novo_int_rev, id_eq_r))
                     st.success("Configuração de manutenção e revisão atualizada com sucesso!")
-                    st.rerun()
         else:
             st.info("Nenhum equipamento registado na frota.")
 
@@ -730,7 +727,7 @@ elif menu == "🔧 Controle de Manutenção":
         df_rev_ed = ler_tabelas_sql("SELECT id, tag_prefixo, marca_modelo, horimetro_km, ultima_revisao, intervalo_revisao FROM veiculos")
         if not df_rev_ed.empty:
             df_rev_ed["rot_rev"] = df_rev_ed["tag_prefixo"] + " - " + df_rev_ed["marca_modelo"]
-            sel_rev_ed = st.selectbox("Selecione Equipamento para Editar Parâmetros de Revisão", df_rev_ed["rot_rev"])
+            sel_rev_ed = st.selectbox("Selecione Equipamento para Editar Parâmetros de Revisão", df_rev_ed["rot_rev"], key="sel_ed_rev_persist")
             id_rev_alvo = int(df_rev_ed[df_rev_ed["rot_rev"] == sel_rev_ed]["id"].values[0])
             d_rev_atual = ler_tabelas_sql(f"SELECT * FROM veiculos WHERE id = {id_rev_alvo}").iloc[0]
             
@@ -749,7 +746,6 @@ elif menu == "🔧 Controle de Manutenção":
                         (en_hor, en_ult, en_int, en_tp, id_rev_alvo)
                     )
                     st.success("✅ Dados de revisão atualizados com sucesso!")
-                    st.rerun()
         else:
             st.info("Nenhum equipamento para editar.")
 
@@ -804,7 +800,7 @@ elif menu == "⛽ Abastecimentos & Combustível":
         df_abs = ler_tabelas_sql("SELECT id, equipamento, data, valor_total FROM combustivel ORDER BY id DESC")
         if not df_abs.empty:
             df_abs["rot_abs"] = df_abs["id"].astype(str) + " - " + df_abs["equipamento"] + " (" + df_abs["data"] + ")"
-            sel_ab_ed = st.selectbox("Selecione o Abastecimento para Editar", df_abs["rot_abs"])
+            sel_ab_ed = st.selectbox("Selecione o Abastecimento para Editar", df_abs["rot_abs"], key="sel_ed_abs_persist")
             id_ab_alvo = int(df_abs[df_abs["rot_abs"] == sel_ab_ed]["id"].values[0])
             d_ab_atual = ler_tabelas_sql(f"SELECT * FROM combustivel WHERE id = {id_ab_alvo}").iloc[0]
             
@@ -824,7 +820,6 @@ elif menu == "⛽ Abastecimentos & Combustível":
                         (en_eq_ab, en_litros, en_val, en_posto, en_mot, id_ab_alvo)
                     )
                     st.success("✅ Abastecimento atualizado com sucesso!")
-                    st.rerun()
         else:
             st.info("Nenhum registo de abastecimento encontrado.")
 
@@ -852,7 +847,7 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
         df_oss = ler_tabelas_sql("SELECT id, tag_prefixo, tipo_manutencao, status_os FROM manutencoes ORDER BY id DESC")
         if not df_oss.empty:
             df_oss["rot_os"] = "OS #" + df_oss["id"].astype(str) + " - " + df_oss["tag_prefixo"] + " (" + df_oss["status_os"] + ")"
-            sel_os_ed = st.selectbox("Selecione a OS para Editar", df_oss["rot_os"])
+            sel_os_ed = st.selectbox("Selecione a OS para Editar", df_oss["rot_os"], key="sel_ed_os_persist")
             id_os_alvo = int(df_oss[df_oss["rot_os"] == sel_os_ed]["id"].values[0])
             d_os_atual = ler_tabelas_sql(f"SELECT * FROM manutencoes WHERE id = {id_os_alvo}").iloc[0]
             
@@ -873,7 +868,6 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
                         (en_tag_os, en_tipo_m, en_status_os, en_ofic, en_custo_os, en_desc, id_os_alvo)
                     )
                     st.success("✅ Ordem de Serviço atualizada com sucesso!")
-                    st.rerun()
         else:
             st.info("Nenhuma Ordem de Serviço encontrada.")
 
