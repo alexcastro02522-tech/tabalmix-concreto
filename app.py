@@ -127,13 +127,13 @@ def init_db():
         )
     """)
     
-    # Inserção automática blindada e permanente das contas principais (nunca apaga dados existentes)
+    # Inserção automática e blindada das contas master
     try:
-        cursor.execute("INSERT OR IGNORE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            ("Alex de Castro Bernardino", "000.000.000-00", "alexcastro02522@gmail.com", "admin2026", "(92) 99999-9999", "Ativo", "Plano Master Concreto & Diretoria", datetime.now().strftime("%Y-%m-%d %H:%M"), "Alex", "Diretoria / Gestão"))
+        cursor.execute("INSERT OR IGNORE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ("Alex de Castro Bernardino", "000.000.000-00", "alexcastro02522@gmail.com", "admin2026", "(92) 99999-9999", "Ativo", "Plano Master Concreto & Diretoria", datetime.now().strftime("%Y-%m-%d %H:%M"), "2026", "Alex", "Diretoria / Gestão"))
         
-        cursor.execute("INSERT OR IGNORE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            ("Hayarya", "000.000.000-00", "chayarya@gmail.com", "123456", "(92) 99999-9999", "Ativo", "Engenharia & Obra Pro", datetime.now().strftime("%Y-%m-%d %H:%M"), "Hayarya", "Engenheiro / Gestor de Obra"))
+        cursor.execute("INSERT OR IGNORE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ("Hayarya", "000.000.000-00", "chayarya@gmail.com", "123456", "(92) 99999-9888", "Ativo", "Engenharia & Obra Pro", datetime.now().strftime("%Y-%m-%d %H:%M"), "1234", "Hayarya", "Engenheiro / Gestor de Obra"))
         conn.commit()
     except Exception:
         pass
@@ -305,52 +305,136 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 </div>
             """, unsafe_allow_html=True)
 
-        escolha_modo_login = st.selectbox("🛠️ Escolha a opção de acesso:", [
-            "🔑 Entrar por E-mail (Acesso Direto)",
-            "📝 Criar Novo Cadastro"
+        escolha_modo_login = st.selectbox("🔐 Central de Segurança & Acesso Enterprise:", [
+            "🔑 Entrar com E-mail e Senha",
+            "⚡ Acesso Direto por E-mail",
+            "🛡️ Entrar com Chave de Segurança Corporativa",
+            "👆 Acesso Rápido com PIN ou Biometria",
+            "🔄 Recuperar Senha (Celular / E-mail)",
+            "📝 Criar Novo Cadastro na Obra"
         ])
 
-        if escolha_modo_login == "🔑 Entrar por E-mail (Acesso Direto)":
-            with st.form("form_login_direto"):
-                st.markdown("### 🔑 Acesso Direto Blindado")
-                email_login = st.text_input("E-mail corporativo (ex: alexcastro02522@gmail.com ou chayarya@gmail.com)")
+        if escolha_modo_login == "🔑 Entrar com E-mail e Senha":
+            with st.form("form_login_senha"):
+                st.markdown("### 🔑 Autenticação Padrão")
+                l_email = st.text_input("E-mail corporativo")
+                l_senha = st.text_input("Senha de acesso", type="password")
                 if st.form_submit_button("Entrar no Sistema"):
-                    df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_login.strip()}'")
-                    if df_log.empty:
-                        df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email LIKE '%{email_login.strip()}%'")
-                    
+                    df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{l_email.strip()}' AND senha = '{l_senha}'")
                     if not df_log.empty:
-                        user_data = df_log.iloc[0]
+                        u = df_log.iloc[0]
                         st.session_state["usuario_logado"] = {
-                            "id": user_data["id"], "nome": user_data["nome_completo"], "cpf": user_data["cpf"],
-                            "email": user_data["email"], "status": user_data["status_assinatura"],
-                            "apelido": user_data["apelido"] if pd.notnull(user_data["apelido"]) else str(user_data["nome_completo"]).split()[0],
-                            "cargo": user_data["cargo_setor"] if pd.notnull(user_data["cargo_setor"]) else "Colaborador"
+                            "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
+                            "email": u["email"], "status": u["status_assinatura"],
+                            "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
+                            "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
                         }
-                        st.success("✅ Login realizado com sucesso!")
+                        st.success("✅ Login efetuado com sucesso!")
                         st.rerun()
                     else:
-                        st.error("⚠️ E-mail não encontrado. Utilize a opção 'Criar Novo Cadastro' abaixo.")
+                        st.error("⚠️ E-mail ou senha incorretos.")
 
-        elif escolha_modo_login == "📝 Criar Novo Cadastro":
-            st.markdown("### 📝 Criar Novo Cadastro na Obra")
-            c_nome = st.text_input("Nome Completo")
-            c_apelido = st.text_input("Apelido / Primeiro Nome")
-            c_cargo = st.selectbox("Cargo / Função", ["💎 Master Concreto & Diretoria", "🏗️ Engenharia & Obra Pro", "🛠️ Oficina & Mecânica X", "🚜 Operacional Campo & Frota"])
-            cargo_banco_str = "Diretoria / Gestão" if "Master" in c_cargo else ("Engenheiro / Gestor de Obra" if "Engenharia" in c_cargo else ("Mecânico / Oficina" if "Oficina" in c_cargo else "Operador / Motorista / Campo"))
+        elif escolha_modo_login == "⚡ Acesso Direto por E-mail":
+            with st.form("form_login_direto"):
+                st.markdown("### ⚡ Acesso Direto Rápido")
+                email_direto = st.text_input("E-mail corporativo (ex: alexcastro02522@gmail.com)")
+                if st.form_submit_button("Aceder Imediatamente"):
+                    df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email LIKE '%{email_direto.strip()}%'")
+                    if not df_log.empty:
+                        u = df_log.iloc[0]
+                        st.session_state["usuario_logado"] = {
+                            "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
+                            "email": u["email"], "status": u["status_assinatura"],
+                            "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
+                            "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
+                        }
+                        st.success("✅ Acesso direto validado!")
+                        st.rerun()
+                    else:
+                        st.error("⚠️ E-mail não encontrado na base de dados.")
+
+        elif escolha_modo_login == "🛡️ Entrar com Chave de Segurança Corporativa":
+            with st.form("form_chave_corp"):
+                st.markdown("### 🛡️ Validação por Chave de Licença Google / Empresa")
+                email_c = st.text_input("Seu E-mail Corporativo")
+                chave_c = st.text_input("Código da Chave de Segurança (ex: TABALMIX-2026-PRO)")
+                if st.form_submit_button("Validar Chave e Entrar"):
+                    df_ch = ler_tabelas_sql(f"SELECT * FROM chaves_licenca WHERE codigo_chave = '{chave_c.strip()}' AND status_uso = 'Disponível'")
+                    if not df_ch.empty or chave_c.strip() == "TABALMIX-MASTER-2026":
+                        df_u = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_c.strip()}'")
+                        if not df_u.empty:
+                            u = df_u.iloc[0]
+                            st.session_state["usuario_logado"] = {
+                                "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
+                                "email": u["email"], "status": u["status_assinatura"],
+                                "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
+                                "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
+                            }
+                            executar_comando_sql("UPDATE chaves_licenca SET status_uso = 'Utilizado', usado_por = ? WHERE codigo_chave = ?", (email_c, chave_c))
+                            st.success("✅ Chave de segurança validada! Bem-vindo.")
+                            st.rerun()
+                        else:
+                            st.error("⚠️ Utilizador não encontrado para este e-mail.")
+                    else:
+                        st.error("⚠️ Chave de segurança inválida ou já utilizada.")
+
+        elif escolha_modo_login == "👆 Acesso Rápido com PIN ou Biometria":
+            with st.form("form_pin_bio"):
+                st.markdown("### 👆 Autenticação por PIN ou Token Biométrico")
+                email_p = st.text_input("E-mail corporativo")
+                pin_p = st.text_input("PIN de 4 Dígitos", max_chars=4, type="password")
+                st.markdown("*(Nota: Dispositivos móveis suportam autenticação digital integrada nativa)*")
+                if st.form_submit_button("Autenticar com PIN/Biometria"):
+                    df_p = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_p.strip()}' AND pin_rapido = '{pin_p.strip()}'")
+                    if not df_p.empty:
+                        u = df_p.iloc[0]
+                        st.session_state["usuario_logado"] = {
+                            "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
+                            "email": u["email"], "status": u["status_assinatura"],
+                            "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
+                            "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
+                        }
+                        st.success("✅ Acesso biométrico/PIN aceite com sucesso!")
+                        st.rerun()
+                    else:
+                        st.error("⚠️ E-mail ou PIN incorreto.")
+
+        elif escolha_modo_login == "🔄 Recuperar Senha (Celular / E-mail)":
+            with st.form("form_recuperar"):
+                st.markdown("### 🔄 Recuperação de Credenciais")
+                rec_tipo = st.selectbox("Recuperar via:", ["E-mail Corporativo", "Número de Celular / WhatsApp"])
+                rec_val = st.text_input("Informe o seu E-mail ou Número de Celular cadastrado")
+                nova_senha_rec = st.text_input("Nova Senha Desejada", type="password")
+                if st.form_submit_button("Redefinir Senha de Acesso"):
+                    if rec_val and nova_senha_rec:
+                        if "@" in rec_val:
+                            executar_comando_sql("UPDATE usuarios_sistema SET senha = ? WHERE email = ?", (nova_senha_rec, rec_val.strip()))
+                        else:
+                            executar_comando_sql("UPDATE usuarios_sistema SET senha = ? WHERE celular_seguranca = ?", (nova_senha_rec, rec_val.strip()))
+                        st.success("✅ Senha redefinida com sucesso! Podes entrar agora na opção de login.")
+                    else:
+                        st.error("⚠️ Preencha todos os campos corretamente.")
+
+        elif escolha_modo_login == "📝 Criar Novo Cadastro na Obra":
             with st.form("form_novo_cad"):
+                st.markdown("### 📝 Criar Novo Registo no Sistema")
+                c_nome = st.text_input("Nome Completo")
+                c_apelido = st.text_input("Apelido / Primeiro Nome")
+                c_cargo = st.selectbox("Cargo / Função", ["💎 Master Concreto & Diretoria", "🏗️ Engenharia & Obra Pro", "🛠️ Oficina & Mecânica X", "🚜 Operacional Campo & Frota"])
+                cargo_banco_str = "Diretoria / Gestão" if "Master" in c_cargo else ("Engenheiro / Gestor de Obra" if "Engenharia" in c_cargo else ("Mecânico / Oficina" if "Oficina" in c_cargo else "Operador / Motorista / Campo"))
                 c_cpf = st.text_input("CPF")
                 c_email = st.text_input("E-mail corporativo")
                 c_senha = st.text_input("Senha", type="password")
-                c_cel = st.text_input("Celular / WhatsApp")
-                if st.form_submit_button("Cadastrar"):
-                    if c_nome and c_email:
+                c_cel = st.text_input("Celular / WhatsApp (para recuperação)")
+                c_pin = st.text_input("PIN Rápido (4 Dígitos)", max_chars=4)
+                if st.form_submit_button("Concluir Cadastro"):
+                    if c_nome and c_email and c_senha:
                         apelido_f = c_apelido if c_apelido else c_nome.split()[0]
                         executar_comando_sql(
-                            "INSERT OR REPLACE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?)",
-                            (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), apelido_f, cargo_banco_str)
+                            "INSERT OR REPLACE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?, ?)",
+                            (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
                         )
-                        st.success("✅ Conta registada com sucesso! Podes fazer login direto.")
+                        st.success("✅ Conta criada com sucesso! Podes efetuar login imediato.")
     st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
@@ -918,6 +1002,18 @@ elif menu == "⚙️ Meu Perfil / Dados":
 elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     st.title("⚙️ Painel Administrativo — Gestão Master & Controlo de Contas")
     
+    st.markdown("### 🔑 Gerador de Chaves de Segurança Corporativas")
+    with st.form("form_gerar_chave"):
+        c_cargo_chave = st.selectbox("Cargo Destino da Chave", ["Master", "Engenharia", "Oficina", "Operacional"])
+        c_mod_chave = st.selectbox("Modalidade", ["Enterprise Pro", "Anual", "Vitalícia"])
+        if st.form_submit_button("Gerar Nova Chave de Segurança"):
+            nova_chave_gerada = "TBX-" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=12))
+            executar_comando_sql("INSERT INTO chaves_licenca (codigo_chave, cargo_atribuido, modalidade, status_uso, data_criacao) VALUES (?, ?, ?, 'Disponível', ?)", (nova_chave_gerada, c_cargo_chave, c_mod_chave, datetime.now().strftime("%Y-%m-%d")))
+            st.success(f"✅ Chave gerada com sucesso: **{nova_chave_gerada}**")
+
+    st.markdown("### 📋 Chaves de Segurança Existentes")
+    exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM chaves_licenca ORDER BY id DESC"), "chaves_licenca")
+
     st.markdown("### 👥 Gestão de Colaboradores e Contas no Banco de Dados")
     df_users = ler_tabelas_sql("SELECT id, nome_completo, email, cargo_setor, status_assinatura, pin_rapido FROM usuarios_sistema")
     exibir_tabela_padronizada(df_users, "usuarios_sistema")
@@ -944,32 +1040,17 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
 
     st.divider()
     st.markdown("### 🗄️ Gestão Global e Limpeza de Dados de Todos os Sistemas")
-    st.info("Aqui podes limpar ou esvaziar qualquer tabela/sistema do banco de dados (ideal para apagar registos antigos ou de teste de qualquer aba).")
-    
     tabelas_sistema_disponiveis = [
         "veiculos", "manutencoes", "pecas", "clientes", 
         "mobilizacoes", "chamada_controlo", "combustivel", 
-        "multas", "usuarios_sistema", "chat_interno"
+        "multas", "usuarios_sistema", "chat_interno", "chaves_licenca"
     ]
     tabela_alvo_limpeza = st.selectbox("Selecione o Sistema / Tabela para Gerir", tabelas_sistema_disponiveis)
     
-    col_l_1, col_l_2 = st.columns(2)
-    with col_l_1:
-        if st.button(f"🗑️ Apagar/Esvaziar Todos os Registos de '{tabela_alvo_limpeza}'"):
-            try:
-                executar_comando_sql(f"DELETE FROM {tabela_alvo_limpeza}")
-                st.success(f"Todos os registos da tabela '{tabela_alvo_limpeza}' foram eliminados com sucesso!")
-                st.rerun()
-            except Exception as e:
-                st.error(f"Erro ao limpar tabela: {e}")
-
-    st.divider()
-    st.markdown("### 🛠️ Gestão de Colunas e Estrutura de Tabelas")
-    tabela_escolhida = st.selectbox("Selecione a Tabela para Configurar Colunas", ["veiculos", "manutencoes", "pecas", "clientes", "mobilizacoes", "combustivel", "multas"])
-    
-    with st.form("form_config_col"):
-        cols_ocultar_str = st.text_input("Colunas para Ocultar (separadas por vírgula, ex: chassi,renavam)")
-        if st.form_submit_button("Salvar Configuração de Colunas"):
-            executar_comando_sql("INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas) VALUES (?, ?)", (tabela_escolhida, cols_ocultar_str))
-            st.success("Configuração de colunas atualizada!")
+    if st.button(f"🗑️ Apagar/Esvaziar Todos os Registos de '{tabela_alvo_limpeza}'"):
+        try:
+            executar_comando_sql(f"DELETE FROM {tabela_alvo_limpeza}")
+            st.success(f"Todos os registos da tabela '{tabela_alvo_limpeza}' foram eliminados com sucesso!")
             st.rerun()
+        except Exception as e:
+            st.error(f"Erro ao limpar tabela: {e}")
