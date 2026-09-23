@@ -331,34 +331,14 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             """, unsafe_allow_html=True)
 
         escolha_modo_login = st.selectbox("🛠️ Escolha a opção de acesso:", [
+            "📝 Criar Novo Cadastro",
             "🔑 Entrar com E-mail e Senha",
             "🔐 Acesso Rápido com PIN",
-            "📝 Criar Novo Cadastro",
             "🎟️ Ativar com Chave Corporativa",
             "🔄 Recuperar Senha"
         ])
 
-        if escolha_modo_login == "🔑 Entrar com E-mail e Senha":
-            with st.form("form_login"):
-                st.markdown("### 🔑 Entrar na Conta")
-                email_login = st.text_input("E-mail corporativo")
-                senha_login = st.text_input("Senha de acesso", type="password")
-                if st.form_submit_button("Entrar no Sistema"):
-                    df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_login}' AND senha = '{senha_login}'")
-                    if not df_log.empty:
-                        user_data = df_log.iloc[0]
-                        st.session_state["usuario_logado"] = {
-                            "id": user_data["id"], "nome": user_data["nome_completo"], "cpf": user_data["cpf"],
-                            "email": user_data["email"], "status": user_data["status_assinatura"],
-                            "apelido": user_data["apelido"] if pd.notnull(user_data["apelido"]) else str(user_data["nome_completo"]).split()[0],
-                            "cargo": user_data["cargo_setor"] if pd.notnull(user_data["cargo_setor"]) else "Colaborador"
-                        }
-                        st.success("✅ Login realizado com sucesso!")
-                        st.rerun()
-                    else:
-                        st.error("⚠️ E-mail ou senha incorretos.")
-
-        elif escolha_modo_login == "🔐 Acesso Rápido com PIN":
+        if escolha_modo_login == "🔐 Acesso Rápido com PIN":
             with st.form("form_pin"):
                 st.markdown("### 🔐 Acesso Rápido com PIN da Obra")
                 email_pin = st.text_input("E-mail corporativo")
@@ -377,6 +357,26 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                         st.rerun()
                     else:
                         st.error("⚠️ E-mail ou PIN inválidos.")
+
+        elif escolha_modo_login == "🔑 Entrar com E-mail e Senha":
+            with st.form("form_login"):
+                st.markdown("### 🔑 Entrar na Conta")
+                email_login = st.text_input("E-mail corporativo")
+                senha_login = st.text_input("Senha de acesso", type="password")
+                if st.form_submit_button("Entrar no Sistema"):
+                    df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_login}' AND senha = '{senha_login}'")
+                    if not df_log.empty:
+                        user_data = df_log.iloc[0]
+                        st.session_state["usuario_logado"] = {
+                            "id": user_data["id"], "nome": user_data["nome_completo"], "cpf": user_data["cpf"],
+                            "email": user_data["email"], "status": user_data["status_assinatura"],
+                            "apelido": user_data["apelido"] if pd.notnull(user_data["apelido"]) else str(user_data["nome_completo"]).split()[0],
+                            "cargo": user_data["cargo_setor"] if pd.notnull(user_data["cargo_setor"]) else "Colaborador"
+                        }
+                        st.success("✅ Login realizado com sucesso!")
+                        st.rerun()
+                    else:
+                        st.error("⚠️ E-mail ou senha incorretos.")
 
         elif escolha_modo_login == "📝 Criar Novo Cadastro":
             st.markdown("### 📝 Criar Novo Cadastro na Obra")
