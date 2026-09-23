@@ -135,6 +135,7 @@ def init_db():
     except Exception:
         pass
 
+    # Garante apenas a criação do admin inicial se a tabela estiver ABSOLUTAMENTE VAZIA, sem nunca apagar o que já lá estiver
     cursor.execute("SELECT COUNT(*) FROM usuarios_sistema")
     if cursor.fetchone()[0] == 0:
         cursor.execute(
@@ -217,7 +218,6 @@ def gerar_excel_formatado(dataframe, nome_aba="Relatório Tabalmix"):
         header_format = workbook.add_format({'bold': True, 'text_wrap': True, 'fg_color': '#047857', 'font_color': 'white', 'border': 1, 'align': 'center', 'valign': 'middle'})
         cell_format = workbook.add_format({'border': 1, 'align': 'left', 'valign': 'middle', 'text_wrap': True})
         
-        # Auto-ajuste inteligente de largura para evitar que dados ultrapassem as colunas
         for col_num, col in enumerate(dataframe.columns):
             max_len = max(
                 dataframe[col].astype(str).map(len).max() if not dataframe.empty else 0,
@@ -1023,6 +1023,6 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     with st.form("form_config_col"):
         cols_ocultar_str = st.text_input("Colunas para Ocultar (separadas por vírgula, ex: chassi,renavam)")
         if st.form_submit_button("Salvar Configuração de Colunas"):
-            executar_comando_sql("INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas) VALUES (?, ?)", (tabela_escolhida, cols_ocultar_str))
+            executar_comando_sql("INSERT OR REPLACE INTO config_colunas (tabela, ordem_colunas) VALUES (?, ?)", (tabela_escolh_str := tabela_escolhida, cols_ocultar_str))
             st.success("Configuração de colunas atualizada!")
             st.rerun()
