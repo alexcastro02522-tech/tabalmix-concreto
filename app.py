@@ -331,34 +331,14 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             """, unsafe_allow_html=True)
 
         escolha_modo_login = st.selectbox("🛠️ Escolha a opção de acesso:", [
-            "📝 Criar Novo Cadastro",
             "🔑 Entrar com E-mail e Senha",
             "🔐 Acesso Rápido com PIN",
+            "📝 Criar Novo Cadastro",
             "🎟️ Ativar com Chave Corporativa",
             "🔄 Recuperar Senha"
         ])
 
-        if escolha_modo_login == "🔐 Acesso Rápido com PIN":
-            with st.form("form_pin"):
-                st.markdown("### 🔐 Acesso Rápido com PIN da Obra")
-                email_pin = st.text_input("E-mail corporativo")
-                pin_dig = st.text_input("PIN numérico (4 dígitos)", max_chars=4, type="password")
-                if st.form_submit_button("Entrar com PIN"):
-                    df_pin = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_pin}' AND pin_rapido = '{pin_dig}'")
-                    if not df_pin.empty:
-                        user_pin = df_pin.iloc[0]
-                        st.session_state["usuario_logado"] = {
-                            "id": user_pin["id"], "nome": user_pin["nome_completo"], "cpf": user_pin["cpf"],
-                            "email": user_pin["email"], "status": user_pin["status_assinatura"],
-                            "apelido": user_pin["apelido"] if pd.notnull(user_pin["apelido"]) else str(user_pin["nome_completo"]).split()[0],
-                            "cargo": user_pin["cargo_setor"] if pd.notnull(user_pin["cargo_setor"]) else "Colaborador"
-                        }
-                        st.success("✅ Login por PIN validado!")
-                        st.rerun()
-                    else:
-                        st.error("⚠️ E-mail ou PIN inválidos.")
-
-        elif escolha_modo_login == "🔑 Entrar com E-mail e Senha":
+        if escolha_modo_login == "🔑 Entrar com E-mail e Senha":
             with st.form("form_login"):
                 st.markdown("### 🔑 Entrar na Conta")
                 email_login = st.text_input("E-mail corporativo")
@@ -377,6 +357,26 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                         st.rerun()
                     else:
                         st.error("⚠️ E-mail ou senha incorretos.")
+
+        elif escolha_modo_login == "🔐 Acesso Rápido com PIN":
+            with st.form("form_pin"):
+                st.markdown("### 🔐 Acesso Rápido com PIN da Obra")
+                email_pin = st.text_input("E-mail corporativo")
+                pin_dig = st.text_input("PIN numérico (4 dígitos)", max_chars=4, type="password")
+                if st.form_submit_button("Entrar com PIN"):
+                    df_pin = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_pin}' AND pin_rapido = '{pin_dig}'")
+                    if not df_pin.empty:
+                        user_pin = df_pin.iloc[0]
+                        st.session_state["usuario_logado"] = {
+                            "id": user_pin["id"], "nome": user_pin["nome_completo"], "cpf": user_pin["cpf"],
+                            "email": user_pin["email"], "status": user_pin["status_assinatura"],
+                            "apelido": user_pin["apelido"] if pd.notnull(user_pin["apelido"]) else str(user_pin["nome_completo"]).split()[0],
+                            "cargo": user_pin["cargo_setor"] if pd.notnull(user_pin["cargo_setor"]) else "Colaborador"
+                        }
+                        st.success("✅ Login por PIN validado!")
+                        st.rerun()
+                    else:
+                        st.error("⚠️ E-mail ou PIN inválidos.")
 
         elif escolha_modo_login == "📝 Criar Novo Cadastro":
             st.markdown("### 📝 Criar Novo Cadastro na Obra")
