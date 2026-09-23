@@ -845,22 +845,65 @@ elif menu == "⛽ Abastecimentos & Combustível":
 
 elif menu == "🛠️ Ordens de Serviço (OS)":
     st.title("🛠️ Gestão de Ordens de Serviço (OS)")
-    t_os1, t_os2, t_os3 = st.tabs(["📋 Listagem de OS", "➕ Abrir Nova OS", "📝 Editar"])
+    
+    t_os1, t_os2, t_os_fechar, t_os3 = st.tabs(["📋 Listagem de OS", "➕ Abrir Nova OS", "🔒 Fechar OS Aberta", "📝 Editar"])
     
     with t_os1:
         exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM manutencoes ORDER BY id DESC"), "manutencoes")
         
     with t_os2:
-        with st.form("form_os"):
-            tag_os = st.text_input("Tag / Prefixo do Equipamento")
-            tipo_man = st.selectbox("Tipo de Manutenção", ["Corretiva", "Preventiva", "Preditiva"])
-            desc = st.text_area("Descrição detalhada do problema")
-            oficina = st.text_input("Oficina / Fornecedor")
+        df_veiculos_os = ler_tabelas_sql("SELECT tag_prefixo, marca_modelo, placa FROM veiculos")
+        lista_tags_os = df_veiculos_os["tag_prefixo"].tolist() if not df_veiculos_os.empty else ["BET-01", "ESC-02"]
+        
+        with st.form("form_os_nova"):
+            st.markdown("### ➕ Abrir Nova Ordem de Serviço")
+            os1, os2 = st.columns(2)
+            with os1:
+                tag_os = st.selectbox("TAG / Prefixo do Equipamento Cadastrado", lista_tags_os)
+                tipo_man = st.selectbox("Tipo de Manutenção", ["Corretiva", "Preventiva", "Preditiva"])
+                origem_f = st.selectbox("Origem da Falha", ["Falha de Equipamento", "Falha de Operação"])
+            with os2:
+                data_ab = st.text_input("Data de Abertura", value=datetime.now().strftime("%d/%m/%Y"))
+                hora_ab = st.text_input("Hora de Abertura", value=datetime.now().strftime("%H:%M"))
+                oficina = st.text_input("Oficina / Fornecedor / Responsável")
+            
+            desc = st.text_area("Descrição Detalhada do Problema / Falha")
             custo = st.number_input("Custo Total Estimado (R$)", min_value=0.0, format="%.2f")
+            
             if st.form_submit_button("Abrir Ordem de Serviço"):
-                executar_comando_sql("INSERT INTO manutencoes (tag_prefixo, tipo_manutencao, descricao_problema, oficina, custo, data_abertura, status_os) VALUES (?, ?, ?, ?, ?, ?, 'aberta')", (tag_os, tipo_man, desc, oficina, custo, datetime.now().strftime("%d/%m/%Y %H:%M")))
-                st.success("Ordem de Serviço aberta com sucesso!")
+                executar_comando_sql(
+                    "INSERT INTO manutencoes (tag_prefixo, tipo_manutencao, origem_falha, descricao_problema, data_abertura, hora_abertura, oficina, custo, status_os) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'aberta')",
+                    (tag_os, tipo_man, origem_f, desc, data_ab, hora_ab, oficina, custo)
+                )
+                st.success("✅ Ordem de Serviço aberta com sucesso!")
                 st.rerun()
+
+    with t_os_fechar:
+        st.markdown("### 🔒 Fechar Ordens de Serviço Abertas")
+        df_abertas = ler_tabelas_sql("SELECT id, tag_prefixo, tipo_manutencao, data_abertura, descricao_problema FROM manutencoes WHERE status_os = 'aberta' ORDER BY id DESC")
+        if not df_abertas.empty:
+            df_abertas["rot_os_ab"] = "OS #" + df_abertas["id"].astype(str) + " - " + df_abertas["tag_prefixo"] + " (" + df_abertas["tipo_manutencao"] + ")"
+            sel_os_fechar = st.selectbox("Selecione a OS Aberta para Concluir / Fechar", df_abertas["rot_os_ab"])
+            id_os_f = int(df_abertas[df_abertas["rot_os_ab"] == sel_os_fechar]["id"].values[0])
+            
+            with st.form("form_fechar_os_exec"):
+                st.info(f"Concluindo Ordem de Serviço selecionada.")
+                pecas_util = st.text_input("Peças Utilizadas (se houver)")
+                custo_p = st.number_input("Custo de Peças (R$)", min_value=0.0, format="%.2f")
+                mao_obra = st.number_input("Custo de Mão de Obra (R$)", min_value=0.0, format="%.2f")
+                tecnico = st.text_input("Técnico / Mecânico Responsável")
+                data_fch = st.text_input("Data de Fechamento", value=datetime.now().strftime("%d/%m/%Y"))
+                
+                if st.form_submit_button("🔒 Confirmar Fechamento da OS"):
+                    custo_total_real = custo_p + mao_obra
+                    executar_comando_sql(
+                        "UPDATE manutencoes SET status_os = 'concluida', pecas_utilizadas = ?, custo_pecas = ?, mao_de_obra = ?, custo = ?, tecnico_mecanico = ?, data_fechamento = ? WHERE id = ?",
+                        (pecas_util, custo_p, mao_obra, custo_total_real, tecnico, data_fch, id_os_f)
+                    )
+                    st.success("✅ Ordem de Serviço fechada e arquivada com sucesso!")
+                    st.rerun()
+        else:
+            st.info("Não existem Ordens de Serviço abertas no momento.")
 
     with t_os3:
         st.markdown("### 📝 Editar Ordem de Serviço (OS)")
