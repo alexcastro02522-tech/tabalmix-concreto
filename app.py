@@ -62,13 +62,6 @@ def init_db():
         )
     """)
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS chamada_controlo (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            colaborador TEXT, cargo TEXT, data_chamada TEXT,
-            status_presenca TEXT, observacao TEXT
-        )
-    """)
-    cursor.execute("""
         CREATE TABLE IF NOT EXISTS combustivel (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             equipamento TEXT, litros REAL, valor_total REAL,
@@ -127,7 +120,6 @@ def init_db():
         )
     """)
     
-    # Inserção automática e blindada das contas master
     try:
         cursor.execute("INSERT OR IGNORE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             ("Alex de Castro Bernardino", "000.000.000-00", "alexcastro02522@gmail.com", "admin2026", "(92) 99999-9999", "Ativo", "Plano Master Concreto & Diretoria", datetime.now().strftime("%Y-%m-%d %H:%M"), "2026", "Alex", "Diretoria / Gestão"))
@@ -383,7 +375,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 st.markdown("### 👆 Autenticação por PIN ou Token Biométrico")
                 email_p = st.text_input("E-mail corporativo")
                 pin_p = st.text_input("PIN de 4 Dígitos", max_chars=4, type="password")
-                st.markdown("*(Nota: Dispositivos móveis suportam autenticação digital integrada nativa)*")
                 if st.form_submit_button("Autenticar com PIN/Biometria"):
                     df_p = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_p.strip()}' AND pin_rapido = '{pin_p.strip()}'")
                     if not df_p.empty:
@@ -462,7 +453,6 @@ lista_menus = [
     "🚜 Cadastro de Equipamentos",
     "🏗️ Mobilização / Desmobilização",
     "🔧 Controle de Manutenção",
-    "📋 Chamada de Controlo",
     "⛽ Abastecimentos & Combustível",
     "🛠️ Ordens de Serviço (OS)",
     "🚨 Gestão & Alertas de Multas",
@@ -806,33 +796,6 @@ elif menu == "🔧 Controle de Manutenção":
         else:
             st.info("Nenhum dado de manutenção disponível para exportação.")
 
-elif menu == "📋 Chamada de Controlo":
-    st.title("📋 Chamada de Controlo & Presença na Obra")
-    st.info("Registe a presença diária dos operadores, motoristas e encarregados em campo.")
-    
-    t_ch1, t_ch2 = st.tabs(["📋 Histórico de Chamadas", "➕ Registar Presença"])
-    with t_ch1:
-        exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM chamada_controlo ORDER BY id DESC"), "chamada_controlo")
-    with t_ch2:
-        df_func = ler_tabelas_sql("SELECT nome_completo, cargo_setor FROM usuarios_sistema")
-        lista_nomes = df_func["nome_completo"].tolist() if not df_func.empty else ["Alex de Castro Bernardino"]
-        
-        with st.form("form_chamada"):
-            c_colab = st.selectbox("Colaborador / Operador", lista_nomes)
-            c_status = st.selectbox("Estado da Presenca", ["Presente", "Falta Justificada", "Falta Injustificada", "Atestado / Licença", "Em Viagem / Campo"])
-            c_obs = st.text_area("Observações do Dia / Atividade")
-            
-            if st.form_submit_button("Registar Chamada"):
-                cargo_cad = "Operacional"
-                if not df_func.empty:
-                    match_c = df_func[df_func["nome_completo"] == c_colab]
-                    if not match_c.empty:
-                        cargo_cad = match_c.iloc[0]["cargo_setor"]
-                
-                executar_comando_sql("INSERT INTO chamada_controlo (colaborador, cargo, data_chamada, status_presenca, observacao) VALUES (?, ?, ?, ?, ?)", (c_colab, cargo_cad, datetime.now().strftime("%d/%m/%Y"), c_status, c_obs))
-                st.success("Presença registada com sucesso na chamada de controlo!")
-                st.rerun()
-
 elif menu == "⛽ Abastecimentos & Combustível":
     st.title("⛽ Registo de Abastecimentos")
     t_cab1, t_cab2, t_cab3 = st.tabs(["📋 Histórico", "➕ Novo Abastecimento", "📝 Editar"])
@@ -1042,7 +1005,7 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     st.markdown("### 🗄️ Gestão Global e Limpeza de Dados de Todos os Sistemas")
     tabelas_sistema_disponiveis = [
         "veiculos", "manutencoes", "pecas", "clientes", 
-        "mobilizacoes", "chamada_controlo", "combustivel", 
+        "mobilizacoes", "combustivel", 
         "multas", "usuarios_sistema", "chat_interno", "chaves_licenca"
     ]
     tabela_alvo_limpeza = st.selectbox("Selecione o Sistema / Tabela para Gerir", tabelas_sistema_disponiveis)
