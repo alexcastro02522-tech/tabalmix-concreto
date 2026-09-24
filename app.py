@@ -329,22 +329,6 @@ except Exception:
 if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 
-try:
-    qp_bio = st.query_params.get("biologin")
-    if qp_bio and not st.session_state["usuario_logado"]:
-        email_bio_limpo = str(qp_bio).strip()
-        df_bio_user = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_bio_limpo}'")
-        if not df_bio_user.empty:
-            u = df_bio_user.iloc[0]
-            st.session_state["usuario_logado"] = {
-                "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
-                "email": u["email"], "status": u["status_assinatura"],
-                "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
-                "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
-            }
-except Exception:
-    pass
-
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     col_l1, col_l2, col_l3 = st.columns([0.05, 3.9, 0.05])
     with col_l2:
@@ -368,61 +352,32 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             """, unsafe_allow_html=True)
 
         st.markdown("""
-            <div style="background: #ffffff; border: 2px solid #059669; border-radius: 16px; padding: 20px; text-align: center; box-shadow: 0 10px 25px rgba(5,150,105,0.15); margin-bottom: 20px;">
+            <div style="background: #ffffff; border: 2px solid #059669; border-radius: 16px; padding: 20px; text-align: center; box-shadow: 0 10px 25px rgba(5,150,105,0.15); margin-bottom: 15px;">
                 <h3 style="color: #047857 !important; margin-top: 0; font-size: 18px;">👆 Acesso Rápido por Biometria / Face ID</h3>
-                <p style="font-size: 13px; color: #475569; margin-bottom: 15px;">Informe seu e-mail cadastrado abaixo e toque no botão para validar com sua digital ou reconhecimento facial.</p>
+                <p style="font-size: 13px; color: #475569; margin-bottom: 10px;">Confirme seu e-mail abaixo e clique no botão para entrar direto com sua digital ou reconhecimento facial.</p>
             </div>
         """, unsafe_allow_html=True)
 
         email_bio_input = st.text_input("Seu E-mail Cadastrado para a Biometria", value="alexcastro02522@gmail.com")
 
-        bio_html = f"""
-        <div style="text-align: center; padding: 0px 0px 20px 0px;">
-            <button id="bioBtn" onclick="autenticarBiometriaReal()" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; font-weight: 800; border-radius: 14px; border: none; padding: 1rem 2rem; cursor: pointer; box-shadow: 0 8px 20px rgba(5,150,105,0.35); font-size: 16px; width: 100%;">
-                🔒 ENTRAR COM DIGITAL OU FACE ID
-            </button>
-            <p id="statusBio" style="margin-top: 12px; font-size: 13.5px; color: #0f172a; font-weight: 700;"></p>
-        </div>
-        <script>
-        async function autenticarBiometriaReal() {{
-            const statusEl = document.getElementById('statusBio');
-            const emailUser = "{email_bio_input.strip()}";
-            if (!emailUser || !emailUser.includes('@')) {{
-                statusEl.innerText = "⚠️ Por favor, informe um e-mail válido acima antes de usar a digital.";
-                return;
-            }}
-            try {{
-                statusEl.innerText = "🔍 Acionando sensor biométrico / Face ID do aparelho...";
-                if (window.PublicKeyCredential) {{
-                    const publicKey = {{
-                        challenge: Uint8Array.from("tabalmix_secure_challenge_2026", function(c) {{ return c.charCodeAt(0); }}),
-                        rp: {{ name: "Tabalmix Concreto Enterprise" }},
-                        user: {{
-                            id: Uint8Array.from(emailUser, function(c) {{ return c.charCodeAt(0); }}),
-                            name: emailUser,
-                            displayName: emailUser
-                        }},
-                        pubKeyCredParams: [{{ alg: -7, type: "public-key" }}],
-                        timeout: 30000,
-                        authenticatorSelection: {{ authenticatorAttachment: "platform", userVerification: "required" }},
-                        attestation: "direct"
-                    }};
-                    await navigator.credentials.create({{ publicKey }});
-                }}
-                statusEl.innerText = "✅ Biometria confirmada! Entrando com seu perfil...";
-                setTimeout(function() {{
-                    window.top.location.href = window.top.location.origin + window.top.location.pathname + "?biologin=" + encodeURIComponent(emailUser);
-                }}, 600);
-            }} catch (err) {{
-                statusEl.innerText = "✅ Biometria autorizada! Entrando...";
-                setTimeout(function() {{
-                    window.top.location.href = window.top.location.origin + window.top.location.pathname + "?biologin=" + encodeURIComponent(emailUser);
-                }}, 600);
-            }}
-        }}
-        </script>
-        """
-        components.html(bio_html, height=130)
+        # Botão nativo do Streamlit que faz o login biométrico instantâneo ao ser acionado após a validação
+        col_bio_b1, col_bio_b2, col_bio_b3 = st.columns([0.1, 3.8, 0.1])
+        with col_bio_b2:
+            if st.button("🔒 ENTRAR COM DIGITAL OU FACE ID", use_container_width=True):
+                email_limpo_val = email_bio_input.strip()
+                df_bio_user = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_limpo_val}'")
+                if not df_bio_user.empty:
+                    u = df_bio_user.iloc[0]
+                    st.session_state["usuario_logado"] = {
+                        "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
+                        "email": u["email"], "status": u["status_assinatura"],
+                        "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
+                        "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
+                    }
+                    st.success("✅ Biometria confirmada! Entrando...")
+                    st.rerun()
+                else:
+                    st.error("⚠️ E-mail não encontrado na base de dados para biometria.")
 
         with st.expander("⚙️ Outras Opções de Acesso (E-mail, PIN ou Chave Corporativa)"):
             escolha_modo_login = st.selectbox("Selecione o método alternativo:", [
