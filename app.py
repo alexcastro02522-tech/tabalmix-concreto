@@ -886,21 +886,61 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
             sel_os_fechar = st.selectbox("Selecione a OS Aberta para Concluir / Fechar", df_abertas["rot_os_ab"])
             id_os_f = int(df_abertas[df_abertas["rot_os_ab"] == sel_os_fechar]["id"].values[0])
             
+            # Buscar peças disponíveis no stock
+            df_pecas_estoque = ler_tabelas_sql("SELECT id, nome_item, quantidade, valor_unitario FROM pecas")
+            lista_pecas_opcoes = ["Nenhuma (Oficina Terceirizada ou sem peça interna)"]
+            if not df_pecas_estoque.empty:
+                for _, p_row in df_pecas_estoque.iterrows():
+                    lista_pecas_opcoes.append(f"{p_row['nome_item']} (Disp: {p_row['quantidade']} | R$ {p_row['valor_unitario']:.2f})")
+
             with st.form("form_fechar_os_exec"):
-                st.info(f"Concluindo Ordem de Serviço selecionada.")
-                pecas_util = st.text_input("Peças Utilizadas (se houver)")
-                custo_p = st.number_input("Custo de Peças (R$)", min_value=0.0, format="%.2f")
-                mao_obra = st.number_input("Custo de Mão de Obra (R$)", min_value=0.0, format="%.2f")
+                st.info("Preencha os dados de fecho, selecione peças do stock interno (abatimento automático) ou informe valores de oficina terceirizada.")
+                
+                fc1, fc2 = st.columns(2)
+                with fc1:
+                    peca_escolhida_stock = st.selectbox("Peça do Stock Interno (Opcional)", lista_pecas_opcoes)
+                    qtd_peca_usada = st.number_input("Quantidade Utilizada da Peça", min_value=1, value=1)
+                with fc2:
+                    origem_peca_tipo = st.selectbox("Origem da Peça / Serviço", ["Stock Interno da Empresa", "Oficina Terceirizada / Externa"])
+                    mao_obra = st.number_input("Custo de Mão de Obra (R$)", min_value=0.0, format="%.2f")
+                
+                custo_pecas_manual = st.number_input("Custo Adicional de Peças Terceirizadas (R$)", min_value=0.0, format="%.2f")
                 tecnico = st.text_input("Técnico / Mecânico Responsável")
-                data_fch = st.text_input("Data de Fechamento", value=datetime.now().strftime("%d/%m/%Y"))
+                
+                fc3, fc4 = st.columns(2)
+                with fc3:
+                    data_fch = st.text_input("Data de Fechamento", value=datetime.now().strftime("%d/%m/%Y"))
+                with fc4:
+                    hora_fch = st.text_input("Hora de Fechamento", value=datetime.now().strftime("%H:%M"))
                 
                 if st.form_submit_button("🔒 Confirmar Fechamento da OS"):
-                    custo_total_real = custo_p + mao_obra
+                    custo_pecas_final = custo_pecas_manual
+                    nome_peca_registo = "Oficina Terceirizada / Sem Peça Interna"
+                    
+                    # Se selecionou peça do stock interno, calcular valor e abater do stock
+                    if "Nenhuma" not in peca_escolhida_stock and not df_pecas_estoque.empty:
+                        nome_peca_str = peca_escolhida_stock.split(" (Disp:")[0]
+                        p_match = df_pecas_estoque[df_pecas_estoque["nome_item"] == nome_peca_str]
+                        if not p_match.empty:
+                            p_id = int(p_match.iloc[0]["id"])
+                            p_qtd_atual = int(p_match.iloc[0]["quantidade"])
+                            p_val_unit = float(p_match.iloc[0]["valor_unitario"])
+                            
+                            if p_qtd_atual >= qtd_peca_usada:
+                                nova_qtd_estoque = p_qtd_atual - qtd_peca_usada
+                                executar_comando_sql("UPDATE pecas SET quantidade = ? WHERE id = ?", (nova_qtd_estoque, p_id))
+                                custo_pecas_final = p_val_unit * qtd_peca_usada
+                                nome_peca_registo = f"{qtd_peca_usada}x {nome_peca_str} (Stock Interno)"
+                            else:
+                                st.error("⚠️ Quantidade solicitada maior do que o disponível em stock!")
+                                st.stop()
+                    
+                    custo_total_real = custo_pecas_final + mao_obra
                     executar_comando_sql(
-                        "UPDATE manutencoes SET status_os = 'concluida', pecas_utilizadas = ?, custo_pecas = ?, mao_de_obra = ?, custo = ?, tecnico_mecanico = ?, data_fechamento = ? WHERE id = ?",
-                        (pecas_util, custo_p, mao_obra, custo_total_real, tecnico, data_fch, id_os_f)
+                        "UPDATE manutencoes SET status_os = 'concluida', pecas_utilizadas = ?, custo_pecas = ?, mao_de_obra = ?, custo = ?, tecnico_mecanico = ?, data_fechamento = ?, hora_fechamento = ? WHERE id = ?",
+                        (nome_peca_registo, custo_pecas_final, mao_obra, custo_total_real, tecnico, data_fch, hora_fch, id_os_f)
                     )
-                    st.success("✅ Ordem de Serviço fechada e arquivada com sucesso!")
+                    st.success("✅ Ordem de Serviço fechada, stock atualizado e arquivada com sucesso!")
                     st.rerun()
         else:
             st.info("Não existem Ordens de Serviço abertas no momento.")
