@@ -28,7 +28,6 @@ supabase: Client = init_supabase()
 
 def ler_tabelas_sql(query_str):
     try:
-        # Identifica qual tabela está sendo consultada na query SQL básica
         q_lower = query_str.lower()
         tabela = "veiculos"
         if "manutencoes" in q_lower: tabela = "manutencoes"
@@ -46,7 +45,6 @@ def ler_tabelas_sql(query_str):
         data = response.data
         if data:
             df = pd.DataFrame(data)
-            # Filtros manuais básicos compatíveis com as queries do sistema
             if "where" in q_lower:
                 if "email = '" in query_str:
                     email_filtro = query_str.split("email = '")[1].split("'")[0]
@@ -399,7 +397,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 setTimeout(() => {{
                     window.top.location.href = window.top.location.origin + window.top.location.pathname + "?biologin=" + encodeURIComponent(emailUser);
                 }}, 600);
-            } catch (err) {{
+            }} catch (err) {{
                 statusEl.innerText = "✅ Biometria autorizada! Entrando...";
                 setTimeout(() => {{
                     window.top.location.href = window.top.location.origin + window.top.location.pathname + "?biologin=" + encodeURIComponent(emailUser);
@@ -565,7 +563,7 @@ if menu == "📊 Visão Geral":
     with c5: st.metric("Total Litros", f"{df_comb['litros'].sum() if not df_comb.empty and 'litros' in df_comb.columns else 0.0:,.1f} L")
     st.divider()
 
-    st.markdown("### 📋 Gestão de Frotas & Relatórios Executivos (Nuveni)")
+    st.markdown("### 📋 Gestão de Frotas & Relatórios Executivos (Nuvem)")
     if not df_veiculos.empty:
         exibir_tabela_padronizada(df_veiculos, "veiculos")
         col_dl1, col_dl2, col_dl3 = st.columns(3)
