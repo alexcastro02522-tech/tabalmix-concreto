@@ -49,6 +49,11 @@ def ler_tabelas_sql(query_str):
                 if "email = '" in query_str:
                     email_filtro = query_str.split("email = '")[1].split("'")[0]
                     df = df[df["email"] == email_filtro]
+                elif "status_os = 'aberta'" in q_lower:
+                    df = df[df["status_os"] == "aberta"]
+                elif "codigo_chave = '" in query_str:
+                    chave_filtro = query_str.split("codigo_chave = '")[1].split("'")[0]
+                    df = df[df["codigo_chave"] == chave_filtro]
             return df
         return pd.DataFrame()
     except Exception as e:
@@ -121,6 +126,8 @@ def executar_comando_sql(query_str, params=None):
             if "usuarios_sistema" in q_lower:
                 if "senha = ?" in q_lower:
                     supabase.table("usuarios_sistema").update({"senha": params[0]}).eq("email", params[1]).execute()
+                elif "status_assinatura" in q_lower:
+                    supabase.table("usuarios_sistema").update({"status_assinatura": params[0]}).eq("id", params[1]).execute()
             elif "chaves_licenca" in q_lower:
                 supabase.table("chaves_licenca").update({"status_uso": "Utilizado", "usado_por": params[0]}).eq("codigo_chave", params[1]).execute()
         elif "delete" in q_lower:
@@ -151,6 +158,31 @@ def executar_comando_sql(query_str, params=None):
         print(f"Erro Supabase Comando: {e}")
         return False
 
+def gerar_pdf_relatorio(titulo, dataframe):
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=letter)
+    width, height = letter
+    c.drawString(50, height - 50, titulo)
+    c.drawString(50, height - 70, f"Gerado em: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
+    y = height - 100
+    for index, row in dataframe.iterrows():
+        if y < 50:
+            c.showPage()
+            y = height - 50
+        linha_txt = " | ".join([str(val) for val in row.values[:4]])
+        c.drawString(50, y, linha_txt[:100])
+        y -= 20
+    c.save()
+    buffer.seek(0)
+    return buffer.getvalue()
+
+def gerar_excel_formatado(dataframe, nome_aba):
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        dataframe.to_excel(writer, index=False, sheet_name=nome_aba)
+    output.seek(0)
+    return output.getvalue()
+
 MERCADO_PAGO_ACCESS_TOKEN = "APP_USR-7480302560366070-091611-1118388bbc787e8f88ea1da583096dbc-2919829212"
 try:
     sdk_mp = mercadopago.SDK(MERCADO_PAGO_ACCESS_TOKEN)
@@ -175,29 +207,24 @@ except Exception:
 if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 
-# Captura de login biométrico via parâmetro de URL seguro
 try:
     qp_bio = st.query_params.get("biologin")
     if qp_bio and not st.session_state["usuario_logado"]:
         email_bio_limpo = str(qp_bio).strip().lower()
-        df_bio_user = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_bio_limpo}'")
-        if df_bio_user.empty:
-            df_all = ler_tabelas_sql("SELECT * FROM usuarios_sistema")
-            if not df_all.empty:
-                df_bio_user = df_all[df_all["email"].str.strip().str.lower() == email_bio_limpo]
-        
-        if not df_bio_user.empty:
-            u = df_bio_user.iloc[0]
-            st.session_state["usuario_logado"] = {
-                "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
-                "email": u["email"], "status": u["status_assinatura"],
-                "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
-                "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
-            }
+        df_all = ler_tabelas_sql("SELECT * FROM usuarios_sistema")
+        if not df_all.empty:
+            df_bio_user = df_all[df_all["email"].str.strip().str.lower() == email_bio_limpo]
+            if not df_bio_user.empty:
+                u = df_bio_user.iloc[0]
+                st.session_state["usuario_logado"] = {
+                    "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
+                    "email": u["email"], "status": u["status_assinatura"],
+                    "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
+                    "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
+                }
 except Exception:
     pass
 
-# Tela Profissional de Autenticação e Login
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     col_l1, col_l2, col_l3 = st.columns([0.05, 3.9, 0.05])
     with col_l2:
@@ -222,8 +249,8 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
 
         st.markdown("""
             <div style="background: #ffffff; border: 2px solid #059669; border-radius: 16px; padding: 16px; text-align: center; box-shadow: 0 10px 25px rgba(5,150,105,0.15); margin-bottom: 15px;">
-                <h3 style="color: #047857 !important; margin-top: 0; font-size: 17px;">🛡️ Portal de Autenticação Segura</h3>
-                <p style="font-size: 12px; color: #475569; margin-bottom: 10px;">Utilize Face ID, Digital, Senha ou gerenciamento de cadastro.</p>
+                <h3 style="color: #047857 !important; margin-top: 0; font-size: 17px;">🛡️ Portal de Autenticação Segura & Campo</h3>
+                <p style="font-size: 12px; color: #475569; margin-bottom: 10px;">Acesse com sua digital, Face ID, PIN ou credenciais corporativas.</p>
             </div>
         """, unsafe_allow_html=True)
 
@@ -288,24 +315,29 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 c_email_cred = st.text_input("E-mail corporativo", value="alexcastro02522@gmail.com")
                 c_senha_cred = st.text_input("Senha ou PIN (4 dígitos)", type="password")
                 if st.form_submit_button("Entrar no Sistema", use_container_width=True):
-                    df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{c_email_cred.strip()}'")
-                    if not df_log.empty:
-                        u = df_log.iloc[0]
-                        senha_banco = str(u.get("senha"))
-                        pin_banco = str(u.get("pin_rapido"))
+                    df_all = ler_tabelas_sql("SELECT * FROM usuarios_sistema")
+                    usuario_encontrado = None
+                    if not df_all.empty:
+                        match = df_all[df_all["email"].str.strip().str.lower() == c_email_cred.strip().lower()]
+                        if not match.empty:
+                            usuario_encontrado = match.iloc[0]
+                    
+                    if usuario_encontrado is not None:
+                        senha_banco = str(usuario_encontrado.get("senha"))
+                        pin_banco = str(usuario_encontrado.get("pin_rapido"))
                         if c_senha_cred == senha_banco or c_senha_cred == pin_banco or c_senha_cred == "2026":
                             st.session_state["usuario_logado"] = {
-                                "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
-                                "email": u["email"], "status": u["status_assinatura"],
-                                "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
-                                "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
+                                "id": usuario_encontrado["id"], "nome": usuario_encontrado["nome_completo"], "cpf": usuario_encontrado["cpf"],
+                                "email": usuario_encontrado["email"], "status": usuario_encontrado["status_assinatura"],
+                                "apelido": usuario_encontrado["apelido"] if pd.notnull(usuario_encontrado["apelido"]) else str(usuario_encontrado["nome_completo"]).split()[0],
+                                "cargo": usuario_encontrado["cargo_setor"] if pd.notnull(usuario_encontrado["cargo_setor"]) else "Colaborador"
                             }
                             st.success("✅ Acesso validado com sucesso!")
                             st.rerun()
                         else:
                             st.error("⚠️ Senha ou PIN incorretos.")
                     else:
-                        st.error("⚠️ E-mail não encontrado na base de dados.")
+                        st.error("⚠️ E-mail não encontrado na base de dados. Utilize a aba 'Novo Cadastro' caso seja o primeiro acesso.")
 
         with tab_m3:
             with st.form("form_recuperar_senha"):
@@ -314,7 +346,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 nova_senha = st.text_input("Nova Senha Desejada", type="password")
                 if st.form_submit_button("Atualizar Credencial na Nuvem", use_container_width=True):
                     if rec_email and nova_senha:
-                        executar_comando_sql("UPDATE usuarios_sistema SET senha = ? WHERE email = ?", (nova_senha, rec_email.strip()))
+                        executar_comando_sql("UPDATE usuarios_sistema SET senha = ? WHERE email = ?", (nova_senha, rec_email.strip().lower()))
                         st.success("✅ Senha atualizada com sucesso no Supabase!")
                     else:
                         st.error("⚠️ Preencha todos os campos.")
@@ -334,7 +366,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                         apelido_f = c_apelido if c_apelido else c_nome.split()[0]
                         executar_comando_sql(
                             "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', 'Colaborador Obra', ?, ?, ?, ?)",
-                            (c_nome, "000.000.000-00", c_email.strip(), c_senha, "(92) 99999-9999", datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
+                            (c_nome, "000.000.000-00", c_email.strip().lower(), c_senha, "(92) 99999-9999", datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
                         )
                         st.success("✅ Cadastro realizado com sucesso! Faça login na aba ao lado.")
     st.stop()
@@ -395,6 +427,16 @@ if menu == "📊 Visão Geral":
     st.markdown("### 📋 Gestão de Frotas & Relatórios Executivos (Nuvem)")
     if not df_veiculos.empty:
         exibir_tabela_padronizada(df_veiculos, "veiculos")
+        col_dl1, col_dl2, col_dl3 = st.columns(3)
+        with col_dl1:
+            pdf_geral = gerar_pdf_relatorio("Relatório Executivo Geral de Frota", df_veiculos)
+            st.download_button("📥 Baixar Relatório PDF", data=pdf_geral, file_name="relatorio_frota.pdf", mime="application/pdf")
+        with col_dl2:
+            excel_geral = gerar_excel_formatado(df_veiculos, "Frota_Tabalmix")
+            st.download_button("📊 Baixar Relatório Excel", data=excel_geral, file_name="relatorio_frota.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+        with col_dl3:
+            msg_wpp = urllib.parse.quote("🏗️ *RELATÓRIO EXECUTIVO TABALMIX CONCRETO*\nFrota total sincronizada na nuvem.")
+            st.markdown(f'<a href="https://api.whatsapp.com/send?text={msg_wpp}" target="_blank"><button style="background:linear-gradient(135deg, #25D366 0%, #128C7E 100%); color:white; font-weight:700; border-radius:12px; border:none; padding:0.65rem 1.8rem; width:100%; box-shadow:0 6px 16px rgba(37,211,102,0.3); cursor:pointer;">📱 Compartilhar no WhatsApp</button></a>', unsafe_allow_html=True)
     else:
         st.info("Nenhum veículo cadastrado no Supabase.")
 
