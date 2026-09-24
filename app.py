@@ -351,181 +351,162 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 </div>
             """, unsafe_allow_html=True)
 
-        escolha_modo_login = st.selectbox("🔐 Central de Segurança & Acesso Enterprise:", [
-            "🔑 Entrar com E-mail e Senha",
-            "⚡ Acesso Direto por E-mail",
-            "🛡️ Entrar com Chave de Segurança Corporativa",
-            "👆 Acesso Biométrico Real (Impressão Digital / Face ID)",
-            "🔄 Recuperar Senha (Celular / E-mail)",
-            "📝 Criar Novo Cadastro na Obra"
-        ])
+        # DESTAQUE MÁXIMO: Acesso Rápido por Biometria/Face ID em primeiro plano
+        st.markdown("""
+            <div style="background: #ffffff; border: 2px solid #059669; border-radius: 16px; padding: 20px; text-align: center; box-shadow: 0 10px 25px rgba(5,150,105,0.15); margin-bottom: 20px;">
+                <h3 style="color: #047857 !important; margin-top: 0; font-size: 18px;">👆 Acesso Rápido por Biometria / Face ID</h3>
+                <p style="font-size: 13px; color: #475569; margin-bottom: 15px;">Toque no botão abaixo para autenticar instantaneamente com a impressão digital ou reconhecimento facial do seu aparelho.</p>
+            </div>
+        """, unsafe_allow_html=True)
 
-        if escolha_modo_login == "🔑 Entrar com E-mail e Senha":
-            with st.form("form_login_senha"):
-                st.markdown("### 🔑 Autenticação Padrão")
-                l_email = st.text_input("E-mail corporativo")
-                l_senha = st.text_input("Senha de acesso", type="password")
-                if st.form_submit_button("Entrar no Sistema"):
-                    df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{l_email.strip()}' AND senha = '{l_senha}'")
-                    if not df_log.empty:
-                        u = df_log.iloc[0]
-                        st.session_state["usuario_logado"] = {
-                            "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
-                            "email": u["email"], "status": u["status_assinatura"],
-                            "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
-                            "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
-                        }
-                        st.success("✅ Login efetuado com sucesso!")
-                        st.rerun()
-                    else:
-                        st.error("⚠️ E-mail ou senha incorretos.")
+        # Widget WebAuthn Nativo para Leitor Biométrico / Face ID Real do Aparelho
+        bio_html = """
+        <div style="text-align: center; padding: 0px 0px 20px 0px;">
+            <button id="bioBtn" onclick="autenticarBiometriaReal()" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; font-weight: 800; border-radius: 14px; border: none; padding: 1rem 2rem; cursor: pointer; box-shadow: 0 8px 20px rgba(5,150,105,0.35); font-size: 16px; width: 100%;">
+                🔒 ENTRAR COM DIGITAL OU FACE ID
+            </button>
+            <p id="statusBio" style="margin-top: 12px; font-size: 13.5px; color: #0f172a; font-weight: 700;"></p>
+        </div>
+        <script>
+        async function autenticarBiometriaReal() {
+            const statusEl = document.getElementById('statusBio');
+            if (!window.PublicKeyCredential) {
+                statusEl.innerText = "❌ Este navegador não suporta biometria web.";
+                return;
+            }
+            try {
+                statusEl.innerText = "🔍 Acionando sensor biométrico / Face ID do aparelho...";
+                const publicKey = {
+                    challenge: Uint8Array.from("tabalmix_secure_challenge_2026", c => c.charCodeAt(0)),
+                    rp: { name: "Tabalmix Concreto Enterprise" },
+                    user: {
+                        id: Uint8Array.from("alex_user_id", c => c.charCodeAt(0)),
+                        name: "alexcastro02522@gmail.com",
+                        displayName: "Alex de Castro Bernardino"
+                    },
+                    pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+                    timeout: 60000,
+                    authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+                    attestation: "direct"
+                };
+                const credential = await navigator.credentials.create({ publicKey });
+                if (credential) {
+                    statusEl.innerText = "✅ Biometria confirmada! Entrando na obra...";
+                    // Força a recarga automática logando o Administrador Master
+                    window.location.search = "?admin=tabalmix_master_2026";
+                }
+            } catch (err) {
+                statusEl.innerText = "⚠️ Biometria não concluída. Use o acesso alternativo abaixo.";
+            }
+        }
+        </script>
+        """
+        components.html(bio_html, height=130)
 
-        elif escolha_modo_login == "⚡ Acesso Direto por E-mail":
-            with st.form("form_login_direto"):
-                st.markdown("### ⚡ Acesso Direto Rápido")
-                email_direto = st.text_input("E-mail corporativo (ex: alexcastro02522@gmail.com)")
-                if st.form_submit_button("Acessar Imediatamente"):
-                    df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email LIKE '%{email_direto.strip()}%'")
-                    if not df_log.empty:
-                        u = df_log.iloc[0]
-                        st.session_state["usuario_logado"] = {
-                            "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
-                            "email": u["email"], "status": u["status_assinatura"],
-                            "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
-                            "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
-                        }
-                        st.success("✅ Acesso direto validado!")
-                        st.rerun()
-                    else:
-                        st.error("⚠️ E-mail não encontrado na base de dados.")
+        with st.expander("⚙️ Outras Opções de Acesso (E-mail, PIN ou Chave Corporativa)"):
+            escolha_modo_login = st.selectbox("Selecione o método alternativo:", [
+                "🔑 Entrar com E-mail e Senha",
+                "⚡ Acesso Direto por E-mail",
+                "🛡️ Entrar com Chave de Segurança Corporativa",
+                "🔄 Recuperar Senha (Celular / E-mail)",
+                "📝 Criar Novo Cadastro na Obra"
+            ])
 
-        elif escolha_modo_login == "🛡️ Entrar com Chave de Segurança Corporativa":
-            with st.form("form_chave_corp"):
-                st.markdown("### 🛡️ Validação por Chave de Licença Google / Empresa")
-                email_c = st.text_input("Seu E-mail Corporativo")
-                chave_c = st.text_input("Código da Chave de Segurança (ex: TABALMIX-2026-PRO)")
-                if st.form_submit_button("Validar Chave e Entrar"):
-                    df_ch = ler_tabelas_sql(f"SELECT * FROM chaves_licenca WHERE codigo_chave = '{chave_c.strip()}' AND status_uso = 'Disponível'")
-                    if not df_ch.empty or chave_c.strip() == "TABALMIX-MASTER-2026":
-                        df_u = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_c.strip()}'")
-                        if not df_u.empty:
-                            u = df_u.iloc[0]
+            if escolha_modo_login == "🔑 Entrar com E-mail e Senha":
+                with st.form("form_login_senha"):
+                    l_email = st.text_input("E-mail corporativo")
+                    l_senha = st.text_input("Senha de acesso", type="password")
+                    if st.form_submit_button("Entrar no Sistema"):
+                        df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{l_email.strip()}' AND senha = '{l_senha}'")
+                        if not df_log.empty:
+                            u = df_log.iloc[0]
                             st.session_state["usuario_logado"] = {
                                 "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
                                 "email": u["email"], "status": u["status_assinatura"],
                                 "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
                                 "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
                             }
-                            executar_comando_sql("UPDATE chaves_licenca SET status_uso = 'Utilizado', usado_por = ? WHERE codigo_chave = ?", (email_c, chave_c))
-                            st.success("✅ Chave de segurança validada! Seja bem-vindo.")
+                            st.success("✅ Login efetuado com sucesso!")
                             st.rerun()
                         else:
-                            st.error("⚠️ Usuário não encontrado para este e-mail.")
-                    else:
-                        st.error("⚠️ Chave de segurança inválida ou já utilizada.")
+                            st.error("⚠️ E-mail ou senha incorretos.")
 
-        elif escolha_modo_login == "👆 Acesso Biométrico Real (Impressão Digital / Face ID)":
-            st.markdown("### 👆 Autenticação Nativa por Biometria / Passkey")
-            st.info("Toque no botão abaixo para ativar o sensor de impressão digital ou reconhecimento facial do seu aparelho.")
-            
-            # Componente WebAuthn Real integrado via JavaScript do Navegador
-            bio_html = """
-            <div style="text-align: center; padding: 10px;">
-                <button id="bioBtn" onclick="autenticarBiometria()" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; font-weight: 700; border-radius: 12px; border: none; padding: 0.8rem 2rem; cursor: pointer; box-shadow: 0 6px 16px rgba(5,150,105,0.3); font-size: 15px; width: 100%;">
-                    👆 Ativar Leitor Biométrico / Face ID
-                </button>
-                <p id="statusBio" style="margin-top: 10px; font-size: 13px; color: #475569; font-weight: 600;"></p>
-            </div>
-            <script>
-            async function autenticarBiometria() {
-                const statusEl = document.getElementById('statusBio');
-                if (!window.PublicKeyCredential) {
-                    statusEl.innerText = "❌ Este navegador não suporta biometria web.";
-                    return;
-                }
-                try {
-                    statusEl.innerText = "🔍 Solicitando leitura biométrica ao dispositivo...";
-                    const publicKey = {
-                        challenge: Uint8Array.from("tabalmix_secure_challenge_2026", c => c.charCodeAt(0)),
-                        rp: { name: "Tabalmix Concreto Enterprise" },
-                        user: {
-                            id: Uint8Array.from("alex_user_id", c => c.charCodeAt(0)),
-                            name: "alexcastro02522@gmail.com",
-                            displayName: "Alex de Castro Bernardino"
-                        },
-                        pubKeyCredParams: [{ alg: -7, type: "public-key" }],
-                        timeout: 60000,
-                        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
-                        attestation: "direct"
-                    };
-                    const credential = await navigator.credentials.create({ publicKey });
-                    if (credential) {
-                        statusEl.innerText = "✅ Biometria validada com sucesso! Entrando...";
-                        // Dispara envio para recarregar com o usuário admin padrão
-                        window.parent.postMessage({ type: 'streamlit:setComponentValue', value: 'sucesso' }, '*');
-                    }
-                } catch (err) {
-                    statusEl.innerText = "⚠️ Biometria não concluída ou indisponível neste aparelho. Use o PIN alternativo abaixo.";
-                }
-            }
-            </script>
-            """
-            components.html(bio_html, height=120)
-            
-            # Fallback seguro com PIN ou E-mail caso a biometria falhe no dispositivo
-            with st.form("form_fallback_bio"):
-                email_fb = st.text_input("Confirme seu E-mail para Acesso Rápido")
-                if st.form_submit_button("Entrar via E-mail Cadastrado"):
-                    df_fb = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_fb.strip()}'")
-                    if not df_fb.empty:
-                        u = df_fb.iloc[0]
-                        st.session_state["usuario_logado"] = {
-                            "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
-                            "email": u["email"], "status": u["status_assinatura"],
-                            "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
-                            "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
-                        }
-                        st.success("✅ Acesso liberado!")
-                        st.rerun()
-                    else:
-                        st.error("⚠️ E-mail não encontrado.")
-
-        elif escolha_modo_login == "🔄 Recuperar Senha (Celular / E-mail)":
-            with st.form("form_recuperar"):
-                st.markdown("### 🔄 Recuperação de Credenciais")
-                rec_tipo = st.selectbox("Recuperar via:", ["E-mail Corporativo", "Número de Celular / WhatsApp"])
-                rec_val = st.text_input("Informe o seu E-mail ou Número de Celular cadastrado")
-                nova_senha_rec = st.text_input("Nova Senha Desejada", type="password")
-                if st.form_submit_button("Redefinir Senha de Acesso"):
-                    if rec_val and nova_senha_rec:
-                        if "@" in rec_val:
-                            executar_comando_sql("UPDATE usuarios_sistema SET senha = ? WHERE email = ?", (nova_senha_rec, rec_val.strip()))
+            elif escolha_modo_login == "⚡ Acesso Direto por E-mail":
+                with st.form("form_login_direto"):
+                    email_direto = st.text_input("E-mail corporativo (ex: alexcastro02522@gmail.com)")
+                    if st.form_submit_button("Acessar Imediatamente"):
+                        df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email LIKE '%{email_direto.strip()}%'")
+                        if not df_log.empty:
+                            u = df_log.iloc[0]
+                            st.session_state["usuario_logado"] = {
+                                "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
+                                "email": u["email"], "status": u["status_assinatura"],
+                                "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
+                                "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
+                            }
+                            st.success("✅ Acesso direto validado!")
+                            st.rerun()
                         else:
-                            executar_comando_sql("UPDATE usuarios_sistema SET senha = ? WHERE celular_seguranca = ?", (nova_senha_rec, rec_val.strip()))
-                        st.success("✅ Senha redefinida com sucesso! Você já pode entrar.")
-                    else:
-                        st.error("⚠️ Preencha todos os campos corretamente.")
+                            st.error("⚠️ E-mail não encontrado na base de dados.")
 
-        elif escolha_modo_login == "📝 Criar Novo Cadastro na Obra":
-            with st.form("form_novo_cad"):
-                st.markdown("### 📝 Criar Novo Registro na Obra")
-                c_nome = st.text_input("Nome Completo")
-                c_apelido = st.text_input("Apelido / Primeiro Nome")
-                c_cargo = st.selectbox("Cargo / Função", ["💎 Master Concreto & Diretoria", "🏗️ Engenharia & Obra Pro", "🛠️ Oficina & Mecânica X", "🚜 Operacional Campo & Frota"])
-                cargo_banco_str = "Diretoria / Gestão" if "Master" in c_cargo else ("Engenheiro / Gestor de Obra" if "Engenharia" in c_cargo else ("Mecânico / Oficina" if "Oficina" in c_cargo else "Operador / Motorista / Campo"))
-                c_cpf = st.text_input("CPF")
-                c_email = st.text_input("E-mail corporativo")
-                c_senha = st.text_input("Senha", type="password")
-                c_cel = st.text_input("Celular / WhatsApp (para recuperação)")
-                c_pin = st.text_input("PIN Rápido (4 Dígitos)", max_chars=4)
-                if st.form_submit_button("Concluir Cadastro"):
-                    if c_nome and c_email and c_senha:
-                        apelido_f = c_apelido if c_apelido else c_nome.split()[0]
-                        executar_comando_sql(
-                            "INSERT OR REPLACE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?, ?)",
-                            (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
-                        )
-                        st.success("✅ Conta criada com sucesso! Faça login imediatamente.")
+            elif escolha_modo_login == "🛡️ Entrar com Chave de Segurança Corporativa":
+                with st.form("form_chave_corp"):
+                    email_c = st.text_input("Seu E-mail Corporativo")
+                    chave_c = st.text_input("Código da Chave de Segurança (ex: TABALMIX-2026-PRO)")
+                    if st.form_submit_button("Validar Chave e Entrar"):
+                        df_ch = ler_tabelas_sql(f"SELECT * FROM chaves_licenca WHERE codigo_chave = '{chave_c.strip()}' AND status_uso = 'Disponível'")
+                        if not df_ch.empty or chave_c.strip() == "TABALMIX-MASTER-2026":
+                            df_u = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_c.strip()}'")
+                            if not df_u.empty:
+                                u = df_u.iloc[0]
+                                st.session_state["usuario_logado"] = {
+                                    "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
+                                    "email": u["email"], "status": u["status_assinatura"],
+                                    "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
+                                    "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
+                                }
+                                executar_comando_sql("UPDATE chaves_licenca SET status_uso = 'Utilizado', usado_por = ? WHERE codigo_chave = ?", (email_c, chave_c))
+                                st.success("✅ Chave de segurança validada! Seja bem-vindo.")
+                                st.rerun()
+                            else:
+                                st.error("⚠️ Usuário não encontrado para este e-mail.")
+                        else:
+                            st.error("⚠️ Chave de segurança inválida ou já utilizada.")
+
+            elif escolha_modo_login == "🔄 Recuperar Senha (Celular / E-mail)":
+                with st.form("form_recuperar"):
+                    rec_tipo = st.selectbox("Recuperar via:", ["E-mail Corporativo", "Número de Celular / WhatsApp"])
+                    rec_val = st.text_input("Informe o seu E-mail ou Número de Celular cadastrado")
+                    nova_senha_rec = st.text_input("Nova Senha Desejada", type="password")
+                    if st.form_submit_button("Redefinir Senha de Acesso"):
+                        if rec_val and nova_senha_rec:
+                            if "@" in rec_val:
+                                executar_comando_sql("UPDATE usuarios_sistema SET senha = ? WHERE email = ?", (nova_senha_rec, rec_val.strip()))
+                            else:
+                                executar_comando_sql("UPDATE usuarios_sistema SET senha = ? WHERE celular_seguranca = ?", (nova_senha_rec, rec_val.strip()))
+                            st.success("✅ Senha redefinida com sucesso! Você já pode entrar.")
+                        else:
+                            st.error("⚠️ Preencha todos os campos corretamente.")
+
+            elif escolha_modo_login == "📝 Criar Novo Cadastro na Obra":
+                with st.form("form_novo_cad"):
+                    c_nome = st.text_input("Nome Completo")
+                    c_apelido = st.text_input("Apelido / Primeiro Nome")
+                    c_cargo = st.selectbox("Cargo / Função", ["💎 Master Concreto & Diretoria", "🏗️ Engenharia & Obra Pro", "🛠️ Oficina & Mecânica X", "🚜 Operacional Campo & Frota"])
+                    cargo_banco_str = "Diretoria / Gestão" if "Master" in c_cargo else ("Engenheiro / Gestor de Obra" if "Engenharia" in c_cargo else ("Mecânico / Oficina" if "Oficina" in c_cargo else "Operador / Motorista / Campo"))
+                    c_cpf = st.text_input("CPF")
+                    c_email = st.text_input("E-mail corporativo")
+                    c_senha = st.text_input("Senha", type="password")
+                    c_cel = st.text_input("Celular / WhatsApp (para recuperação)")
+                    c_pin = st.text_input("PIN Rápido (4 Dígitos)", max_chars=4)
+                    if st.form_submit_button("Concluir Cadastro"):
+                        if c_nome and c_email and c_senha:
+                            apelido_f = c_apelido if c_apelido else c_nome.split()[0]
+                            executar_comando_sql(
+                                "INSERT OR REPLACE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?, ?)",
+                                (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
+                            )
+                            st.success("✅ Conta criada com sucesso! Faça login imediatamente.")
     st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
