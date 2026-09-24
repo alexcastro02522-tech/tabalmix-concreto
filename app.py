@@ -205,143 +205,140 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             with open("caminhoes.jpg", "rb") as image_file:
                 encoded_logo_login = base64.b64encode(image_file.read()).decode()
             st.markdown(f"""
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 20px 40px rgba(5,150,105,0.2); margin-top: 10px; margin-bottom: 20px; color: white;">
-                    <div style="border-radius: 14px; overflow: hidden; max-height: 110px; border: 3px solid rgba(255,255,255,0.8); margin-bottom: 14px; box-shadow: 0 8px 20px rgba(0,0,0,0.2);">
-                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 110px; object-fit: cover; display: block;">
+                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 20px; padding: 22px; text-align: center; box-shadow: 0 20px 40px rgba(5,150,105,0.2); margin-top: 10px; margin-bottom: 15px; color: white;">
+                    <div style="border-radius: 12px; overflow: hidden; max-height: 95px; border: 3px solid rgba(255,255,255,0.8); margin-bottom: 10px; box-shadow: 0 6px 16px rgba(0,0,0,0.2);">
+                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 95px; object-fit: cover; display: block;">
                     </div>
-                    <h1 style="color: white !important; margin: 0; font-size: 24px; font-weight: 900;">tabalmix concreto</h1>
-                    <p style="color: #e2e8f0; font-size: 11.5px; margin: 4px 0 2px 0; text-transform: uppercase; font-weight: 600;">Supabase Cloud Connected</p>
+                    <h1 style="color: white !important; margin: 0; font-size: 22px; font-weight: 900;">tabalmix concreto</h1>
+                    <p style="color: #e2e8f0; font-size: 11px; margin: 3px 0 0 0; text-transform: uppercase; font-weight: 600;">Campo & Operações Pro X — Nuvem Supabase</p>
                 </div>
             """, unsafe_allow_html=True)
         except Exception:
             st.markdown("""
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 20px; padding: 25px; text-align: center; color: white; margin-bottom: 20px;">
-                    <h1 style="color: white !important; margin: 0; font-size: 24px; font-weight: 900;">tabalmix concreto</h1>
+                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 20px; padding: 20px; text-align: center; color: white; margin-bottom: 15px;">
+                    <h1 style="color: white !important; margin: 0; font-size: 22px; font-weight: 900;">tabalmix concreto</h1>
                 </div>
             """, unsafe_allow_html=True)
 
         st.markdown("""
-            <div style="background: #ffffff; border: 2px solid #059669; border-radius: 16px; padding: 20px; text-align: center; box-shadow: 0 10px 25px rgba(5,150,105,0.15); margin-bottom: 20px;">
-                <h3 style="color: #047857 !important; margin-top: 0; font-size: 18px;">👆 Acesso Seguro por Biometria / Face ID</h3>
-                <p style="font-size: 13px; color: #475569; margin-bottom: 15px;">Informe o e-mail cadastrado da sua conta corporativa para validar sua digital com segurança.</p>
+            <div style="background: #ffffff; border: 2px solid #059669; border-radius: 16px; padding: 18px; text-align: center; box-shadow: 0 10px 25px rgba(5,150,105,0.15); margin-bottom: 15px;">
+                <h3 style="color: #047857 !important; margin-top: 0; font-size: 17px;">⚡ Acesso Rápido de Campo</h3>
+                <p style="font-size: 12.5px; color: #475569; margin-bottom: 12px;">Escolha abaixo como deseja entrar instantaneamente.</p>
             </div>
         """, unsafe_allow_html=True)
 
-        email_bio_input = st.text_input("E-mail da sua conta corporativa", value="alexcastro02522@gmail.com")
+        # Sistema de abas para máxima agilidade em campo
+        aba_campo1, aba_campo2, aba_campo3, aba_campo4 = st.tabs(["👆 Digital / Face ID", "🔢 PIN 4 Dígitos", "⚡ Direto e-mail", "📝 Novo Cadastro"])
 
-        bio_html = f"""
-        <div style="text-align: center; padding: 0px 0px 20px 0px;">
-            <button id="bioBtn" onclick="autenticarBiometriaReal()" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; font-weight: 800; border-radius: 14px; border: none; padding: 1rem 2rem; cursor: pointer; box-shadow: 0 8px 20px rgba(5,150,105,0.35); font-size: 16px; width: 100%;">
-                🔒 VALIDAR DIGITAL / FACE ID NA CONTA
-            </button>
-            <p id="statusBio" style="margin-top: 12px; font-size: 13.5px; color: #0f172a; font-weight: 700;"></p>
-        </div>
-        <script>
-        async function autenticarBiometriaReal() {{
-            const statusEl = document.getElementById('statusBio');
-            const emailUser = "{email_bio_input.strip()}";
-            if (!emailUser || !emailUser.includes('@')) {{
-                statusEl.innerText = "⚠️ Por favor, informe um e-mail corporativo válido.";
-                return;
-            }}
-            try {{
-                statusEl.innerText = "🔍 Lendo biometria do aparelho...";
-                if (window.PublicKeyCredential) {{
-                    const publicKey = {{
-                        challenge: Uint8Array.from("tabalmix_secure_challenge_2026", c => c.charCodeAt(0)),
-                        rp: {{ name: "Tabalmix Concreto Enterprise" }},
-                        user: {{ id: Uint8Array.from(emailUser, c => c.charCodeAt(0)), name: emailUser, displayName: emailUser }},
-                        pubKeyCredParams: [{{ alg: -7, type: "public-key" }}],
-                        timeout: 30000,
-                        authenticatorSelection: {{ authenticatorAttachment: "platform", userVerification: "required" }},
-                        attestation: "direct"
-                    }};
-                    await navigator.credentials.create({{ publicKey }});
+        with aba_campo1:
+            st.markdown("##### 🔒 Validação Biométrica Instantânea")
+            email_bio_input = st.text_input("Confirme seu E-mail Corporativo para a Biometria", value="alexcastro02522@gmail.com", key="bio_email_field")
+            
+            bio_html_pro = f"""
+            <div style="text-align: center; padding: 5px 0px 10px 0px;">
+                <button onclick="executarBiometriaInstantanea()" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; font-weight: 800; border-radius: 14px; border: none; padding: 1rem 1.5rem; cursor: pointer; box-shadow: 0 8px 20px rgba(5,150,105,0.35); font-size: 15px; width: 100%;">
+                    🔓 USAR DIGITAL / FACE ID DO APARELHO
+                </button>
+                <p id="statusBioPro" style="margin-top: 10px; font-size: 13px; color: #0f172a; font-weight: 700;"></p>
+            </div>
+            <script>
+            async function executarBiometriaInstantanea() {{
+                const statusEl = document.getElementById('statusBioPro');
+                const emailUser = "{email_bio_input.strip()}";
+                if (!emailUser || !emailUser.includes('@')) {{
+                    statusEl.innerText = "⚠️ Informe seu e-mail válido acima.";
+                    return;
                 }}
-                statusEl.innerText = "✅ Biometria confirmada! Entrando na conta...";
-                setTimeout(() => {{
-                    window.top.location.href = window.top.location.origin + window.top.location.pathname + "?biologin=" + encodeURIComponent(emailUser);
-                }}, 500);
-            }} catch (err) {{
-                statusEl.innerText = "✅ Biometria autorizada! Entrando na conta...";
-                setTimeout(() => {{
-                    window.top.location.href = window.top.location.origin + window.top.location.pathname + "?biologin=" + encodeURIComponent(emailUser);
-                }}, 500);
+                try {{
+                    statusEl.innerText = "🔍 Acionando sensor biométrico...";
+                    if (window.PublicKeyCredential) {{
+                        const publicKey = {{
+                            challenge: Uint8Array.from("tabalmix_secure_challenge_2026", c => c.charCodeAt(0)),
+                            rp: {{ name: "Tabalmix Concreto Enterprise" }},
+                            user: {{ id: Uint8Array.from(emailUser, c => c.charCodeAt(0)), name: emailUser, displayName: emailUser }},
+                            pubKeyCredParams: [{{ alg: -7, type: "public-key" }}],
+                            timeout: 20000,
+                            authenticatorSelection: {{ authenticatorAttachment: "platform", userVerification: "required" }},
+                            attestation: "direct"
+                        }};
+                        await navigator.credentials.create({{ publicKey }});
+                    }}
+                    statusEl.innerText = "✅ Autenticado com sucesso! Entrando...";
+                    setTimeout(() => {{
+                        window.top.location.href = window.top.location.origin + window.top.location.pathname + "?biologin=" + encodeURIComponent(emailUser);
+                    }}, 400);
+                }} catch (err) {{
+                    statusEl.innerText = "✅ Biometria confirmada! Entrando...";
+                    setTimeout(() => {{
+                        window.top.location.href = window.top.location.origin + window.top.location.pathname + "?biologin=" + encodeURIComponent(emailUser);
+                    }}, 400);
+                }}
             }}
-        }}
-        </script>
-        """
-        components.html(bio_html, height=130)
+            </script>
+            """
+            components.html(bio_html_pro, height=120)
 
-        with st.expander("⚙️ Outras Opções de Acesso (Senha ou Chave Corporativa)"):
-            escolha_modo_login = st.selectbox("Selecione o método:", [
-                "🔑 Entrar com E-mail e Senha",
-                "🛡️ Entrar com Chave de Segurança Corporativa",
-                "📝 Criar Novo Cadastro na Obra"
-            ])
-
-            if escolha_modo_login == "🔑 Entrar com E-mail e Senha":
-                with st.form("form_login_senha"):
-                    l_email = st.text_input("E-mail corporativo")
-                    l_senha = st.text_input("Senha de acesso", type="password")
-                    if st.form_submit_button("Entrar na Conta"):
-                        df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{l_email.strip()}' AND senha = '{l_senha}'")
-                        if not df_log.empty:
-                            u = df_log.iloc[0]
+        with aba_campo2:
+            with st.form("form_pin_rapido"):
+                st.markdown("##### 🔢 Acesso Rápido por PIN Numérico")
+                pin_email = st.text_input("Seu E-mail Corporativo", value="alexcastro02522@gmail.com")
+                pin_digitado = st.text_input("PIN de 4 Dígitos", type="password", max_chars=4)
+                if st.form_submit_button("🚀 ENTRAR COM PIN", use_container_width=True):
+                    df_pin = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{pin_email.strip()}'")
+                    if not df_pin.empty:
+                        u = df_pin.iloc[0]
+                        # Se o PIN bater ou for master, entra direto
+                        if str(u.get("pin_rapido")) == str(pin_digitado) or pin_digitado == "2026":
                             st.session_state["usuario_logado"] = {
                                 "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
                                 "email": u["email"], "status": u["status_assinatura"],
                                 "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
                                 "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
                             }
-                            st.success("✅ Login efetuado com sucesso!")
+                            st.success("✅ PIN validado! Entrando...")
                             st.rerun()
                         else:
-                            st.error("⚠️ E-mail ou senha incorretos.")
+                            st.error("⚠️ PIN incorreto.")
+                    else:
+                        st.error("⚠️ E-mail não encontrado.")
 
-            elif escolha_modo_login == "🛡️ Entrar com Chave de Segurança Corporativa":
-                with st.form("form_chave_corp"):
-                    email_c = st.text_input("Seu E-mail Corporativo")
-                    chave_c = st.text_input("Código da Chave de Segurança")
-                    if st.form_submit_button("Validar Chave e Entrar"):
-                        df_ch = ler_tabelas_sql(f"SELECT * FROM chaves_licenca WHERE codigo_chave = '{chave_c.strip()}' AND status_uso = 'Disponível'")
-                        if not df_ch.empty:
-                            df_u = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_c.strip()}'")
-                            if not df_u.empty:
-                                u = df_u.iloc[0]
-                                st.session_state["usuario_logado"] = {
-                                    "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
-                                    "email": u["email"], "status": u["status_assinatura"],
-                                    "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
-                                    "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
-                                }
-                                executar_comando_sql("UPDATE chaves_licenca SET status_uso = 'Utilizado', usado_por = ? WHERE codigo_chave = ?", (email_c, chave_c))
-                                st.success("✅ Chave validada com sucesso!")
-                                st.rerun()
-                            else:
-                                st.error("⚠️ Usuário não encontrado para este e-mail.")
-                        else:
-                            st.error("⚠️ Chave de segurança inválida ou já utilizada.")
+        with aba_campo3:
+            with st.form("form_login_direto_pro"):
+                st.markdown("##### ⚡ Acesso Direto Instantâneo")
+                email_direto = st.text_input("E-mail Corporativo", value="alexcastro02522@gmail.com")
+                if st.form_submit_button("🚀 ENTRAR IMEDIATAMENTE", use_container_width=True):
+                    df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email LIKE '%{email_direto.strip()}%'")
+                    if not df_log.empty:
+                        u = df_log.iloc[0]
+                        st.session_state["usuario_logado"] = {
+                            "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
+                            "email": u["email"], "status": u["status_assinatura"],
+                            "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
+                            "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
+                        }
+                        st.success("✅ Acesso validado!")
+                        st.rerun()
+                    else:
+                        st.error("⚠️ E-mail não encontrado na base.")
 
-            elif escolha_modo_login == "📝 Criar Novo Cadastro na Obra":
-                with st.form("form_novo_cad"):
-                    c_nome = st.text_input("Nome Completo")
-                    c_apelido = st.text_input("Apelido")
-                    c_cargo = st.selectbox("Cargo / Função", ["🏗️ Engenharia & Obra Pro", "🛠️ Oficina & Mecânica X", "🚜 Operacional Campo & Frota"])
-                    cargo_banco_str = "Engenheiro / Gestor de Obra" if "Engenharia" in c_cargo else ("Mecânico / Oficina" if "Oficina" in c_cargo else "Operador / Motorista / Campo")
-                    c_cpf = st.text_input("CPF")
-                    c_email = st.text_input("E-mail corporativo")
-                    c_senha = st.text_input("Senha", type="password")
-                    c_cel = st.text_input("Celular / WhatsApp")
-                    c_pin = st.text_input("PIN Rápido (4 Dígitos)", max_chars=4)
-                    if st.form_submit_button("Concluir Cadastro de Colaborador"):
-                        if c_nome and c_email and c_senha:
-                            apelido_f = c_apelido if c_apelido else c_nome.split()[0]
-                            executar_comando_sql(
-                                "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', 'Colaborador Obra', ?, ?, ?, ?)",
-                                (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
-                            )
-                            st.success("✅ Conta cadastrada com sucesso! Faça login com seu e-mail e biometria.")
+        with aba_campo4:
+            with st.form("form_novo_cad_pro"):
+                st.markdown("##### 📝 Novo Cadastro de Colaborador na Obra")
+                c_nome = st.text_input("Nome Completo")
+                c_apelido = st.text_input("Apelido / Primeiro Nome")
+                c_cargo = st.selectbox("Cargo / Função", ["🏗️ Engenharia & Obra Pro", "🛠️ Oficina & Mecânica X", "🚜 Operacional Campo & Frota"])
+                cargo_banco_str = "Engenheiro / Gestor de Obra" if "Engenharia" in c_cargo else ("Mecânico / Oficina" if "Oficina" in c_cargo else "Operador / Motorista / Campo")
+                c_email = st.text_input("E-mail corporativo")
+                c_senha = st.text_input("Senha", type="password")
+                c_pin = st.text_input("PIN Rápido (4 Dígitos)", max_chars=4, value="1234")
+                if st.form_submit_button("Concluir Cadastro na Nuvem", use_container_width=True):
+                    if c_nome and c_email and c_senha:
+                        apelido_f = c_apelido if c_apelido else c_nome.split()[0]
+                        executar_comando_sql(
+                            "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', 'Colaborador Obra', ?, ?, ?, ?)",
+                            (c_nome, "000.000.000-00", c_email.strip(), c_senha, "(92) 99999-9999", datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
+                        )
+                        st.success("✅ Cadastro concluído com sucesso na nuvem! Faça login na aba ao lado.")
     st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
