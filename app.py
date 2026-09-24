@@ -38,7 +38,7 @@ def init_db():
             origem_falha TEXT, descricao_problema TEXT, data_abertura TEXT,
             hora_abertura TEXT, pecas_utilizadas TEXT, custo_pecas REAL,
             mao_de_obra REAL, custo REAL, oficina TEXT, tecnico_mecanico TEXT,
-            data_fechamento TEXT, hora_fechamento TEXT, status_os TEXT
+            encarregado_responsavel TEXT, data_fechamento TEXT, hora_fechamento TEXT, status_os TEXT
         )
     """)
     cursor.execute("""
@@ -125,7 +125,7 @@ def init_db():
             data_infracao TEXT,
             valor_multa REAL,
             descricao_infracao TEXT,
-            condutor_responsable TEXT,
+            condutor_responsavel TEXT,
             data_vencimento TEXT,
             status_multa TEXT
         )
@@ -220,43 +220,49 @@ def gerar_excel_formatado(dataframe, nome_aba="Relatório Tabalmix"):
     output.seek(0)
     return output
 
-def gerar_pdf_relatorio(titulo, dataframe):
+def gerar_pdf_relatorio(titulo, dataframe, assinaturas=None):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     largura, altura = letter
     margem_esq = 30
     largura_util = largura - 60
+    
+    # Cabeçalho Oficial Tabalmix Concreto com Logotipo Simulado/Selo
     c.setFillColorRGB(0.04, 0.35, 0.22)
-    c.rect(0, altura - 70, largura, 70, fill=1, stroke=0)
+    c.rect(0, altura - 75, largura, 75, fill=1, stroke=0)
     c.setFillColorRGB(1, 1, 1)
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(margem_esq, altura - 30, "tabalmix concreto — enterprise management")
+    c.drawString(margem_esq, altura - 30, "🏗️ TABALMIX CONCRETO — ENTERPRISE MANAGEMENT")
     c.setFont("Helvetica", 9)
-    c.drawString(margem_esq, altura - 48, "relatório executivo certificado | powered by castro tech")
+    c.drawString(margem_esq, altura - 48, "SISTEMA INTELIGENTE DE FROTAS, OBRAS E ORDENS DE SERVIÇO CERTIFICADAS")
+    
     c.setFillColorRGB(0.1, 0.1, 0.1)
-    c.setFont("Helvetica-Bold", 14)
-    c.drawString(margem_esq, altura - 95, titulo)
+    c.setFont("Helvetica-Bold", 13)
+    c.drawString(margem_esq, altura - 98, titulo)
     c.setFont("Helvetica", 9)
     c.setFillColorRGB(0.4, 0.4, 0.4)
-    c.drawString(margem_esq, altura - 112, f"gerado em: {datetime.now().strftime('%d/%m/%Y às %H:%M')}")
+    c.drawString(margem_esq, altura - 114, f"Gerado em: {datetime.now().strftime('%d/%m/%Y às %H:%M')} | Validação Oficial por Castro Tech")
     c.setStrokeColorRGB(0.8, 0.8, 0.8)
     c.setLineWidth(1)
-    c.line(margem_esq, altura - 120, largura - margem_esq, altura - 120)
+    c.line(margem_esq, altura - 122, largura - margem_esq, altura - 122)
+    
     y = altura - 145
     altura_linha = 22
     colunas = list(dataframe.columns)
-    colunas_amigables = [str(col).replace('_', ' ').upper() for col in colunas[:6]]
+    colunas_amigaveis = [str(col).replace('_', ' ').upper() for col in colunas[:6]]
+    
     c.setFillColorRGB(0.05, 0.25, 0.15)
     c.rect(margem_esq, y - 4, largura_util, altura_linha, fill=1, stroke=0)
     c.setFillColorRGB(1, 1, 1)
     c.setFont("Helvetica-Bold", 8.5)
-    largura_coluna = largura_util / max(len(colunas_amigables), 1)
-    for i, col_nome in enumerate(colunas_amigables):
+    largura_coluna = largura_util / max(len(colunas_amigaveis), 1)
+    for i, col_nome in enumerate(colunas_amigaveis):
         c.drawString(margem_esq + (i * largura_coluna) + 4, y + 4, col_nome[:14])
     y -= altura_linha + 4
+    
     c.setFont("Helvetica", 8)
     for index, row in dataframe.iterrows():
-        if y < 50:
+        if y < 100:
             c.showPage()
             y = altura - 40
         if index % 2 == 0:
@@ -271,6 +277,31 @@ def gerar_pdf_relatorio(titulo, dataframe):
         c.setStrokeColorRGB(0.88, 0.9, 0.88)
         c.line(margem_esq, y - 4, largura - margem_esq, y - 4)
         y -= altura_linha
+        
+    # Bloco de Assinaturas Oficiais (Encarregado e Técnico Mecânico)
+    if y < 120:
+        c.showPage()
+        y = altura - 60
+        
+    y -= 30
+    c.setStrokeColorRGB(0.2, 0.2, 0.2)
+    c.setLineWidth(1)
+    
+    # Linha de Assinatura 1 (Técnico Mecânico)
+    c.line(margem_esq, y, largura / 2 - 20, y)
+    # Linha de Assinatura 2 (Encarregado Responsável)
+    c.line(largura / 2 + 20, y, largura - margem_esq, y)
+    
+    c.setFont("Helvetica-Bold", 8.5)
+    tec_nome = assinaturas.get('tecnico', 'Técnico Mecânico Responsável') if assinaturas else 'Técnico Mecânico Responsável'
+    enc_nome = assinaturas.get('encarregado', 'Encarregado / Gestor Responsável') if assinaturas else 'Encarregado / Gestor Responsável'
+    
+    c.drawString(margem_esq, y - 12, f"Assinatura: {tec_nome}")
+    c.drawString(largura / 2 + 20, y - 12, f"Assinatura: {enc_nome}")
+    c.setFont("Helvetica", 7.5)
+    c.drawString(margem_esq, y - 22, "Técnico Mecânico / Manutenção Oficial")
+    c.drawString(largura / 2 + 20, y - 22, "Encarregado / Gestor de Obra Tabalmix")
+
     c.save()
     buffer.seek(0)
     return buffer
@@ -341,7 +372,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             with st.form("form_login_direto"):
                 st.markdown("### ⚡ Acesso Direto Rápido")
                 email_direto = st.text_input("E-mail corporativo (ex: alexcastro02522@gmail.com)")
-                if st.form_submit_button("Aceder Imediatamente"):
+                if st.form_submit_button("Acessar Imediatamente"):
                     df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email LIKE '%{email_direto.strip()}%'")
                     if not df_log.empty:
                         u = df_log.iloc[0]
@@ -374,10 +405,10 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                                 "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
                             }
                             executar_comando_sql("UPDATE chaves_licenca SET status_uso = 'Utilizado', usado_por = ? WHERE codigo_chave = ?", (email_c, chave_c))
-                            st.success("✅ Chave de segurança validada! Bem-vindo.")
+                            st.success("✅ Chave de segurança validada! Seja bem-vindo.")
                             st.rerun()
                         else:
-                            st.error("⚠️ Utilizador não encontrado para este e-mail.")
+                            st.error("⚠️ Usuário não encontrado para este e-mail.")
                     else:
                         st.error("⚠️ Chave de segurança inválida ou já utilizada.")
 
@@ -396,7 +427,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                             "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
                             "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
                         }
-                        st.success("✅ Acesso biométrico/PIN aceite com sucesso!")
+                        st.success("✅ Acesso biométrico/PIN aceito com sucesso!")
                         st.rerun()
                     else:
                         st.error("⚠️ E-mail ou PIN incorreto.")
@@ -413,13 +444,13 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                             executar_comando_sql("UPDATE usuarios_sistema SET senha = ? WHERE email = ?", (nova_senha_rec, rec_val.strip()))
                         else:
                             executar_comando_sql("UPDATE usuarios_sistema SET senha = ? WHERE celular_seguranca = ?", (nova_senha_rec, rec_val.strip()))
-                        st.success("✅ Senha redefinida com sucesso! Podes entrar agora na opção de login.")
+                        st.success("✅ Senha redefinida com sucesso! Você já pode entrar.")
                     else:
                         st.error("⚠️ Preencha todos os campos corretamente.")
 
         elif escolha_modo_login == "📝 Criar Novo Cadastro na Obra":
             with st.form("form_novo_cad"):
-                st.markdown("### 📝 Criar Novo Registo no Sistema")
+                st.markdown("### 📝 Criar Novo Registro na Obra")
                 c_nome = st.text_input("Nome Completo")
                 c_apelido = st.text_input("Apelido / Primeiro Nome")
                 c_cargo = st.selectbox("Cargo / Função", ["💎 Master Concreto & Diretoria", "🏗️ Engenharia & Obra Pro", "🛠️ Oficina & Mecânica X", "🚜 Operacional Campo & Frota"])
@@ -436,14 +467,14 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                             "INSERT OR REPLACE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?, ?)",
                             (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
                         )
-                        st.success("✅ Conta criada com sucesso! Podes efetuar login imediato.")
+                        st.success("✅ Conta criada com sucesso! Faça login imediatamente.")
     st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
 
 def exibir_tabela_padronizada(df, nome_tabela):
     if df.empty:
-        st.info("Nenhum registo encontrado.")
+        st.info("Nenhum registro encontrado.")
         return
     st.dataframe(df, use_container_width=True, hide_index=True)
 
@@ -517,7 +548,7 @@ if menu == "📊 Visão Geral":
             if "categoria_equipamento" in df_veiculos.columns:
                 st.bar_chart(df_veiculos["categoria_equipamento"].value_counts())
         with col_st2:
-            st.markdown("#### Estado Operacional da Frota")
+            st.markdown("#### Status Operacional da Frota")
             if "status" in df_veiculos.columns:
                 st.bar_chart(df_veiculos["status"].value_counts())
     
@@ -526,7 +557,7 @@ if menu == "📊 Visão Geral":
     if not df_veiculos.empty:
         exibir_tabela_padronizada(df_veiculos, "veiculos")
         
-        st.markdown("#### 📤 Partilha e Exportação de Relatórios")
+        st.markdown("#### 📤 Compartilhamento e Exportação de Relatórios")
         col_dl1, col_dl2, col_dl3 = st.columns(3)
         with col_dl1:
             pdf_geral = gerar_pdf_relatorio("Relatório Executivo Geral de Frota", df_veiculos)
@@ -536,9 +567,9 @@ if menu == "📊 Visão Geral":
             st.download_button("📊 Baixar Relatório Excel", data=excel_geral, file_name="relatorio_frota.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         with col_dl3:
             msg_wpp = urllib.parse.quote("🏗️ *RELATÓRIO EXECUTIVO TABALMIX CONCRETO*\nFrota total: " + str(len(df_veiculos)) + " equipamentos ativos e em conformidade.")
-            st.markdown(f'<a href="https://api.whatsapp.com/send?text={msg_wpp}" target="_blank"><button style="background:linear-gradient(135deg, #25D366 0%, #128C7E 100%); color:white; font-weight:700; border-radius:12px; border:none; padding:0.65rem 1.8rem; width:100%; box-shadow:0 6px 16px rgba(37,211,102,0.3); cursor:pointer;">📱 Partilhar no WhatsApp</button></a>', unsafe_allow_html=True)
+            st.markdown(f'<a href="https://api.whatsapp.com/send?text={msg_wpp}" target="_blank"><button style="background:linear-gradient(135deg, #25D366 0%, #128C7E 100%); color:white; font-weight:700; border-radius:12px; border:none; padding:0.65rem 1.8rem; width:100%; box-shadow:0 6px 16px rgba(37,211,102,0.3); cursor:pointer;">📱 Compartilhar no WhatsApp</button></a>', unsafe_allow_html=True)
     else:
-        st.info("Nenhum veículo registado na frota.")
+        st.info("Nenhum veículo cadastrado na frota.")
 
 elif menu == "🔍 Consulta / Busca Geral":
     st.title("🔍 Consulta e Histórico Completo")
@@ -551,14 +582,14 @@ elif menu == "🔍 Consulta / Busca Geral":
 
 elif menu == "🚜 Cadastro de Equipamentos":
     st.title("🚜 Cadastro de Equipamentos")
-    t_l, t_r, t_e = st.tabs(["📋 Frota", "➕ Registar", "📝 Editar"])
+    t_l, t_r, t_e = st.tabs(["📋 Frota", "➕ Cadastrar", "📝 Editar"])
     
     with t_l:
         exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM veiculos"), "veiculos")
         
     with t_r:
         with st.form("form_eq_novo"):
-            st.markdown("### Registar Novo Equipamento / Frota Completa")
+            st.markdown("### Cadastrar Novo Equipamento / Frota Completa")
             c1, c2, c3 = st.columns(3)
             with c1:
                 f_tag = st.text_input("TAG / Prefixo (ex: BET-01, ESC-02)")
@@ -577,12 +608,12 @@ elif menu == "🚜 Cadastro de Equipamentos":
                 f_empresa = st.text_input("Empresa Proprietária", value="Tabalmix Concreto")
                 f_operador = st.text_input("Operador / Condutor Principal")
 
-            if st.form_submit_button("Guardar Equipamento") and f_tag:
+            if st.form_submit_button("Salvar Equipamento") and f_tag:
                 executar_comando_sql(
                     "INSERT INTO veiculos (tag_prefixo, placa, categoria_equipamento, ano_fabricacao, renavam, crv, marca_modelo, tipo, cor, combustivel, chassi, empresa, operador_condutor, horimetro_km, status, tipo_controle, ultima_revisao, intervalo_revisao) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Ativo', 'KM', 0, 10000)",
                     (f_tag, f_placa, f_cat, f_ano, f_renavam, f_crv, f_marca_modelo, f_tipo, f_cor, f_combustivel, f_chassi, f_empresa, f_operador, 0)
                 )
-                st.success("Equipamento registado com sucesso!")
+                st.success("Equipamento cadastrado com sucesso!")
                 st.rerun()
 
     with t_e:
@@ -619,19 +650,19 @@ elif menu == "🚜 Cadastro de Equipamentos":
             st.info("Nenhum equipamento disponível para edição.")
 
 elif menu == "🏗️ Mobilização / Desmobilização":
-    st.title("🏗️ Controlo de Mobilização, Desmobilização & Vistoria")
+    st.title("🏗️ Controle de Mobilização, Desmobilização & Vistoria")
     
     df_frota_mob = ler_tabelas_sql("SELECT tag_prefixo, marca_modelo, placa FROM veiculos")
     lista_tags_mob = df_frota_mob["tag_prefixo"].tolist() if not df_frota_mob.empty else ["BET-01", "ESC-02"]
 
-    t_mob_reg, t_mob_mais, t_mob_menos, t_mob_ed = st.tabs(["📋 Registos Gerais", "➕ Mobilização (+)", "➖ Desmobilização (-)", "📝 Editar"])
+    t_mob_reg, t_mob_mais, t_mob_menos, t_mob_ed = st.tabs(["📋 Registros Gerais", "➕ Mobilização (+)", "➖ Desmobilização (-)", "📝 Editar"])
     
     with t_mob_reg:
         exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM mobilizacoes ORDER BY id DESC"), "mobilizacoes")
         
     with t_mob_mais:
         with st.form("form_mobilizacao_mais"):
-            st.markdown("### ➕ Registar Nova Mobilização")
+            st.markdown("### ➕ Cadastrar Nova Mobilização")
             c_m1, c_m2 = st.columns(2)
             with c_m1:
                 eq_tag_m = st.selectbox("TAG / Prefixo do Equipamento", lista_tags_mob, key="tag_mob")
@@ -646,17 +677,17 @@ elif menu == "🏗️ Mobilização / Desmobilização":
             st.markdown("### 📸 Vistoria Fotográfica da Mobilização")
             st.file_uploader("Carregar Imagens de Vistoria (Mobilização)", accept_multiple_files=True, type=["jpg", "png", "jpeg"], key="foto_mob")
 
-            if st.form_submit_button("Registar Mobilização"):
+            if st.form_submit_button("Cadastrar Mobilização"):
                 executar_comando_sql(
                     "INSERT INTO mobilizacoes (equipamento, tipo_movimento, destino_origem, encarregado_responsavel, data_movimento, km_horimetro_atual, observacao) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (eq_tag_m, "➕ Mobilização (+)", destino_m, encarregado_m, data_mov_m, km_atual_m, obs_m)
                 )
-                st.success("Mobilização registada com sucesso!")
+                st.success("Mobilização cadastrada com sucesso!")
                 st.rerun()
 
     with t_mob_menos:
         with st.form("form_desmobilizacao_menos"):
-            st.markdown("### ➖ Registar Nova Desmobilização")
+            st.markdown("### ➖ Cadastrar Nova Desmobilização")
             c_d1, c_d2 = st.columns(2)
             with c_d1:
                 eq_tag_d = st.selectbox("TAG / Prefixo do Equipamento", lista_tags_mob, key="tag_desmob")
@@ -671,20 +702,20 @@ elif menu == "🏗️ Mobilização / Desmobilização":
             st.markdown("### 📸 Vistoria Fotográfica da Desmobilização")
             st.file_uploader("Carregar Imagens de Vistoria (Desmobilização)", accept_multiple_files=True, type=["jpg", "png", "jpeg"], key="foto_desm")
 
-            if st.form_submit_button("Registar Desmobilização"):
+            if st.form_submit_button("Cadastrar Desmobilização"):
                 executar_comando_sql(
                     "INSERT INTO mobilizacoes (equipamento, tipo_movimento, destino_origem, encarregado_responsavel, data_movimento, km_horimetro_atual, observacao) VALUES (?, ?, ?, ?, ?, ?, ?)",
                     (eq_tag_d, "➖ Desmobilização (-)", origem_d, encarregado_d, data_mov_d, km_atual_d, obs_d)
                 )
-                st.success("Desmobilização registada com sucesso!")
+                st.success("Desmobilização cadastrada com sucesso!")
                 st.rerun()
 
     with t_mob_ed:
-        st.markdown("### 📝 Editar Registo de Mobilização / Desmobilização")
+        st.markdown("### 📝 Editar Registro de Mobilização / Desmobilização")
         df_mobs = ler_tabelas_sql("SELECT id, equipamento, tipo_movimento, data_movimento FROM mobilizacoes ORDER BY id DESC")
         if not df_mobs.empty:
             df_mobs["rot_mob"] = df_mobs["id"].astype(str) + " - " + df_mobs["equipamento"] + " (" + df_mobs["tipo_movimento"] + ")"
-            mob_sel = st.selectbox("Selecione o Registo para Editar", df_mobs["rot_mob"], key="sel_ed_mob_persist")
+            mob_sel = st.selectbox("Selecione o Registro para Editar", df_mobs["rot_mob"], key="sel_ed_mob_persist")
             id_mob_edit = int(df_mobs[df_mobs["rot_mob"] == mob_sel]["id"].values[0])
             d_mob = ler_tabelas_sql(f"SELECT * FROM mobilizacoes WHERE id = {id_mob_edit}").iloc[0]
             
@@ -704,17 +735,17 @@ elif menu == "🏗️ Mobilização / Desmobilização":
                         "UPDATE mobilizacoes SET equipamento = ?, destino_origem = ?, encarregado_responsavel = ?, data_movimento = ?, km_horimetro_atual = ?, observacao = ? WHERE id = ?",
                         (ne_eq, ne_dest, ne_enc, ne_data, ne_km, ne_obs, id_mob_edit)
                     )
-                    st.success("✅ Registo atualizado com sucesso!")
+                    st.success("✅ Registro atualizado com sucesso!")
         else:
-            st.info("Nenhum registo de mobilização encontrado.")
+            st.info("Nenhum registro de mobilização encontrado.")
 
 elif menu == "🔧 Controle de Manutenção":
     st.title("🔧 Controle de Manutenção & Configuração Inicial de Revisão")
     
-    t_man_rev, t_man_ed, t_man_rel = st.tabs(["⚙️ Configuração & Alertas", "📝 Editar Revisão", "📤 Relatórios & Partilha"])
+    t_man_rev, t_man_ed, t_man_rel = st.tabs(["⚙️ Configuração & Alertas", "📝 Editar Revisão", "📤 Relatórios & Compartilhamento"])
     
     with t_man_rev:
-        st.info("Selecione qualquer equipamento da frota, configure a sua revisão inicial e acompanhe os alertas automáticos em tempo real.")
+        st.info("Selecione qualquer equipamento da frota, configure sua revisão inicial e acompanhe os alertas automáticos em tempo real.")
         df_rev = ler_tabelas_sql("SELECT id, tag_prefixo, placa, marca_modelo, horimetro_km, tipo_controle, ultima_revisao, intervalo_revisao FROM veiculos")
         if not df_rev.empty:
             st.markdown("### 🚨 Alertas Ativos de Revisão")
@@ -739,7 +770,7 @@ elif menu == "🔧 Controle de Manutenção":
             st.divider()
             st.markdown("### ⚙️ Configuração Inicial e Atualização de Manutenção por Equipamento")
             df_rev["rotulo"] = df_rev["tag_prefixo"] + " - " + df_rev["marca_modelo"] + " (" + df_rev["placa"] + ")"
-            eq_sel_rev = st.selectbox("Selecione o Equipamento / Veículo Registado", df_rev["rotulo"], key="sel_rev_config_persist")
+            eq_sel_rev = st.selectbox("Selecione o Equipamento / Veículo Cadastrado", df_rev["rotulo"], key="sel_rev_config_persist")
             
             equip_escolhido = df_rev[df_rev["rotulo"] == eq_sel_rev].iloc[0]
             id_eq_r = int(equip_escolhido["id"])
@@ -755,14 +786,14 @@ elif menu == "🔧 Controle de Manutenção":
                 with c_m4:
                     novo_int_rev = st.number_input("Intervalo da Revisão", min_value=100, value=int(equip_escolhido["intervalo_revisao"] or 10000))
                 
-                if st.form_submit_button("Guardar Configuração de Revisão"):
+                if st.form_submit_button("Salvar Configuração de Revisão"):
                     executar_comando_sql("UPDATE veiculos SET tipo_controle = ?, horimetro_km = ?, ultima_revisao = ?, intervalo_revisao = ? WHERE id = ?", (novo_tipo_cont, novo_hor_km, nova_ult_rev, novo_int_rev, id_eq_r))
                     st.success("Configuração de manutenção e revisão atualizada com sucesso!")
         else:
-            st.info("Nenhum equipamento registado na frota.")
+            st.info("Nenhum equipamento cadastrado na frota.")
 
     with t_man_ed:
-        st.markdown("### 📝 Editar Dados de Controlo / Revisão de Frota")
+        st.markdown("### 📝 Editar Dados de Controle / Revisão de Frota")
         df_rev_ed = ler_tabelas_sql("SELECT id, tag_prefixo, marca_modelo, horimetro_km, ultima_revisao, intervalo_revisao FROM veiculos")
         if not df_rev_ed.empty:
             df_rev_ed["rot_rev"] = df_rev_ed["tag_prefixo"] + " - " + df_rev_ed["marca_modelo"]
@@ -777,7 +808,7 @@ elif menu == "🔧 Controle de Manutenção":
                     en_ult = st.number_input("Última Revisão", value=int(d_rev_atual["ultima_revisao"] or 0))
                 with er2:
                     en_int = st.number_input("Intervalo de Revisão", value=int(d_rev_atual["intervalo_revisao"] or 10000))
-                    en_tp = st.selectbox("Tipo de Controlo", ["KM", "Horas (Horímetro)"], index=0 if d_rev_atual["tipo_controle"]=="KM" else 1)
+                    en_tp = st.selectbox("Tipo de Controle", ["KM", "Horas (Horímetro)"], index=0 if d_rev_atual["tipo_controle"]=="KM" else 1)
                 
                 if st.form_submit_button("💾 Salvar Alterações de Revisão"):
                     executar_comando_sql(
@@ -789,26 +820,26 @@ elif menu == "🔧 Controle de Manutenção":
             st.info("Nenhum equipamento para editar.")
 
     with t_man_rel:
-        st.markdown("### 📤 Partilha e Exportação de Dados de Manutenção")
+        st.markdown("### 📤 Compartilhamento e Exportação de Dados de Manutenção")
         df_rel_man = ler_tabelas_sql("SELECT tag_prefixo, placa, marca_modelo, horimetro_km, tipo_controle, ultima_revisao, intervalo_revisao FROM veiculos")
         if not df_rel_man.empty:
             exibir_tabela_padronizada(df_rel_man, "veiculos")
             
             col_m_dl1, col_m_dl2, col_m_dl3 = st.columns(3)
             with col_m_dl1:
-                pdf_man = gerar_pdf_relatorio("Relatório de Controlo de Manutenção e Revisões", df_rel_man)
+                pdf_man = gerar_pdf_relatorio("Relatório de Controle de Manutenção e Revisões", df_rel_man)
                 st.download_button("📥 Baixar Relatório PDF", data=pdf_man, file_name="relatorio_manutencao.pdf", mime="application/pdf")
             with col_m_dl2:
                 excel_man = gerar_excel_formatado(df_rel_man, "Manutencao_Tabalmix")
-                st.download_button("📊 Baixar Relatório Excel (Auto-ajustado)", data=excel_man, file_name="relatorio_manutencao.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+                st.download_button("📊 Baixar Relatório Excel (Autoajustado)", data=excel_man, file_name="relatorio_manutencao.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
             with col_m_dl3:
-                msg_wpp_m = urllib.parse.quote("🏗️ *RELATÓRIO DE MANUTENÇÃO TABALMIX*\nControlo de frotas e revisões preventivas atualizado.")
-                st.markdown(f'<a href="https://api.whatsapp.com/send?text={msg_wpp_m}" target="_blank"><button style="background:linear-gradient(135deg, #25D366 0%, #128C7E 100%); color:white; font-weight:700; border-radius:12px; border:none; padding:0.65rem 1.8rem; width:100%; box-shadow:0 6px 16px rgba(37,211,102,0.3); cursor:pointer;">📱 Partilhar no WhatsApp</button></a>', unsafe_allow_html=True)
+                msg_wpp_m = urllib.parse.quote("🏗️ *RELATÓRIO DE MANUTENÇÃO TABALMIX*\nControle de frotas e revisões preventivas atualizado.")
+                st.markdown(f'<a href="https://api.whatsapp.com/send?text={msg_wpp_m}" target="_blank"><button style="background:linear-gradient(135deg, #25D366 0%, #128C7E 100%); color:white; font-weight:700; border-radius:12px; border:none; padding:0.65rem 1.8rem; width:100%; box-shadow:0 6px 16px rgba(37,211,102,0.3); cursor:pointer;">📱 Compartilhar no WhatsApp</button></a>', unsafe_allow_html=True)
         else:
             st.info("Nenhum dado de manutenção disponível para exportação.")
 
 elif menu == "⛽ Abastecimentos & Combustível":
-    st.title("⛽ Registo de Abastecimentos")
+    st.title("⛽ Registro de Abastecimentos")
     t_cab1, t_cab2, t_cab3 = st.tabs(["📋 Histórico", "➕ Novo Abastecimento", "📝 Editar"])
     
     with t_cab1:
@@ -821,13 +852,13 @@ elif menu == "⛽ Abastecimentos & Combustível":
             v_total = st.number_input("Valor Total (R$)", min_value=0.0, format="%.2f")
             posto = st.text_input("Posto de Combustível")
             motorista = st.text_input("Motorista / Responsável")
-            if st.form_submit_button("Registar Abastecimento"):
+            if st.form_submit_button("Cadastrar Abastecimento"):
                 executar_comando_sql("INSERT INTO combustivel (equipamento, litros, valor_total, posto_posto, motorista, data) VALUES (?, ?, ?, ?, ?, ?)", (eq_comb, litros, v_total, posto, motorista, datetime.now().strftime("%d/%m/%Y %H:%M")))
-                st.success("Abastecimento registado!")
+                st.success("Abastecimento cadastrado!")
                 st.rerun()
 
     with t_cab3:
-        st.markdown("### 📝 Editar Registo de Abastecimento")
+        st.markdown("### 📝 Editar Registro de Abastecimento")
         df_abs = ler_tabelas_sql("SELECT id, equipamento, data, valor_total FROM combustivel ORDER BY id DESC")
         if not df_abs.empty:
             df_abs["rot_abs"] = df_abs["id"].astype(str) + " - " + df_abs["equipamento"] + " (" + df_abs["data"] + ")"
@@ -852,7 +883,7 @@ elif menu == "⛽ Abastecimentos & Combustível":
                     )
                     st.success("✅ Abastecimento atualizado com sucesso!")
         else:
-            st.info("Nenhum registo de abastecimento encontrado.")
+            st.info("Nenhum registro de abastecimento encontrado.")
 
 elif menu == "🛠️ Ordens de Serviço (OS)":
     st.title("🛠️ Gestão de Ordens de Serviço (OS)")
@@ -862,6 +893,18 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
     with t_os1:
         exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM manutencoes ORDER BY id DESC"), "manutencoes")
         
+        # Opção de exportação da OS em PDF e Excel Autoajustado
+        df_os_exp = ler_tabelas_sql("SELECT id, tag_prefixo, tipo_manutencao, data_abertura, data_fechamento, custo, status_os, tecnico_mecanico, encarregado_responsavel FROM manutencoes ORDER BY id DESC")
+        if not df_os_exp.empty:
+            st.markdown("#### 📤 Exportar Relatório de Ordens de Serviço")
+            col_osex1, col_osex2 = st.columns(2)
+            with col_osex1:
+                pdf_os_arq = gerar_pdf_relatorio("Relatório Geral de Ordens de Serviço (OS)", df_os_exp)
+                st.download_button("📥 Baixar Relatório OS em PDF", data=pdf_os_arq, file_name="relatorio_ordens_servico.pdf", mime="application/pdf")
+            with col_osex2:
+                excel_os_arq = gerar_excel_formatado(df_os_exp, "Ordens_Servico_Tabalmix")
+                st.download_button("📊 Baixar Relatório OS em Excel", data=excel_os_arq, file_name="relatorio_ordens_servico.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
     with t_os2:
         df_veiculos_os = ler_tabelas_sql("SELECT tag_prefixo, marca_modelo, placa FROM veiculos")
         lista_tags_os = df_veiculos_os["tag_prefixo"].tolist() if not df_veiculos_os.empty else ["BET-01", "ESC-02"]
@@ -890,7 +933,7 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
                 st.rerun()
 
     with t_os_fechar:
-        st.markdown("### 🔒 Fechar Ordens de Serviço Abertas")
+        st.markdown("### 🔒 Fechar Ordens de Serviço Abertas (Com Baixa em Estoque & Assinaturas)")
         df_abertas = ler_tabelas_sql("SELECT id, tag_prefixo, tipo_manutencao, data_abertura, descricao_problema FROM manutencoes WHERE status_os = 'aberta' ORDER BY id DESC")
         if not df_abertas.empty:
             df_abertas["rot_os_ab"] = "OS #" + df_abertas["id"].astype(str) + " - " + df_abertas["tag_prefixo"] + " (" + df_abertas["tipo_manutencao"] + ")"
@@ -903,19 +946,29 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
                 for _, p_row in df_pecas_estoque.iterrows():
                     lista_pecas_opcoes.append(f"{p_row['nome_item']} (Disp: {p_row['quantidade']} | R$ {p_row['valor_unitario']:.2f})")
 
+            df_colab_sis = ler_tabelas_sql("SELECT nome_completo, cargo_setor FROM usuarios_sistema")
+            lista_nomes_colab = df_colab_sis["nome_completo"].tolist() if not df_colab_sis.empty else ["Alex de Castro Bernardino"]
+
             with st.form("form_fechar_os_exec"):
-                st.info("Preencha os dados de fecho, selecione peças do stock interno (abatimento automático) ou informe valores de oficina terceirizada.")
+                st.info("Preencha os dados, selecione peças do estoque (abatimento automático) e inclua as assinaturas responsáveis.")
                 
                 fc1, fc2 = st.columns(2)
                 with fc1:
-                    peca_escolhida_stock = st.selectbox("Peça do Stock Interno (Opcional)", lista_pecas_opcoes)
+                    peca_escolhida_estoque = st.selectbox("Peça / Ferramenta do Estoque (Abatimento Automático)", lista_pecas_opcoes)
                     qtd_peca_usada = st.number_input("Quantidade Utilizada da Peça", min_value=1, value=1)
                 with fc2:
-                    origem_peca_tipo = st.selectbox("Origem da Peça / Serviço", ["Stock Interno da Empresa", "Oficina Terceirizada / Externa"])
+                    origem_peca_tipo = st.selectbox("Origem da Manutenção", ["Estoque Interno da Empresa", "Oficina Terceirizada / Externa"])
                     mao_obra = st.number_input("Custo de Mão de Obra (R$)", min_value=0.0, format="%.2f")
                 
                 custo_pecas_manual = st.number_input("Custo Adicional de Peças Terceirizadas (R$)", min_value=0.0, format="%.2f")
-                tecnico = st.text_input("Técnico / Mecânico Responsável")
+                
+                st.markdown("---")
+                st.markdown("### ✍️ Assinaturas e Responsáveis Técnicos Oficiais")
+                fc_as1, fc_as2 = st.columns(2)
+                with fc_as1:
+                    tecnico_resp = st.selectbox("Técnico / Mecânico Responsável (Assinatura)", lista_nomes_colab)
+                with fc_as2:
+                    encarregado_resp = st.selectbox("Encarregado / Gestor Responsável (Assinatura)", lista_nomes_colab)
                 
                 fc3, fc4 = st.columns(2)
                 with fc3:
@@ -923,12 +976,12 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
                 with fc4:
                     hora_fch = st.text_input("Hora de Fechamento", value=datetime.now().strftime("%H:%M"))
                 
-                if st.form_submit_button("🔒 Confirmar Fechamento da OS"):
+                if st.form_submit_button("🔒 Confirmar Fechamento da OS e Assinar"):
                     custo_pecas_final = custo_pecas_manual
                     nome_peca_registo = "Oficina Terceirizada / Sem Peça Interna"
                     
-                    if "Nenhuma" not in peca_escolhida_stock and not df_pecas_estoque.empty:
-                        nome_peca_str = peca_escolhida_stock.split(" (Disp:")[0]
+                    if "Nenhuma" not in peca_escolhida_estoque and not df_pecas_estoque.empty:
+                        nome_peca_str = peca_escolhida_estoque.split(" (Disp:")[0]
                         p_match = df_pecas_estoque[df_pecas_estoque["nome_item"] == nome_peca_str]
                         if not p_match.empty:
                             p_id = int(p_match.iloc[0]["id"])
@@ -939,17 +992,17 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
                                 nova_qtd_estoque = p_qtd_atual - qtd_peca_usada
                                 executar_comando_sql("UPDATE pecas SET quantidade = ? WHERE id = ?", (nova_qtd_estoque, p_id))
                                 custo_pecas_final = p_val_unit * qtd_peca_usada
-                                nome_peca_registo = f"{qtd_peca_usada}x {nome_peca_str} (Stock Interno)"
+                                nome_peca_registo = f"{qtd_peca_usada}x {nome_peca_str} (Estoque Interno)"
                             else:
-                                st.error("⚠️ Quantidade solicitada maior do que o disponível em stock!")
+                                st.error("⚠️ Quantidade solicitada maior do que o disponível em estoque!")
                                 st.stop()
                     
                     custo_total_real = custo_pecas_final + mao_obra
                     executar_comando_sql(
-                        "UPDATE manutencoes SET status_os = 'concluida', pecas_utilizadas = ?, custo_pecas = ?, mao_de_obra = ?, custo = ?, tecnico_mecanico = ?, data_fechamento = ?, hora_fechamento = ? WHERE id = ?",
-                        (nome_peca_registo, custo_pecas_final, mao_obra, custo_total_real, tecnico, data_fch, hora_fch, id_os_f)
+                        "UPDATE manutencoes SET status_os = 'concluida', pecas_utilizadas = ?, custo_pecas = ?, mao_de_obra = ?, custo = ?, tecnico_mecanico = ?, encarregado_responsavel = ?, data_fechamento = ?, hora_fechamento = ? WHERE id = ?",
+                        (nome_peca_registo, custo_pecas_final, mao_obra, custo_total_real, tecnico_resp, encarregado_resp, data_fch, hora_fch, id_os_f)
                     )
-                    st.success("✅ Ordem de Serviço fechada, stock atualizado e arquivada com sucesso!")
+                    st.success("✅ Ordem de Serviço fechada, estoque abatido, assinaturas registradas e OS arquivada com sucesso!")
                     st.rerun()
         else:
             st.info("Não existem Ordens de Serviço abertas no momento.")
@@ -984,49 +1037,62 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
             st.info("Nenhuma Ordem de Serviço encontrada.")
 
 elif menu == "🚨 Gestão & Alertas de Multas":
-    st.title("🚨 Controlo Inteligente de Multas")
+    st.title("🚨 Controle Inteligente de Multas")
     if st.button("🔍 Varredura em Massa de Toda a Frota"):
-        st.success("Varredura executada com sucesso! Nenhuma nova infração detetada nos órgãos autuadores.")
+        st.success("Varredura executada com sucesso! Nenhuma nova infração detectada nos órgãos autuadores.")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM multas ORDER BY id DESC"), "multas")
     with st.form("form_multa"):
-        st.markdown("### Registar Nova Multa")
+        st.markdown("### Cadastrar Nova Multa")
         m_placa = st.text_input("Placa do Equipamento")
         m_orgao = st.text_input("Órgão Autuador (ex: DETRAN, PRF)")
         m_local = st.text_input("Local da Infração")
         m_valor = st.number_input("Valor da Multa (R$)", min_value=0.0, format="%.2f")
         m_venc = st.text_input("Data de Vencimento (DD/MM/AAAA)")
-        if st.form_submit_button("Registar Multa"):
+        if st.form_submit_button("Cadastrar Multa"):
             executar_comando_sql("INSERT INTO multas (equipamento_placa, orgao_autuador, local_infracao, valor_multa, data_vencimento, status_multa) VALUES (?, ?, ?, ?, ?, 'Pendente')", (m_placa, m_orgao, m_local, m_valor, m_venc))
-            st.success("Multa registada com sucesso!")
+            st.success("Multa cadastrada com sucesso!")
             st.rerun()
 
 elif menu == "🔩 Peças e Ferramentas":
-    st.title("🔩 Stock de Peças e Ferramentas")
+    st.title("🔩 Estoque de Peças e Ferramentas")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM pecas ORDER BY id DESC"), "pecas")
+    
+    # Opção para exportar o estoque em PDF e Excel Autoajustado
+    df_estoque_exp = ler_tabelas_sql("SELECT * FROM pecas")
+    if not df_estoque_exp.empty:
+        st.markdown("#### 📤 Exportar Relatório de Estoque")
+        col_est1, col_est2 = st.columns(2)
+        with col_est1:
+            pdf_estoque = gerar_pdf_relatorio("Relatório Geral de Estoque de Peças e Ferramentas", df_estoque_exp)
+            st.download_button("📥 Baixar Relatório de Estoque em PDF", data=pdf_estoque, file_name="relatorio_estoque.pdf", mime="application/pdf")
+        with col_est2:
+            excel_estoque = gerar_excel_formatado(df_estoque_exp, "Estoque_Tabalmix")
+            st.download_button("📊 Baixar Relatório de Estoque em Excel", data=excel_estoque, file_name="relatorio_estoque.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
     with st.form("form_peca"):
-        st.markdown("### Adicionar Item ao Stock")
+        st.markdown("### Adicionar Item ao Estoque")
         p_nome = st.text_input("Nome da Peça / Item")
         p_cat = st.text_input("Categoria")
-        p_qtd = st.number_input("Quantidade em Stock", min_value=1, value=1)
+        p_qtd = st.number_input("Quantidade em Estoque", min_value=1, value=1)
         p_val = st.number_input("Valor Unitário (R$)", min_value=0.0, format="%.2f")
         if st.form_submit_button("Adicionar Peça"):
             executar_comando_sql("INSERT INTO pecas (nome_item, categoria, quantidade, valor_unitario) VALUES (?, ?, ?, ?)", (p_nome, p_cat, p_qtd, p_val))
-            st.success("Item adicionado ao stock!")
+            st.success("Item adicionado ao estoque!")
             st.rerun()
 
 elif menu == "👥 Gestão de Clientes":
     st.title("👥 Gestão de Clientes")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM clientes ORDER BY id DESC"), "clientes")
     with st.form("form_cli"):
-        st.markdown("### Registar Novo Cliente")
+        st.markdown("### Cadastrar Novo Cliente")
         cl_nome = st.text_input("Nome / Razão Social")
         cl_emp = st.text_input("Empresa")
         cl_tel = st.text_input("Telefone / WhatsApp")
         cl_doc = st.text_input("CPF / CNPJ")
         cl_end = st.text_input("Endereço")
-        if st.form_submit_button("Registar Cliente"):
+        if st.form_submit_button("Cadastrar Cliente"):
             executar_comando_sql("INSERT INTO clientes (nome, empresa, telefone, documento, endereco) VALUES (?, ?, ?, ?, ?)", (cl_nome, cl_emp, cl_tel, cl_doc, cl_end))
-            st.success("Cliente registado com sucesso!")
+            st.success("Cliente cadastrado com sucesso!")
             st.rerun()
 
 elif menu == "💬 Chat Tabalmix Pro & Reuniões Live":
@@ -1080,7 +1146,7 @@ elif menu == "💬 Chat Tabalmix Pro & Reuniões Live":
 
     with aba_chat_live_2:
         st.markdown("### 📹 Salas de Videoconferência Corporativa")
-        st.info("Crie reuniões, escolha os participantes ativos cadastrados no sistema e gere o link seguro. O primeiro utilizador a entrar torna-se automaticamente o **Anfitrião / Moderador**.")
+        st.info("Crie reuniões, escolha os participantes ativos cadastrados no sistema e gere o link seguro. O primeiro usuário a entrar torna-se automaticamente o **Anfitrião / Moderador**.")
         
         df_colab_reuniao = ler_tabelas_sql("SELECT nome_completo, apelido, cargo_setor FROM usuarios_sistema")
         lista_participantes_opcoes = df_colab_reuniao["nome_completo"].tolist() if not df_colab_reuniao.empty else ["Alex de Castro Bernardino"]
@@ -1100,7 +1166,7 @@ elif menu == "💬 Chat Tabalmix Pro & Reuniões Live":
                     
                     executar_comando_sql(
                         "INSERT INTO reunioes_live (titulo_reuniao, criador, participantes, link_sala, senha_sala, status_sala, data_criacao) VALUES (?, ?, ?, ?, ?, 'Ativa', ?)",
-                        (titulo_conf, criador_nome, participantes_str, link_gerado_oficial, senha_sala_val, datetime.now().strftime("%d/%m/%Y %H:%M"))
+                        (titulo_conf, criador_nome, participantes_str, link_gerado_oficial, senha_sala_val, datetime.now().strftime("%d/%m/%Y às %H:%M"))
                     )
                     st.success("✅ Sala de reunião criada com sucesso!")
                     st.rerun()
@@ -1112,7 +1178,6 @@ elif menu == "💬 Chat Tabalmix Pro & Reuniões Live":
         df_reunioes = ler_tabelas_sql("SELECT * FROM reunioes_live ORDER BY id DESC")
         if not df_reunioes.empty:
             for _, r_row in df_reunioes.iterrows():
-                r_id = r_row["id"]
                 r_tit = r_row["titulo_reuniao"]
                 r_criador = r_row["criador"]
                 r_part = r_row["participantes"]
@@ -1141,13 +1206,13 @@ elif menu == "⚙️ Meu Perfil / Dados":
             * **Nome Completo**: {usuario_atual.get('nome', 'Alex de Castro Bernardino')}
             * **E-mail**: {usuario_atual.get('email', 'alexcastro02522@gmail.com')}
             * **Cargo / Função**: {usuario_atual.get('cargo', 'Diretoria / Gestão')}
-            * **Estado da Assinatura**: 🟢 Ativo (Plano Master Concreto & Diretoria)
+            * **Status da Assinatura**: 🟢 Ativo (Plano Master Concreto & Diretoria)
         """)
     else:
         st.info("Sessão em modo administrador.")
 
 elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
-    st.title("⚙️ Painel Administrativo — Gestão Master & Controlo de Contas")
+    st.title("⚙️ Painel Administrativo — Gestão Master & Controle de Contas")
     
     st.markdown("### 🔑 Gerador de Chaves de Segurança Corporativas")
     with st.form("form_gerar_chave"):
@@ -1168,21 +1233,21 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     col_adm1, col_adm2 = st.columns(2)
     with col_adm1:
         with st.form("form_ativar_user"):
-            st.markdown("#### 🟢 Ativar / Inativar Utilizador")
-            id_u_alvo = st.number_input("ID do Utilizador", min_value=1, step=1)
-            novo_status_u = st.selectbox("Novo Estado", ["Ativo", "Inativo"])
-            if st.form_submit_button("Atualizar Estado do Utilizador"):
+            st.markdown("#### 🟢 Ativar / Inativar Usuário")
+            id_u_alvo = st.number_input("ID do Usuário", min_value=1, step=1)
+            novo_status_u = st.selectbox("Novo Status", ["Ativo", "Inativo"])
+            if st.form_submit_button("Atualizar Status do Usuário"):
                 executar_comando_sql("UPDATE usuarios_sistema SET status_assinatura = ? WHERE id = ?", (novo_status_u, id_u_alvo))
-                st.success("Estado do utilizador atualizado!")
+                st.success("Status do usuário atualizado!")
                 st.rerun()
                 
     with col_adm2:
         with st.form("form_excluir_user"):
-            st.markdown("#### 🗑️ Remover Utilizador do Sistema")
-            id_u_del = st.number_input("ID do Utilizador a Remover", min_value=1, step=1, key="del_u")
-            if st.form_submit_button("Eliminar Utilizador"):
+            st.markdown("#### 🗑️ Remover Usuário do Sistema")
+            id_u_del = st.number_input("ID do Usuário a Remover", min_value=1, step=1, key="del_u")
+            if st.form_submit_button("Excluir Usuário"):
                 executar_comando_sql("DELETE FROM usuarios_sistema WHERE id = ?", (id_u_del,))
-                st.success("Utilizador removido com sucesso!")
+                st.success("Usuário removido com sucesso!")
                 st.rerun()
 
     st.divider()
@@ -1194,10 +1259,10 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     ]
     tabela_alvo_limpeza = st.selectbox("Selecione o Sistema / Tabela para Gerir", tabelas_sistema_disponiveis)
     
-    if st.button(f"🗑️ Apagar/Esvaziar Todos os Registos de '{tabela_alvo_limpeza}'"):
+    if st.button(f"🗑️ Apagar/Esvaziar Todos os Registros de '{tabela_alvo_limpeza}'"):
         try:
             executar_comando_sql(f"DELETE FROM {tabela_alvo_limpeza}")
-            st.success(f"Todos os registos da tabela '{tabela_alvo_limpeza}' foram eliminados com sucesso!")
+            st.success(f"Todos os registros da tabela '{tabela_alvo_limpeza}' foram excluídos com sucesso!")
             st.rerun()
         except Exception as e:
             st.error(f"Erro ao limpar tabela: {e}")
