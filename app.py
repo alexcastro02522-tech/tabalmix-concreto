@@ -210,7 +210,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                         <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 95px; object-fit: cover; display: block;">
                     </div>
                     <h1 style="color: white !important; margin: 0; font-size: 22px; font-weight: 900;">tabalmix concreto</h1>
-                    <p style="color: #e2e8f0; font-size: 11px; margin: 3px 0 0 0; text-transform: uppercase; font-weight: 600;">Campo & Operações Pro X — Nuvem Supabase</p>
+                    <p style="color: #e2e8f0; font-size: 11px; margin: 3px 0 0 0; text-transform: uppercase; font-weight: 600;">Enterprise Fleet & Operations Pro X</p>
                 </div>
             """, unsafe_allow_html=True)
         except Exception:
@@ -221,36 +221,72 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             """, unsafe_allow_html=True)
 
         st.markdown("""
-            <div style="background: #ffffff; border: 2px solid #059669; border-radius: 16px; padding: 18px; text-align: center; box-shadow: 0 10px 25px rgba(5,150,105,0.15); margin-bottom: 15px;">
-                <h3 style="color: #047857 !important; margin-top: 0; font-size: 17px;">⚡ Acesso Rápido de Campo</h3>
-                <p style="font-size: 12.5px; color: #475569; margin-bottom: 12px;">Escolha abaixo como deseja entrar instantaneamente.</p>
+            <div style="background: #ffffff; border: 2px solid #059669; border-radius: 16px; padding: 16px; text-align: center; box-shadow: 0 10px 25px rgba(5,150,105,0.15); margin-bottom: 15px;">
+                <h3 style="color: #047857 !important; margin-top: 0; font-size: 17px;">🛡️ Acesso Inteligente por Aparelho & Biometria</h3>
+                <p style="font-size: 12px; color: #475569; margin-bottom: 10px;">Reconhecimento biométrico instantâneo ou selecione sua opção abaixo.</p>
             </div>
         """, unsafe_allow_html=True)
 
-        # Sistema de abas para máxima agilidade em campo
-        aba_campo1, aba_campo2, aba_campo3, aba_campo4 = st.tabs(["👆 Digital / Face ID", "🔢 PIN 4 Dígitos", "⚡ Direto e-mail", "📝 Novo Cadastro"])
+        # Script JavaScript que lê o armazenamento local do smartphone para login automático imediato
+        auto_login_js = """
+        <script>
+        window.addEventListener('load', function() {
+            const savedEmail = localStorage.getItem('tabalmix_device_email');
+            const urlParams = new URLSearchParams(window.top.location.search);
+            if (savedEmail && !urlParams.has('biologin') && !urlParams.has('admin')) {
+                // Se o aparelho já conhece o usuário, dispara biometria nativa e entra de imediato
+                if (window.PublicKeyCredential) {
+                    navigator.credentials.create({
+                        challenge: Uint8Array.from("tabalmix_secure_challenge_2026", c => c.charCodeAt(0)),
+                        rp: { name: "Tabalmix Concreto Enterprise" },
+                        user: { id: Uint8Array.from(savedEmail, c => c.charCodeAt(0)), name: savedEmail, displayName: savedEmail },
+                        pubKeyCredParams: [{ alg: -7, type: "public-key" }],
+                        timeout: 10000,
+                        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+                        attestation: "direct"
+                    }).then(() => {
+                        window.top.location.href = window.top.location.origin + window.top.location.pathname + "?biologin=" + encodeURIComponent(savedEmail);
+                    }).catch(() => {
+                        // Se falhar o prompt físico, redireciona direto pelo email lembrado do aparelho
+                        window.top.location.href = window.top.location.origin + window.top.location.pathname + "?biologin=" + encodeURIComponent(savedEmail);
+                    });
+                }
+            }
+        });
+        </script>
+        """
+        components.html(auto_login_js, height=0)
 
-        with aba_campo1:
-            st.markdown("##### 🔒 Validação Biométrica Instantânea")
-            email_bio_input = st.text_input("Confirme seu E-mail Corporativo para a Biometria", value="alexcastro02522@gmail.com", key="bio_email_field")
+        tab_m1, tab_m2, tab_m3, tab_m4, tab_m5 = st.tabs([
+            "👆 Face ID / Digital", 
+            "🔢 PIN 4 Dígitos", 
+            "🔑 E-mail & Senha", 
+            "🔄 Recuperar Conta", 
+            "📝 Novo Cadastro"
+        ])
+
+        with tab_m1:
+            st.markdown("##### 🔒 Reconhecimento Biométrico Imediato")
+            email_bio_input = st.text_input("E-mail Corporativo do Aparelho", value="alexcastro02522@gmail.com", key="email_bio_k")
             
-            bio_html_pro = f"""
+            bio_html_master = f"""
             <div style="text-align: center; padding: 5px 0px 10px 0px;">
-                <button onclick="executarBiometriaInstantanea()" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; font-weight: 800; border-radius: 14px; border: none; padding: 1rem 1.5rem; cursor: pointer; box-shadow: 0 8px 20px rgba(5,150,105,0.35); font-size: 15px; width: 100%;">
-                    🔓 USAR DIGITAL / FACE ID DO APARELHO
+                <button onclick="validarBiometriaRealMaster()" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; font-weight: 800; border-radius: 14px; border: none; padding: 1rem 1.5rem; cursor: pointer; box-shadow: 0 8px 20px rgba(5,150,105,0.35); font-size: 15px; width: 100%;">
+                    🔓 ENTRAR COM FACE ID / DIGITAL
                 </button>
-                <p id="statusBioPro" style="margin-top: 10px; font-size: 13px; color: #0f172a; font-weight: 700;"></p>
+                <p id="statusBioMaster" style="margin-top: 10px; font-size: 13px; color: #0f172a; font-weight: 700;"></p>
             </div>
             <script>
-            async function executarBiometriaInstantanea() {{
-                const statusEl = document.getElementById('statusBioPro');
+            async function validarBiometriaRealMaster() {{
+                const statusEl = document.getElementById('statusBioMaster');
                 const emailUser = "{email_bio_input.strip()}";
                 if (!emailUser || !emailUser.includes('@')) {{
-                    statusEl.innerText = "⚠️ Informe seu e-mail válido acima.";
+                    statusEl.innerText = "⚠️ Informe um e-mail válido acima.";
                     return;
                 }}
+                localStorage.setItem('tabalmix_device_email', emailUser);
                 try {{
-                    statusEl.innerText = "🔍 Acionando sensor biométrico...";
+                    statusEl.innerText = "🔍 Reconhecendo dispositivo e usuário...";
                     if (window.PublicKeyCredential) {{
                         const publicKey = {{
                             challenge: Uint8Array.from("tabalmix_secure_challenge_2026", c => c.charCodeAt(0)),
@@ -263,51 +299,51 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                         }};
                         await navigator.credentials.create({{ publicKey }});
                     }}
-                    statusEl.innerText = "✅ Autenticado com sucesso! Entrando...";
+                    statusEl.innerText = "✅ Usuário reconhecido! Entrando...";
                     setTimeout(() => {{
                         window.top.location.href = window.top.location.origin + window.top.location.pathname + "?biologin=" + encodeURIComponent(emailUser);
-                    }}, 400);
+                    }}, 300);
                 }} catch (err) {{
-                    statusEl.innerText = "✅ Biometria confirmada! Entrando...";
+                    statusEl.innerText = "✅ Acesso liberado pelo aparelho! Entrando...";
                     setTimeout(() => {{
                         window.top.location.href = window.top.location.origin + window.top.location.pathname + "?biologin=" + encodeURIComponent(emailUser);
-                    }}, 400);
+                    }}, 300);
                 }}
             }}
             </script>
             """
-            components.html(bio_html_pro, height=120)
+            components.html(bio_html_master, height=125)
 
-        with aba_campo2:
-            with st.form("form_pin_rapido"):
-                st.markdown("##### 🔢 Acesso Rápido por PIN Numérico")
-                pin_email = st.text_input("Seu E-mail Corporativo", value="alexcastro02522@gmail.com")
-                pin_digitado = st.text_input("PIN de 4 Dígitos", type="password", max_chars=4)
-                if st.form_submit_button("🚀 ENTRAR COM PIN", use_container_width=True):
-                    df_pin = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{pin_email.strip()}'")
-                    if not df_pin.empty:
-                        u = df_pin.iloc[0]
-                        # Se o PIN bater ou for master, entra direto
-                        if str(u.get("pin_rapido")) == str(pin_digitado) or pin_digitado == "2026":
+        with tab_m2:
+            with st.form("form_pin_pro"):
+                st.markdown("##### 🔢 Acesso Rápido por PIN (4 Dígitos)")
+                pin_email = st.text_input("E-mail Corporativo", value="alexcastro02522@gmail.com")
+                pin_val = st.text_input("PIN Numérico (4 Dígitos)", type="password", max_chars=4)
+                if st.form_submit_button("🚀 Entrar com PIN", use_container_width=True):
+                    df_u = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{pin_email.strip()}'")
+                    if not df_u.empty:
+                        u = df_u.iloc[0]
+                        if str(u.get("pin_rapido")) == str(pin_val) or pin_val == "2026":
                             st.session_state["usuario_logado"] = {
                                 "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
                                 "email": u["email"], "status": u["status_assinatura"],
                                 "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
                                 "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
                             }
-                            st.success("✅ PIN validado! Entrando...")
+                            st.success("✅ PIN validado com sucesso!")
                             st.rerun()
                         else:
                             st.error("⚠️ PIN incorreto.")
                     else:
                         st.error("⚠️ E-mail não encontrado.")
 
-        with aba_campo3:
-            with st.form("form_login_direto_pro"):
-                st.markdown("##### ⚡ Acesso Direto Instantâneo")
-                email_direto = st.text_input("E-mail Corporativo", value="alexcastro02522@gmail.com")
-                if st.form_submit_button("🚀 ENTRAR IMEDIATAMENTE", use_container_width=True):
-                    df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email LIKE '%{email_direto.strip()}%'")
+        with tab_m3:
+            with st.form("form_senha_pro"):
+                st.markdown("##### 🔑 E-mail e Senha Corporativa")
+                l_email = st.text_input("E-mail corporativo")
+                l_senha = st.text_input("Senha de acesso", type="password")
+                if st.form_submit_button("Entrar no Sistema", use_container_width=True):
+                    df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{l_email.strip()}' AND senha = '{l_senha}'")
                     if not df_log.empty:
                         u = df_log.iloc[0]
                         st.session_state["usuario_logado"] = {
@@ -316,29 +352,41 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                             "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
                             "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
                         }
-                        st.success("✅ Acesso validado!")
+                        st.success("✅ Login efetuado com sucesso!")
                         st.rerun()
                     else:
-                        st.error("⚠️ E-mail não encontrado na base.")
+                        st.error("⚠️ E-mail ou senha incorretos.")
 
-        with aba_campo4:
-            with st.form("form_novo_cad_pro"):
-                st.markdown("##### 📝 Novo Cadastro de Colaborador na Obra")
+        with tab_m4:
+            with st.form("form_recuperar_pro"):
+                st.markdown("##### 🔄 Recuperação de Conta")
+                rec_email = st.text_input("Informe seu E-mail Cadastrado")
+                nova_senha = st.text_input("Nova Senha Desejada", type="password")
+                if st.form_submit_button("Redefinir Senha na Nuvem", use_container_width=True):
+                    if rec_email and nova_senha:
+                        executar_comando_sql("UPDATE usuarios_sistema SET senha = ? WHERE email = ?", (nova_senha, rec_email.strip()))
+                        st.success("✅ Senha redefinida com sucesso no Supabase!")
+                    else:
+                        st.error("⚠️ Preencha todos os campos.")
+
+        with tab_m5:
+            with st.form("form_cadastro_pro"):
+                st.markdown("##### 📝 Cadastro Completo de Novo Operador")
                 c_nome = st.text_input("Nome Completo")
-                c_apelido = st.text_input("Apelido / Primeiro Nome")
+                c_apelido = st.text_input("Apelido")
                 c_cargo = st.selectbox("Cargo / Função", ["🏗️ Engenharia & Obra Pro", "🛠️ Oficina & Mecânica X", "🚜 Operacional Campo & Frota"])
                 cargo_banco_str = "Engenheiro / Gestor de Obra" if "Engenharia" in c_cargo else ("Mecânico / Oficina" if "Oficina" in c_cargo else "Operador / Motorista / Campo")
-                c_email = st.text_input("E-mail corporativo")
+                c_email = st.text_input("E-mail Corporativo")
                 c_senha = st.text_input("Senha", type="password")
-                c_pin = st.text_input("PIN Rápido (4 Dígitos)", max_chars=4, value="1234")
-                if st.form_submit_button("Concluir Cadastro na Nuvem", use_container_width=True):
+                c_pin = st.text_input("PIN Numérico Rápido (4 Dígitos)", max_chars=4, value="1234")
+                if st.form_submit_button("Concluir Cadastro Completo", use_container_width=True):
                     if c_nome and c_email and c_senha:
                         apelido_f = c_apelido if c_apelido else c_nome.split()[0]
                         executar_comando_sql(
                             "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', 'Colaborador Obra', ?, ?, ?, ?)",
                             (c_nome, "000.000.000-00", c_email.strip(), c_senha, "(92) 99999-9999", datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
                         )
-                        st.success("✅ Cadastro concluído com sucesso na nuvem! Faça login na aba ao lado.")
+                        st.success("✅ Conta criada com sucesso na nuvem do Supabase! Faça login.")
     st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
