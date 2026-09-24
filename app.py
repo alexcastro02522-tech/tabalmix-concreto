@@ -130,6 +130,16 @@ def init_db():
             status_multa TEXT
         )
     """)
+
+    # Migração segura para adicionar colunas caso já exista um banco antigo
+    try:
+        cursor.execute("ALTER TABLE manutencoes ADD COLUMN encarregado_responsavel TEXT")
+    except Exception:
+        pass
+    try:
+        cursor.execute("ALTER TABLE manutencoes ADD COLUMN hora_fechamento TEXT")
+    except Exception:
+        pass
     
     try:
         cursor.execute("INSERT OR IGNORE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -147,7 +157,10 @@ init_db()
 
 def ler_tabelas_sql(query_str):
     conn = sqlite3.connect(DB_FILE)
-    df = pd.read_sql(query_str, conn)
+    try:
+        df = pd.read_sql(query_str, conn)
+    except Exception:
+        df = pd.DataFrame()
     conn.close()
     return df
 
@@ -227,7 +240,6 @@ def gerar_pdf_relatorio(titulo, dataframe, assinaturas=None):
     margem_esq = 30
     largura_util = largura - 60
     
-    # Cabeçalho Oficial Tabalmix Concreto com Logotipo Simulado/Selo
     c.setFillColorRGB(0.04, 0.35, 0.22)
     c.rect(0, altura - 75, largura, 75, fill=1, stroke=0)
     c.setFillColorRGB(1, 1, 1)
@@ -278,7 +290,6 @@ def gerar_pdf_relatorio(titulo, dataframe, assinaturas=None):
         c.line(margem_esq, y - 4, largura - margem_esq, y - 4)
         y -= altura_linha
         
-    # Bloco de Assinaturas Oficiais (Encarregado e Técnico Mecânico)
     if y < 120:
         c.showPage()
         y = altura - 60
@@ -286,10 +297,7 @@ def gerar_pdf_relatorio(titulo, dataframe, assinaturas=None):
     y -= 30
     c.setStrokeColorRGB(0.2, 0.2, 0.2)
     c.setLineWidth(1)
-    
-    # Linha de Assinatura 1 (Técnico Mecânico)
     c.line(margem_esq, y, largura / 2 - 20, y)
-    # Linha de Assinatura 2 (Encarregado Responsável)
     c.line(largura / 2 + 20, y, largura - margem_esq, y)
     
     c.setFont("Helvetica-Bold", 8.5)
@@ -893,7 +901,6 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
     with t_os1:
         exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM manutencoes ORDER BY id DESC"), "manutencoes")
         
-        # Opção de exportação da OS em PDF e Excel Autoajustado
         df_os_exp = ler_tabelas_sql("SELECT id, tag_prefixo, tipo_manutencao, data_abertura, data_fechamento, custo, status_os, tecnico_mecanico, encarregado_responsavel FROM manutencoes ORDER BY id DESC")
         if not df_os_exp.empty:
             st.markdown("#### 📤 Exportar Relatório de Ordens de Serviço")
@@ -1057,7 +1064,6 @@ elif menu == "🔩 Peças e Ferramentas":
     st.title("🔩 Estoque de Peças e Ferramentas")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM pecas ORDER BY id DESC"), "pecas")
     
-    # Opção para exportar o estoque em PDF e Excel Autoajustado
     df_estoque_exp = ler_tabelas_sql("SELECT * FROM pecas")
     if not df_estoque_exp.empty:
         st.markdown("#### 📤 Exportar Relatório de Estoque")
