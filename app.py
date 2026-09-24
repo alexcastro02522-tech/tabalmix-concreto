@@ -329,7 +329,6 @@ except Exception:
 if "usuario_logado" not in st.session_state:
     st.session_state["usuario_logado"] = None
 
-# Captura sinal de login biométrico via URL passado pelo JavaScript do navegador
 try:
     qp_bio = st.query_params.get("biologin")
     if qp_bio and not st.session_state["usuario_logado"]:
@@ -371,14 +370,12 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
         st.markdown("""
             <div style="background: #ffffff; border: 2px solid #059669; border-radius: 16px; padding: 20px; text-align: center; box-shadow: 0 10px 25px rgba(5,150,105,0.15); margin-bottom: 20px;">
                 <h3 style="color: #047857 !important; margin-top: 0; font-size: 18px;">👆 Acesso Rápido por Biometria / Face ID</h3>
-                <p style="font-size: 13px; color: #475569; margin-bottom: 15px;">Informe seu e-mail abaixo uma única vez e toque no botão para validar com sua digital ou reconhecimento facial.</p>
+                <p style="font-size: 13px; color: #475569; margin-bottom: 15px;">Informe seu e-mail cadastrado abaixo e toque no botão para validar com sua digital ou reconhecimento facial.</p>
             </div>
         """, unsafe_allow_html=True)
 
-        # Campo simples para o usuário informar o e-mail que será vinculado à biometria deste aparelho
         email_bio_input = st.text_input("Seu E-mail Cadastrado para a Biometria", value="alexcastro02522@gmail.com")
 
-        # Widget WebAuthn Real conectado ao banco de dados do usuário informado
         bio_html = f"""
         <div style="text-align: center; padding: 0px 0px 20px 0px;">
             <button id="bioBtn" onclick="autenticarBiometriaReal()" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; font-weight: 800; border-radius: 14px; border: none; padding: 1rem 2rem; cursor: pointer; box-shadow: 0 8px 20px rgba(5,150,105,0.35); font-size: 16px; width: 100%;">
@@ -387,21 +384,21 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             <p id="statusBio" style="margin-top: 12px; font-size: 13.5px; color: #0f172a; font-weight: 700;"></p>
         </div>
         <script>
-        async function autenticarBiometriaReal() {
+        async function autenticarBiometriaReal() {{
             const statusEl = document.getElementById('statusBio');
             const emailUser = "{email_bio_input.strip()}";
-            if (!emailUser || !emailUser.includes('@')) {
+            if (!emailUser || !emailUser.includes('@')) {{
                 statusEl.innerText = "⚠️ Por favor, informe um e-mail válido acima antes de usar a digital.";
                 return;
-            }
-            try {
+            }}
+            try {{
                 statusEl.innerText = "🔍 Acionando sensor biométrico / Face ID do aparelho...";
-                if (window.PublicKeyCredential) {
+                if (window.PublicKeyCredential) {{
                     const publicKey = {{
-                        challenge: Uint8Array.from("tabalmix_secure_challenge_2026", c => c.charCodeAt(0)),
+                        challenge: Uint8Array.from("tabalmix_secure_challenge_2026", function(c) {{ return c.charCodeAt(0); }}),
                         rp: {{ name: "Tabalmix Concreto Enterprise" }},
                         user: {{
-                            id: Uint8Array.from(emailUser, c => c.charCodeAt(0)),
+                            id: Uint8Array.from(emailUser, function(c) {{ return c.charCodeAt(0); }}),
                             name: emailUser,
                             displayName: emailUser
                         }},
@@ -411,18 +408,18 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                         attestation: "direct"
                     }};
                     await navigator.credentials.create({{ publicKey }});
-                }
+                }}
                 statusEl.innerText = "✅ Biometria confirmada! Entrando com seu perfil...";
-                setTimeout(() => {{
+                setTimeout(function() {{
                     window.top.location.href = window.top.location.origin + window.top.location.pathname + "?biologin=" + encodeURIComponent(emailUser);
                 }}, 600);
-            } catch (err) {
+            }} catch (err) {{
                 statusEl.innerText = "✅ Biometria autorizada! Entrando...";
-                setTimeout(() => {{
+                setTimeout(function() {{
                     window.top.location.href = window.top.location.origin + window.top.location.pathname + "?biologin=" + encodeURIComponent(emailUser);
                 }}, 600);
-            }
-        }
+            }}
+        }}
         </script>
         """
         components.html(bio_html, height=130)
