@@ -131,7 +131,6 @@ def init_db():
         )
     """)
 
-    # Migração segura para adicionar colunas caso já exista um banco antigo
     try:
         cursor.execute("ALTER TABLE manutencoes ADD COLUMN encarregado_responsavel TEXT")
     except Exception:
@@ -227,7 +226,10 @@ def gerar_excel_formatado(dataframe, nome_aba="Relatório Tabalmix"):
         header_format = workbook.add_format({'bold': True, 'text_wrap': True, 'fg_color': '#047857', 'font_color': 'white', 'border': 1, 'align': 'center', 'valign': 'middle'})
         cell_format = workbook.add_format({'border': 1, 'align': 'left', 'valign': 'middle', 'text_wrap': True})
         for col_num, col in enumerate(dataframe.columns):
-            max_len = max(dataframe[col].astype(str).map(len).max() if not dataframe.empty else 0, len(str(col))) + 4
+            if not dataframe.empty:
+                max_len = max([len(str(val)) for val in dataframe[col].dropna()] + [len(str(col))]) + 4
+            else:
+                max_len = len(str(col)) + 4
             worksheet.set_column(col_num, col_num, max(max_len, 15), cell_format)
             worksheet.write(0, col_num, str(col).upper(), header_format)
     output.seek(0)
