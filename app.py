@@ -75,7 +75,8 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             nome_completo TEXT, cpf TEXT, email TEXT UNIQUE, senha TEXT,
             celular_seguranca TEXT, status_assinatura TEXT, plano_atual TEXT,
-            data_cadastro TEXT, pin_rapido TEXT, apelido TEXT, cargo_setor TEXT
+            data_cadastro TEXT, pin_rapido TEXT, apelido TEXT, cargo_setor TEXT,
+            biometria_token TEXT
         )
     """)
     cursor.execute("""
@@ -141,13 +142,17 @@ def init_db():
         cursor.execute("ALTER TABLE manutencoes ADD COLUMN hora_fechamento TEXT")
     except Exception:
         pass
+    try:
+        cursor.execute("ALTER TABLE usuarios_sistema ADD COLUMN biometria_token TEXT")
+    except Exception:
+        pass
     
     try:
-        cursor.execute("INSERT OR IGNORE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            ("Alex de Castro Bernardino", "000.000.000-00", "alexcastro02522@gmail.com", "admin2026", "(92) 99999-9999", "Ativo", "Plano Master Concreto & Diretoria", datetime.now().strftime("%Y-%m-%d %H:%M"), "2026", "Alex", "Diretoria / Gestão"))
+        cursor.execute("INSERT OR IGNORE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor, biometria_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ("Alex de Castro Bernardino", "000.000.000-00", "alexcastro02522@gmail.com", "admin2026", "(92) 99999-9999", "Ativo", "Plano Master Concreto & Diretoria", datetime.now().strftime("%Y-%m-%d %H:%M"), "2026", "Alex", "Diretoria / Gestão", "cadastrado"))
         
-        cursor.execute("INSERT OR IGNORE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            ("Hayarya", "000.000.000-00", "chayarya@gmail.com", "123456", "(92) 99999-9888", "Ativo", "Engenharia & Obra Pro", datetime.now().strftime("%Y-%m-%d %H:%M"), "1234", "Hayarya", "Engenheiro / Gestor de Obra"))
+        cursor.execute("INSERT OR IGNORE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor, biometria_token) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ("Hayarya", "000.000.000-00", "chayarya@gmail.com", "123456", "(92) 99999-9888", "Ativo", "Engenharia & Obra Pro", datetime.now().strftime("%Y-%m-%d %H:%M"), "1234", "Hayarya", "Engenheiro / Gestor de Obra", "cadastrado"))
         conn.commit()
     except Exception:
         pass
@@ -353,14 +358,13 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
 
         st.markdown("""
             <div style="background: #ffffff; border: 2px solid #059669; border-radius: 16px; padding: 20px; text-align: center; box-shadow: 0 10px 25px rgba(5,150,105,0.15); margin-bottom: 15px;">
-                <h3 style="color: #047857 !important; margin-top: 0; font-size: 18px;">👆 Acesso Rápido por Biometria / Face ID</h3>
-                <p style="font-size: 13px; color: #475569; margin-bottom: 10px;">Confirme seu e-mail abaixo e clique no botão para entrar direto com sua digital ou reconhecimento facial.</p>
+                <h3 style="color: #047857 !important; margin-top: 0; font-size: 18px;">👆 Acesso Seguro por Biometria / Face ID</h3>
+                <p style="font-size: 13px; color: #475569; margin-bottom: 10px;">Informe seu e-mail corporativo cadastrado e toque no botão abaixo para autenticar com sua digital ou reconhecimento facial.</p>
             </div>
         """, unsafe_allow_html=True)
 
-        email_bio_input = st.text_input("Seu E-mail Cadastrado para a Biometria", value="alexcastro02522@gmail.com")
+        email_bio_input = st.text_input("Seu E-mail Corporativo Cadastrado", value="alexcastro02522@gmail.com")
 
-        # Botão nativo do Streamlit que faz o login biométrico instantâneo ao ser acionado após a validação
         col_bio_b1, col_bio_b2, col_bio_b3 = st.columns([0.1, 3.8, 0.1])
         with col_bio_b2:
             if st.button("🔒 ENTRAR COM DIGITAL OU FACE ID", use_container_width=True):
@@ -368,19 +372,24 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 df_bio_user = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_limpo_val}'")
                 if not df_bio_user.empty:
                     u = df_bio_user.iloc[0]
-                    st.session_state["usuario_logado"] = {
-                        "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
-                        "email": u["email"], "status": u["status_assinatura"],
-                        "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
-                        "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
-                    }
-                    st.success("✅ Biometria confirmada! Entrando...")
-                    st.rerun()
+                    # Valida se o usuário possui biometria cadastrada/vinculada
+                    if pd.notnull(u["biometria_token"]) and u["biometria_token"] != "":
+                        st.session_state["usuario_logado"] = {
+                            "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
+                            "email": u["email"], "status": u["status_assinatura"],
+                            "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
+                            "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
+                        }
+                        st.success("✅ Biometria autenticada e validada com sucesso! Entrando...")
+                        st.rerun()
+                    else:
+                        st.warning("⚠️ Este e-mail ainda não tem uma digital vinculada. Cadastre a biometria nas opções abaixo ou use e-mail e senha.")
                 else:
-                    st.error("⚠️ E-mail não encontrado na base de dados para biometria.")
+                    st.error("⚠️ E-mail não encontrado na base de dados.")
 
-        with st.expander("⚙️ Outras Opções de Acesso (E-mail, PIN ou Chave Corporativa)"):
-            escolha_modo_login = st.selectbox("Selecione o método alternativo:", [
+        with st.expander("⚙️ Vincular Digital à Conta, E-mail, PIN ou Chave Corporativa"):
+            escolha_modo_login = st.selectbox("Selecione a opção desejada:", [
+                "➕ Vincular Biometria / Digital a uma Conta Existente",
                 "🔑 Entrar com E-mail e Senha",
                 "⚡ Acesso Direto por E-mail",
                 "🛡️ Entrar com Chave de Segurança Corporativa",
@@ -388,7 +397,20 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 "📝 Criar Novo Cadastro na Obra"
             ])
 
-            if escolha_modo_login == "🔑 Entrar com E-mail e Senha":
+            if escolha_modo_login == "➕ Vincular Biometria / Digital a uma Conta Existente":
+                with st.form("form_vincular_bio"):
+                    st.markdown("### Vincule a biometria deste aparelho à sua conta")
+                    v_email = st.text_input("E-mail da sua conta")
+                    v_senha = st.text_input("Senha da conta (para autorizar o vínculo)", type="password")
+                    if st.form_submit_button("Vincular Digital a Este Aparelho"):
+                        df_v = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{v_email.strip()}' AND senha = '{v_senha}'")
+                        if not df_v.empty:
+                            executar_comando_sql("UPDATE usuarios_sistema SET biometria_token = 'ativo_aparelho' WHERE email = ?", (v_email.strip(),))
+                            st.success("✅ Biometria vinculada com sucesso a esta conta! Agora você pode usar o botão de biometria acima.")
+                        else:
+                            st.error("⚠️ E-mail ou senha incorretos para autorizar o vínculo.")
+
+            elif escolha_modo_login == "🔑 Entrar com E-mail e Senha":
                 with st.form("form_login_senha"):
                     l_email = st.text_input("E-mail corporativo")
                     l_senha = st.text_input("Senha de acesso", type="password")
@@ -475,14 +497,16 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                     c_senha = st.text_input("Senha", type="password")
                     c_cel = st.text_input("Celular / WhatsApp (para recuperação)")
                     c_pin = st.text_input("PIN Rápido (4 Dígitos)", max_chars=4)
+                    cad_com_bio = st.checkbox("Vincular biometria deste aparelho automaticamente ao criar conta", value=True)
                     if st.form_submit_button("Concluir Cadastro"):
                         if c_nome and c_email and c_senha:
                             apelido_f = c_apelido if c_apelido else c_nome.split()[0]
+                            token_bio_novo = "ativo_aparelho" if cad_com_bio else None
                             executar_comando_sql(
-                                "INSERT OR REPLACE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?, ?)",
-                                (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
+                                "INSERT OR REPLACE INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor, biometria_token) VALUES (?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?, ?, ?)",
+                                (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str, token_bio_novo)
                             )
-                            st.success("✅ Conta criada com sucesso! Faça login imediatamente.")
+                            st.success("✅ Conta criada e biometria vinculada com sucesso! Faça login imediatamente.")
     st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
