@@ -124,22 +124,12 @@ def executar_comando_sql(query_str, params=None):
                     supabase.table("usuarios_sistema").insert(dados).execute()
         elif "update" in q_lower:
             if "usuarios_sistema" in q_lower:
-                if "biometria_token" in q_lower:
-                    supabase.table("usuarios_sistema").update({"biometria_token": "ativo_aparelho"}).eq("email", params[0]).execute()
-                elif "senha = ?" in q_lower:
+                if "senha = ?" in q_lower:
                     supabase.table("usuarios_sistema").update({"senha": params[0]}).eq("email", params[1]).execute()
                 elif "status_assinatura" in q_lower:
                     supabase.table("usuarios_sistema").update({"status_assinatura": params[0]}).eq("id", params[1]).execute()
-            elif "veiculos" in q_lower:
-                if "horimetro_km" in q_lower and "ultima_revisao" in q_lower:
-                    supabase.table("veiculos").update({"tipo_controle": params[0], "horimetro_km": params[1], "ultima_revisao": params[2], "intervalo_revisao": params[3]}).eq("id", params[4]).execute()
-            elif "manutencoes" in q_lower:
-                if "concluida" in q_lower:
-                    supabase.table("manutencoes").update({
-                        "status_os": "concluida", "pecas_utilizadas": params[0], "custo_pecas": params[1],
-                        "mao_de_obra": params[2], "custo": params[3], "tecnico_mecanico": params[4],
-                        "encarregado_responsavel": params[5], "data_fechamento": params[6], "hora_fechamento": params[7]
-                    }).eq("id", params[8]).execute()
+            elif "chaves_licenca" in q_lower:
+                supabase.table("chaves_licenca").update({"status_uso": "Utilizado", "usado_por": params[0]}).eq("codigo_chave", params[1]).execute()
         elif "delete" in q_lower:
             if "usuarios_sistema" in q_lower:
                 supabase.table("usuarios_sistema").delete().eq("id", params[0]).execute()
@@ -180,131 +170,6 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-
-st.markdown("""
-    <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    header[data-testid="stHeader"] { background: transparent !important; }
-    .block-container { padding-top: 1.2rem !important; padding-bottom: 3rem !important; max-width: 100% !important; }
-    [data-testid="stSidebar"] { background: #f8fafc !important; border-right: 1px solid #e2e8f0; }
-    [data-testid="stSidebar"] .stRadio label, [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] div {
-        color: #1e293b !important; font-family: 'Plus Jakarta Sans', sans-serif !important; font-weight: 600 !important;
-    }
-    .stApp { background: #f4f6f9 !important; color: #0f172a !important; font-family: 'Plus Jakarta Sans', sans-serif !important; }
-    h1, h2, h3, h4 { color: #0f172a !important; font-weight: 800; letter-spacing: -0.8px; }
-    label, div[data-baseweb="input"] label, .stTextInput label, .stNumberInput label, .stSelectbox label, .stTextArea label {
-        color: #0f172a !important; font-weight: 700 !important;
-    }
-    div[data-testid="stMetric"] {
-        background: #ffffff !important; border: 1px solid #e2e8f0 !important; border-left: 5px solid #059669 !important;
-        padding: 18px !important; border-radius: 16px !important; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.04);
-    }
-    .stButton button {
-        background: linear-gradient(135deg, #059669 0%, #047857 100%) !important; color: white !important;
-        font-weight: 700; border-radius: 12px; border: none; padding: 0.65rem 1.8rem;
-        box-shadow: 0 6px 16px rgba(5, 150, 105, 0.3);
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-def gerar_excel_formatado(dataframe, nome_aba="Relatório Tabalmix"):
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        dataframe.to_excel(writer, sheet_name=nome_aba, index=False)
-        workbook = writer.book
-        worksheet = writer.sheets[nome_aba]
-        header_format = workbook.add_format({'bold': True, 'text_wrap': True, 'fg_color': '#047857', 'font_color': 'white', 'border': 1, 'align': 'center', 'valign': 'middle'})
-        cell_format = workbook.add_format({'border': 1, 'align': 'left', 'valign': 'middle', 'text_wrap': True})
-        for col_num, col in enumerate(dataframe.columns):
-            if not dataframe.empty:
-                max_len = max([len(str(val)) for val in dataframe[col].dropna()] + [len(str(col))]) + 4
-            else:
-                max_len = len(str(col)) + 4
-            worksheet.set_column(col_num, col_num, max(max_len, 15), cell_format)
-            worksheet.write(0, col_num, str(col).upper(), header_format)
-    output.seek(0)
-    return output
-
-def gerar_pdf_relatorio(titulo, dataframe, assinaturas=None):
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    largura, altura = letter
-    margem_esq = 30
-    largura_util = largura - 60
-    
-    c.setFillColorRGB(0.04, 0.35, 0.22)
-    c.rect(0, altura - 75, largura, 75, fill=1, stroke=0)
-    c.setFillColorRGB(1, 1, 1)
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(margem_esq, altura - 30, "🏗️ TABALMIX CONCRETO — ENTERPRISE MANAGEMENT")
-    c.setFont("Helvetica", 9)
-    c.drawString(margem_esq, altura - 48, "SISTEMA INTELIGENTE DE FROTAS, OBRAS E ORDENS DE SERVIÇO CERTIFICADAS")
-    
-    c.setFillColorRGB(0.1, 0.1, 0.1)
-    c.setFont("Helvetica-Bold", 13)
-    c.drawString(margem_esq, altura - 98, titulo)
-    c.setFont("Helvetica", 9)
-    c.setFillColorRGB(0.4, 0.4, 0.4)
-    c.drawString(margem_esq, altura - 114, f"Gerado em: {datetime.now().strftime('%d/%m/%Y às %H:%M')} | Supabase Nuvem NATIVA")
-    c.setStrokeColorRGB(0.8, 0.8, 0.8)
-    c.setLineWidth(1)
-    c.line(margem_esq, altura - 122, largura - margem_esq, altura - 122)
-    
-    y = altura - 145
-    altura_linha = 22
-    colunas = list(dataframe.columns)
-    colunas_amigaveis = [str(col).replace('_', ' ').upper() for col in colunas[:6]]
-    
-    c.setFillColorRGB(0.05, 0.25, 0.15)
-    c.rect(margem_esq, y - 4, largura_util, altura_linha, fill=1, stroke=0)
-    c.setFillColorRGB(1, 1, 1)
-    c.setFont("Helvetica-Bold", 8.5)
-    largura_coluna = largura_util / max(len(colunas_amigaveis), 1)
-    for i, col_nome in enumerate(colunas_amigaveis):
-        c.drawString(margem_esq + (i * largura_coluna) + 4, y + 4, col_nome[:14])
-    y -= altura_linha + 4
-    
-    c.setFont("Helvetica", 8)
-    for index, row in dataframe.iterrows():
-        if y < 100:
-            c.showPage()
-            y = altura - 40
-        if index % 2 == 0:
-            c.setFillColorRGB(0.95, 0.97, 0.95)
-            c.rect(margem_esq, y - 3, largura_util, altura_linha - 2, fill=1, stroke=0)
-        c.setFillColorRGB(0.15, 0.15, 0.15)
-        for i, col in enumerate(colunas[:6]):
-            valor_celula = str(row[col])
-            if valor_celula == 'None' or valor_celula == 'nan':
-                valor_celula = '-'
-            c.drawString(margem_esq + (i * largura_coluna) + 4, y + 3, valor_celula[:16])
-        c.setStrokeColorRGB(0.88, 0.9, 0.88)
-        c.line(margem_esq, y - 4, largura - margem_esq, y - 4)
-        y -= altura_linha
-        
-    if y < 120:
-        c.showPage()
-        y = altura - 60
-        
-    y -= 30
-    c.setStrokeColorRGB(0.2, 0.2, 0.2)
-    c.setLineWidth(1)
-    c.line(margem_esq, y, largura / 2 - 20, y)
-    c.line(largura / 2 + 20, y, largura - margem_esq, y)
-    
-    c.setFont("Helvetica-Bold", 8.5)
-    tec_nome = assinaturas.get('tecnico', 'Técnico Mecânico Responsável') if assinaturas else 'Técnico Mecânico Responsável'
-    enc_nome = assinaturas.get('encarregado', 'Encarregado / Gestor Responsável') if assinaturas else 'Encarregado / Gestor Responsável'
-    
-    c.drawString(margem_esq, y - 12, f"Assinatura: {tec_nome}")
-    c.drawString(largura / 2 + 20, y - 12, f"Assinatura: {enc_nome}")
-    c.setFont("Helvetica", 7.5)
-    c.drawString(margem_esq, y - 22, "Técnico Mecânico / Manutenção Oficial")
-    c.drawString(largura / 2 + 20, y - 22, "Encarregado / Gestor de Obra Tabalmix")
-
-    c.save()
-    buffer.seek(0)
-    return buffer
 
 modo_admin_liberado = False
 try:
@@ -357,17 +222,17 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
 
         st.markdown("""
             <div style="background: #ffffff; border: 2px solid #059669; border-radius: 16px; padding: 20px; text-align: center; box-shadow: 0 10px 25px rgba(5,150,105,0.15); margin-bottom: 20px;">
-                <h3 style="color: #047857 !important; margin-top: 0; font-size: 18px;">👆 Acesso Rápido por Biometria / Face ID</h3>
-                <p style="font-size: 13px; color: #475569; margin-bottom: 15px;">Informe seu e-mail cadastrado e toque no botão para validar com sua digital ou reconhecimento facial.</p>
+                <h3 style="color: #047857 !important; margin-top: 0; font-size: 18px;">👆 Acesso Seguro por Biometria / Face ID</h3>
+                <p style="font-size: 13px; color: #475569; margin-bottom: 15px;">Informe o e-mail cadastrado da sua conta corporativa para validar sua digital com segurança.</p>
             </div>
         """, unsafe_allow_html=True)
 
-        email_bio_input = st.text_input("Seu E-mail Cadastrado para a Biometria", value="alexcastro02522@gmail.com")
+        email_bio_input = st.text_input("E-mail da sua conta corporativa", value="alexcastro02522@gmail.com")
 
         bio_html = f"""
         <div style="text-align: center; padding: 0px 0px 20px 0px;">
             <button id="bioBtn" onclick="autenticarBiometriaReal()" style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; font-weight: 800; border-radius: 14px; border: none; padding: 1rem 2rem; cursor: pointer; box-shadow: 0 8px 20px rgba(5,150,105,0.35); font-size: 16px; width: 100%;">
-                🔒 ENTRAR COM DIGITAL OU FACE ID
+                🔒 VALIDAR DIGITAL / FACE ID NA CONTA
             </button>
             <p id="statusBio" style="margin-top: 12px; font-size: 13.5px; color: #0f172a; font-weight: 700;"></p>
         </div>
@@ -376,11 +241,11 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             const statusEl = document.getElementById('statusBio');
             const emailUser = "{email_bio_input.strip()}";
             if (!emailUser || !emailUser.includes('@')) {{
-                statusEl.innerText = "⚠️ Por favor, informe um e-mail válido acima.";
+                statusEl.innerText = "⚠️ Por favor, informe um e-mail corporativo válido.";
                 return;
             }}
             try {{
-                statusEl.innerText = "🔍 Acionando sensor biométrico...";
+                statusEl.innerText = "🔍 Lendo biometria do aparelho...";
                 if (window.PublicKeyCredential) {{
                     const publicKey = {{
                         challenge: Uint8Array.from("tabalmix_secure_challenge_2026", c => c.charCodeAt(0)),
@@ -393,27 +258,25 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                     }};
                     await navigator.credentials.create({{ publicKey }});
                 }}
-                statusEl.innerText = "✅ Biometria confirmada! Entrando...";
+                statusEl.innerText = "✅ Biometria confirmada! Entrando na conta...";
                 setTimeout(() => {{
                     window.top.location.href = window.top.location.origin + window.top.location.pathname + "?biologin=" + encodeURIComponent(emailUser);
-                }}, 600);
+                }}, 500);
             }} catch (err) {{
-                statusEl.innerText = "✅ Biometria autorizada! Entrando...";
+                statusEl.innerText = "✅ Biometria autorizada! Entrando na conta...";
                 setTimeout(() => {{
                     window.top.location.href = window.top.location.origin + window.top.location.pathname + "?biologin=" + encodeURIComponent(emailUser);
-                }}, 600);
+                }}, 500);
             }}
         }}
         </script>
         """
         components.html(bio_html, height=130)
 
-        with st.expander("⚙️ Outras Opções de Acesso (E-mail, PIN ou Chave Corporativa)"):
+        with st.expander("⚙️ Outras Opções de Acesso (Senha ou Chave Corporativa)"):
             escolha_modo_login = st.selectbox("Selecione o método:", [
                 "🔑 Entrar com E-mail e Senha",
-                "⚡ Acesso Direto por E-mail",
                 "🛡️ Entrar com Chave de Segurança Corporativa",
-                "🔄 Recuperar Senha (Celular / E-mail)",
                 "📝 Criar Novo Cadastro na Obra"
             ])
 
@@ -421,7 +284,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 with st.form("form_login_senha"):
                     l_email = st.text_input("E-mail corporativo")
                     l_senha = st.text_input("Senha de acesso", type="password")
-                    if st.form_submit_button("Entrar no Sistema"):
+                    if st.form_submit_button("Entrar na Conta"):
                         df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{l_email.strip()}' AND senha = '{l_senha}'")
                         if not df_log.empty:
                             u = df_log.iloc[0]
@@ -436,31 +299,13 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                         else:
                             st.error("⚠️ E-mail ou senha incorretos.")
 
-            elif escolha_modo_login == "⚡ Acesso Direto por E-mail":
-                with st.form("form_login_direto"):
-                    email_direto = st.text_input("E-mail corporativo")
-                    if st.form_submit_button("Acessar Imediatamente"):
-                        df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email LIKE '%{email_direto.strip()}%'")
-                        if not df_log.empty:
-                            u = df_log.iloc[0]
-                            st.session_state["usuario_logado"] = {
-                                "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
-                                "email": u["email"], "status": u["status_assinatura"],
-                                "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
-                                "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
-                            }
-                            st.success("✅ Acesso direto validado!")
-                            st.rerun()
-                        else:
-                            st.error("⚠️ E-mail não encontrado.")
-
             elif escolha_modo_login == "🛡️ Entrar com Chave de Segurança Corporativa":
                 with st.form("form_chave_corp"):
                     email_c = st.text_input("Seu E-mail Corporativo")
                     chave_c = st.text_input("Código da Chave de Segurança")
                     if st.form_submit_button("Validar Chave e Entrar"):
                         df_ch = ler_tabelas_sql(f"SELECT * FROM chaves_licenca WHERE codigo_chave = '{chave_c.strip()}' AND status_uso = 'Disponível'")
-                        if not df_ch.empty or chave_c.strip() == "TABALMIX-MASTER-2026":
+                        if not df_ch.empty:
                             df_u = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_c.strip()}'")
                             if not df_u.empty:
                                 u = df_u.iloc[0]
@@ -471,43 +316,32 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                                     "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
                                 }
                                 executar_comando_sql("UPDATE chaves_licenca SET status_uso = 'Utilizado', usado_por = ? WHERE codigo_chave = ?", (email_c, chave_c))
-                                st.success("✅ Chave validada!")
+                                st.success("✅ Chave validada com sucesso!")
                                 st.rerun()
                             else:
-                                st.error("⚠️ Usuário não encontrado.")
+                                st.error("⚠️ Usuário não encontrado para este e-mail.")
                         else:
-                            st.error("⚠️ Chave inválida ou já utilizada.")
-
-            elif escolha_modo_login == "🔄 Recuperar Senha (Celular / E-mail)":
-                with st.form("form_recuperar"):
-                    rec_val = st.text_input("Informe seu E-mail ou Celular cadastrado")
-                    nova_senha_rec = st.text_input("Nova Senha Desejada", type="password")
-                    if st.form_submit_button("Redefinir Senha"):
-                        if rec_val and nova_senha_rec:
-                            executar_comando_sql("UPDATE usuarios_sistema SET senha = ? WHERE email = ?", (nova_senha_rec, rec_val.strip()))
-                            st.success("✅ Senha redefinida com sucesso!")
-                        else:
-                            st.error("⚠️ Preencha os campos.")
+                            st.error("⚠️ Chave de segurança inválida ou já utilizada.")
 
             elif escolha_modo_login == "📝 Criar Novo Cadastro na Obra":
                 with st.form("form_novo_cad"):
                     c_nome = st.text_input("Nome Completo")
                     c_apelido = st.text_input("Apelido")
-                    c_cargo = st.selectbox("Cargo / Função", ["💎 Master Concreto & Diretoria", "🏗️ Engenharia & Obra Pro", "🛠️ Oficina & Mecânica X", "🚜 Operacional Campo & Frota"])
-                    cargo_banco_str = "Diretoria / Gestão" if "Master" in c_cargo else ("Engenheiro / Gestor de Obra" if "Engenharia" in c_cargo else ("Mecânico / Oficina" if "Oficina" in c_cargo else "Operador / Motorista / Campo"))
+                    c_cargo = st.selectbox("Cargo / Função", ["🏗️ Engenharia & Obra Pro", "🛠️ Oficina & Mecânica X", "🚜 Operacional Campo & Frota"])
+                    cargo_banco_str = "Engenheiro / Gestor de Obra" if "Engenharia" in c_cargo else ("Mecânico / Oficina" if "Oficina" in c_cargo else "Operador / Motorista / Campo")
                     c_cpf = st.text_input("CPF")
                     c_email = st.text_input("E-mail corporativo")
                     c_senha = st.text_input("Senha", type="password")
                     c_cel = st.text_input("Celular / WhatsApp")
                     c_pin = st.text_input("PIN Rápido (4 Dígitos)", max_chars=4)
-                    if st.form_submit_button("Concluir Cadastro"):
+                    if st.form_submit_button("Concluir Cadastro de Colaborador"):
                         if c_nome and c_email and c_senha:
                             apelido_f = c_apelido if c_apelido else c_nome.split()[0]
                             executar_comando_sql(
-                                "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', ?, ?, ?, ?, ?)",
-                                (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
+                                "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, 'Ativo', 'Colaborador Obra', ?, ?, ?, ?)",
+                                (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
                             )
-                            st.success("✅ Conta criada no Supabase com sucesso! Faça login.")
+                            st.success("✅ Conta cadastrada com sucesso! Faça login com seu e-mail e biometria.")
     st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
@@ -521,7 +355,7 @@ def exibir_tabela_padronizada(df, nome_tabela):
 with st.sidebar:
     st.markdown("<div style='text-align:center; font-weight:900;'>🏗️ TABALMIX CONCRETO</div>", unsafe_allow_html=True)
     if modo_admin_liberado:
-        st.success("🔓 **Modo Admin Ativo**")
+        st.success("🔓 **Modo Admin Master Ativo**")
     elif usuario_atual:
         st.markdown(f"👤 **{usuario_atual['apelido']}**<br>{usuario_atual['cargo']}", unsafe_allow_html=True)
         if st.button("🚪 Encerrar Sessão"):
