@@ -89,7 +89,6 @@ def init_db():
             destinatario TEXT,
             cargo TEXT,
             mensagem TEXT,
-            arquivo_path TEXT,
             arquivo_nome TEXT,
             data_envio TEXT
         )
@@ -886,7 +885,6 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
             sel_os_fechar = st.selectbox("Selecione a OS Aberta para Concluir / Fechar", df_abertas["rot_os_ab"])
             id_os_f = int(df_abertas[df_abertas["rot_os_ab"] == sel_os_fechar]["id"].values[0])
             
-            # Buscar peças disponíveis no stock
             df_pecas_estoque = ler_tabelas_sql("SELECT id, nome_item, quantidade, valor_unitario FROM pecas")
             lista_pecas_opcoes = ["Nenhuma (Oficina Terceirizada ou sem peça interna)"]
             if not df_pecas_estoque.empty:
@@ -917,7 +915,6 @@ elif menu == "🛠️ Ordens de Serviço (OS)":
                     custo_pecas_final = custo_pecas_manual
                     nome_peca_registo = "Oficina Terceirizada / Sem Peça Interna"
                     
-                    # Se selecionou peça do stock interno, calcular valor e abater do stock
                     if "Nenhuma" not in peca_escolhida_stock and not df_pecas_estoque.empty:
                         nome_peca_str = peca_escolhida_stock.split(" (Disp:")[0]
                         p_match = df_pecas_estoque[df_pecas_estoque["nome_item"] == nome_peca_str]
@@ -1022,16 +1019,56 @@ elif menu == "👥 Gestão de Clientes":
 
 elif menu == "💬 Chat Tabalmix Pro & Rede":
     st.title("💬 Central Pro Enterprise — Chat & Live Ops")
-    df_chat = ler_tabelas_sql("SELECT * FROM chat_interno ORDER BY id ASC LIMIT 50")
-    if not df_chat.empty:
-        for _, r in df_chat.iterrows():
-            st.markdown(f"**{r['remetente']}**: {r['mensagem']}")
-    with st.form("form_chat", clear_on_submit=True):
-        msg = st.text_input("Escreva a sua mensagem para a equipa...")
-        if st.form_submit_button("Enviar Mensagem") and msg:
-            rem_nome = usuario_atual['apelido'] if usuario_atual else "Alex"
-            executar_comando_sql("INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, data_envio) VALUES (?, 'Geral', 'Operacional', ?, ?)", (rem_nome, msg, datetime.now().strftime("%H:%M")))
-            st.rerun()
+    st.markdown("Canal de comunicação em tempo real integrado para diretoria, engenharia, oficina e campo.")
+    
+    # Caixa de exibição estilo chat corporativo moderno
+    chat_container = st.container()
+    with chat_container:
+        df_chat = ler_tabelas_sql("SELECT * FROM chat_interno ORDER BY id ASC LIMIT 100")
+        if not df_chat.empty:
+            for _, r in df_chat.iterrows():
+                remetente_msg = r['remetente']
+                mensagem_txt = r['mensagem']
+                data_envio_msg = r['data_envio']
+                arquivo_anexo = r['arquivo_nome']
+                
+                # Cores e estilos baseados no remetente ou padrão
+                st.markdown(f"""
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                            <span style="font-weight: 800; color: #047857; font-size: 13.5px;">👤 {remetente_msg}</span>
+                            <span style="font-size: 11px; color: #64748b; font-weight: 600;">{data_envio_msg}</span>
+                        </div>
+                        <div style="color: #1e293b; font-size: 14px; font-weight: 500;">{mensagem_txt}</div>
+                        {f'<div style="margin-top: 6px; font-size: 12px; color: #2563eb; font-weight: 600;">📎 Anexo: {arquivo_anexo}</div>' if arquivo_anexo else ''}
+                    </div>
+                """, unsafe_allow_html=True)
+        else:
+            st.info("Nenhuma mensagem no chat ainda. Seja o primeiro a iniciar a conversa!")
+
+    st.divider()
+    
+    # Formulário de Envio de Mensagem
+    with st.form("form_chat_pro", clear_on_submit=True):
+        col_m1, col_m2 = st.columns([3.2, 0.8])
+        with col_m1:
+            msg_texto = st.text_input("Escreva a sua mensagem...", placeholder="Digite aqui...")
+        with col_m2:
+            arquivo_chat = st.file_uploader("Anexo Opcional", type=["jpg", "png", "jpeg", "pdf"], label_visibility="collapsed")
+            
+        if st.form_submit_button("🚀 Enviar Mensagem para a Equipa"):
+            if msg_texto.strip() or arquivo_chat is not None:
+                nome_remetente = usuario_atual['apelido'] if usuario_atual else "Alex"
+                cargo_remetente = usuario_atual['cargo'] if usuario_atual else "Diretoria"
+                nome_arq_val = arquivo_chat.name if arquivo_chat is not None else None
+                
+                executar_comando_sql(
+                    "INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, arquivo_nome, data_envio) VALUES (?, 'Geral', ?, ?, ?, ?)",
+                    (nome_remetente, cargo_remetente, msg_texto, nome_arq_val, datetime.now().strftime("%d/%m/%Y às %H:%M"))
+                )
+                st.rerun()
+            else:
+                st.warning("Escreva uma mensagem ou anexe um ficheiro antes de enviar.")
 
 elif menu == "⚙️ Meu Perfil / Dados":
     st.title("⚙️ Meu Perfil & Gestão da Assinatura")
