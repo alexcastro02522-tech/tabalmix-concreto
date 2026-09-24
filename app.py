@@ -94,6 +94,18 @@ def init_db():
         )
     """)
     cursor.execute("""
+        CREATE TABLE IF NOT EXISTS reunioes_live (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            titulo_reuniao TEXT,
+            criador TEXT,
+            participantes TEXT,
+            link_sala TEXT,
+            senha_sala TEXT,
+            status_sala TEXT,
+            data_criacao TEXT
+        )
+    """)
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS chaves_licenca (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             codigo_chave TEXT UNIQUE,
@@ -457,7 +469,7 @@ lista_menus = [
     "🚨 Gestão & Alertas de Multas",
     "🔩 Peças e Ferramentas",
     "👥 Gestão de Clientes",
-    "💬 Chat Tabalmix Pro & Rede",
+    "💬 Chat Tabalmix Pro & Reuniões Live",
     "⚙️ Meu Perfil / Dados",
 ]
 if modo_admin_liberado:
@@ -1017,58 +1029,110 @@ elif menu == "👥 Gestão de Clientes":
             st.success("Cliente registado com sucesso!")
             st.rerun()
 
-elif menu == "💬 Chat Tabalmix Pro & Rede":
-    st.title("💬 Central Pro Enterprise — Chat & Live Ops")
-    st.markdown("Canal de comunicação em tempo real integrado para diretoria, engenharia, oficina e campo.")
+elif menu == "💬 Chat Tabalmix Pro & Reuniões Live":
+    st.title("💬 Central Pro Enterprise — Chat & Reuniões Live")
     
-    # Caixa de exibição estilo chat corporativo moderno
-    chat_container = st.container()
-    with chat_container:
-        df_chat = ler_tabelas_sql("SELECT * FROM chat_interno ORDER BY id ASC LIMIT 100")
-        if not df_chat.empty:
-            for _, r in df_chat.iterrows():
-                remetente_msg = r['remetente']
-                mensagem_txt = r['mensagem']
-                data_envio_msg = r['data_envio']
-                arquivo_anexo = r['arquivo_nome']
-                
-                # Cores e estilos baseados no remetente ou padrão
-                st.markdown(f"""
-                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
-                            <span style="font-weight: 800; color: #047857; font-size: 13.5px;">👤 {remetente_msg}</span>
-                            <span style="font-size: 11px; color: #64748b; font-weight: 600;">{data_envio_msg}</span>
+    aba_chat_live_1, aba_chat_live_2 = st.tabs(["💬 Chat Interno Corporativo", "📹 Salas de Reunião & Vídeo Live"])
+    
+    with aba_chat_live_1:
+        st.markdown("### Canal de Mensagens em Tempo Real")
+        chat_container = st.container()
+        with chat_container:
+            df_chat = ler_tabelas_sql("SELECT * FROM chat_interno ORDER BY id ASC LIMIT 100")
+            if not df_chat.empty:
+                for _, r in df_chat.iterrows():
+                    remetente_msg = r['remetente']
+                    mensagem_txt = r['mensagem']
+                    data_envio_msg = r['data_envio']
+                    arquivo_anexo = r['arquivo_nome']
+                    
+                    st.markdown(f"""
+                        <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 16px; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                <span style="font-weight: 800; color: #047857; font-size: 13.5px;">👤 {remetente_msg}</span>
+                                <span style="font-size: 11px; color: #64748b; font-weight: 600;">{data_envio_msg}</span>
+                            </div>
+                            <div style="color: #1e293b; font-size: 14px; font-weight: 500;">{mensagem_txt}</div>
+                            {f'<div style="margin-top: 6px; font-size: 12px; color: #2563eb; font-weight: 600;">📎 Anexo: {arquivo_anexo}</div>' if arquivo_anexo else ''}
                         </div>
-                        <div style="color: #1e293b; font-size: 14px; font-weight: 500;">{mensagem_txt}</div>
-                        {f'<div style="margin-top: 6px; font-size: 12px; color: #2563eb; font-weight: 600;">📎 Anexo: {arquivo_anexo}</div>' if arquivo_anexo else ''}
+                    """, unsafe_allow_html=True)
+            else:
+                st.info("Nenhuma mensagem no chat ainda.")
+
+        with st.form("form_chat_pro_real", clear_on_submit=True):
+            col_m1, col_m2 = st.columns([3.2, 0.8])
+            with col_m1:
+                msg_texto = st.text_input("Escreva a sua mensagem...", placeholder="Digite aqui...")
+            with col_m2:
+                arquivo_chat = st.file_uploader("Anexo Opcional", type=["jpg", "png", "jpeg", "pdf"], label_visibility="collapsed")
+                
+            if st.form_submit_button("🚀 Enviar Mensagem"):
+                if msg_texto.strip() or arquivo_chat is not None:
+                    nome_remetente = usuario_atual['apelido'] if usuario_atual else "Alex"
+                    cargo_remetente = usuario_atual['cargo'] if usuario_atual else "Diretoria"
+                    nome_arq_val = arquivo_chat.name if arquivo_chat is not None else None
+                    
+                    executar_comando_sql(
+                        "INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, arquivo_nome, data_envio) VALUES (?, 'Geral', ?, ?, ?, ?)",
+                        (nome_remetente, cargo_remetente, msg_texto, nome_arq_val, datetime.now().strftime("%d/%m/%Y às %H:%M"))
+                    )
+                    st.rerun()
+
+    with aba_chat_live_2:
+        st.markdown("### 📹 Salas de Videoconferência Corporativa")
+        st.info("Crie reuniões, escolha os participantes ativos cadastrados no sistema e gere o link seguro. O primeiro utilizador a entrar torna-se automaticamente o **Anfitrião / Moderador**.")
+        
+        df_colab_reuniao = ler_tabelas_sql("SELECT nome_completo, apelido, cargo_setor FROM usuarios_sistema")
+        lista_participantes_opcoes = df_colab_reuniao["nome_completo"].tolist() if not df_colab_reuniao.empty else ["Alex de Castro Bernardino"]
+        
+        with st.form("form_criar_reuniao"):
+            st.markdown("#### ➕ Criar Nova Sala de Reunião Live")
+            titulo_conf = st.text_input("Título / Assunto da Reunião (ex: Alinhamento de Obras e Frota)")
+            participantes_sel = st.multiselect("Selecionar Participantes Cadastrados", lista_participantes_opcoes, default=lista_participantes_opcoes[:2])
+            
+            if st.form_submit_button("Gerar Link da Reunião e Sala"):
+                if titulo_conf.strip():
+                    codigo_sala_hash = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+                    link_gerado_oficial = f"https://meet.jit.si/TabalmixConcreto-{codigo_sala_hash}"
+                    senha_sala_val = "".join(random.choices(string.digits, k=4))
+                    criador_nome = usuario_atual['apelido'] if usuario_atual else "Alex"
+                    participantes_str = ", ".join(participantes_sel)
+                    
+                    executar_comando_sql(
+                        "INSERT INTO reunioes_live (titulo_reuniao, criador, participantes, link_sala, senha_sala, status_sala, data_criacao) VALUES (?, ?, ?, ?, ?, 'Ativa', ?)",
+                        (titulo_conf, criador_nome, participantes_str, link_gerado_oficial, senha_sala_val, datetime.now().strftime("%d/%m/%Y %H:%M"))
+                    )
+                    st.success("✅ Sala de reunião criada com sucesso!")
+                    st.rerun()
+                else:
+                    st.warning("⚠️ Insira o título da reunião.")
+
+        st.markdown("---")
+        st.markdown("### 📋 Salas de Reunião Ativas")
+        df_reunioes = ler_tabelas_sql("SELECT * FROM reunioes_live ORDER BY id DESC")
+        if not df_reunioes.empty:
+            for _, r_row in df_reunioes.iterrows():
+                r_id = r_row["id"]
+                r_tit = r_row["titulo_reuniao"]
+                r_criador = r_row["criador"]
+                r_part = r_row["participantes"]
+                r_link = r_row["link_sala"]
+                r_senha = r_row["senha_sala"]
+                r_data = r_row["data_criacao"]
+                
+                st.markdown(f"""
+                    <div style="background: white; border: 1px solid #cbd5e1; border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 4px 12px rgba(0,0,0,0.03);">
+                        <h4 style="color: #047857 !important; margin: 0 0 8px 0;">🎙️ {r_tit}</h4>
+                        <p style="margin: 2px 0; font-size: 13px; color: #475569;"><b>Criador / Anfitrião Principal:</b> {r_criador} ({r_data})</p>
+                        <p style="margin: 2px 0; font-size: 13px; color: #475569;"><b>Participantes Convidados:</b> {r_part}</p>
+                        <p style="margin: 2px 0; font-size: 13px; color: #475569;"><b>PIN de Acesso à Sala:</b> <code>{r_senha}</code></p>
+                        <div style="margin-top: 12px;">
+                            <a href="{r_link}" target="_blank"><button style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; font-weight: 700; border-radius: 10px; border: none; padding: 0.5rem 1.4rem; cursor: pointer; box-shadow: 0 4px 12px rgba(37,99,235,0.3);">🔗 Entrar na Videoconferência (Moderação Automática)</button></a>
+                        </div>
                     </div>
                 """, unsafe_allow_html=True)
         else:
-            st.info("Nenhuma mensagem no chat ainda. Seja o primeiro a iniciar a conversa!")
-
-    st.divider()
-    
-    # Formulário de Envio de Mensagem
-    with st.form("form_chat_pro", clear_on_submit=True):
-        col_m1, col_m2 = st.columns([3.2, 0.8])
-        with col_m1:
-            msg_texto = st.text_input("Escreva a sua mensagem...", placeholder="Digite aqui...")
-        with col_m2:
-            arquivo_chat = st.file_uploader("Anexo Opcional", type=["jpg", "png", "jpeg", "pdf"], label_visibility="collapsed")
-            
-        if st.form_submit_button("🚀 Enviar Mensagem para a Equipa"):
-            if msg_texto.strip() or arquivo_chat is not None:
-                nome_remetente = usuario_atual['apelido'] if usuario_atual else "Alex"
-                cargo_remetente = usuario_atual['cargo'] if usuario_atual else "Diretoria"
-                nome_arq_val = arquivo_chat.name if arquivo_chat is not None else None
-                
-                executar_comando_sql(
-                    "INSERT INTO chat_interno (remetente, destinatario, cargo, mensagem, arquivo_nome, data_envio) VALUES (?, 'Geral', ?, ?, ?, ?)",
-                    (nome_remetente, cargo_remetente, msg_texto, nome_arq_val, datetime.now().strftime("%d/%m/%Y às %H:%M"))
-                )
-                st.rerun()
-            else:
-                st.warning("Escreva uma mensagem ou anexe um ficheiro antes de enviar.")
+            st.info("Nenhuma sala de reunião ativa no momento.")
 
 elif menu == "⚙️ Meu Perfil / Dados":
     st.title("⚙️ Meu Perfil & Gestão da Assinatura")
@@ -1126,7 +1190,7 @@ elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     tabelas_sistema_disponiveis = [
         "veiculos", "manutencoes", "pecas", "clientes", 
         "mobilizacoes", "combustivel", 
-        "multas", "usuarios_sistema", "chat_interno", "chaves_licenca"
+        "multas", "usuarios_sistema", "chat_interno", "reunioes_live", "chaves_licenca"
     ]
     tabela_alvo_limpeza = st.selectbox("Selecione o Sistema / Tabela para Gerir", tabelas_sistema_disponiveis)
     
