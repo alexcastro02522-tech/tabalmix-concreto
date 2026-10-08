@@ -163,34 +163,28 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    header[data-testid="stHeader"] { background: transparent !important; }
-    
-    /* ========================================================
-       COLOQUE ESTA PARTE EXATAMENTE AQUI EMBAIXO:
-       Corrige e aplica o rótulo "☰ Menu" unicamente no botão 
-       de abrir/fechar a barra lateral, evitando repetir nos outros.
-       ======================================================== */
-    header[data-testid="stHeader"] [data-testid="baseButton-header"] {
-        font-size: 0px !important;
-    }
-    header[data-testid="stHeader"] [data-testid="baseButton-header"]::after {
-        content: "☰ Menu" !important;
-        font-size: 13px !important;
-        font-weight: 700 !important;
-        color: #047857 !important;
-        background: #ffffff !important;
-        padding: 4px 10px !important;
-        border-radius: 8px !important;
-        border: 1px solid #cbd5e1 !important;
-        display: inline-block !important;
-    }
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+header[data-testid="stHeader"] { background: transparent !important; }
 
-    /* O restante do seu design system continua aqui embaixo... */
-    .block-container { padding-top: 1.5rem !important; ... }
-    </style>
+header[data-testid="stHeader"] [data-testid="baseButton-header"] {
+    font-size: 0px !important;
+}
+header[data-testid="stHeader"] [data-testid="baseButton-header"]::after {
+    content: "☰ Menu" !important;
+    font-size: 13px !important;
+    font-weight: 700 !important;
+    color: #047857 !important;
+    background: #ffffff !important;
+    padding: 4px 10px !important;
+    border-radius: 8px !important;
+    border: 1px solid #cbd5e1 !important;
+    display: inline-block !important;
+}
+</style>
 """, unsafe_allow_html=True)
+
 
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     header[data-testid="stHeader"] { background: transparent !important; }
