@@ -163,7 +163,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-    <style>
+<style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     header[data-testid="stHeader"] { background: transparent !important; }
     
