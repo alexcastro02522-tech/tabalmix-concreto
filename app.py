@@ -181,11 +181,27 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# DESIGN SYSTEM CORPORATIVO AVANÇADO - SEM EMOJIS NOS TÍTULOS
+# DESIGN SYSTEM CORPORATIVO AVANÇADO - COM CORREÇÃO DO BOTÃO DE MENU
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     header[data-testid="stHeader"] { background: transparent !important; }
+    
+    /* CORREÇÃO DO BOTÃO DA BARRA LATERAL (REMOVE TEXTO QUEBRADO) */
+    button[data-testid="baseButton-header"] p {
+        display: none !important;
+    }
+    button[data-testid="baseButton-header"]::after {
+        content: "☰ Menu" !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
+        color: #047857 !important;
+        background: #ffffff !important;
+        padding: 4px 10px !important;
+        border-radius: 8px !important;
+        border: 1px solid #cbd5e1 !important;
+    }
+
     .block-container { padding-top: 1.5rem !important; padding-bottom: 3.5rem !important; max-width: 100% !important; }
     [data-testid="stSidebar"] { background: #f8fafc !important; border-right: 1px solid #e2e8f0; }
     [data-testid="stSidebar"] .stRadio label, [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] div {
@@ -258,7 +274,6 @@ def gerar_pdf_ordem_servico(os_row):
     margem = 35
     largura_util = largura - (2 * margem)
     
-    # Cabeçalho Oficial Tabalmix Concreto
     c.setFillColorRGB(0.04, 0.35, 0.22)
     c.rect(0, altura - 70, largura, 70, fill=1, stroke=0)
     c.setFillColorRGB(1, 1, 1)
@@ -267,12 +282,10 @@ def gerar_pdf_ordem_servico(os_row):
     c.setFont("Helvetica", 9)
     c.drawString(margem, altura - 46, "ORDEM DE SERVIÇO TÉCNICA CERTIFICADA — CASTRO TECH")
     
-    # Informações Principais da OS
     y = altura - 95
     c.setFillColorRGB(0.1, 0.1, 0.1)
     c.setFont("Helvetica-Bold", 12)
     c.drawString(margem, y, f"ORDEM DE SERVIÇO Nº: {os_row.get('id', '001')}")
-    
     c.setFont("Helvetica-Bold", 9)
     c.drawString(largura - 160, y, f"STATUS: {str(os_row.get('status_os', 'aberta')).upper()}")
     
@@ -286,7 +299,6 @@ def gerar_pdf_ordem_servico(os_row):
     c.drawString(margem, y, f"Equipamento / TAG: {os_row.get('tag_prefixo', '-')}")
     c.drawString(margem + 200, y, f"Ocorrência: {os_row.get('ocorrencia_tipo', 'Mecânica')}")
     
-    # Descrição do Problema
     y -= 30
     c.setFont("Helvetica-Bold", 9)
     c.drawString(margem, y, "DESCRIÇÃO DO PROBLEMA / RELATO:")
@@ -295,7 +307,6 @@ def gerar_pdf_ordem_servico(os_row):
     c.rect(margem, y - 35, largura_util, 40, fill=0, stroke=1)
     c.drawString(margem + 6, y - 12, str(os_row.get('descricao_problema', '-'))[:90])
     
-    # Serviços Realizados / Fechamento
     y -= 55
     c.setFont("Helvetica-Bold", 9)
     c.drawString(margem, y, "SERVIÇOS REALIZADOS / CONCLUSÃO:")
@@ -308,12 +319,9 @@ def gerar_pdf_ordem_servico(os_row):
     c.drawString(margem, y, f"Data Fechamento: {os_row.get('data_fechamento', '-')}   |   Hora Final: {os_row.get('hora_fechamento', '-')}")
     c.drawString(margem + 300, y, f"Custo Total (R$): R$ {float(os_row.get('custo', 0) or 0):,.2f}")
     
-    # Bloco de Assinaturas (Conforme formulário físico)
     y -= 90
     c.setStrokeColorRGB(0.3, 0.3, 0.3)
     c.setLineWidth(0.8)
-    
-    # Três colunas de assinatura
     larg_col_ass = largura_util / 3.0
     c.line(margem, y, margem + larg_col_ass - 15, y)
     c.line(margem + larg_col_ass + 5, y, margem + (2 * larg_col_ass) - 10, y)
@@ -752,7 +760,6 @@ elif menu == "Ordens de Serviço (OS)":
                         st.success("OS fechada com sucesso.")
                         st.rerun()
                         
-                # Botão de download do PDF certificado da OS
                 pdf_os_bytes = gerar_pdf_ordem_servico(d_os)
                 st.download_button("Baixar PDF Oficial da OS (Formulário Tabalmix)", data=pdf_os_bytes, file_name=f"OS_{os_selecionada}.pdf", mime="application/pdf")
         else:
