@@ -162,71 +162,29 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
-st.markdown("<style>header[data-testid='stHeader'] { background: transparent !important; }</style>", unsafe_allow_html=True)
 
+# ESTILO EM LINHA ÚNICA (ZERO ERRO DE INDENTAÇÃO NO TELEMÓVEL)
+st.markdown("<style>header[data-testid='stHeader'] {background: transparent !important;} header[data-testid='stHeader'] [data-testid='baseButton-header'] {font-size: 0px !important;} header[data-testid='stHeader'] [data-testid='baseButton-header']::after {content: '☰ Menu' !important; font-size: 13px !important; font-weight: 700 !important; color: #047857 !important; background: #ffffff !important; padding: 4px 10px !important; border-radius: 8px !important; border: 1px solid #cbd5e1 !important; display: inline-block !important;}</style>", unsafe_allow_html=True)
 
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    header[data-testid="stHeader"] { background: transparent !important; }
-    
-    header[data-testid="stHeader"] button[kind="header"] { font-size: 0px !important; }
-    header[data-testid="stHeader"] button[kind="header"]::after {
-        content: "☰ Menu" !important;
-        font-size: 13px !important;
-        font-weight: 700 !important;
-        color: #047857 !important;
-        background: #ffffff !important;
-        padding: 4px 10px !important;
-        border-radius: 8px !important;
-        border: 1px solid #cbd5e1 !important;
-        display: inline-block !important;
-    }
-
+st.markdown("""
+    <style>
     .block-container { padding-top: 1.5rem !important; padding-bottom: 3.5rem !important; max-width: 100% !important; }
     [data-testid="stSidebar"] { background: #f8fafc !important; border-right: 1px solid #e2e8f0; }
     [data-testid="stSidebar"] .stRadio label, [data-testid="stSidebar"] span, [data-testid="stSidebar"] p, [data-testid="stSidebar"] div {
-        color: #1e293b !important; font-family: 'Plus Jakarta Sans', sans-serif !important; font-weight: 600 !important;
+        color: #1e293b !important; font-weight: 600 !important;
     }
-    .stApp { background: #f1f5f9 !important; color: #0f172a !important; font-family: 'Plus Jakarta Sans', sans-serif !important; }
-    h1, h2, h3, h4 { color: #0f172a !important; font-weight: 800; letter-spacing: -0.8px; }
-    label, div[data-baseweb="input"] label, .stTextInput label, .stNumberInput label, .stSelectbox label, .stTextArea label {
-        color: #1e293b !important; font-weight: 700 !important; font-size: 13.5px !important;
-    }
-    
+    .stApp { background: #f1f5f9 !important; color: #0f172a !important; }
+    h1, h2, h3, h4 { color: #0f172a !important; font-weight: 800; }
     .metric-card-corporate {
-        background: #ffffff;
-        border: 1px solid #e2e8f0;
-        border-left: 5px solid #047857;
-        padding: 22px 20px;
-        border-radius: 14px;
-        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
-        transition: all 0.3s ease;
-        margin-bottom: 12px;
+        background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #047857;
+        padding: 22px 20px; border-radius: 14px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03); margin-bottom: 12px;
     }
-    .metric-title {
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        color: #64748b;
-        letter-spacing: 0.6px;
-        margin-bottom: 6px;
-    }
-    .metric-value {
-        font-size: 24px;
-        font-weight: 900;
-        color: #0f172a;
-        letter-spacing: -0.5px;
-    }
-    .metric-sub {
-        font-size: 11.5px;
-        font-weight: 600;
-        color: #047857;
-        margin-top: 4px;
-    }
+    .metric-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 6px; }
+    .metric-value { font-size: 24px; font-weight: 900; color: #0f172a; }
+    .metric-sub { font-size: 11.5px; font-weight: 600; color: #047857; margin-top: 4px; }
     .stButton button {
         background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important; 
-        color: white !important; font-weight: 700 !important; border-radius: 10px !important; 
-        border: none !important; padding: 0.65rem 1.6rem !important;
-        box-shadow: 0 4px 12px rgba(4, 120, 87, 0.2);
+        color: white !important; font-weight: 700 !important; border-radius: 10px !important; border: none !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -473,7 +431,6 @@ if menu == "Visão Geral":
     df_comb = ler_tabelas_sql("SELECT * FROM combustivel")
     df_multas = ler_tabelas_sql("SELECT * FROM multas")
 
-    # ALERTA PREDITIVO DE REVISÃO
     if not df_veiculos.empty:
         alertas_revisao = []
         for _, row in df_veiculos.iterrows():
@@ -764,10 +721,8 @@ elif menu == "Ordens de Serviço (OS)":
                         custo_total_geral = custo_peca_total + f_mao
                         pecas_desc_str = f"{peca_escolhida} (Qtd: {qtd_usada})" if peca_escolhida != "Nenhuma" else "Nenhuma peça de estoque aplicada"
                         
-                        # Atualiza OS
                         executar_comando_sql("UPDATE manutencoes SET status_os = 'concluida' WHERE id = ?", (pecas_desc_str, custo_peca_total, f_mao, custo_total_geral, f_tec, f_enc, datetime.now().strftime("%d/%m/%Y"), datetime.now().strftime("%H:%M"), os_selecionada))
                         
-                        # Baixa automática no estoque de peças se aplicável
                         if peca_escolhida != "Nenhuma":
                             p_row = df_pecas_est[df_pecas_est['nome_item'] == peca_escolhida].iloc[0]
                             estoque_atual = int(p_row.get('quantidade', 0) or 0)
@@ -876,7 +831,6 @@ elif menu == "Chat Interno & Reuniões Live":
 
     with t_live:
         st.markdown("### Salas de Reunião por Vídeo")
-        df_salas = ler_tabelas_sql("SELECT * FROM reuniões_live") if False else pd.DataFrame()
         with st.form("form_live_sala"):
             tit_sala = st.text_input("Título da Reunião", value="Alinhamento Operacional Tabalmix")
             link_sala = st.text_input("Link da Sala (Ex: Meet / Zoom / Jitsi)", value="https://meet.google.com/abc-defg-hij")
