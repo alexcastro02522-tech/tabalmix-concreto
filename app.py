@@ -163,7 +163,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ESTILO EM LINHA ÚNICA (ZERO ERRO DE INDENTAÇÃO NO TELEMÓVEL)
+# ESTILO EM LINHA ÚNICA (CORREÇÃO DE MENU + MODO ESCURO INTELIGENTE E UNIFORME)
 st.markdown("<style>header[data-testid='stHeader'] {background: transparent !important;} header[data-testid='stHeader'] [data-testid='baseButton-header'] {font-size: 0px !important;} header[data-testid='stHeader'] [data-testid='baseButton-header']::after {content: '☰ Menu' !important; font-size: 13px !important; font-weight: 700 !important; color: #047857 !important; background: #ffffff !important; padding: 4px 10px !important; border-radius: 8px !important; border: 1px solid #cbd5e1 !important; display: inline-block !important;}</style>", unsafe_allow_html=True)
 
 st.markdown("""
@@ -175,6 +175,14 @@ st.markdown("""
     }
     .stApp { background: #f1f5f9 !important; color: #0f172a !important; }
     h1, h2, h3, h4 { color: #0f172a !important; font-weight: 800; }
+    
+    /* CORREÇÃO PARA GARANTIR LEGIBILIDADE PERFEITA EM QUALQUER TEMA (CLARO/ESCURO) */
+    input, textarea, select, div[data-baseweb="select"] {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        -webkit-text-fill-color: #0f172a !important;
+    }
+
     .metric-card-corporate {
         background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #047857;
         padding: 22px 20px; border-radius: 14px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03); margin-bottom: 12px;
@@ -379,7 +387,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                             "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                             (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
                         )
-                        # LOGIN AUTOMÁTICO IMEDIATO APÓS CADASTRO
+                        # LOGIN AUTOMÁTICO IMEDIATO APÓS CADASTRO COM SUPORTE A PIN
                         st.session_state["usuario_logado"] = {
                             "id": 999, "nome": c_nome, "cpf": c_cpf,
                             "email": c_email.strip(), "status": "Ativo",
