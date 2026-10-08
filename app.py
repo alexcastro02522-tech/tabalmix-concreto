@@ -70,8 +70,7 @@ def executar_comando_sql(query_str, params=None):
                     "chassi": str(params[10]), "empresa": str(params[11]), "operador_condutor": str(params[12]),
                     "horimetro_km": float(params[13]) if params[13] else 0.0, "status": 'Ativo', "tipo_controle": 'KM', "ultima_revisao": 0, "intervalo_revisao": 10000
                 }
-                res = supabase.table("veiculos").insert(dados).execute()
-                print("Resultado insert veiculos:", res)
+                supabase.table("veiculos").insert(dados).execute()
             elif "mobilizacoes" in q_lower:
                 dados = {
                     "equipamento": str(params[0]), "tipo_movimento": str(params[1]), "destino_origem": str(params[2]),
@@ -89,7 +88,8 @@ def executar_comando_sql(query_str, params=None):
                 dados = {
                     "tag_prefixo": str(params[0]), "tipo_manutencao": str(params[1]), "origem_falha": str(params[2]),
                     "descricao_problema": str(params[3]), "data_abertura": str(params[4]), "hora_abertura": str(params[5]),
-                    "oficina": str(params[6]), "custo": float(params[7]), "status_os": 'aberta'
+                    "oficina": str(params[6]), "custo": float(params[7]), "status_os": 'aberta',
+                    "ocorrencia_tipo": str(params[8]) if len(params) > 8 else "Mecânica"
                 }
                 supabase.table("manutencoes").insert(dados).execute()
             elif "multas" in q_lower:
@@ -176,12 +176,12 @@ except Exception:
 
 st.set_page_config(
     page_title="Tabalmix Concreto - Enterprise Fleet & Operations Pro X",
-    page_icon="🚀",
+    page_icon="🏗️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
-# DESIGN SYSTEM ULTRAMODERNO - CASTRO TECH & TABALMIX
+# DESIGN SYSTEM CORPORATIVO AVANÇADO - SEM EMOJIS NOS TÍTULOS
 st.markdown("""
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -197,46 +197,41 @@ st.markdown("""
         color: #1e293b !important; font-weight: 700 !important; font-size: 13.5px !important;
     }
     
-    .metric-card-modern {
+    .metric-card-corporate {
         background: #ffffff;
         border: 1px solid #e2e8f0;
-        border-left: 5px solid #059669;
+        border-left: 5px solid #047857;
         padding: 22px 20px;
-        border-radius: 18px;
-        box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.05);
+        border-radius: 14px;
+        box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03);
         transition: all 0.3s ease;
         margin-bottom: 12px;
     }
-    .metric-card-modern:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 20px 35px -5px rgba(5, 150, 105, 0.12), 0 10px 15px -5px rgba(0, 0, 0, 0.04);
-        border-color: #059669;
-    }
     .metric-title {
-        font-size: 11.5px;
+        font-size: 11px;
         font-weight: 700;
         text-transform: uppercase;
         color: #64748b;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.6px;
         margin-bottom: 6px;
     }
     .metric-value {
-        font-size: 26px;
+        font-size: 24px;
         font-weight: 900;
         color: #0f172a;
-        letter-spacing: -1px;
+        letter-spacing: -0.5px;
     }
     .metric-sub {
-        font-size: 12px;
+        font-size: 11.5px;
         font-weight: 600;
-        color: #059669;
+        color: #047857;
         margin-top: 4px;
     }
     .stButton button {
-        background: linear-gradient(135deg, #059669 0%, #047857 100%) !important; 
-        color: white !important; font-weight: 700 !important; border-radius: 14px !important; 
-        border: none !important; padding: 0.7rem 1.8rem !important;
-        box-shadow: 0 8px 20px rgba(5, 150, 105, 0.25) !important;
+        background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important; 
+        color: white !important; font-weight: 700 !important; border-radius: 10px !important; 
+        border: none !important; padding: 0.65rem 1.6rem !important;
+        box-shadow: 0 4px 12px rgba(4, 120, 87, 0.2);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -256,76 +251,79 @@ def gerar_excel_formatado(dataframe, nome_aba="Relatório Tabalmix"):
     output.seek(0)
     return output
 
-def gerar_pdf_relatorio(titulo, dataframe, assinaturas=None):
+def gerar_pdf_ordem_servico(os_row):
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=letter)
     largura, altura = letter
-    margem_esq = 30
-    largura_util = largura - 60
+    margem = 35
+    largura_util = largura - (2 * margem)
     
+    # Cabeçalho Oficial Tabalmix Concreto
     c.setFillColorRGB(0.04, 0.35, 0.22)
-    c.rect(0, altura - 75, largura, 75, fill=1, stroke=0)
+    c.rect(0, altura - 70, largura, 70, fill=1, stroke=0)
     c.setFillColorRGB(1, 1, 1)
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(margem_esq, altura - 30, "🏗️ TABALMIX CONCRETO — ENTERPRISE MANAGEMENT")
+    c.setFont("Helvetica-Bold", 15)
+    c.drawString(margem, altura - 30, "TABALMIX CONCRETO - SISTEMA DE GESTÃO DE FROTA")
     c.setFont("Helvetica", 9)
-    c.drawString(margem_esq, altura - 48, "SISTEMA INTELIGENTE DE FROTAS, OBRAS E ORDENS DE SERVIÇO — CASTRO TECH")
+    c.drawString(margem, altura - 46, "ORDEM DE SERVIÇO TÉCNICA CERTIFICADA — CASTRO TECH")
     
+    # Informações Principais da OS
+    y = altura - 95
     c.setFillColorRGB(0.1, 0.1, 0.1)
-    c.setFont("Helvetica-Bold", 13)
-    c.drawString(margem_esq, altura - 98, titulo)
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(margem, y, f"ORDEM DE SERVIÇO Nº: {os_row.get('id', '001')}")
+    
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(largura - 160, y, f"STATUS: {str(os_row.get('status_os', 'aberta')).upper()}")
+    
+    y -= 25
     c.setFont("Helvetica", 9)
-    c.setFillColorRGB(0.4, 0.4, 0.4)
-    c.drawString(margem_esq, altura - 114, f"Gerado em: {datetime.now().strftime('%d/%m/%Y às %H:%M')} | Sincronizado via Supabase Cloud")
-    c.setStrokeColorRGB(0.8, 0.8, 0.8)
-    c.setLineWidth(1)
-    c.line(margem_esq, altura - 122, largura - margem_esq, altura - 122)
+    c.drawString(margem, y, f"Data Abertura: {os_row.get('data_abertura', '-')}")
+    c.drawString(margem + 150, y, f"Hora: {os_row.get('hora_abertura', '-')}")
+    c.drawString(margem + 280, y, f"Oficina / Local: {os_row.get('oficina', '-')}")
     
-    y = altura - 145
-    altura_linha = 22
-    colunas = list(dataframe.columns)
-    colunas_amigaveis = [str(col).replace('_', ' ').upper() for col in colunas[:6]]
+    y -= 22
+    c.drawString(margem, y, f"Equipamento / TAG: {os_row.get('tag_prefixo', '-')}")
+    c.drawString(margem + 200, y, f"Ocorrência: {os_row.get('ocorrencia_tipo', 'Mecânica')}")
     
-    c.setFillColorRGB(0.05, 0.25, 0.15)
-    c.rect(margem_esq, y - 4, largura_util, altura_linha, fill=1, stroke=0)
-    c.setFillColorRGB(1, 1, 1)
-    c.setFont("Helvetica-Bold", 8.5)
-    largura_coluna = largura_util / max(len(colunas_amigaveis), 1)
-    for i, col_nome in enumerate(colunas_amigaveis):
-        c.drawString(margem_esq + (i * largura_coluna) + 4, y + 4, col_nome[:14])
-    y -= altura_linha + 4
-    
-    c.setFont("Helvetica", 8)
-    for index, row in dataframe.iterrows():
-        if y < 100:
-            c.showPage()
-            y = altura - 40
-        if index % 2 == 0:
-            c.setFillColorRGB(0.95, 0.97, 0.95)
-            c.rect(margem_esq, y - 3, largura_util, altura_linha - 2, fill=1, stroke=0)
-        c.setFillColorRGB(0.15, 0.15, 0.15)
-        for i, col in enumerate(colunas[:6]):
-            valor_celula = str(row[col])
-            if valor_celula == 'None' or valor_celula == 'nan':
-                valor_celula = '-'
-            c.drawString(margem_esq + (i * largura_coluna) + 4, y + 3, valor_celula[:16])
-        c.setStrokeColorRGB(0.88, 0.9, 0.88)
-        c.line(margem_esq, y - 4, largura - margem_esq, y - 4)
-        y -= altura_linha
-        
-    if y < 120:
-        c.showPage()
-        y = altura - 60
-        
+    # Descrição do Problema
     y -= 30
-    c.setStrokeColorRGB(0.2, 0.2, 0.2)
-    c.setLineWidth(1)
-    c.line(margem_esq, y, largura / 2 - 20, y)
-    c.line(largura / 2 + 20, y, largura - margem_esq, y)
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(margem, y, "DESCRIÇÃO DO PROBLEMA / RELATO:")
+    y -= 18
+    c.setFont("Helvetica", 9)
+    c.rect(margem, y - 35, largura_util, 40, fill=0, stroke=1)
+    c.drawString(margem + 6, y - 12, str(os_row.get('descricao_problema', '-'))[:90])
     
-    c.setFont("Helvetica-Bold", 8.5)
-    c.drawString(margem_esq, y - 12, "Assinatura: Técnico Mecânico Responsável")
-    c.drawString(largura / 2 + 20, y - 12, "Assinatura: Encarregado / Gestor de Obra")
+    # Serviços Realizados / Fechamento
+    y -= 55
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(margem, y, "SERVIÇOS REALIZADOS / CONCLUSÃO:")
+    y -= 18
+    c.setFont("Helvetica", 9)
+    c.rect(margem, y - 35, largura_util, 40, fill=0, stroke=1)
+    c.drawString(margem + 6, y - 12, str(os_row.get('pecas_utilizadas', 'Aguardando encerramento técnico'))[:90])
+    
+    y -= 55
+    c.drawString(margem, y, f"Data Fechamento: {os_row.get('data_fechamento', '-')}   |   Hora Final: {os_row.get('hora_fechamento', '-')}")
+    c.drawString(margem + 300, y, f"Custo Total (R$): R$ {float(os_row.get('custo', 0) or 0):,.2f}")
+    
+    # Bloco de Assinaturas (Conforme formulário físico)
+    y -= 90
+    c.setStrokeColorRGB(0.3, 0.3, 0.3)
+    c.setLineWidth(0.8)
+    
+    # Três colunas de assinatura
+    larg_col_ass = largura_util / 3.0
+    c.line(margem, y, margem + larg_col_ass - 15, y)
+    c.line(margem + larg_col_ass + 5, y, margem + (2 * larg_col_ass) - 10, y)
+    c.line(margem + (2 * larg_col_ass) + 10, y, largura - margem, y)
+    
+    c.setFont("Helvetica", 7.5)
+    c.drawString(margem, y - 12, "Ass. Mecânica / Elétrica")
+    c.drawString(margem + larg_col_ass + 5, y - 12, "Responsável Técnico")
+    c.drawString(margem + (2 * larg_col_ass) + 10, y - 12, "Encarregado Tabalmix")
+
     c.save()
     buffer.seek(0)
     return buffer
@@ -348,34 +346,33 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             with open("caminhoes.jpg", "rb") as image_file:
                 encoded_logo_login = base64.b64encode(image_file.read()).decode()
             st.markdown(f"""
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 20px; padding: 25px; text-align: center; box-shadow: 0 20px 40px rgba(5,150,105,0.2); margin-top: 10px; margin-bottom: 20px; color: white;">
-                    <div style="border-radius: 14px; overflow: hidden; max-height: 110px; border: 3px solid rgba(255,255,255,0.8); margin-bottom: 14px; box-shadow: 0 8px 20px rgba(0,0,0,0.2);">
-                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 110px; object-fit: cover; display: block;">
+                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 10px 30px rgba(4,120,87,0.15); margin-top: 10px; margin-bottom: 20px; color: white;">
+                    <div style="border-radius: 12px; overflow: hidden; max-height: 100px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 12px;">
+                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 100px; object-fit: cover; display: block;">
                     </div>
-                    <h1 style="color: white !important; margin: 0; font-size: 24px; font-weight: 900;">tabalmix concreto</h1>
-                    <p style="color: #e2e8f0; font-size: 11.5px; margin: 4px 0 2px 0; text-transform: uppercase; font-weight: 600;">Powered by Castro Tech • Cloud Supabase</p>
+                    <h1 style="color: white !important; margin: 0; font-size: 22px; font-weight: 800;">TABALMIX CONCRETO</h1>
+                    <p style="color: #e2e8f0; font-size: 11px; margin: 4px 0 0 0; text-transform: uppercase; font-weight: 600;">Gestão Corporativa • Castro Tech & Supabase</p>
                 </div>
             """, unsafe_allow_html=True)
         except Exception:
             st.markdown("""
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 20px; padding: 25px; text-align: center; color: white; margin-bottom: 20px;">
-                    <h1 style="color: white !important; margin: 0; font-size: 24px; font-weight: 900;">tabalmix concreto</h1>
-                    <p style="color: #e2e8f0; font-size: 11px; text-transform: uppercase;">Powered by Castro Tech</p>
+                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 25px; text-align: center; color: white; margin-bottom: 20px;">
+                    <h1 style="color: white !important; margin: 0; font-size: 22px; font-weight: 800;">TABALMIX CONCRETO</h1>
+                    <p style="color: #e2e8f0; font-size: 11px; text-transform: uppercase;">Castro Tech Architecture</p>
                 </div>
             """, unsafe_allow_html=True)
 
-        escolha_modo_login = st.selectbox("🔐 Central de Segurança & Acesso Supabase:", [
-            "⚡ Acesso Direto por E-mail",
-            "🔑 Entrar com E-mail e Senha",
-            "🛡️ Entrar com Chave de Segurança Corporativa",
-            "👆 Acesso Rápido com PIN",
-            "🔄 Recuperar Senha",
-            "📝 Criar Novo Cadastro na Obra"
+        escolha_modo_login = st.selectbox("Central de Segurança & Acesso Corporativo:", [
+            "Acesso Direto por E-mail",
+            "Entrar com E-mail e Senha",
+            "Entrar com Chave de Segurança",
+            "Acesso Rápido com PIN",
+            "Criar Novo Cadastro na Obra"
         ])
 
-        if escolha_modo_login == "⚡ Acesso Direto por E-mail":
+        if escolha_modo_login == "Acesso Direto por E-mail":
             with st.form("form_login_direto"):
-                st.markdown("### ⚡ Acesso Direto Rápido")
+                st.markdown("### Acesso Direto Rápido")
                 email_direto = st.text_input("E-mail corporativo", value="alexcastro02522@gmail.com")
                 if st.form_submit_button("Acessar Imediatamente"):
                     df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_direto.strip()}'")
@@ -387,14 +384,14 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                             "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
                             "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
                         }
-                        st.success("✅ Acesso validado!")
+                        st.success("Acesso validado com sucesso.")
                         st.rerun()
                     else:
-                        st.error("⚠️ E-mail não encontrado na base de dados.")
+                        st.error("E-mail não encontrado na base de dados.")
 
-        elif escolha_modo_login == "🔑 Entrar com E-mail e Senha":
+        elif escolha_modo_login == "Entrar com E-mail e Senha":
             with st.form("form_login_senha"):
-                st.markdown("### 🔑 Autenticação Padrão")
+                st.markdown("### Autenticação Padrão")
                 l_email = st.text_input("E-mail corporativo", value="alexcastro02522@gmail.com")
                 l_senha = st.text_input("Senha de acesso", type="password", value="admin2026")
                 if st.form_submit_button("Entrar no Sistema"):
@@ -408,16 +405,16 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                                 "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
                                 "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
                             }
-                            st.success("✅ Login efetuado com sucesso!")
+                            st.success("Login efetuado com sucesso.")
                             st.rerun()
                         else:
-                            st.error("⚠️ Senha incorreta.")
+                            st.error("Senha incorreta.")
                     else:
-                        st.error("⚠️ E-mail não encontrado.")
+                        st.error("E-mail não encontrado.")
 
-        elif escolha_modo_login == "🛡️ Entrar com Chave de Segurança Corporativa":
+        elif escolha_modo_login == "Entrar com Chave de Segurança":
             with st.form("form_chave_corp"):
-                st.markdown("### 🛡️ Validação por Chave de Licença")
+                st.markdown("### Validação por Chave de Licença")
                 email_c = st.text_input("Seu E-mail Corporativo")
                 chave_c = st.text_input("Código da Chave de Segurança")
                 if st.form_submit_button("Validar Chave e Entrar"):
@@ -430,14 +427,14 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                             "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
                             "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
                         }
-                        st.success("✅ Chave validada!")
+                        st.success("Chave validada.")
                         st.rerun()
                     else:
-                        st.error("⚠️ Usuário não encontrado.")
+                        st.error("Usuário não encontrado.")
 
-        elif escolha_modo_login == "👆 Acesso Rápido com PIN":
+        elif escolha_modo_login == "Acesso Rápido com PIN":
             with st.form("form_pin_bio"):
-                st.markdown("### 👆 Autenticação por PIN")
+                st.markdown("### Autenticação por PIN")
                 email_p = st.text_input("E-mail corporativo", value="alexcastro02522@gmail.com")
                 pin_p = st.text_input("PIN de 4 Dígitos", max_chars=4, type="password", value="2026")
                 if st.form_submit_button("Autenticar com PIN"):
@@ -451,32 +448,20 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                                 "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
                                 "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
                             }
-                            st.success("✅ Acesso validado!")
+                            st.success("Acesso validado.")
                             st.rerun()
                         else:
-                            st.error("⚠️ PIN incorreto.")
+                            st.error("PIN incorreto.")
                     else:
-                        st.error("⚠️ E-mail não encontrado.")
+                        st.error("E-mail não encontrado.")
 
-        elif escolha_modo_login == "🔄 Recuperar Senha":
-            with st.form("form_recuperar"):
-                st.markdown("### 🔄 Recuperação de Credenciais")
-                rec_val = st.text_input("E-mail cadastrado")
-                nova_senha_rec = st.text_input("Nova Senha Desejada", type="password")
-                if st.form_submit_button("Redefinir Senha"):
-                    if rec_val and nova_senha_rec:
-                        executar_comando_sql("UPDATE usuarios_sistema SET senha = ? WHERE email = ?", (nova_senha_rec, rec_val.strip()))
-                        st.success("✅ Senha redefinida no Supabase!")
-                    else:
-                        st.error("⚠️ Preencha os campos.")
-
-        elif escolha_modo_login == "📝 Criar Novo Cadastro na Obra":
+        elif escolha_modo_login == "Criar Novo Cadastro na Obra":
             with st.form("form_novo_cad"):
-                st.markdown("### 📝 Criar Novo Registro")
+                st.markdown("### Criar Novo Registro")
                 c_nome = st.text_input("Nome Completo")
                 c_apelido = st.text_input("Apelido")
-                c_cargo = st.selectbox("Cargo / Função", ["💎 Master Concreto & Diretoria", "🏗️ Engenharia & Obra Pro", "🛠️ Oficina & Mecânica X", "🚜 Operacional Campo & Frota"])
-                cargo_banco_str = "Diretoria / Gestão" if "Master" in c_cargo else ("Engenheiro / Gestor de Obra" if "Engenharia" in c_cargo else ("Mecânico / Oficina" if "Oficina" in c_cargo else "Operador / Motorista / Campo"))
+                c_cargo = st.selectbox("Cargo / Função", ["Diretoria & Master", "Engenharia & Obra", "Oficina & Mecânica", "Operacional Campo"])
+                cargo_banco_str = "Diretoria / Gestão" if "Master" in c_cargo else ("Engenheiro / Gestor de Obra" if "Engenharia" in c_cargo else ("Mecânico / Oficina" if "Oficina" in c_cargo else "Operador / Motorista"))
                 c_cpf = st.text_input("CPF")
                 c_email = st.text_input("E-mail corporativo")
                 c_senha = st.text_input("Senha", type="password")
@@ -489,7 +474,7 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                             "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                             (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
                         )
-                        st.success("✅ Conta cadastrada com sucesso!")
+                        st.success("Conta cadastrada com sucesso.")
                         st.rerun()
     st.stop()
 
@@ -502,62 +487,45 @@ def exibir_tabela_padronizada(df, nome_tabela):
     st.dataframe(df, use_container_width=True, hide_index=True)
 
 with st.sidebar:
-    st.markdown("<div style='text-align:center; font-weight:900;'>🏗️ TABALMIX CONCRETO</div>", unsafe_allow_html=True)
-    st.markdown("<div style='text-align:center; font-size:11px; color:#64748b; margin-bottom:10px;'>Castro Tech Architecture</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; font-weight:900; font-size:16px;'>TABALMIX CONCRETO</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; font-size:10.5px; color:#64748b; margin-bottom:10px;'>Castro Tech Architecture</div>", unsafe_allow_html=True)
     if modo_admin_liberado:
-        st.success("🔓 **Modo Admin Ativo**")
+        st.success("Modo Admin Ativo")
     elif usuario_atual:
-        st.markdown(f"👤 **{usuario_atual['apelido']}**<br>{usuario_atual['cargo']}", unsafe_allow_html=True)
-        if st.button("🚪 Encerrar Sessão"):
+        st.markdown(f"**{usuario_atual['apelido']}**<br>{usuario_atual['cargo']}", unsafe_allow_html=True)
+        if st.button("Encerrar Sessão"):
             st.session_state["usuario_logado"] = None
             st.rerun()
     st.markdown("---")
 
 lista_menus = [
-    "📊 Visão Geral",
-    "🔍 Consulta / Busca Geral",
-    "🚜 Cadastro de Equipamentos",
-    "🏗️ Mobilização / Desmobilização",
-    "🔧 Controle de Manutenção",
-    "⛽ Abastecimentos & Combustível",
-    "🛠️ Ordens de Serviço (OS)",
-    "🚨 Gestão & Alertas de Multas",
-    "🔩 Peças e Ferramentas",
-    "👥 Gestão de Clientes",
-    "💬 Chat Tabalmix Pro & Reuniões Live",
-    "⚙️ Meu Perfil / Dados",
+    "Visão Geral",
+    "Consulta / Busca Geral",
+    "Cadastro de Equipamentos",
+    "Mobilização / Desmobilização",
+    "Controle de Manutenção",
+    "Abastecimentos & Combustível",
+    "Ordens de Serviço (OS)",
+    "Gestão & Alertas de Multas",
+    "Peças e Ferramentas",
+    "Gestão de Clientes",
+    "Chat Interno & Reuniões Live",
+    "Meu Perfil / Dados",
 ]
 if modo_admin_liberado:
-    lista_menus.append("⚙️ Painel de Licença (Admin)")
+    lista_menus.append("Painel de Licença (Admin)")
 
 menu = st.sidebar.radio("Navegação", lista_menus, label_visibility="collapsed")
 
-if menu == "📊 Visão Geral":
-    st.title("🏗️ Painel Executivo Ultramoderno")
-    st.markdown("<p style='color: #64748b; margin-top: -10px; margin-bottom: 25px;'>Monitoramento de frotas, operações e métricas em tempo real — Castro Tech</p>", unsafe_allow_html=True)
+if menu == "Visão Geral":
+    st.title("Painel Executivo de Operações")
+    st.markdown("<p style='color: #64748b; margin-top: -10px; margin-bottom: 25px;'>Monitoramento de frotas e métricas corporativas em tempo real — Castro Tech</p>", unsafe_allow_html=True)
     
     df_veiculos = ler_tabelas_sql("SELECT * FROM veiculos")
     df_manut = ler_tabelas_sql("SELECT * FROM manutencoes")
     df_comb = ler_tabelas_sql("SELECT * FROM combustivel")
     df_multas = ler_tabelas_sql("SELECT * FROM multas")
 
-    if not df_veiculos.empty:
-        alertas_revisao = []
-        for _, row in df_veiculos.iterrows():
-            atual = row.get("horimetro_km", 0) or 0
-            ultima = row.get("ultima_revisao", 0) or 0
-            intervalo = row.get("intervalo_revisao", 0) or 1000
-            tipo = row.get("tipo_controle", "KM")
-            proxima_rev = ultima + intervalo
-            if atual >= (proxima_rev - (intervalo * 0.1)):
-                falta = proxima_rev - atual
-                status_txt = f"🚨 VENCIDA (Passou {abs(falta)} {tipo})" if falta < 0 else f"⚠️ ATENÇÃO: Faltam apenas {falta} {tipo} para a revisão!"
-                alertas_revisao.append(f"• **{row['tag_prefixo']} ({row['marca_modelo']})** — {status_txt}")
-
-        if alertas_revisao:
-            st.error("🚨 **ALERTA EXECUTIVO: EQUIPAMENTOS PRÓXIMOS OU EM ATRASO DE REVISÃO!**\n\n" + "\n".join(alertas_revisao))
-
-    # CAIXINHAS FLUTUANTES ZERADAS SE NÃO HOUVER DADOS
     total_frota = len(df_veiculos) if not df_veiculos.empty else 0
     os_abertas = len(df_manut[df_manut["status_os"] == "aberta"]) if not df_manut.empty and "status_os" in df_manut.columns else 0
     total_multas = len(df_multas) if not df_multas.empty else 0
@@ -567,7 +535,7 @@ if menu == "📊 Visão Geral":
     c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
         st.markdown(f"""
-            <div class="metric-card-modern">
+            <div class="metric-card-corporate">
                 <div class="metric-title">Total Frota</div>
                 <div class="metric-value">{total_frota}</div>
                 <div class="metric-sub">Veículos Ativos</div>
@@ -575,7 +543,7 @@ if menu == "📊 Visão Geral":
         """, unsafe_allow_html=True)
     with c2:
         st.markdown(f"""
-            <div class="metric-card-modern">
+            <div class="metric-card-corporate">
                 <div class="metric-title">OS Abertas</div>
                 <div class="metric-value">{os_abertas}</div>
                 <div class="metric-sub">Em Manutenção</div>
@@ -583,7 +551,7 @@ if menu == "📊 Visão Geral":
         """, unsafe_allow_html=True)
     with c3:
         st.markdown(f"""
-            <div class="metric-card-modern">
+            <div class="metric-card-corporate">
                 <div class="metric-title">Multas</div>
                 <div class="metric-value">{total_multas}</div>
                 <div class="metric-sub">Registradas</div>
@@ -591,7 +559,7 @@ if menu == "📊 Visão Geral":
         """, unsafe_allow_html=True)
     with c4:
         st.markdown(f"""
-            <div class="metric-card-modern">
+            <div class="metric-card-corporate">
                 <div class="metric-title">Gasto Combust.</div>
                 <div class="metric-value" style="font-size: 20px;">R$ {gasto_comb:,.2f}</div>
                 <div class="metric-sub">Investido em Diesel</div>
@@ -599,7 +567,7 @@ if menu == "📊 Visão Geral":
         """, unsafe_allow_html=True)
     with c5:
         st.markdown(f"""
-            <div class="metric-card-modern">
+            <div class="metric-card-corporate">
                 <div class="metric-title">Total Litros</div>
                 <div class="metric-value" style="font-size: 22px;">{total_litros:,.1f} L</div>
                 <div class="metric-sub">Consumo Global</div>
@@ -607,26 +575,25 @@ if menu == "📊 Visão Geral":
         """, unsafe_allow_html=True)
 
     st.divider()
-
-    st.markdown("### 📋 Gestão de Frotas & Relatórios Executivos")
+    st.markdown("### Gestão de Frotas & Relatórios Executivos")
     if not df_veiculos.empty:
         exibir_tabela_padronizada(df_veiculos, "veiculos")
         
         col_dl1, col_dl2, col_dl3 = st.columns(3)
         with col_dl1:
-            pdf_geral = gerar_pdf_relatorio("Relatório Executivo Geral de Frota", df_veiculos)
-            st.download_button("📥 Baixar Relatório PDF", data=pdf_geral, file_name="relatorio_frota.pdf", mime="application/pdf")
+            pdf_geral = gerar_pdf_ordem_servico({"id": "GERAL", "tag_prefixo": "FROTA TOTAL", "descricao_problema": "Relatório geral de frota Tabalmix"})
+            st.download_button("Baixar Relatório PDF", data=pdf_geral, file_name="relatorio_frota.pdf", mime="application/pdf")
         with col_dl2:
             excel_geral = gerar_excel_formatado(df_veiculos, "Frota_Tabalmix")
-            st.download_button("📊 Baixar Relatório Excel", data=excel_geral, file_name="relatorio_frota.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+            st.download_button("Baixar Relatório Excel", data=excel_geral, file_name="relatorio_frota.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         with col_dl3:
-            msg_wpp = urllib.parse.quote("🏗️ *RELATÓRIO EXECUTIVO TABALMIX CONCRETO*\nFrota total sincronizada no Supabase — Castro Tech.")
-            st.markdown(f'<a href="https://api.whatsapp.com/send?text={msg_wpp}" target="_blank"><button style="background:linear-gradient(135deg, #25D366 0%, #128C7E 100%); color:white; font-weight:700; border-radius:14px; border:none; padding:0.7rem 1.8rem; width:100%; box-shadow:0 8px 20px rgba(37,211,102,0.3); cursor:pointer;">📱 Compartilhar no WhatsApp</button></a>', unsafe_allow_html=True)
+            msg_wpp = urllib.parse.quote("RELATÓRIO EXECUTIVO TABALMIX CONCRETO - Frota sincronizada no Supabase.")
+            st.markdown(f'<a href="https://api.whatsapp.com/send?text={msg_wpp}" target="_blank"><button style="background:linear-gradient(135deg, #047857 0%, #065f46 100%); color:white; font-weight:700; border-radius:10px; border:none; padding:0.65rem 1.6rem; width:100%; cursor:pointer;">Compartilhar no WhatsApp</button></a>', unsafe_allow_html=True)
     else:
         st.info("Nenhum veículo cadastrado na nuvem.")
 
-elif menu == "🔍 Consulta / Busca Geral":
-    st.title("🔍 Consulta e Histórico Completo")
+elif menu == "Consulta / Busca Geral":
+    st.title("Consulta e Histórico Completo")
     termo_busca = st.text_input("Pesquisar por placa, marca ou modelo:")
     df_v = ler_tabelas_sql("SELECT * FROM veiculos")
     if termo_busca and not df_v.empty:
@@ -635,9 +602,9 @@ elif menu == "🔍 Consulta / Busca Geral":
     else:
         exibir_tabela_padronizada(df_v, "veiculos")
 
-elif menu == "🚜 Cadastro de Equipamentos":
-    st.title("🚜 Cadastro de Equipamentos")
-    t_l, t_r, t_e = st.tabs(["📋 Frota", "➕ Cadastrar", "📝 Editar"])
+elif menu == "Cadastro de Equipamentos":
+    st.title("Cadastro de Equipamentos")
+    t_l, t_r, t_e = st.tabs(["Frota", "Cadastrar", "Editar"])
     with t_l:
         exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM veiculos"), "veiculos")
     with t_r:
@@ -662,14 +629,14 @@ elif menu == "🚜 Cadastro de Equipamentos":
                 f_op = st.text_input("Operador")
             if st.form_submit_button("Salvar no Supabase") and f_tag:
                 executar_comando_sql("INSERT INTO veiculos", (f_tag, f_placa, f_cat, f_ano, f_renavam, f_crv, f_marca, f_tipo, f_cor, f_comb, f_chassi, f_emp, f_op, 0.0))
-                st.success("✅ Equipamento salvo direto no Supabase!")
+                st.success("Equipamento salvo no Supabase.")
                 st.rerun()
     with t_e:
-        st.markdown("### 📝 Editar Equipamento")
-        st.info("Módulo de edição em sincronização ativa com Supabase.")
+        st.markdown("### Editar Equipamento")
+        st.info("Sincronizado com Supabase.")
 
-elif menu == "🏗️ Mobilização / Desmobilização":
-    st.title("🏗️ Controle de Mobilização & Vistoria")
+elif menu == "Mobilização / Desmobilização":
+    st.title("Controle de Mobilização & Vistoria")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM mobilizacoes"), "mobilizacoes")
     with st.form("form_mob"):
         eq = st.text_input("Equipamento / TAG")
@@ -680,15 +647,15 @@ elif menu == "🏗️ Mobilização / Desmobilização":
         obs = st.text_area("Observação")
         if st.form_submit_button("Cadastrar Movimento"):
             executar_comando_sql("INSERT INTO mobilizacoes", (eq, mov, dest, enc, datetime.now().strftime("%d/%m/%Y"), km, obs))
-            st.success("✅ Salvo no Supabase!")
+            st.success("Salvo no Supabase.")
             st.rerun()
 
-elif menu == "🔧 Controle de Manutenção":
-    st.title("🔧 Controle de Manutenção & Revisões")
+elif menu == "Controle de Manutenção":
+    st.title("Controle de Manutenção & Revisões")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM veiculos"), "veiculos")
 
-elif menu == "⛽ Abastecimentos & Combustível":
-    st.title("⛽ Registro de Abastecimentos")
+elif menu == "Abastecimentos & Combustível":
+    st.title("Registro de Abastecimentos")
     st.markdown("<p style='color: #64748b;'>Painel analítico e controle de diesel — Castro Tech</p>", unsafe_allow_html=True)
     
     with st.container():
@@ -707,7 +674,7 @@ elif menu == "⛽ Abastecimentos & Combustível":
     mc1, mc2, mc3, mc4 = st.columns(4)
     with mc1:
         st.markdown(f"""
-            <div class="metric-card-modern">
+            <div class="metric-card-corporate">
                 <div class="metric-title">KM Rodados</div>
                 <div class="metric-value">0 km</div>
                 <div class="metric-sub">Volume no Filtro</div>
@@ -715,7 +682,7 @@ elif menu == "⛽ Abastecimentos & Combustível":
         """, unsafe_allow_html=True)
     with mc2:
         st.markdown(f"""
-            <div class="metric-card-modern">
+            <div class="metric-card-corporate">
                 <div class="metric-title">Diesel Consumido</div>
                 <div class="metric-value">{tot_litros_c:,.1f} L</div>
                 <div class="metric-sub">Consumo Total</div>
@@ -723,7 +690,7 @@ elif menu == "⛽ Abastecimentos & Combustível":
         """, unsafe_allow_html=True)
     with mc3:
         st.markdown(f"""
-            <div class="metric-card-modern">
+            <div class="metric-card-corporate">
                 <div class="metric-title">Média da Frota</div>
                 <div class="metric-value">0,00 km/L</div>
                 <div class="metric-sub">Sem registros</div>
@@ -731,7 +698,7 @@ elif menu == "⛽ Abastecimentos & Combustível":
         """, unsafe_allow_html=True)
     with mc4:
         st.markdown(f"""
-            <div class="metric-card-modern" style="border-left-color: #047857; background: #065f46; color: white;">
+            <div class="metric-card-corporate" style="border-left-color: #047857; background: #047857; color: white;">
                 <div class="metric-title" style="color: #e2e8f0;">Custo Total Diesel</div>
                 <div class="metric-value" style="color: white; font-size: 20px;">R$ {tot_valor_c:,.2f}</div>
                 <div class="metric-sub" style="color: #a7f3d0;">Total Lançado</div>
@@ -739,11 +706,11 @@ elif menu == "⛽ Abastecimentos & Combustível":
         """, unsafe_allow_html=True)
 
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### 📋 Registros de Abastecimento")
+    st.markdown("### Registros de Abastecimento")
     exibir_tabela_padronizada(df_comb_vis, "combustivel")
     
     with st.form("form_comb"):
-        st.markdown("### ➕ Novo Lançamento de Abastecimento")
+        st.markdown("### Novo Lançamento de Abastecimento")
         eq = st.text_input("Equipamento")
         lit = st.number_input("Litros", min_value=0.0)
         val = st.number_input("Valor Total (R$)", min_value=0.0)
@@ -751,26 +718,68 @@ elif menu == "⛽ Abastecimentos & Combustível":
         mot = st.text_input("Motorista")
         if st.form_submit_button("Cadastrar Abastecimento"):
             executar_comando_sql("INSERT INTO combustivel", (eq, lit, val, post, mot, datetime.now().strftime("%d/%m/%Y")))
-            st.success("✅ Abastecimento salvo no Supabase!")
+            st.success("Abastecimento salvo no Supabase.")
             st.rerun()
 
-elif menu == "🛠️ Ordens de Serviço (OS)":
-    st.title("🛠️ Gestão de Ordens de Serviço (OS)")
-    exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM manutencoes"), "manutencoes")
-    with st.form("form_os"):
-        tag = st.text_input("TAG do Equipamento")
-        t_man = st.selectbox("Tipo", ["Corretiva", "Preventiva"])
-        origem = st.selectbox("Origem", ["Falha de Equipamento", "Falha de Operação"])
-        desc = st.text_area("Descrição do Problema")
-        oficina = st.text_input("Oficina")
-        custo = st.number_input("Custo Estimado", min_value=0.0)
-        if st.form_submit_button("Abrir OS na Nuvem"):
-            executar_comando_sql("INSERT INTO manutencoes", (tag, t_man, origem, desc, datetime.now().strftime("%d/%m/%Y"), datetime.now().strftime("%H:%M"), oficina, custo))
-            st.success("✅ OS aberta no Supabase!")
-            st.rerun()
+elif menu == "Ordens de Serviço (OS)":
+    st.title("Gestão de Ordens de Serviço (OS)")
+    st.markdown("<p style='color: #64748b;'>Controle técnico de manutenção e emissão de OS certificada — Castro Tech</p>", unsafe_allow_html=True)
+    
+    t_os_aberta, t_os_fechar = st.tabs(["Abertas & Em Andamento", "Abrir Nova OS"])
+    
+    with t_os_aberta:
+        df_os = ler_tabelas_sql("SELECT * FROM manutencoes")
+        if not df_os.empty:
+            exibir_tabela_padronizada(df_os, "manutencoes")
+            
+            st.markdown("### Fechamento e Conclusão de OS")
+            os_ids = df_os['id'].tolist() if 'id' in df_os.columns else []
+            os_selecionada = st.selectbox("Selecione o ID da OS para Baixa / Fechamento", os_ids)
+            
+            if os_selecionada:
+                d_os = df_os[df_os['id'] == os_selecionada].iloc[0]
+                with st.form("form_fechar_os"):
+                    st.markdown(f"**Equipamento:** {d_os.get('tag_prefixo')} | **Relato:** {d_os.get('descricao_problema')}")
+                    f_pecas = st.text_area("Serviços Realizados / Peças Utilizadas", value="Revisão concluída e testada em campo.")
+                    f_c_pecas = st.number_input("Custo de Peças (R$)", min_value=0.0, value=0.0)
+                    f_mao = st.number_input("Custo Mão de Obra (R$)", min_value=0.0, value=0.0)
+                    f_tec = st.text_input("Responsável Técnico / Mecânico", value="Equipe Técnica Tabalmix")
+                    f_enc = st.text_input("Encarregado Responsável", value="Gestor de Obra")
+                    
+                    if st.form_submit_button("Concluir e Fechar OS"):
+                        custo_total = f_c_pecas + f_mao
+                        executar_comando_sql("UPDATE manutencoes SET status_os = 'concluida' WHERE id = ?", (f_pecas, f_c_pecas, f_mao, custo_total, f_tec, f_enc, datetime.now().strftime("%d/%m/%Y"), datetime.now().strftime("%H:%M"), os_selecionada))
+                        st.success("OS fechada com sucesso.")
+                        st.rerun()
+                        
+                # Botão de download do PDF certificado da OS
+                pdf_os_bytes = gerar_pdf_ordem_servico(d_os)
+                st.download_button("Baixar PDF Oficial da OS (Formulário Tabalmix)", data=pdf_os_bytes, file_name=f"OS_{os_selecionada}.pdf", mime="application/pdf")
+        else:
+            st.info("Nenhuma Ordem de Serviço registrada.")
 
-elif menu == "🚨 Gestão & Alertas de Multas":
-    st.title("🚨 Controle de Multas")
+    with t_os_fechar:
+        with st.form("form_os_novo"):
+            st.markdown("### Abertura de Nova Ordem de Serviço")
+            c1, c2 = st.columns(2)
+            with c1:
+                tag = st.text_input("TAG / Prefixo do Equipamento")
+                t_man = st.selectbox("Tipo de Manutenção", ["Corretiva", "Preventiva"])
+                origem = st.selectbox("Origem da Falha", ["Falha de Equipamento", "Falha de Operação"])
+                ocorrencia = st.selectbox("Categoria da Ocorrência", ["Mecânica", "Elétrica", "Hidráulica", "Refrigeração", "Borracharia", "Soldagem", "Alinhamento", "Outros"])
+            with c2:
+                oficina = st.text_input("Oficina / Local", value="Oficina Central Tabalmix")
+                custo = st.number_input("Custo Estimado (R$)", min_value=0.0, value=0.0)
+            
+            desc = st.text_area("Descrição Detalhada do Problema / Relato")
+            
+            if st.form_submit_button("Abrir OS na Nuvem") and tag:
+                executar_comando_sql("INSERT INTO manutencoes", (tag, t_man, origem, desc, datetime.now().strftime("%d/%m/%Y"), datetime.now().strftime("%H:%M"), oficina, custo, ocorrencia))
+                st.success("Ordem de Serviço aberta com sucesso no Supabase.")
+                st.rerun()
+
+elif menu == "Gestão & Alertas de Multas":
+    st.title("Controle de Multas")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM multas"), "multas")
     with st.form("form_multa"):
         placa = st.text_input("Placa")
@@ -780,11 +789,11 @@ elif menu == "🚨 Gestão & Alertas de Multas":
         venc = st.text_input("Vencimento")
         if st.form_submit_button("Cadastrar Multa"):
             executar_comando_sql("INSERT INTO multas", (placa, orgao, local, valor, venc))
-            st.success("✅ Multa salva no Supabase!")
+            st.success("Multa salva no Supabase.")
             st.rerun()
 
-elif menu == "🔩 Peças e Ferramentas":
-    st.title("🔩 Estoque de Peças")
+elif menu == "Peças e Ferramentas":
+    st.title("Estoque de Peças")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM pecas"), "pecas")
     with st.form("form_peca"):
         nome = st.text_input("Nome da Peça")
@@ -793,11 +802,11 @@ elif menu == "🔩 Peças e Ferramentas":
         val = st.number_input("Valor Unitário", min_value=0.0)
         if st.form_submit_button("Adicionar Peça"):
             executar_comando_sql("INSERT INTO pecas", (nome, cat, qtd, val))
-            st.success("✅ Peça salva no Supabase!")
+            st.success("Peça salva no Supabase.")
             st.rerun()
 
-elif menu == "👥 Gestão de Clientes":
-    st.title("👥 Gestão de Clientes")
+elif menu == "Gestão de Clientes":
+    st.title("Gestão de Clientes")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM clientes"), "clientes")
     with st.form("form_cli"):
         nome = st.text_input("Nome / Razão Social")
@@ -807,11 +816,11 @@ elif menu == "👥 Gestão de Clientes":
         end = st.text_input("Endereço")
         if st.form_submit_button("Cadastrar Cliente"):
             executar_comando_sql("INSERT INTO clientes", (nome, emp, tel, doc, end))
-            st.success("✅ Cliente salvo no Supabase!")
+            st.success("Cliente salvo no Supabase.")
             st.rerun()
 
-elif menu == "💬 Chat Tabalmix Pro & Reuniões Live":
-    st.title("💬 Chat Interno & Reuniões Live")
+elif menu == "Chat Interno & Reuniões Live":
+    st.title("Chat Interno & Reuniões Live")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM chat_interno"), "chat_interno")
     with st.form("form_chat", clear_on_submit=True):
         msg = st.text_input("Mensagem")
@@ -821,8 +830,8 @@ elif menu == "💬 Chat Tabalmix Pro & Reuniões Live":
             executar_comando_sql("INSERT INTO chat_interno", (rem, "Geral", cargo, msg, "", datetime.now().strftime("%d/%m/%Y às %H:%M")))
             st.rerun()
 
-elif menu == "⚙️ Meu Perfil / Dados":
-    st.title("⚙️ Meu Perfil & Dados")
+elif menu == "Meu Perfil / Dados":
+    st.title("Meu Perfil & Dados")
     if usuario_atual:
         st.markdown(f"""
             * **Nome**: {usuario_atual.get('nome')}
@@ -831,10 +840,10 @@ elif menu == "⚙️ Meu Perfil / Dados":
             * **Arquitetura**: Castro Tech & Supabase Cloud
         """)
 
-elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
-    st.title("⚙️ Painel Administrativo Master")
+elif menu == "Painel de Licença (Admin)" and modo_admin_liberado:
+    st.title("Painel Administrativo Master")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM usuarios_sistema"), "usuarios_sistema")
-    if st.button("🗑️ Limpar Tabela Veiculos"):
+    if st.button("Limpar Tabela Veiculos"):
         executar_comando_sql("DELETE FROM veiculos")
-        st.success("Tabela limpa no Supabase!")
+        st.success("Tabela limpa no Supabase.")
         st.rerun()
