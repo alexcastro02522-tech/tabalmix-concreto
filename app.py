@@ -162,27 +162,9 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+st.markdown("<style>header[data-testid='stHeader'] { background: transparent !important; }</style>", unsafe_allow_html=True)
 
-st.markdown("""
-<style>
-header[data-testid="stHeader"] { background: transparent !important; }
 
-header[data-testid="stHeader"] [data-testid="baseButton-header"] {
-    font-size: 0px !important;
-}
-header[data-testid="stHeader"] [data-testid="baseButton-header"]::after {
-    content: "☰ Menu" !important;
-    font-size: 13px !important;
-    font-weight: 700 !important;
-    color: #047857 !important;
-    background: #ffffff !important;
-    padding: 4px 10px !important;
-    border-radius: 8px !important;
-    border: 1px solid #cbd5e1 !important;
-    display: inline-block !important;
-}
-</style>
-""", unsafe_allow_html=True)
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     header[data-testid="stHeader"] { background: transparent !important; }
     
