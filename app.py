@@ -831,7 +831,7 @@ elif menu == "⚙️ Meu Perfil / Dados":
             * **Arquitetura**: Castro Tech & Supabase Cloud
         """)
 
-elif menu == "⚙️ Painel de Licença (Admin)" e modo_admin_liberado:
+elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
     st.title("⚙️ Painel Administrativo Master")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM usuarios_sistema"), "usuarios_sistema")
     if st.button("🗑️ Limpar Tabela Veiculos"):
