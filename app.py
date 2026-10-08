@@ -165,7 +165,6 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 header[data-testid="stHeader"] { background: transparent !important; }
 
 header[data-testid="stHeader"] [data-testid="baseButton-header"] {
@@ -184,6 +183,7 @@ header[data-testid="stHeader"] [data-testid="baseButton-header"]::after {
 }
 </style>
 """, unsafe_allow_html=True)
+
 
 
 
