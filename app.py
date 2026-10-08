@@ -379,7 +379,13 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                             "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                             (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
                         )
-                        st.success("Conta cadastrada com sucesso.")
+                        # LOGIN AUTOMÁTICO IMEDIATO APÓS CADASTRO
+                        st.session_state["usuario_logado"] = {
+                            "id": 999, "nome": c_nome, "cpf": c_cpf,
+                            "email": c_email.strip(), "status": "Ativo",
+                            "apelido": apelido_f, "cargo": cargo_banco_str
+                        }
+                        st.success("Conta cadastrada e acesso liberado com sucesso!")
                         st.rerun()
     st.stop()
 
