@@ -64,84 +64,85 @@ def executar_comando_sql(query_str, params=None):
         if "insert" in q_lower:
             if "veiculos" in q_lower:
                 dados = {
-                    "tag_prefixo": params[0], "placa": params[1], "categoria_equipamento": params[2],
-                    "ano_fabricacao": params[3], "renavam": params[4], "crv": params[5],
-                    "marca_modelo": params[6], "tipo": params[7], "cor": params[8], "combustivel": params[9],
-                    "chassi": params[10], "empresa": params[11], "operador_condutor": params[12],
-                    "horimetro_km": params[13], "status": 'Ativo', "tipo_controle": 'KM', "ultima_revisao": 0, "intervalo_revisao": 10000
+                    "tag_prefixo": str(params[0]), "placa": str(params[1]), "categoria_equipamento": str(params[2]),
+                    "ano_fabricacao": int(params[3]) if params[3] else 2026, "renavam": str(params[4]), "crv": str(params[5]),
+                    "marca_modelo": str(params[6]), "tipo": str(params[7]), "cor": str(params[8]), "combustivel": str(params[9]),
+                    "chassi": str(params[10]), "empresa": str(params[11]), "operador_condutor": str(params[12]),
+                    "horimetro_km": float(params[13]) if params[13] else 0.0, "status": 'Ativo', "tipo_controle": 'KM', "ultima_revisao": 0, "intervalo_revisao": 10000
                 }
-                supabase.table("veiculos").insert(dados).execute()
+                res = supabase.table("veiculos").insert(dados).execute()
+                print("Resultado insert veiculos:", res)
             elif "mobilizacoes" in q_lower:
                 dados = {
-                    "equipamento": params[0], "tipo_movimento": params[1], "destino_origem": params[2],
-                    "encarregado_responsavel": params[3], "data_movimento": params[4], "km_horimetro_atual": params[5],
-                    "observacao": params[6]
+                    "equipamento": str(params[0]), "tipo_movimento": str(params[1]), "destino_origem": str(params[2]),
+                    "encarregado_responsavel": str(params[3]), "data_movimento": str(params[4]), "km_horimetro_atual": str(params[5]),
+                    "observacao": str(params[6])
                 }
                 supabase.table("mobilizacoes").insert(dados).execute()
             elif "combustivel" in q_lower:
                 dados = {
-                    "equipamento": params[0], "litros": params[1], "valor_total": params[2],
-                    "posto_posto": params[3], "motorista": params[4], "data": params[5]
+                    "equipamento": str(params[0]), "litros": float(params[1]), "valor_total": float(params[2]),
+                    "posto_posto": str(params[3]), "motorista": str(params[4]), "data": str(params[5])
                 }
                 supabase.table("combustivel").insert(dados).execute()
             elif "manutencoes" in q_lower:
                 dados = {
-                    "tag_prefixo": params[0], "tipo_manutencao": params[1], "origem_falha": params[2],
-                    "descricao_problema": params[3], "data_abertura": params[4], "hora_abertura": params[5],
-                    "oficina": params[6], "custo": params[7], "status_os": 'aberta'
+                    "tag_prefixo": str(params[0]), "tipo_manutencao": str(params[1]), "origem_falha": str(params[2]),
+                    "descricao_problema": str(params[3]), "data_abertura": str(params[4]), "hora_abertura": str(params[5]),
+                    "oficina": str(params[6]), "custo": float(params[7]), "status_os": 'aberta'
                 }
                 supabase.table("manutencoes").insert(dados).execute()
             elif "multas" in q_lower:
                 dados = {
-                    "equipamento_placa": params[0], "orgao_autuador": params[1], "local_infracao": params[2],
-                    "valor_multa": params[3], "data_vencimento": params[4], "status_multa": 'Pendente'
+                    "equipamento_placa": str(params[0]), "orgao_autuador": str(params[1]), "local_infracao": str(params[2]),
+                    "valor_multa": float(params[3]), "data_vencimento": str(params[4]), "status_multa": 'Pendente'
                 }
                 supabase.table("multas").insert(dados).execute()
             elif "pecas" in q_lower:
-                dados = {"nome_item": params[0], "categoria": params[1], "quantidade": params[2], "valor_unitario": params[3]}
+                dados = {"nome_item": str(params[0]), "categoria": str(params[1]), "quantidade": int(params[2]), "valor_unitario": float(params[3])}
                 supabase.table("pecas").insert(dados).execute()
             elif "clientes" in q_lower:
-                dados = {"nome": params[0], "empresa": params[1], "telefone": params[2], "documento": params[3], "endereco": params[4]}
+                dados = {"nome": str(params[0]), "empresa": str(params[1]), "telefone": str(params[2]), "documento": str(params[3]), "endereco": str(params[4])}
                 supabase.table("clientes").insert(dados).execute()
             elif "chat_interno" in q_lower:
-                dados = {"remetente": params[0], "destinatario": params[1], "cargo": params[2], "mensagem": params[3], "arquivo_nome": params[4], "data_envio": params[5]}
+                dados = {"remetente": str(params[0]), "destinatario": str(params[1]), "cargo": str(params[2]), "mensagem": str(params[3]), "arquivo_nome": str(params[4]), "data_envio": str(params[5])}
                 supabase.table("chat_interno").insert(dados).execute()
             elif "reunioes_live" in q_lower:
-                dados = {"titulo_reuniao": params[0], "criador": params[1], "participantes": params[2], "link_sala": params[3], "senha_sala": params[4], "status_sala": "Ativa", "data_criacao": params[5]}
+                dados = {"titulo_reuniao": str(params[0]), "criador": str(params[1]), "participantes": str(params[2]), "link_sala": str(params[3]), "senha_sala": str(params[4]), "status_sala": "Ativa", "data_criacao": str(params[5])}
                 supabase.table("reunioes_live").insert(dados).execute()
             elif "chaves_licenca" in q_lower:
-                dados = {"codigo_chave": params[0], "cargo_atribuido": params[1], "modalidade": params[2], "status_uso": "Disponível", "data_criacao": params[3]}
+                dados = {"codigo_chave": str(params[0]), "cargo_atribuido": str(params[1]), "modalidade": str(params[2]), "status_uso": "Disponível", "data_criacao": str(params[3])}
                 supabase.table("chaves_licenca").insert(dados).execute()
             elif "usuarios_sistema" in q_lower:
                 if len(params) >= 10:
                     dados = {
-                        "nome_completo": params[0], "cpf": params[1], "email": params[2], "senha": params[3],
-                        "celular_seguranca": params[4], "status_assinatura": "Ativo", "plano_atual": params[5],
-                        "data_cadastro": params[6], "pin_rapido": params[7], "apelido": params[8], "cargo_setor": params[9]
+                        "nome_completo": str(params[0]), "cpf": str(params[1]), "email": str(params[2]), "senha": str(params[3]),
+                        "celular_seguranca": str(params[4]), "status_assinatura": "Ativo", "plano_atual": str(params[5]),
+                        "data_cadastro": str(params[6]), "pin_rapido": str(params[7]), "apelido": str(params[8]), "cargo_setor": str(params[9])
                     }
                     supabase.table("usuarios_sistema").insert(dados).execute()
         elif "update" in q_lower:
             if "usuarios_sistema" in q_lower:
                 if "senha = ?" in q_lower:
-                    supabase.table("usuarios_sistema").update({"senha": params[0]}).eq("email", params[1]).execute()
+                    supabase.table("usuarios_sistema").update({"senha": str(params[0])}).eq("email", str(params[1])).execute()
             elif "chaves_licenca" in q_lower:
-                supabase.table("chaves_licenca").update({"status_uso": "Utilizado", "usado_por": params[0]}).eq("codigo_chave", params[1]).execute()
+                supabase.table("chaves_licenca").update({"status_uso": "Utilizado", "usado_por": str(params[0])}).eq("codigo_chave", str(params[1])).execute()
             elif "manutencoes" in q_lower and "status_os = 'concluida'" in q_lower:
                 supabase.table("manutencoes").update({
-                    "status_os": "concluida", "pecas_utilizadas": params[0], "custo_pecas": params[1],
-                    "mao_de_obra": params[2], "custo": params[3], "tecnico_mecanico": params[4],
-                    "encarregado_responsavel": params[5], "data_fechamento": params[6], "hora_fechamento": params[7]
-                }).eq("id", params[8]).execute()
+                    "status_os": "concluida", "pecas_utilizadas": str(params[0]), "custo_pecas": float(params[1]),
+                    "mao_de_obra": float(params[2]), "custo": float(params[3]), "tecnico_mecanico": str(params[4]),
+                    "encarregado_responsavel": str(params[5]), "data_fechamento": str(params[6]), "hora_fechamento": str(params[7])
+                }).eq("id", int(params[8])).execute()
             elif "pecas" in q_lower and "quantidade = ?" in q_lower:
-                supabase.table("pecas").update({"quantidade": params[0]}).eq("id", params[1]).execute()
+                supabase.table("pecas").update({"quantidade": int(params[0])}).eq("id", int(params[1])).execute()
             elif "veiculos" in q_lower and "horimetro_km" in q_lower:
                 supabase.table("veiculos").update({
-                    "tipo_controle": params[0], "horimetro_km": params[1], 
-                    "ultima_revisao": params[2], "intervalo_revisao": params[3]
-                }).eq("id", params[4]).execute()
+                    "tipo_controle": str(params[0]), "horimetro_km": float(params[1]), 
+                    "ultima_revisao": float(params[2]), "intervalo_revisao": float(params[3])
+                }).eq("id", int(params[4])).execute()
         elif "delete" in q_lower:
             if "usuarios_sistema" in q_lower:
-                supabase.table("usuarios_sistema").delete().eq("id", params[0]).execute()
+                supabase.table("usuarios_sistema").delete().eq("id", int(params[0])).execute()
             elif "veiculos" in q_lower:
                 supabase.table("veiculos").delete().execute()
             elif "manutencoes" in q_lower:
@@ -196,7 +197,6 @@ st.markdown("""
         color: #1e293b !important; font-weight: 700 !important; font-size: 13.5px !important;
     }
     
-    /* CAIXINHAS FLUTUANTES ULTRAMODERNAS (CARDS) */
     .metric-card-modern {
         background: #ffffff;
         border: 1px solid #e2e8f0;
@@ -232,21 +232,11 @@ st.markdown("""
         color: #059669;
         margin-top: 4px;
     }
-    
-    /* BOTÕES MODERNOS CASTRO TECH */
     .stButton button {
         background: linear-gradient(135deg, #059669 0%, #047857 100%) !important; 
-        color: white !important;
-        font-weight: 700 !important; 
-        border-radius: 14px !important; 
-        border: none !important; 
-        padding: 0.7rem 1.8rem !important;
+        color: white !important; font-weight: 700 !important; border-radius: 14px !important; 
+        border: none !important; padding: 0.7rem 1.8rem !important;
         box-shadow: 0 8px 20px rgba(5, 150, 105, 0.25) !important;
-        transition: all 0.3s ease !important;
-    }
-    .stButton button:hover {
-        box-shadow: 0 12px 28px rgba(5, 150, 105, 0.4) !important;
-        transform: translateY(-2px) !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -567,8 +557,8 @@ if menu == "📊 Visão Geral":
         if alertas_revisao:
             st.error("🚨 **ALERTA EXECUTIVO: EQUIPAMENTOS PRÓXIMOS OU EM ATRASO DE REVISÃO!**\n\n" + "\n".join(alertas_revisao))
 
-    # CAIXINHAS FLUTUANTES ULTRAMODERNAS (METRICS CARDS)
-    total_frota = len(df_veiculos)
+    # CAIXINHAS FLUTUANTES ZERADAS SE NÃO HOUVER DADOS
+    total_frota = len(df_veiculos) if not df_veiculos.empty else 0
     os_abertas = len(df_manut[df_manut["status_os"] == "aberta"]) if not df_manut.empty and "status_os" in df_manut.columns else 0
     total_multas = len(df_multas) if not df_multas.empty else 0
     gasto_comb = df_comb['valor_total'].sum() if not df_comb.empty and 'valor_total' in df_comb.columns else 0.0
@@ -671,7 +661,7 @@ elif menu == "🚜 Cadastro de Equipamentos":
                 f_emp = st.text_input("Empresa", value="Tabalmix Concreto")
                 f_op = st.text_input("Operador")
             if st.form_submit_button("Salvar no Supabase") and f_tag:
-                executar_comando_sql("INSERT INTO veiculos", (f_tag, f_placa, f_cat, f_ano, f_renavam, f_crv, f_marca, f_tipo, f_cor, f_comb, f_chassi, f_emp, f_op, 0))
+                executar_comando_sql("INSERT INTO veiculos", (f_tag, f_placa, f_cat, f_ano, f_renavam, f_crv, f_marca, f_tipo, f_cor, f_comb, f_chassi, f_emp, f_op, 0.0))
                 st.success("✅ Equipamento salvo direto no Supabase!")
                 st.rerun()
     with t_e:
@@ -701,7 +691,6 @@ elif menu == "⛽ Abastecimentos & Combustível":
     st.title("⛽ Registro de Abastecimentos")
     st.markdown("<p style='color: #64748b;'>Painel analítico e controle de diesel — Castro Tech</p>", unsafe_allow_html=True)
     
-    # Filtros superiores executivos
     with st.container():
         f_col1, f_col2, f_col3, f_col4 = st.columns(4)
         with f_col1: f_mes_ini = st.selectbox("Início", ["Novembro / 2023", "Janeiro / 2026", "Outubro / 2026"])
@@ -712,15 +701,15 @@ elif menu == "⛽ Abastecimentos & Combustível":
     st.markdown("<br>", unsafe_allow_html=True)
     
     df_comb_vis = ler_tabelas_sql("SELECT * FROM combustivel")
-    tot_litros_c = df_comb_vis['litros'].sum() if not df_comb_vis.empty and 'litros' in df_comb_vis.columns else 4800.0
-    tot_valor_c = df_comb_vis['valor_total'].sum() if not df_comb_vis.empty and 'valor_total' in df_comb_vis.columns else 35400.0
+    tot_litros_c = df_comb_vis['litros'].sum() if not df_comb_vis.empty and 'litros' in df_comb_vis.columns else 0.0
+    tot_valor_c = df_comb_vis['valor_total'].sum() if not df_comb_vis.empty and 'valor_total' in df_comb_vis.columns else 0.0
 
     mc1, mc2, mc3, mc4 = st.columns(4)
     with mc1:
         st.markdown(f"""
             <div class="metric-card-modern">
                 <div class="metric-title">KM Rodados</div>
-                <div class="metric-value">9,1 mil</div>
+                <div class="metric-value">0 km</div>
                 <div class="metric-sub">Volume no Filtro</div>
             </div>
         """, unsafe_allow_html=True)
@@ -736,16 +725,16 @@ elif menu == "⛽ Abastecimentos & Combustível":
         st.markdown(f"""
             <div class="metric-card-modern">
                 <div class="metric-title">Média da Frota</div>
-                <div class="metric-value">1,89 km/L</div>
-                <div class="metric-sub">Referência: 1.50</div>
+                <div class="metric-value">0,00 km/L</div>
+                <div class="metric-sub">Sem registros</div>
             </div>
         """, unsafe_allow_html=True)
     with mc4:
         st.markdown(f"""
             <div class="metric-card-modern" style="border-left-color: #047857; background: #065f46; color: white;">
-                <div class="metric-title" style="color: #e2e8f0;">Economia Financeira</div>
-                <div class="metric-value" style="color: white; font-size: 22px;">R$ {tot_valor_c:,.2f}</div>
-                <div class="metric-sub" style="color: #a7f3d0;">Custo Otimizado</div>
+                <div class="metric-title" style="color: #e2e8f0;">Custo Total Diesel</div>
+                <div class="metric-value" style="color: white; font-size: 20px;">R$ {tot_valor_c:,.2f}</div>
+                <div class="metric-sub" style="color: #a7f3d0;">Total Lançado</div>
             </div>
         """, unsafe_allow_html=True)
 
@@ -829,7 +818,7 @@ elif menu == "💬 Chat Tabalmix Pro & Reuniões Live":
         if st.form_submit_button("Enviar Mensagem"):
             rem = usuario_atual['apelido'] if usuario_atual else "Alex"
             cargo = usuario_atual['cargo'] if usuario_atual else "Diretoria"
-            executar_comando_sql("INSERT INTO chat_interno", (rem, "Geral", cargo, msg, None, datetime.now().strftime("%d/%m/%Y às %H:%M")))
+            executar_comando_sql("INSERT INTO chat_interno", (rem, "Geral", cargo, msg, "", datetime.now().strftime("%d/%m/%Y às %H:%M")))
             st.rerun()
 
 elif menu == "⚙️ Meu Perfil / Dados":
@@ -842,7 +831,7 @@ elif menu == "⚙️ Meu Perfil / Dados":
             * **Arquitetura**: Castro Tech & Supabase Cloud
         """)
 
-elif menu == "⚙️ Painel de Licença (Admin)" and modo_admin_liberado:
+elif menu == "⚙️ Painel de Licença (Admin)" e modo_admin_liberado:
     st.title("⚙️ Painel Administrativo Master")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM usuarios_sistema"), "usuarios_sistema")
     if st.button("🗑️ Limpar Tabela Veiculos"):
