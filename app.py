@@ -54,7 +54,7 @@ def ler_tabelas_sql(query_str):
             return df
         return pd.DataFrame()
     except Exception as e:
-        print(f"Erro Supabase Ler: {e}")
+        print(f"Erro Supabase Ler ({query_str}): {e}")
         return pd.DataFrame()
 
 def executar_comando_sql(query_str, params=None):
@@ -153,7 +153,7 @@ def executar_comando_sql(query_str, params=None):
                 supabase.table("reunioes_live").delete().execute()
         return True
     except Exception as e:
-        print(f"Erro Supabase Comando: {e}")
+        print(f"Erro Supabase Comando ({query_str}): {e}")
         return False
 
 st.set_page_config(
@@ -163,7 +163,7 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ESTILO EM LINHA ÚNICA (CORREÇÃO DE MENU + MODO ESCURO INTELIGENTE E UNIFORME)
+# ESTILO EM LINHA ÚNICA + CORREÇÃO DEFINITIVA DE MODO ESCURO (CAMPOS SEMPRE LEGÍVEIS)
 st.markdown("<style>header[data-testid='stHeader'] {background: transparent !important;} header[data-testid='stHeader'] [data-testid='baseButton-header'] {font-size: 0px !important;} header[data-testid='stHeader'] [data-testid='baseButton-header']::after {content: '☰ Menu' !important; font-size: 13px !important; font-weight: 700 !important; color: #047857 !important; background: #ffffff !important; padding: 4px 10px !important; border-radius: 8px !important; border: 1px solid #cbd5e1 !important; display: inline-block !important;}</style>", unsafe_allow_html=True)
 
 st.markdown("""
@@ -176,11 +176,14 @@ st.markdown("""
     .stApp { background: #f1f5f9 !important; color: #0f172a !important; }
     h1, h2, h3, h4 { color: #0f172a !important; font-weight: 800; }
     
-    /* CORREÇÃO PARA GARANTIR LEGIBILIDADE PERFEITA EM QUALQUER TEMA (CLARO/ESCURO) */
-    input, textarea, select, div[data-baseweb="select"] {
+    /* BLOQUEIO DE INVERSÃO DE CORES DO NAVEGADOR EM MODO ESCURO */
+    input, textarea, select, div[data-baseweb="select"] > div {
         background-color: #ffffff !important;
         color: #0f172a !important;
         -webkit-text-fill-color: #0f172a !important;
+    }
+    div[data-baseweb="base-input"] {
+        background-color: #ffffff !important;
     }
 
     .metric-card-corporate {
@@ -318,7 +321,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
 
         escolha_modo_login = st.selectbox("Central de Segurança & Acesso Corporativo:", [
             "Entrar com E-mail e Senha",
-            "Acesso Rápido com PIN",
             "Criar Novo Cadastro na Obra"
         ])
 
@@ -345,29 +347,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                     else:
                         st.error("E-mail não encontrado.")
 
-        elif escolha_modo_login == "Acesso Rápido com PIN":
-            with st.form("form_pin_bio"):
-                st.markdown("### Autenticação por PIN")
-                email_p = st.text_input("E-mail corporativo", value="alexcastro02522@gmail.com")
-                pin_p = st.text_input("PIN de 4 Dígitos", max_chars=4, type="password", value="2026")
-                if st.form_submit_button("Autenticar com PIN"):
-                    df_p = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{email_p.strip()}'")
-                    if not df_p.empty:
-                        u = df_p.iloc[0]
-                        if str(u.get("pin_rapido")) == str(pin_p):
-                            st.session_state["usuario_logado"] = {
-                                "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
-                                "email": u["email"], "status": u["status_assinatura"],
-                                "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
-                                "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
-                            }
-                            st.success("Acesso validado.")
-                            st.rerun()
-                        else:
-                            st.error("PIN incorreto.")
-                    else:
-                        st.error("E-mail não encontrado.")
-
         elif escolha_modo_login == "Criar Novo Cadastro na Obra":
             with st.form("form_novo_cad"):
                 st.markdown("### Criar Novo Registro")
@@ -387,7 +366,6 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                             "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                             (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
                         )
-                        # LOGIN AUTOMÁTICO IMEDIATO APÓS CADASTRO COM SUPORTE A PIN
                         st.session_state["usuario_logado"] = {
                             "id": 999, "nome": c_nome, "cpf": c_cpf,
                             "email": c_email.strip(), "status": "Ativo",
@@ -818,14 +796,15 @@ elif menu == "Gestão de Clientes":
 
 elif menu == "Chat Interno & Reuniões Live":
     st.title("Chat Corporativo & Reuniões Live")
-    st.markdown("<p style='color: #64748b;'>Comunicação em tempo real entre colaboradores e salas de vídeo — Castro Tech</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #64748b;'>Comunicação em tempo real e salas de vídeo — Castro Tech</p>", unsafe_allow_html=True)
     
-    t_chat, t_live = st.tabs(["Chat Interno", "Salas de Reunião Live"])
+    t_chat_geral, t_chat_priv, t_live = st.tabs(["Mural Geral", "Bate-Papo Privado (1:1)", "Salas de Reunião Live"])
     
-    with t_chat:
+    with t_chat_geral:
         df_chat = ler_tabelas_sql("SELECT * FROM chat_interno")
         if not df_chat.empty:
-            for _, msg in df_chat.tail(15).iterrows():
+            df_geral_msg = df_chat[df_chat['destinatario'] == 'Geral'] if 'destinatario' in df_chat.columns else df_chat
+            for _, msg in df_geral_msg.tail(15).iterrows():
                 st.markdown(f"""
                     <div style="background: #ffffff; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 12px; margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
                         <strong style="color: #047857;">{msg.get('remetente')} ({msg.get('cargo')})</strong> <span style="font-size: 11px; color: #64748b; float: right;">{msg.get('data_envio')}</span>
@@ -833,15 +812,49 @@ elif menu == "Chat Interno & Reuniões Live":
                     </div>
                 """, unsafe_allow_html=True)
         else:
-            st.info("Nenhuma mensagem no chat corporativo.")
+            st.info("Nenhuma mensagem no mural geral.")
             
-        with st.form("form_chat_wpp", clear_on_submit=True):
-            txt_msg = st.text_input("Digite sua mensagem para a equipe...")
-            if st.form_submit_button("Enviar Mensagem"):
+        with st.form("form_chat_geral_env", clear_on_submit=True):
+            txt_msg_g = st.text_input("Enviar mensagem para o mural geral...")
+            if st.form_submit_button("Enviar para Geral"):
                 rem = usuario_atual['apelido'] if usuario_atual else "Alex"
                 cargo = usuario_atual['cargo'] if usuario_atual else "Diretoria"
-                executar_comando_sql("INSERT INTO chat_interno", (rem, "Geral", cargo, txt_msg, "", datetime.now().strftime("%d/%m/%Y às %H:%M")))
+                executar_comando_sql("INSERT INTO chat_interno", (rem, "Geral", cargo, txt_msg_g, "", datetime.now().strftime("%d/%m/%Y às %H:%M")))
                 st.rerun()
+
+    with t_chat_priv:
+        st.markdown("### Mensagens Privadas (Estilo WhatsApp)")
+        df_usuarios = ler_tabelas_sql("SELECT * FROM usuarios_sistema")
+        if not df_usuarios.empty and usuario_atual:
+            outros_usuarios = df_usuarios[df_usuarios['email'] != usuario_atual['email']]['apelido'].tolist()
+            if outros_usuarios:
+                colega_escolhido = st.selectbox("Escolher Colaborador para Conversa Privada", outros_usuarios)
+                
+                df_chat_all = ler_tabelas_sql("SELECT * FROM chat_interno")
+                if not df_chat_all.empty:
+                    meu_nome = usuario_atual['apelido']
+                    conversa_privada = df_chat_all[
+                        ((df_chat_all['remetente'] == meu_nome) & (df_chat_all['destinatario'] == colega_escolhido)) |
+                        ((df_chat_all['remetente'] == colega_escolhido) & (df_chat_all['destinatario'] == meu_nome))
+                    ]
+                    for _, msg in conversa_privada.tail(15).iterrows():
+                        cor_fundo = "#d1fae5" if msg.get('remetente') == meu_nome else "#ffffff"
+                        st.markdown(f"""
+                            <div style="background: {cor_fundo}; border: 1px solid #cbd5e1; padding: 10px 14px; border-radius: 10px; margin-bottom: 8px;">
+                                <strong style="color: #047857;">{msg.get('remetente')}</strong> <span style="font-size: 10.5px; color: #64748b; float: right;">{msg.get('data_envio')}</span>
+                                <p style="margin: 4px 0 0 0; color: #0f172a; font-size: 13.5px;">{msg.get('mensagem')}</p>
+                            </div>
+                        """, unsafe_allow_html=True)
+                
+                with st.form("form_chat_priv_env", clear_on_submit=True):
+                    txt_priv = st.text_input(f"Mensagem estritamente privada para {colega_escolhido}...")
+                    if st.form_submit_button("Enviar Privado"):
+                        rem = usuario_atual['apelido']
+                        cargo = usuario_atual['cargo']
+                        executar_comando_sql("INSERT INTO chat_interno", (rem, colega_escolhido, cargo, txt_priv, "", datetime.now().strftime("%d/%m/%Y às %H:%M")))
+                        st.rerun()
+            else:
+                st.info("Ainda não há outros colaboradores cadastrados para conversar em privado.")
 
     with t_live:
         st.markdown("### Salas de Reunião por Vídeo")
@@ -851,7 +864,7 @@ elif menu == "Chat Interno & Reuniões Live":
             if st.form_submit_button("Criar e Compartilhar Sala"):
                 rem = usuario_atual['apelido'] if usuario_atual else "Alex"
                 executar_comando_sql("INSERT INTO chat_interno", (rem, "Geral", "Diretoria", f"🎥 **Nova Reunião Iniciada:** {tit_sala}\n🔗 **Acesse pelo link:** {link_sala}", "", datetime.now().strftime("%d/%m/%Y às %H:%M")))
-                st.success("Sala de reunião criada e compartilhada no chat da equipe.")
+                st.success("Sala de reunião criada e compartilhada no mural geral da equipe.")
                 st.rerun()
 
 elif menu == "Meu Perfil / Dados":
