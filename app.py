@@ -72,7 +72,7 @@ def executar_comando_sql(query_str, params=None):
                     "ultima_revisao": float(params[15]) if params[15] else 0.0, "intervalo_revisao": float(params[16]) if params[16] else 10000.0
                 }
                 res = supabase.table("veiculos").insert(dados).execute()
-                print("Supabase Inserir Veiculo Resposta:", res)
+                print("Supabase Resposta Veiculo:", res)
             elif "mobilizacoes" in q_lower and params:
                 dados = {
                     "equipamento": str(params[0]), "tipo_movimento": str(params[1]), "destino_origem": str(params[2]),
@@ -120,7 +120,7 @@ def executar_comando_sql(query_str, params=None):
                         "data_cadastro": str(params[6]), "pin_rapido": str(params[7]), "apelido": str(params[8]), "cargo_setor": str(params[9])
                     }
                     res_u = supabase.table("usuarios_sistema").insert(dados).execute()
-                    print("Supabase Inserir Usuario Resposta:", res_u)
+                    print("Supabase Resposta Usuario:", res_u)
         elif "update" in q_lower:
             if "usuarios_sistema" in q_lower and params:
                 if "senha = ?" in q_lower:
@@ -156,7 +156,8 @@ def executar_comando_sql(query_str, params=None):
                 supabase.table("reunioes_live").delete().execute()
         return True
     except Exception as e:
-        print(f"Erro Supabase Comando ({query_str}): {e}")
+        print(f"ERRO EXATO SUPABASE: {e}")
+        st.error(f"Detalhe técnico do erro: {e}")
         return False
 
 st.set_page_config(
