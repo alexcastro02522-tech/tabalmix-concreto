@@ -71,7 +71,8 @@ def executar_comando_sql(query_str, params=None):
                     "horimetro_km": float(params[13]) if params[13] else 0.0, "status": 'Ativo', "tipo_controle": str(params[14]), 
                     "ultima_revisao": float(params[15]) if params[15] else 0.0, "intervalo_revisao": float(params[16]) if params[16] else 10000.0
                 }
-                supabase.table("veiculos").insert(dados).execute()
+                res = supabase.table("veiculos").insert(dados).execute()
+                print("Supabase Inserir Veiculo Resposta:", res)
             elif "mobilizacoes" in q_lower and params:
                 dados = {
                     "equipamento": str(params[0]), "tipo_movimento": str(params[1]), "destino_origem": str(params[2]),
@@ -118,7 +119,8 @@ def executar_comando_sql(query_str, params=None):
                         "celular_seguranca": str(params[4]), "status_assinatura": "Ativo", "plano_atual": str(params[5]),
                         "data_cadastro": str(params[6]), "pin_rapido": str(params[7]), "apelido": str(params[8]), "cargo_setor": str(params[9])
                     }
-                    supabase.table("usuarios_sistema").insert(dados).execute()
+                    res_u = supabase.table("usuarios_sistema").insert(dados).execute()
+                    print("Supabase Inserir Usuario Resposta:", res_u)
         elif "update" in q_lower:
             if "usuarios_sistema" in q_lower and params:
                 if "senha = ?" in q_lower:
@@ -355,17 +357,22 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 if st.form_submit_button("Concluir Cadastro"):
                     if c_nome and c_email and c_senha:
                         apelido_f = c_apelido if c_apelido else c_nome.split()[0]
-                        executar_comando_sql(
+                        sucesso_cad = executar_comando_sql(
                             "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                            (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
+                            (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, "Ativo", "Padrão", datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
                         )
-                        st.session_state["usuario_logado"] = {
-                            "id": 999, "nome": c_nome, "cpf": c_cpf,
-                            "email": c_email.strip(), "status": "Ativo",
-                            "apelido": apelido_f, "cargo": cargo_banco_str
-                        }
-                        st.success("Conta cadastrada e acesso liberado com sucesso!")
-                        st.rerun()
+                        if sucesso_cad:
+                            st.session_state["usuario_logado"] = {
+                                "id": 999, "nome": c_nome, "cpf": c_cpf,
+                                "email": c_email.strip(), "status": "Ativo",
+                                "apelido": apelido_f, "cargo": cargo_banco_str
+                            }
+                            st.success("Conta cadastrada e acesso liberado com sucesso!")
+                            st.rerun()
+                        else:
+                            st.error("Erro ao salvar cadastro na nuvem. Verifique os dados.")
+                    else:
+                        st.warning("Preencha os campos obrigatórios (Nome, E-mail e Senha).")
     st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
@@ -554,12 +561,15 @@ elif menu == "Cadastro de Equipamentos":
                 f_intrev = st.number_input(f"Intervalo de Revisão ({f_tctrl})", min_value=100.0, value=10000.0)
 
             if st.form_submit_button("Salvar Equipamento no Supabase") and f_tag:
-                executar_comando_sql("INSERT INTO veiculos", (
+                sucesso_eq = executar_comando_sql("INSERT INTO veiculos", (
                     f_tag, f_placa, f_cat, f_ano, f_renavam, f_crv, f_marca, f_tipo, 
                     f_cor, f_comb, f_chassi, f_emp, f_op, 0.0, f_tctrl, f_ultrev, f_intrev
                 ))
-                st.success("Equipamento cadastrado com sucesso na nuvem.")
-                st.rerun()
+                if sucesso_eq:
+                    st.success("Equipamento cadastrado com sucesso na nuvem.")
+                    st.rerun()
+                else:
+                    st.error("Erro ao salvar equipamento. Verifique os campos preenchidos.")
     with t_e:
         st.markdown("### Atualizar KM / Horímetro e Revisões")
         df_ed_v = ler_tabelas_sql("SELECT * FROM veiculos")
