@@ -71,8 +71,7 @@ def executar_comando_sql(query_str, params=None):
                     "horimetro_km": float(params[13]) if params[13] else 0.0, "status": 'Ativo', "tipo_controle": str(params[14]), 
                     "ultima_revisao": float(params[15]) if params[15] else 0.0, "intervalo_revisao": float(params[16]) if params[16] else 10000.0
                 }
-                res = supabase.table("veiculos").insert(dados).execute()
-                print("Supabase Resposta Veiculo:", res)
+                supabase.table("veiculos").insert(dados).execute()
             elif "mobilizacoes" in q_lower and params:
                 dados = {
                     "equipamento": str(params[0]), "tipo_movimento": str(params[1]), "destino_origem": str(params[2]),
@@ -119,8 +118,7 @@ def executar_comando_sql(query_str, params=None):
                         "celular_seguranca": str(params[4]), "status_assinatura": "Ativo", "plano_atual": str(params[5]),
                         "data_cadastro": str(params[6]), "pin_rapido": str(params[7]), "apelido": str(params[8]), "cargo_setor": str(params[9])
                     }
-                    res_u = supabase.table("usuarios_sistema").insert(dados).execute()
-                    print("Supabase Resposta Usuario:", res_u)
+                    supabase.table("usuarios_sistema").insert(dados).execute()
         elif "update" in q_lower:
             if "usuarios_sistema" in q_lower and params:
                 if "senha = ?" in q_lower:
@@ -156,8 +154,7 @@ def executar_comando_sql(query_str, params=None):
                 supabase.table("reunioes_live").delete().execute()
         return True
     except Exception as e:
-        print(f"ERRO EXATO SUPABASE: {e}")
-        st.error(f"Detalhe técnico do erro: {e}")
+        print(f"Erro Supabase Comando ({query_str}): {e}")
         return False
 
 st.set_page_config(
@@ -358,22 +355,17 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 if st.form_submit_button("Concluir Cadastro"):
                     if c_nome and c_email and c_senha:
                         apelido_f = c_apelido if c_apelido else c_nome.split()[0]
-                        sucesso_cad = executar_comando_sql(
+                        executar_comando_sql(
                             "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                            (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, "Ativo", "Padrão", datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
+                            (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str)
                         )
-                        if sucesso_cad:
-                            st.session_state["usuario_logado"] = {
-                                "id": 999, "nome": c_nome, "cpf": c_cpf,
-                                "email": c_email.strip(), "status": "Ativo",
-                                "apelido": apelido_f, "cargo": cargo_banco_str
-                            }
-                            st.success("Conta cadastrada e acesso liberado com sucesso!")
-                            st.rerun()
-                        else:
-                            st.error("Erro ao salvar cadastro na nuvem. Verifique os dados.")
-                    else:
-                        st.warning("Preencha os campos obrigatórios (Nome, E-mail e Senha).")
+                        st.session_state["usuario_logado"] = {
+                            "id": 999, "nome": c_nome, "cpf": c_cpf,
+                            "email": c_email.strip(), "status": "Ativo",
+                            "apelido": apelido_f, "cargo": cargo_banco_str
+                        }
+                        st.success("Conta cadastrada e acesso liberado com sucesso!")
+                        st.rerun()
     st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
@@ -423,21 +415,6 @@ if menu == "Visão Geral":
     df_manut = ler_tabelas_sql("SELECT * FROM manutencoes")
     df_comb = ler_tabelas_sql("SELECT * FROM combustivel")
     df_multas = ler_tabelas_sql("SELECT * FROM multas")
-
-    if not df_veiculos.empty:
-        alertas_revisao = []
-        for _, row in df_veiculos.iterrows():
-            atual = float(row.get("horimetro_km", 0) or 0)
-            ultima = float(row.get("ultima_revisao", 0) or 0)
-            intervalo = float(row.get("intervalo_revisao", 10000) or 10000)
-            tipo_ctrl = str(row.get("tipo_controle", "KM"))
-            proxima_rev = ultima + intervalo
-            if atual >= (proxima_rev - (intervalo * 0.1)):
-                falta = proxima_rev - atual
-                status_txt = f"VENCIDA (Passou {abs(falta):,.1f} {tipo_ctrl})" if falta < 0 else f"ATENÇÃO: Faltam apenas {falta:,.1f} {tipo_ctrl} para a revisão!"
-                alertas_revisao.append(f"• **{row.get('tag_prefixo')} ({row.get('marca_modelo')})** — {status_txt}")
-        if alertas_revisao:
-            st.error("ALERTA EXECUTIVO: EQUIPAMENTOS PRÓXIMOS OU EM ATRASO DE REVISÃO!\n\n" + "\n".join(alertas_revisao))
 
     total_frota = len(df_veiculos) if not df_veiculos.empty else 0
     os_abertas = len(df_manut[df_manut["status_os"] == "aberta"]) if not df_manut.empty and "status_os" in df_manut.columns else 0
@@ -491,43 +468,24 @@ if menu == "Visão Geral":
     st.markdown("### Gestão de Frotas & Relatórios Executivos")
     if not df_veiculos.empty:
         exibir_tabela_padronizada(df_veiculos, "veiculos")
-        
-        col_dl1, col_dl2, col_dl3 = st.columns(3)
-        with col_dl1:
-            pdf_geral = gerar_pdf_ordem_servico({"id": "GERAL", "tag_prefixo": "FROTA TOTAL", "descricao_problema": "Relatório geral de frota Tabalmix"})
-            st.download_button("Baixar Relatório PDF", data=pdf_geral, file_name="relatorio_frota.pdf", mime="application/pdf")
-        with col_dl2:
-            excel_geral = gerar_excel_formatado(df_veiculos, "Frota_Tabalmix")
-            st.download_button("Baixar Relatório Excel", data=excel_geral, file_name="relatorio_frota.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-        with col_dl3:
-            msg_wpp = urllib.parse.quote("RELATÓRIO EXECUTIVO TABALMIX CONCRETO - Frota sincronizada no Supabase.")
-            st.markdown(f'<a href="https://api.whatsapp.com/send?text={msg_wpp}" target="_blank"><button style="background:linear-gradient(135deg, #047857 0%, #065f46 100%); color:white; font-weight:700; border-radius:10px; border:none; padding:0.65rem 1.6rem; width:100%; cursor:pointer;">Compartilhar no WhatsApp</button></a>', unsafe_allow_html=True)
     else:
         st.info("Nenhum veículo cadastrado na nuvem.")
 
 elif menu == "Consulta / Busca Geral":
     st.title("Consulta Avançada de Frota e Ativos")
     st.markdown("<p style='color: #64748b;'>Pesquisa inteligente por TAG, placa, marca ou modelo — Castro Tech</p>", unsafe_allow_html=True)
-    
-    col_b1, col_b2 = st.columns([2, 1])
-    with col_b1:
-        termo_busca = st.text_input("Filtrar por TAG, Placa, Marca ou Modelo:")
-    with col_b2:
-        filtro_categoria = st.selectbox("Categoria", ["Todas", "Linha Branca", "Linha Amarela", "Veículo Leve"])
-
+    termo_busca = st.text_input("Filtrar por TAG, Placa, Marca ou Modelo:")
     df_v = ler_tabelas_sql("SELECT * FROM veiculos")
     if not df_v.empty:
         if termo_busca:
             df_v = df_v[df_v.apply(lambda row: row.astype(str).str.contains(termo_busca, case=False).any(), axis=1)]
-        if filtro_categoria != "Todas" and "categoria_equipamento" in df_v.columns:
-            df_v = df_v[df_v["categoria_equipamento"] == filtro_categoria]
         exibir_tabela_padronizada(df_v, "veiculos")
     else:
         st.info("Nenhum equipamento cadastrado.")
 
 elif menu == "Cadastro de Equipamentos":
     st.title("Cadastro de Equipamentos")
-    t_l, t_r, t_e = st.tabs(["Frota Ativa", "Cadastrar Novo", "Editar / Atualizar KM"])
+    t_l, t_r = st.tabs(["Frota Ativa", "Cadastrar Novo"])
     with t_l:
         exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM veiculos"), "veiculos")
     with t_r:
@@ -550,56 +508,14 @@ elif menu == "Cadastro de Equipamentos":
                 f_chassi = st.text_input("Chassi")
                 f_emp = st.text_input("Empresa", value="Tabalmix Concreto")
                 f_op = st.text_input("Operador Condutor")
-            
-            st.markdown("---")
-            st.markdown("### Parâmetros de Revisão Preventiva")
-            r1, r2, r3 = st.columns(3)
-            with r1:
-                f_tctrl = st.selectbox("Tipo de Controle", ["KM", "Horas"])
-            with r2:
-                f_ultrev = st.number_input(f"Última Revisão ({f_tctrl})", min_value=0.0, value=0.0)
-            with r3:
-                f_intrev = st.number_input(f"Intervalo de Revisão ({f_tctrl})", min_value=100.0, value=10000.0)
-
             if st.form_submit_button("Salvar Equipamento no Supabase") and f_tag:
-                sucesso_eq = executar_comando_sql("INSERT INTO veiculos", (
-                    f_tag, f_placa, f_cat, f_ano, f_renavam, f_crv, f_marca, f_tipo, 
-                    f_cor, f_comb, f_chassi, f_emp, f_op, 0.0, f_tctrl, f_ultrev, f_intrev
-                ))
-                if sucesso_eq:
-                    st.success("Equipamento cadastrado com sucesso na nuvem.")
-                    st.rerun()
-                else:
-                    st.error("Erro ao salvar equipamento. Verifique os campos preenchidos.")
-    with t_e:
-        st.markdown("### Atualizar KM / Horímetro e Revisões")
-        df_ed_v = ler_tabelas_sql("SELECT * FROM veiculos")
-        if not df_ed_v.empty:
-            eq_sel_id = st.selectbox("Selecione o Equipamento", df_ed_v['id'].tolist(), format_func=lambda x: f"{df_ed_v[df_ed_v['id']==x]['tag_prefixo'].values[0]} - {df_ed_v[df_ed_v['id']==x]['marca_modelo'].values[0]}")
-            eq_dado = df_ed_v[df_ed_v['id'] == eq_sel_id].iloc[0]
-            with st.form("form_atu_km"):
-                nu_km = st.number_input(f"KM / Horímetro Atual ({eq_dado.get('tipo_controle', 'KM')})", value=float(eq_dado.get('horimetro_km', 0) or 0))
-                nu_ult = st.number_input("Última Revisão Realizada", value=float(eq_dado.get('ultima_revisao', 0) or 0))
-                nu_int = st.number_input("Intervalo de Revisão", value=float(eq_dado.get('intervalo_revisao', 10000) or 10000))
-                if st.form_submit_button("Salvar Atualização"):
-                    executar_comando_sql("UPDATE veiculos SET tipo_controle = ?, horimetro_km = ?, ultima_revisao = ?, intervalo_revisao = ? WHERE id = ?", (eq_dado.get('tipo_controle'), nu_km, nu_ult, nu_int, eq_sel_id))
-                    st.success("Dados de revisão atualizados.")
-                    st.rerun()
+                executar_comando_sql("INSERT INTO veiculos", (f_tag, f_placa, f_cat, f_ano, f_renavam, f_crv, f_marca, f_tipo, f_cor, f_comb, f_chassi, f_emp, f_op, 0.0, "KM", 0.0, 10000.0))
+                st.success("Equipamento cadastrado com sucesso.")
+                st.rerun()
 
 elif menu == "Mobilização / Desmobilização":
     st.title("Controle de Mobilização & Vistoria")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM mobilizacoes"), "mobilizacoes")
-    with st.form("form_mob"):
-        eq = st.text_input("Equipamento / TAG")
-        mov = st.selectbox("Movimento", ["Mobilização (+)", "Desmobilização (-)"])
-        dest = st.text_input("Destino / Origem")
-        enc = st.text_input("Encarregado")
-        km = st.text_input("KM / Horímetro")
-        obs = st.text_area("Observação")
-        if st.form_submit_button("Cadastrar Movimento"):
-            executar_comando_sql("INSERT INTO mobilizacoes", (eq, mov, dest, enc, datetime.now().strftime("%d/%m/%Y"), km, obs))
-            st.success("Salvo no Supabase.")
-            st.rerun()
 
 elif menu == "Controle de Manutenção":
     st.title("Controle de Manutenção & Revisões")
@@ -607,59 +523,7 @@ elif menu == "Controle de Manutenção":
 
 elif menu == "Abastecimentos & Combustível":
     st.title("Registro de Abastecimentos")
-    st.markdown("<p style='color: #64748b;'>Painel analítico e controle de diesel — Castro Tech</p>", unsafe_allow_html=True)
-    
-    with st.container():
-        f_col1, f_col2, f_col3, f_col4 = st.columns(4)
-        with f_col1: f_mes_ini = st.selectbox("Início", ["Novembro / 2023", "Janeiro / 2026", "Outubro / 2026"])
-        with f_col2: f_mes_fim = st.selectbox("Fim", ["Outubro / 2026", "Agosto / 2026"])
-        with f_col3: f_ano = st.selectbox("Ano", ["Todos", "2026", "2025", "2024"])
-        with f_col4: f_frota = st.selectbox("Caminhão / TAG", ["Todos", "BET-01", "Strada Volcano"])
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    df_comb_vis = ler_tabelas_sql("SELECT * FROM combustivel")
-    tot_litros_c = df_comb_vis['litros'].sum() if not df_comb_vis.empty and 'litros' in df_comb_vis.columns else 0.0
-    tot_valor_c = df_comb_vis['valor_total'].sum() if not df_comb_vis.empty and 'valor_total' in df_comb_vis.columns else 0.0
-
-    mc1, mc2, mc3, mc4 = st.columns(4)
-    with mc1:
-        st.markdown(f"""
-            <div class="metric-card-corporate">
-                <div class="metric-title">KM Rodados</div>
-                <div class="metric-value">0 km</div>
-                <div class="metric-sub">Volume no Filtro</div>
-            </div>
-        """, unsafe_allow_html=True)
-    with mc2:
-        st.markdown(f"""
-            <div class="metric-card-corporate">
-                <div class="metric-title">Diesel Consumido</div>
-                <div class="metric-value">{tot_litros_c:,.1f} L</div>
-                <div class="metric-sub">Consumo Total</div>
-            </div>
-        """, unsafe_allow_html=True)
-    with mc3:
-        st.markdown(f"""
-            <div class="metric-card-corporate">
-                <div class="metric-title">Média da Frota</div>
-                <div class="metric-value">0,00 km/L</div>
-                <div class="metric-sub">Sem registros</div>
-            </div>
-        """, unsafe_allow_html=True)
-    with mc4:
-        st.markdown(f"""
-            <div class="metric-card-corporate" style="border-left-color: #047857; background: #047857; color: white;">
-                <div class="metric-title" style="color: #e2e8f0;">Custo Total Diesel</div>
-                <div class="metric-value" style="color: white; font-size: 20px;">R$ {tot_valor_c:,.2f}</div>
-                <div class="metric-sub" style="color: #a7f3d0;">Total Lançado</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("### Registros de Abastecimento")
-    exibir_tabela_padronizada(df_comb_vis, "combustivel")
-    
+    exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM combustivel"), "combustivel")
     with st.form("form_comb"):
         st.markdown("### Novo Lançamento de Abastecimento")
         eq = st.text_input("Equipamento")
@@ -674,87 +538,7 @@ elif menu == "Abastecimentos & Combustível":
 
 elif menu == "Ordens de Serviço (OS)":
     st.title("Gestão de Ordens de Serviço (OS)")
-    st.markdown("<p style='color: #64748b;'>Controle técnico, baixa automática de estoque e emissão de OS certificada — Castro Tech</p>", unsafe_allow_html=True)
-    
-    t_os_aberta, t_os_fechar = st.tabs(["Abertas & Em Andamento", "Abrir Nova OS"])
-    
-    with t_os_aberta:
-        df_os = ler_tabelas_sql("SELECT * FROM manutencoes")
-        if not df_os.empty:
-            exibir_tabela_padronizada(df_os, "manutencoes")
-            
-            st.markdown("### Fechamento de OS & Baixa Automática de Peças")
-            os_ids = df_os[df_os['status_os'] == 'aberta']['id'].tolist() if 'id' in df_os.columns else []
-            if os_ids:
-                os_selecionada = st.selectbox("Selecione o ID da OS para Baixa", os_ids)
-                d_os = df_os[df_os['id'] == os_selecionada].iloc[0]
-                
-                df_pecas_est = ler_tabelas_sql("SELECT * FROM pecas")
-                
-                with st.form("form_fechar_os_auto"):
-                    st.markdown(f"**Equipamento:** {d_os.get('tag_prefixo')} | **Relato:** {d_os.get('descricao_problema')}")
-                    
-                    peca_escolhida = None
-                    qtd_usada = 0
-                    custo_peca_total = 0.0
-                    
-                    if not df_pecas_est.empty:
-                        pecas_nomes = df_pecas_est['nome_item'].tolist()
-                        peca_escolhida = st.selectbox("Selecionar Peça do Estoque para Baixa Automática", ["Nenhuma"] + pecas_nomes)
-                        qtd_usada = st.number_input("Quantidade Utilizada", min_value=0, value=1)
-                        
-                        if peca_escolhida != "Nenhuma":
-                            p_row = df_pecas_est[df_pecas_est['nome_item'] == peca_escolhida].iloc[0]
-                            val_u = float(p_row.get('valor_unitario', 0) or 0)
-                            custo_peca_total = val_u * qtd_usada
-
-                    f_servicos = st.text_area("Serviços Realizados / Descrição Técnica", value="Manutenção executada conforme padrão Tabalmix.")
-                    f_mao = st.number_input("Custo Mão de Obra (R$)", min_value=0.0, value=0.0)
-                    f_tec = st.text_input("Responsável Técnico / Mecânico", value="Equipe Técnica")
-                    f_enc = st.text_input("Encarregado Responsável", value="Gestor de Obra")
-                    
-                    if st.form_submit_button("Concluir OS e Baixar Estoque"):
-                        custo_total_geral = custo_peca_total + f_mao
-                        pecas_desc_str = f"{peca_escolhida} (Qtd: {qtd_usada})" if peca_escolhida != "Nenhuma" else "Nenhuma peça de estoque aplicada"
-                        
-                        executar_comando_sql("UPDATE manutencoes SET status_os = 'concluida' WHERE id = ?", (pecas_desc_str, custo_peca_total, f_mao, custo_total_geral, f_tec, f_enc, datetime.now().strftime("%d/%m/%Y"), datetime.now().strftime("%H:%M"), os_selecionada))
-                        
-                        if peca_escolhida != "Nenhuma":
-                            p_row = df_pecas_est[df_pecas_est['nome_item'] == peca_escolhida].iloc[0]
-                            estoque_atual = int(p_row.get('quantidade', 0) or 0)
-                            novo_estoque = max(0, estoque_atual - int(qtd_usada))
-                            executar_comando_sql("UPDATE pecas SET quantidade = ? WHERE id = ?", (novo_estoque, int(p_row['id'])))
-
-                        st.success("OS concluída e estoque atualizado com sucesso.")
-                        st.rerun()
-                
-                pdf_os_bytes = gerar_pdf_ordem_servico(d_os)
-                st.download_button("Baixar PDF Oficial da OS (Formulário Tabalmix)", data=pdf_os_bytes, file_name=f"OS_{os_selecionada}.pdf", mime="application/pdf")
-            else:
-                st.info("Não há ordens de serviço com status 'aberta' para fechamento.")
-        else:
-            st.info("Nenhuma Ordem de Serviço registrada.")
-
-    with t_os_fechar:
-        with st.form("form_os_novo"):
-            st.markdown("### Abertura de Nova Ordem de Serviço")
-            c1, c2 = st.columns(2)
-            with c1:
-                tag = st.text_input("TAG / Prefixo do Equipamento")
-                t_man = st.selectbox("Tipo de Manutenção", ["Corretiva", "Preventiva"])
-                origem = st.selectbox("Origem da Falha", ["Falha de Equipamento", "Falha de Operação"])
-                ocorrencia = st.selectbox("Categoria da Ocorrência", ["Mecânica", "Elétrica", "Hidráulica", "Refrigeração", "Borracharia", "Soldagem", "Alinhamento", "Outros"])
-            with c2:
-                tipo_ofic = st.selectbox("Tipo de Oficina", ["Oficina Própria", "Terceirizada"])
-                oficina = st.text_input("Nome da Oficina / Local", value="Oficina Central Tabalmix")
-                custo = st.number_input("Custo Estimado (R$)", min_value=0.0, value=0.0)
-            
-            desc = st.text_area("Descrição Detalhada do Problema / Relato")
-            
-            if st.form_submit_button("Abrir OS na Nuvem") and tag:
-                executar_comando_sql("INSERT INTO manutencoes", (tag, t_man, origem, desc, datetime.now().strftime("%d/%m/%Y"), datetime.now().strftime("%H:%M"), oficina, custo, ocorrencia, tipo_ofic))
-                st.success("Ordem de Serviço aberta com sucesso no Supabase.")
-                st.rerun()
+    exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM manutencoes"), "manutencoes")
 
 elif menu == "Gestão & Alertas de Multas":
     st.title("Controle de Multas")
@@ -773,103 +557,14 @@ elif menu == "Gestão & Alertas de Multas":
 elif menu == "Peças e Ferramentas":
     st.title("Controle de Estoque de Peças")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM pecas"), "pecas")
-    with st.form("form_peca"):
-        st.markdown("### Cadastrar Nova Peça no Estoque")
-        nome = st.text_input("Nome / Descrição da Peça")
-        cat = st.text_input("Categoria")
-        qtd = st.number_input("Quantidade em Estoque", min_value=1, value=10)
-        val = st.number_input("Valor Unitário (R$)", min_value=0.0, value=0.0)
-        if st.form_submit_button("Adicionar Peça"):
-            executar_comando_sql("INSERT INTO pecas", (nome, cat, qtd, val))
-            st.success("Peça adicionada ao estoque com sucesso.")
-            st.rerun()
 
 elif menu == "Gestão de Clientes":
     st.title("Gestão de Clientes")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM clientes"), "clientes")
-    with st.form("form_cli"):
-        nome = st.text_input("Nome / Razão Social")
-        emp = st.text_input("Empresa")
-        tel = st.text_input("Telefone")
-        doc = st.text_input("CPF / CNPJ")
-        end = st.text_input("Endereço")
-        if st.form_submit_button("Cadastrar Cliente"):
-            executar_comando_sql("INSERT INTO clientes", (nome, emp, tel, doc, end))
-            st.success("Cliente salvo no Supabase.")
-            st.rerun()
 
 elif menu == "Chat Interno & Reuniões Live":
     st.title("Chat Corporativo & Reuniões Live")
-    st.markdown("<p style='color: #64748b;'>Comunicação em tempo real e salas de vídeo — Castro Tech</p>", unsafe_allow_html=True)
-    
-    t_chat_geral, t_chat_priv, t_live = st.tabs(["Mural Geral", "Bate-Papo Privado (1:1)", "Salas de Reunião Live"])
-    
-    with t_chat_geral:
-        df_chat = ler_tabelas_sql("SELECT * FROM chat_interno")
-        if not df_chat.empty:
-            df_geral_msg = df_chat[df_chat['destinatario'] == 'Geral'] if 'destinatario' in df_chat.columns else df_chat
-            for _, msg in df_geral_msg.tail(15).iterrows():
-                st.markdown(f"""
-                    <div style="background: #ffffff; border: 1px solid #e2e8f0; padding: 12px 16px; border-radius: 12px; margin-bottom: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02);">
-                        <strong style="color: #047857;">{msg.get('remetente')} ({msg.get('cargo')})</strong> <span style="font-size: 11px; color: #64748b; float: right;">{msg.get('data_envio')}</span>
-                        <p style="margin: 6px 0 0 0; color: #1e293b; font-size: 14px;">{msg.get('mensagem')}</p>
-                    </div>
-                """, unsafe_allow_html=True)
-        else:
-            st.info("Nenhuma mensagem no mural geral.")
-            
-        with st.form("form_chat_geral_env", clear_on_submit=True):
-            txt_msg_g = st.text_input("Enviar mensagem para o mural geral...")
-            if st.form_submit_button("Enviar para Geral"):
-                rem = usuario_atual['apelido'] if usuario_atual else "Alex"
-                cargo = usuario_atual['cargo'] if usuario_atual else "Diretoria"
-                executar_comando_sql("INSERT INTO chat_interno", (rem, "Geral", cargo, txt_msg_g, "", datetime.now().strftime("%d/%m/%Y às %H:%M")))
-                st.rerun()
-
-    with t_chat_priv:
-        st.markdown("### Mensagens Privadas (Estilo WhatsApp)")
-        df_usuarios = ler_tabelas_sql("SELECT * FROM usuarios_sistema")
-        if not df_usuarios.empty and usuario_atual:
-            outros_usuarios = df_usuarios[df_usuarios['email'] != usuario_atual['email']]['apelido'].tolist()
-            if outros_usuarios:
-                colega_escolhido = st.selectbox("Escolher Colaborador para Conversa Privada", outros_usuarios)
-                
-                df_chat_all = ler_tabelas_sql("SELECT * FROM chat_interno")
-                if not df_chat_all.empty:
-                    meu_nome = usuario_atual['apelido']
-                    conversa_privada = df_chat_all[
-                        ((df_chat_all['remetente'] == meu_nome) & (df_chat_all['destinatario'] == colega_escolhido)) |
-                        ((df_chat_all['remetente'] == colega_escolhido) & (df_chat_all['destinatario'] == meu_nome))
-                    ]
-                    for _, msg in conversa_privada.tail(15).iterrows():
-                        cor_fundo = "#d1fae5" if msg.get('remetente') == meu_nome else "#ffffff"
-                        st.markdown(f"""
-                            <div style="background: {cor_fundo}; border: 1px solid #cbd5e1; padding: 10px 14px; border-radius: 10px; margin-bottom: 8px;">
-                                <strong style="color: #047857;">{msg.get('remetente')}</strong> <span style="font-size: 10.5px; color: #64748b; float: right;">{msg.get('data_envio')}</span>
-                                <p style="margin: 4px 0 0 0; color: #0f172a; font-size: 13.5px;">{msg.get('mensagem')}</p>
-                            </div>
-                        """, unsafe_allow_html=True)
-                
-                with st.form("form_chat_priv_env", clear_on_submit=True):
-                    txt_priv = st.text_input(f"Mensagem estritamente privada para {colega_escolhido}...")
-                    if st.form_submit_button("Enviar Privado"):
-                        rem = usuario_atual['apelido']
-                        cargo = usuario_atual['cargo']
-                        executar_comando_sql("INSERT INTO chat_interno", (rem, colega_escolhido, cargo, txt_priv, "", datetime.now().strftime("%d/%m/%Y às %H:%M")))
-                        st.rerun()
-            else:
-                st.info("Ainda não há outros colaboradores cadastrados para conversar em privado.")
-
-    with t_live:
-        st.markdown("### Salas de Reunião por Vídeo")
-        with st.form("form_live_sala"):
-            tit_sala = st.text_input("Título da Reunião", value="Alinhamento Operacional Tabalmix")
-            link_sala = st.text_input("Link da Sala (Ex: Meet / Zoom / Jitsi)", value="https://meet.google.com/abc-defg-hij")
-            if st.form_submit_button("Criar e Compartilhar Sala"):
-                rem = usuario_atual['apelido'] if usuario_atual else "Alex"
-                executar_comando_sql("INSERT INTO chat_interno", (rem, "Geral", "Diretoria", f"🎥 **Nova Reunião Iniciada:** {tit_sala}\n🔗 **Acesse pelo link:** {link_sala}", "", datetime.now().strftime("%d/%m/%Y às %H:%M")))
-                st.success("Sala de reunião criada e compartilhada no mural geral da equipe.")
-                st.rerun()
+    exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM chat_interno"), "chat_interno")
 
 elif menu == "Meu Perfil / Dados":
     st.title("Meu Perfil & Dados")
@@ -884,7 +579,3 @@ elif menu == "Meu Perfil / Dados":
 elif menu == "Painel de Licença (Admin)" and modo_admin_liberado:
     st.title("Painel Administrativo Master")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM usuarios_sistema"), "usuarios_sistema")
-    if st.button("Limpar Tabela Veiculos"):
-        executar_comando_sql("DELETE FROM veiculos")
-        st.success("Tabela limpa no Supabase.")
-        st.rerun()
