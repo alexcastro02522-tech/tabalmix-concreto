@@ -25,8 +25,12 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- INICIALIZAÇÃO DE ESTADO LOCAL (FALLBACK GARANTIDO) ---
-for chave_est in ["local_veiculos", "local_chat", "local_usuarios", "local_manutencoes", "local_combustivel", "local_mobilizacoes", "local_multas", "local_pecas", "local_clientes", "local_reunioes_live"]:
+# --- INICIALIZAÇÃO DE ESTADO LOCAL (FALLBACK GARANTIDO E COMPLETO) ---
+for chave_est in [
+    "local_veiculos", "local_chat_interno", "local_usuarios_sistema", 
+    "local_manutencoes", "local_combustivel", "local_mobilizacoes", 
+    "local_multas", "local_pecas", "local_clientes", "local_reunioes_live"
+]:
     if chave_est not in st.session_state:
         st.session_state[chave_est] = []
 
@@ -99,6 +103,10 @@ def executar_comando_sql(query_str, params=None):
     elif "usuarios_sistema" in q_lower: tabela = "usuarios_sistema"
 
     dados = {}
+    loc_key = f"local_{tabela}"
+    if loc_key not in st.session_state:
+        st.session_state[loc_key] = []
+
     try:
         if "insert" in q_lower and params:
             if tabela == "veiculos":
@@ -146,13 +154,13 @@ def executar_comando_sql(query_str, params=None):
         elif "delete" in q_lower:
             if supabase is not None:
                 supabase.table(tabela).delete().neq("id", 0).execute()
-            st.session_state[f"local_{tabela}"] = []
+            st.session_state[loc_key] = []
             return True, "Limpeza Executada"
     except Exception as e:
         st.session_state["ultimo_erro_ia"] = f"Erro ao gravar em {tabela}: {str(e)}"
     
     if dados:
-        st.session_state[f"local_{tabela}"].append(dados)
+        st.session_state[loc_key].append(dados)
         return True, "Sucesso em Modo Local (Resiliente)"
     return False, "Falha na Execução"
 
