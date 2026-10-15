@@ -119,39 +119,27 @@ def executar_comando_sql(query_str, params=None):
                         "data_cadastro": str(params[6]), "pin_rapido": str(params[7]), "apelido": str(params[8]), "cargo_setor": str(params[9])
                     }
                     supabase.table("usuarios_sistema").insert(dados).execute()
-        elif "update" in q_lower:
-            if "usuarios_sistema" in q_lower and params:
-                if "senha = ?" in q_lower:
-                    supabase.table("usuarios_sistema").update({"senha": str(params[0])}).eq("email", str(params[1])).execute()
-            elif "manutencoes" in q_lower and "status_os = 'concluida'" in q_lower and params:
-                supabase.table("manutencoes").update({
-                    "status_os": "concluida", "pecas_utilizadas": str(params[0]), "custo_pecas": float(params[1]),
-                    "mao_de_obra": float(params[2]), "custo": float(params[3]), "tecnico_mecanico": str(params[4]),
-                    "encarregado_responsavel": str(params[5]), "data_fechamento": str(params[6]), "hora_fechamento": str(params[7])
-                }).eq("id", int(params[8])).execute()
-            elif "pecas" in q_lower and "quantidade = ?" in q_lower and params:
-                supabase.table("pecas").update({"quantidade": int(params[0])}).eq("id", int(params[1])).execute()
         elif "delete" in q_lower:
             if "usuarios_sistema" in q_lower and params:
                 supabase.table("usuarios_sistema").delete().eq("id", int(params[0])).execute()
             elif "veiculos" in q_lower:
-                supabase.table("veiculos").delete().execute()
+                supabase.table("veiculos").delete().neq("id", 0).execute()
             elif "manutencoes" in q_lower:
-                supabase.table("manutencoes").delete().execute()
+                supabase.table("manutencoes").delete().neq("id", 0).execute()
             elif "pecas" in q_lower:
-                supabase.table("pecas").delete().execute()
+                supabase.table("pecas").delete().neq("id", 0).execute()
             elif "clientes" in q_lower:
-                supabase.table("clientes").delete().execute()
+                supabase.table("clientes").delete().neq("id", 0).execute()
             elif "mobilizacoes" in q_lower:
-                supabase.table("mobilizacoes").delete().execute()
+                supabase.table("mobilizacoes").delete().neq("id", 0).execute()
             elif "combustivel" in q_lower:
-                supabase.table("combustivel").delete().execute()
+                supabase.table("combustivel").delete().neq("id", 0).execute()
             elif "multas" in q_lower:
-                supabase.table("multas").delete().execute()
+                supabase.table("multas").delete().neq("id", 0).execute()
             elif "chat_interno" in q_lower:
-                supabase.table("chat_interno").delete().execute()
+                supabase.table("chat_interno").delete().neq("id", 0).execute()
             elif "reunioes_live" in q_lower:
-                supabase.table("reunioes_live").delete().execute()
+                supabase.table("reunioes_live").delete().neq("id", 0).execute()
         return True
     except Exception as e:
         print(f"Erro Supabase Comando ({query_str}): {e}")
@@ -208,76 +196,6 @@ def gerar_excel_formatado(dataframe, nome_aba="Relatório Tabalmix"):
     output.seek(0)
     return output
 
-def gerar_pdf_ordem_servico(os_row):
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=letter)
-    largura, altura = letter
-    margem = 35
-    largura_util = largura - (2 * margem)
-    
-    c.setFillColorRGB(0.04, 0.35, 0.22)
-    c.rect(0, altura - 70, largura, 70, fill=1, stroke=0)
-    c.setFillColorRGB(1, 1, 1)
-    c.setFont("Helvetica-Bold", 15)
-    c.drawString(margem, altura - 30, "TABALMIX CONCRETO - SISTEMA DE GESTÃO DE FROTA")
-    c.setFont("Helvetica", 9)
-    c.drawString(margem, altura - 46, "ORDEM DE SERVIÇO TÉCNICA CERTIFICADA — CASTRO TECH")
-    
-    y = altura - 95
-    c.setFillColorRGB(0.1, 0.1, 0.1)
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(margem, y, f"ORDEM DE SERVIÇO Nº: {os_row.get('id', '001')}")
-    c.setFont("Helvetica-Bold", 9)
-    c.drawString(largura - 160, y, f"STATUS: {str(os_row.get('status_os', 'aberta')).upper()}")
-    
-    y -= 25
-    c.setFont("Helvetica", 9)
-    c.drawString(margem, y, f"Data Abertura: {os_row.get('data_abertura', '-')}")
-    c.drawString(margem + 150, y, f"Hora: {os_row.get('hora_abertura', '-')}")
-    c.drawString(margem + 280, y, f"Oficina / Local: {os_row.get('oficina', '-')}")
-    
-    y -= 22
-    c.drawString(margem, y, f"Equipamento / TAG: {os_row.get('tag_prefixo', '-')}")
-    c.drawString(margem + 200, y, f"Ocorrência: {os_row.get('ocorrencia_tipo', 'Mecânica')}")
-    c.drawString(margem + 380, y, f"Tipo: {os_row.get('tipo_oficina', 'Própria')}")
-    
-    y -= 30
-    c.setFont("Helvetica-Bold", 9)
-    c.drawString(margem, y, "DESCRIÇÃO DO PROBLEMA / RELATO:")
-    y -= 18
-    c.setFont("Helvetica", 9)
-    c.rect(margem, y - 35, largura_util, 40, fill=0, stroke=1)
-    c.drawString(margem + 6, y - 12, str(os_row.get('descricao_problema', '-'))[:90])
-    
-    y -= 55
-    c.setFont("Helvetica-Bold", 9)
-    c.drawString(margem, y, "SERVIÇOS REALIZADOS / PEÇAS APLICADAS:")
-    y -= 18
-    c.setFont("Helvetica", 9)
-    c.rect(margem, y - 35, largura_util, 40, fill=0, stroke=1)
-    c.drawString(margem + 6, y - 12, str(os_row.get('pecas_utilizadas', 'Aguardando encerramento técnico'))[:90])
-    
-    y -= 55
-    c.drawString(margem, y, f"Data Fechamento: {os_row.get('data_fechamento', '-')}   |   Hora Final: {os_row.get('hora_fechamento', '-')}")
-    c.drawString(margem + 300, y, f"Custo Total (R$): R$ {float(os_row.get('custo', 0) or 0):,.2f}")
-    
-    y -= 90
-    c.setStrokeColorRGB(0.3, 0.3, 0.3)
-    c.setLineWidth(0.8)
-    larg_col_ass = largura_util / 3.0
-    c.line(margem, y, margem + larg_col_ass - 15, y)
-    c.line(margem + larg_col_ass + 5, y, margem + (2 * larg_col_ass) - 10, y)
-    c.line(margem + (2 * larg_col_ass) + 10, y, largura - margem, y)
-    
-    c.setFont("Helvetica", 7.5)
-    c.drawString(margem, y - 12, "Ass. Mecânica / Elétrica")
-    c.drawString(margem + larg_col_ass + 5, y - 12, "Responsável Técnico")
-    c.drawString(margem + (2 * larg_col_ass) + 10, y - 12, "Encarregado Tabalmix")
-
-    c.save()
-    buffer.seek(0)
-    return buffer
-
 modo_admin_liberado = False
 try:
     query_params = st.query_params
@@ -292,25 +210,12 @@ if "usuario_logado" not in st.session_state:
 if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
     col_l1, col_l2, col_l3 = st.columns([0.05, 3.9, 0.05])
     with col_l2:
-        try:
-            with open("caminhoes.jpg", "rb") as image_file:
-                encoded_logo_login = base64.b64encode(image_file.read()).decode()
-            st.markdown(f"""
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 10px 30px rgba(4,120,87,0.15); margin-top: 10px; margin-bottom: 20px; color: white;">
-                    <div style="border-radius: 12px; overflow: hidden; max-height: 100px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 12px;">
-                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 100px; object-fit: cover; display: block;">
-                    </div>
-                    <h1 style="color: white !important; margin: 0; font-size: 22px; font-weight: 800;">TABALMIX CONCRETO</h1>
-                    <p style="color: #e2e8f0; font-size: 11px; margin: 4px 0 0 0; text-transform: uppercase; font-weight: 600;">Gestão Corporativa • Castro Tech & Supabase</p>
-                </div>
-            """, unsafe_allow_html=True)
-        except Exception:
-            st.markdown("""
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 25px; text-align: center; color: white; margin-bottom: 20px;">
-                    <h1 style="color: white !important; margin: 0; font-size: 22px; font-weight: 800;">TABALMIX CONCRETO</h1>
-                    <p style="color: #e2e8f0; font-size: 11px; text-transform: uppercase;">Castro Tech Architecture</p>
-                </div>
-            """, unsafe_allow_html=True)
+        st.markdown("""
+            <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 25px; text-align: center; color: white; margin-bottom: 20px;">
+                <h1 style="color: white !important; margin: 0; font-size: 22px; font-weight: 800;">TABALMIX CONCRETO</h1>
+                <p style="color: #e2e8f0; font-size: 11px; text-transform: uppercase;">Gestão Corporativa & Automação Master</p>
+            </div>
+        """, unsafe_allow_html=True)
 
         escolha_modo_login = st.selectbox("Central de Segurança & Acesso Corporativo:", [
             "Entrar com E-mail e Senha",
@@ -473,7 +378,6 @@ if menu == "Visão Geral":
 
 elif menu == "Consulta / Busca Geral":
     st.title("Consulta Avançada de Frota e Ativos")
-    st.markdown("<p style='color: #64748b;'>Pesquisa inteligente por TAG, placa, marca ou modelo — Castro Tech</p>", unsafe_allow_html=True)
     termo_busca = st.text_input("Filtrar por TAG, Placa, Marca ou Modelo:")
     df_v = ler_tabelas_sql("SELECT * FROM veiculos")
     if not df_v.empty:
@@ -577,5 +481,48 @@ elif menu == "Meu Perfil / Dados":
         """)
 
 elif menu == "Painel de Licença (Admin)" and modo_admin_liberado:
-    st.title("Painel Administrativo Master")
+    st.title("Painel Administrativo Master & Bot de Testes")
+    st.markdown("<p style='color: #64748b;'>Ferramentas de auditoria, testes automatizados e limpeza geral da base — Castro Tech</p>", unsafe_allow_html=True)
+    
+    col_bt1, col_bt2 = st.columns(2)
+    with col_bt1:
+        st.markdown("### 🤖 Bot de Teste Automatizado")
+        st.markdown("Executa um ciclo completo criando usuário de teste, veículo piloto e lançamentos simulados.")
+        if st.button("Executar Bot de Testes Agora"):
+            try:
+                # 1. Criar usuário teste
+                executar_comando_sql(
+                    "INSERT INTO usuarios_sistema (nome_completo, cpf, email, senha, celular_seguranca, status_assinatura, plano_atual, data_cadastro, pin_rapido, apelido, cargo_setor) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    ("Bot Auditor Teste", "000.000.000-00", "bottest@tabalmix.com", "123456", "(92) 99999-9999", "Ativo", "Master", datetime.now().strftime("%Y-%m-%d %H:%M"), "1234", "RoboTest", "Diretoria / Gestão")
+                )
+                # 2. Criar veículo teste
+                executar_comando_sql("INSERT INTO veiculos", ("BOT-99", "ABC-1234", "Linha Amarela", 2026, "123456789", "987654", "Caminhão Betoneira Teste", "Betoneira", "Branco", "Diesel", "9BWZZZ...", "Tabalmix Concreto", "RoboTest", 1500.0, "KM", 1000.0, 10000.0))
+                # 3. Criar abastecimento teste
+                executar_comando_sql("INSERT INTO combustivel", ("BOT-99", 150.0, 950.0, "Posto Central", "RoboTest", datetime.now().strftime("%d/%m/%Y")))
+                st.success("✅ Bot executado com sucesso! Dados de teste criados no Supabase.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erro ao rodar bot de testes: {e}")
+
+    with col_bt2:
+        st.markdown("### 🧹 Botão de Reset Master (Zerar Tudo)")
+        st.markdown("Apaga todos os registros operacionais e de teste das tabelas do banco de dados de uma só vez.")
+        if st.button("⚠️ ZERAR TODOS OS DADOS DA NUVEM"):
+            try:
+                executar_comando_sql("DELETE FROM veiculos")
+                executar_comando_sql("DELETE FROM manutencoes")
+                executar_comando_sql("DELETE FROM pecas")
+                executar_comando_sql("DELETE FROM clientes")
+                executar_comando_sql("DELETE FROM mobilizacoes")
+                executar_comando_sql("DELETE FROM combustivel")
+                executar_comando_sql("DELETE FROM multas")
+                executar_comando_sql("DELETE FROM chat_interno")
+                executar_comando_sql("DELETE FROM reunioes_live")
+                st.success("🗑️ Banco de dados limpo com sucesso! Todas as tabelas foram zeradas.")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erro ao zerar o banco de dados: {e}")
+
+    st.divider()
+    st.markdown("### Colaboradores Cadastrados no Sistema")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM usuarios_sistema"), "usuarios_sistema")
