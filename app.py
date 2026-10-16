@@ -14,7 +14,7 @@ import streamlit as st
 from supabase import create_client, Client
 
 SUPABASE_URL = "https://dqdtjofuytnokjnjcyxc.supabase.co"
-SUPABASE_KEY = "sb_publishable_m75yp7ycIwqKwULd7365gA_cd3GSlpg"
+SUPABASE_KEY = "sb_publishable_6ZvPJlJ_0BvgLMo8uC661g_Mm4Wy9m2"
 
 @st.cache_resource
 def init_supabase():
