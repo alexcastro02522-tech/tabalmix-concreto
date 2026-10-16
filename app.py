@@ -20,7 +20,6 @@ def init_supabase():
     try:
         from supabase import create_client
         client = create_client(SUPABASE_URL, SUPABASE_KEY)
-        # Teste imediato de leitura real
         client.table("veiculos").select("id").limit(1).execute()
         return client
     except Exception as e:
@@ -824,7 +823,7 @@ elif menu == "Meu Perfil / Dados":
         st.write(f"**E-mail Corporativo:** {usuario_atual.get('email')}")
         st.write(f"**Status da Conta:** {usuario_atual.get('status')}")
         
-        if modo_admin_liberado or usuario_atual.get('id'] == 1 or "Master" in str(usuario_atual.get('cargo')):
+        if modo_admin_liberado or usuario_atual.get('id') == 1 or "Master" in str(usuario_atual.get('cargo')):
             st.divider()
             st.markdown("### 🛡️ Painel Master: Aprovação de Colaboradores Pendentes")
             df_usuarios = ler_tabelas_sql("SELECT * FROM usuarios_sistema")
