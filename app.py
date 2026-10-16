@@ -182,7 +182,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- DESIGN CLEAN & LIGHT DE PRIMEIRO MUNDO (ESTILO ESTÚDIO PROFISSIONAL) ---
 st.markdown("""
     <style>
     header[data-testid='stHeader'] {background: #ffffff !important; border-bottom: 1px solid #e2e8f0;} 
@@ -228,7 +227,7 @@ def gerar_excel_formatado(dataframe, nome_aba="Relatório Tabalmix"):
         header_format = workbook.add_format({'bold': True, 'text_wrap': True, 'fg_color': '#047857', 'font_color': 'white', 'border': 1, 'align': 'center', 'valign': 'middle'})
         cell_format = workbook.add_format({'border': 1, 'align': 'left', 'valign': 'middle', 'text_wrap': True})
         for col_num, col in enumerate(dataframe.columns):
-            max_len = max(dataframe[col].astype(str).map(len).max() if not dataframe.empty else 0, len(str(col))) + 4
+            max_len = max(dataframe[col].astype(str).str.len().max() if not dataframe.empty else 0, len(str(col))) + 4
             worksheet.set_column(col_num, col_num, max(max_len, 15), cell_format)
             worksheet.write(0, col_num, str(col).upper(), header_format)
     output.seek(0)
@@ -504,26 +503,44 @@ elif menu == "Robô de Testes Reais (QA)":
 
 elif menu == "Assistente IA & Diagnóstico":
     st.title("Assistente IA de Suporte & Diagnóstico")
-    st.markdown("Módulo inteligente para apoio aos colaboradores e monitoramento automático de erros técnicos.")
+    st.markdown("Módulo inteligente de apoio operacional, diagnóstico automatizado e central de FAQs da obra.")
     
     ultimo_erro = st.session_state.get("ultimo_erro_ia", "Nenhum erro detetado recentemente. O sistema está a operar normalmente.")
-    st.markdown(f"""
-        <div style="background: #ffffff; padding: 15px; border-radius: 10px; border: 1px solid #cbd5e1; border-left: 5px solid #047857; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(15,23,42,0.03);">
-            <strong>Diagnóstico Técnico Atual:</strong><br><span style="color: #64748b; font-size: 13px;">{ultimo_erro}</span>
-        </div>
-    """, unsafe_allow_html=True)
-
-    pergunta_ia = st.text_input("Como posso ajudar a tua operação hoje?")
-    if pergunta_ia:
-        p_lower = pergunta_ia.lower()
-        if "os" in p_lower or "ordem" in p_lower:
-            st.info("💡 **Dica da IA:** Para fechar uma Ordem de Serviço, vai à aba 'Ordens de Serviço (OS)', seleciona a aba 'Abertas', escolhe o ID da OS e clica em 'Concluir OS e Baixar Estoque'.")
-        elif "abastecimento" in p_lower:
-            st.info("💡 **Dica da IA:** O registo de combustível é feito na aba 'Abastecimentos & Combustível' preenchendo os litros e o valor total gasto.")
-        elif "romaneio" in p_lower or "concreto" in p_lower:
-            st.info("💡 **Dica da IA:** Utilize o módulo 'Romaneios & Despacho de Concreto' para gerir o volume em m³ e o abatimento (Slump) entregue nas obras.")
-        else:
-            st.info("💡 **Dica da IA:** Certifica-te de que tens permissão de perfil adequada e que os dados obrigatórios estão preenchidos.")
+    
+    col_ia1, col_ia2 = st.columns([1.5, 1])
+    with col_ia1:
+        st.markdown(f"""
+            <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #cbd5e1; border-left: 5px solid #047857; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(15,23,42,0.03);">
+                <strong style="color: #0f172a; font-size: 14px;">Centro de Diagnóstico Técnico & Conexão:</strong><br>
+                <span style="color: #64748b; font-size: 12.5px; line-height: 1.6;">{ultimo_erro}</span>
+            </div>
+        """, unsafe_allow_html=True)
+        
+        pergunta_ia = st.text_input("Escreva a sua dúvida ou comando para a IA Operacional:")
+        if pergunta_ia:
+            p_lower = pergunta_ia.lower()
+            if "os" in p_lower or "ordem" in p_lower:
+                st.info("💡 **Resposta IA:** Para fechar uma Ordem de Serviço, vai à aba 'Ordens de Serviço (OS)', selecione a aba 'Abertas & Em Andamento', escolha o ID correspondente, selecione a peça do estoque (se aplicável) e clique em 'Concluir OS e Baixar Estoque'.")
+            elif "abastecimento" in p_lower or "combustível" in p_lower:
+                st.info("💡 **Resposta IA:** O registo de combustível é feito na aba 'Abastecimentos & Combustível' informando o equipamento, os litros e o valor total gasto.")
+            elif "romaneio" in p_lower or "concreto" in p_lower:
+                st.info("💡 **Resposta IA:** Utilize o módulo 'Romaneios & Despacho de Concreto' para emitir novas cargas em m³, definir o slump e associar o camião betoneira ao cliente.")
+            elif "pneu" in p_lower:
+                st.info("💡 **Resposta IA:** O controlo de desgaste e profundidade de sulcos por eixo é feito no módulo 'Controle de Pneus (Desgaste)'.")
+            else:
+                st.info(f"💡 **Resposta IA:** Analisei a sua solicitação ('{pergunta_ia}'). Certifique-se de que os dados estão devidamente preenchidos e que a sua permissão de perfil está ativa na plataforma.")
+                
+    with col_ia2:
+        st.markdown("""
+            <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 2px 8px rgba(15,23,42,0.03);">
+                <strong style="color: #0f172a; font-size: 13.5px;">Atalhos & FAQs Rápidas</strong>
+                <ul style="color: #475569; font-size: 12px; padding-left: 18px; margin-top: 8px; line-height: 1.6;">
+                    <li><b>Modo Resiliente:</b> Ativo automaticamente em quedas de rede.</li>
+                    <li><b>Baixa de Estoque:</b> Vinculada diretamente ao encerramento de OS.</li>
+                    <li><b>Relatórios:</b> Disponíveis em PDF certificado e Excel formatado.</li>
+                </ul>
+            </div>
+        """, unsafe_allow_html=True)
 
 elif menu == "Romaneios & Despacho de Concreto":
     st.title("Gestão de Romaneios e Cargas de Concreto")
@@ -589,20 +606,74 @@ elif menu == "Consulta / Busca Geral":
     exibir_tabela_padronizada(df_v, "veiculos")
 
 elif menu == "Cadastro de Equipamentos":
-    st.title("Cadastro de Equipamentos")
-    t_l, t_r = st.tabs(["Frota Ativa", "Cadastrar Novo"])
+    st.title("Cadastro de Equipamentos & Dossiê Técnico")
+    st.markdown("Registo completo com chassi, motorista responsável, documentação e controlo preventivo de revisão.")
+    t_l, t_r = st.tabs(["Frota Ativa Cadastrada", "Cadastrar Novo Equipamento (Completo)"])
     with t_l:
-        exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM veiculos"), "veiculos")
+        df_veiculos_reg = ler_tabelas_sql("SELECT * FROM veiculos")
+        exibir_tabela_padronizada(df_veiculos_reg, "veiculos")
+        
+        # Alertas de Revisão Preventiva baseados na última revisão e horímetro/KM
+        if not df_veiculos_reg.empty:
+            st.markdown("### Alertas de Revisão Preventiva")
+            for _, eq_r in df_veiculos_reg.iterrows():
+                tag_eq = eq_r.get("tag_prefixo", "EQ")
+                atual_km = float(eq_r.get("horimetro_km", 0) or 0)
+                ult_rev = float(eq_r.get("ultima_revisao", 0) or 0)
+                intervalo = float(eq_r.get("intervalo_revisao", 10000) or 10000)
+                rodado = atual_km - ult_rev
+                falta = intervalo - rodado
+                if falta <= 1000:
+                    st.markdown(f"<div style='background:#fef2f2; border:1px solid #f87171; color:#991b1b; padding:10px; border-radius:8px; margin-bottom:8px;'>⚠️ <b>ALERTA DE REVISÃO:</b> O equipamento <b>{tag_eq}</b> está próximo ou atingiu o limite de revisão! (Rodados {rodado:,.1f} de {intervalo:,.1f} limite).</div>", unsafe_allow_html=True)
+                else:
+                    st.markdown(f"<div style='background:#f0fdf4; border:1px solid #86efac; color:#166534; padding:8px; border-radius:8px; margin-bottom:6px;'>✅ Equipamento <b>{tag_eq}</b> com revisão regular ({rodado:,.1f} rodados desde a última revisão).</div>", unsafe_allow_html=True)
+
     with t_r:
-        with st.form("form_eq"):
-            f_tag = st.text_input("TAG / Prefixo")
-            f_placa = st.text_input("Placa")
-            f_cat = st.selectbox("Categoria", ["Linha Branca", "Linha Amarela", "Veículo Leve"])
-            f_marca = st.text_input("Marca / Modelo")
-            if st.form_submit_button("Salvar Equipamento") and f_tag:
-                executar_comando_sql("INSERT INTO veiculos", (f_tag, f_placa, f_cat, 2026, "", "", f_marca, "", "", "Diesel", "", "Tabalmix", "", 0.0, "KM", 0.0, 10000.0))
-                st.success("Equipamento registado com sucesso!")
-                st.rerun()
+        with st.form("form_eq_completo"):
+            st.markdown("#### Informações Gerais & Identificação")
+            col_e1, col_e2, col_e3 = st.columns(3)
+            with col_e1:
+                f_tag = st.text_input("TAG / Prefixo (ex: BET-01)")
+                f_placa = st.text_input("Placa do Veículo")
+                f_cat = st.selectbox("Categoria", ["Betoneira", "Linha Branca", "Linha Amarela", "Veículo Leve"])
+            with col_e2:
+                f_marca = st.text_input("Marca / Modelo (ex: Mercedes / Volvo)")
+                f_ano = st.number_input("Ano de Fabricação", min_value=1990, max_value=2030, value=2026)
+                f_cor = st.text_input("Cor", value="Branca")
+            with col_e3:
+                f_comb = st.selectbox("Combustível", ["Diesel S10", "Diesel S500", "Gasolina", "Flex"])
+                f_empresa = st.selectbox("Empresa / Filial", ["Tabalmix Concreto", "Parceiro / Terceirizado"])
+                f_tipo_ctrl = st.selectbox("Tipo de Controlo", ["KM (Quilometragem)", "Horímetro (Horas)"])
+
+            st.markdown("#### Documentação Oficial (Chassi, CRV, Renavam)")
+            col_d1, col_d2 = st.columns(2)
+            with col_d1:
+                f_chassi = st.text_input("Número do Chassi")
+                f_renavam = st.text_input("RENAVAM")
+            with col_d2:
+                f_crv = st.text_input("CRV (Certificado de Registro de Veículo)")
+                f_motorista = st.text_input("Motorista / Operador Responsável Fixo")
+
+            st.markdown("#### Controle de Horímetro / KM & Revisão Preventiva")
+            col_r1, col_r2, col_r3 = st.columns(3)
+            with col_r1:
+                f_horimetro_km = st.number_input("Horímetro / KM Atual", min_value=0.0, value=0.0, step=100.0)
+            with col_r2:
+                f_ultima_rev = st.number_input("KM / Horímetro da Última Revisão", min_value=0.0, value=0.0, step=100.0)
+            with col_r3:
+                f_intervalo_rev = st.number_input("Intervalo para Próxima Revisão", min_value=1000.0, value=10000.0, step=1000.0)
+
+            if st.form_submit_button("Salvar Dossiê do Equipamento"):
+                if f_tag and f_placa:
+                    executar_comando_sql("INSERT INTO veiculos", (
+                        f_tag, f_placa, f_cat, f_ano, f_renavam, f_crv, f_marca, 
+                        f_cat, f_cor, f_comb, f_chassi, f_empresa, f_motorista, 
+                        f_horimetro_km, f_tipo_ctrl, f_ultima_rev, f_intervalo_rev
+                    ))
+                    st.success(f"Equipamento {f_tag} registado com sucesso com todo o dossiê técnico e controlo de revisão!")
+                    st.rerun()
+                else:
+                    st.error("Preencha pelo menos a TAG e a Placa do equipamento.")
 
 elif menu == "Mobilização / Desmobilização":
     st.title("Mobilização & Vistoria")
