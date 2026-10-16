@@ -163,7 +163,6 @@ def executar_comando_sql(query_str, params=None):
                     supabase.table("pecas").update({"quantidade": int(params[0])}).eq("id", int(params[1])).execute()
                 return True, "Estoque Atualizado"
         elif "delete" in q_lower:
-            # Proteção estrita: o robô de testes nunca limpa tabelas automaticamente para preservar os dados reais da frota!
             return True, "Proteção Ativa: Dados preservados."
     except Exception as e:
         st.session_state["ultimo_erro_ia"] = f"[{tabela.upper()}] Alerta: {str(e)}"
@@ -436,6 +435,10 @@ if modo_admin_liberado:
 
 menu = st.sidebar.radio("Navegação", lista_menus, label_visibility="collapsed")
 
+# Buscar lista atualizada de veículos para seletores automáticos em todo o sistema
+df_veiculos_global = ler_tabelas_sql("SELECT * FROM veiculos")
+lista_tags_veiculos = df_veiculos_global['tag_prefixo'].tolist() if not df_veiculos_global.empty and 'tag_prefixo' in df_veiculos_global.columns else []
+
 if menu == "Visão Geral":
     st.title("Painel Executivo de Operações")
     st.markdown("<p style='color: #64748b; margin-top: -10px; margin-bottom: 25px;'>Monitoramento corporativo em tempo real — Castro Tech</p>", unsafe_allow_html=True)
@@ -450,7 +453,7 @@ if menu == "Visão Geral":
         </div>
     """, unsafe_allow_html=True)
 
-    df_veiculos = ler_tabelas_sql("SELECT * FROM veiculos")
+    df_veiculos = df_veiculos_global
     df_manut = ler_tabelas_sql("SELECT * FROM manutencoes")
     df_comb = ler_tabelas_sql("SELECT * FROM combustivel")
     df_multas = ler_tabelas_sql("SELECT * FROM multas")
@@ -546,14 +549,17 @@ elif menu == "Romaneios & Despacho de Concreto":
         with st.form("form_romaneio"):
             n_rom = st.text_input("Número do Romaneio", value=f"ROM-{random.randint(1000,9999)}")
             cli_obra = st.text_input("Cliente / Obra de Destino")
-            caminhao = st.text_input("TAG do Caminhão Betoneira")
+            caminhao = st.selectbox("Caminhão Betoneira (Automático)", lista_tags_veiculos if lista_tags_veiculos else ["Nenhum veículo cadastrado"])
             vol = st.number_input("Volume de Concreto (m³)", min_value=0.0, value=8.0)
             slump = st.selectbox("Abatimento (Slump)", ["S100 (±20)", "S120 (±20)", "S140 (±20)", "S160 (±20)"])
             motorista_r = st.text_input("Motorista Responsável")
             if st.form_submit_button("Gerar e Emitir Romaneio"):
-                executar_comando_sql("INSERT INTO romaneios", (n_rom, cli_obra, caminhao, vol, slump, motorista_r, datetime.now().strftime("%d/%m/%Y %H:%M")))
-                st.success("Romaneio emitido com sucesso!")
-                st.rerun()
+                if lista_tags_veiculos:
+                    executar_comando_sql("INSERT INTO romaneios", (n_rom, cli_obra, caminhao, vol, slump, motorista_r, datetime.now().strftime("%d/%m/%Y %H:%M")))
+                    st.success("Romaneio emitido com sucesso!")
+                    st.rerun()
+                else:
+                    st.error("Cadastre um veículo primeiro na aba 'Cadastro de Equipamentos'.")
 
 elif menu == "Compliance & CNH (Legal)":
     st.title("Compliance Legal & Documentos da Frota")
@@ -563,15 +569,18 @@ elif menu == "Compliance & CNH (Legal)":
         exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM compliance_frota"), "compliance_frota")
     with t_comp_add:
         with st.form("form_compliance"):
-            motorista_ativo = st.text_input("Motorista ou Veículo (TAG/Placa)")
+            motorista_ativo = st.selectbox("Veículo da Frota (Automático)", lista_tags_veiculos if lista_tags_veiculos else ["Nenhum veículo cadastrado"])
             tipo_doc = st.selectbox("Tipo de Documento", ["CNH Categoria D/E", "CRV Veicular", "Licença Ambiental", "Seguro Frota"])
             num_documento = st.text_input("Número do Documento")
             venc = st.text_input("Data de Vencimento (DD/MM/AAAA)", value=datetime.now().strftime("%d/%m/%Y"))
             status_leg = st.selectbox("Status", ["Regular", "Próximo ao Vencimento", "Vencido"])
             if st.form_submit_button("Salvar Documento"):
-                executar_comando_sql("INSERT INTO compliance_frota", (motorista_ativo, tipo_doc, num_documento, venc, status_leg))
-                st.success("Documento registado no compliance.")
-                st.rerun()
+                if lista_tags_veiculos:
+                    executar_comando_sql("INSERT INTO compliance_frota", (motorista_ativo, tipo_doc, num_documento, venc, status_leg))
+                    st.success("Documento registado no compliance.")
+                    st.rerun()
+                else:
+                    st.error("Cadastre um veículo primeiro.")
 
 elif menu == "Controle de Pneus (Desgaste)":
     st.title("Controle de Pneus e Desgaste por Eixo")
@@ -581,20 +590,23 @@ elif menu == "Controle de Pneus (Desgaste)":
         exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM pneus_frota"), "pneus_frota")
     with t_pneu_add:
         with st.form("form_pneu"):
-            v_tag = st.text_input("TAG do Veículo")
+            v_tag = st.selectbox("TAG do Veículo (Automático)", lista_tags_veiculos if lista_tags_veiculos else ["Nenhum veículo cadastrado"])
             eixo = st.selectbox("Posição no Eixo", ["Dianteiro Esquerdo", "Dianteiro Direito", "Tração Esq. Interno", "Tração Esq. Externo", "Tração Dir. Interno", "Tração Dir. Externo"])
             marca = st.text_input("Marca / Modelo do Pneu", value="Michelin / Bridgestone")
             sulco = st.number_input("Profundidade do Sulco (mm)", min_value=0.0, value=15.0)
             estado_pneu = st.selectbox("Estado", ["Novo", "Bom Desgaste", "Apto para Recapagem", "Descartado"])
             if st.form_submit_button("Salvar Pneu"):
-                executar_comando_sql("INSERT INTO pneus_frota", (v_tag, eixo, marca, sulco, estado_pneu))
-                st.success("Registar pneu efetuado com sucesso!")
-                st.rerun()
+                if lista_tags_veiculos:
+                    executar_comando_sql("INSERT INTO pneus_frota", (v_tag, eixo, marca, sulco, estado_pneu))
+                    st.success("Registar pneu efetuado com sucesso!")
+                    st.rerun()
+                else:
+                    st.error("Cadastre um veículo primeiro.")
 
 elif menu == "Consulta / Busca Geral":
     st.title("Consulta Avançada de Frota e Ativos")
     termo = st.text_input("Pesquisar por TAG, Placa ou Modelo:")
-    df_v = ler_tabelas_sql("SELECT * FROM veiculos")
+    df_v = df_veiculos_global
     if not df_v.empty and termo:
         df_v = df_v[df_v.apply(lambda r: r.astype(str).str.contains(termo, case=False).any(), axis=1)]
     exibir_tabela_padronizada(df_v, "veiculos")
@@ -604,7 +616,7 @@ elif menu == "Cadastro de Equipamentos":
     st.markdown("Registo completo com chassi, motorista responsável, documentação e controlo preventivo de revisão.")
     t_l, t_r = st.tabs(["Frota Ativa Cadastrada", "Cadastrar Novo Equipamento (Completo)"])
     with t_l:
-        df_veiculos_reg = ler_tabelas_sql("SELECT * FROM veiculos")
+        df_veiculos_reg = df_veiculos_global
         exibir_tabela_padronizada(df_veiculos_reg, "veiculos")
         
         if not df_veiculos_reg.empty:
@@ -672,12 +684,15 @@ elif menu == "Mobilização / Desmobilização":
     st.title("Mobilização & Vistoria")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM mobilizacoes"), "mobilizacoes")
     with st.form("form_mob"):
-        eq = st.text_input("Equipamento")
-        dest = st.text_input("Destino / Origem")
+        eq = st.selectbox("Equipamento (Automático)", lista_tags_veiculos if lista_tags_veiculos else ["Nenhum veículo cadastrado"])
+        dest = st.text_input("Destino / Obra / Canteiro")
         if st.form_submit_button("Registar Movimento"):
-            executar_comando_sql("INSERT INTO mobilizacoes", (eq, "Mobilização", dest, "Encarregado", datetime.now().strftime("%d/%m/%Y"), "0", ""))
-            st.success("Movimento registado.")
-            st.rerun()
+            if lista_tags_veiculos:
+                executar_comando_sql("INSERT INTO mobilizacoes", (eq, "Mobilização", dest, "Encarregado", datetime.now().strftime("%d/%m/%Y"), "0", ""))
+                st.success("Movimento registado.")
+                st.rerun()
+            else:
+                st.error("Cadastre um veículo primeiro.")
 
 elif menu == "Controle de Manutenção":
     st.title("Controle de Manutenção")
@@ -687,13 +702,16 @@ elif menu == "Abastecimentos & Combustível":
     st.title("Abastecimentos & Combustível")
     exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM combustivel"), "combustivel")
     with st.form("form_comb"):
-        eq = st.text_input("Equipamento")
+        eq = st.selectbox("Equipamento (Automático)", lista_tags_veiculos if lista_tags_veiculos else ["Nenhum veículo cadastrado"])
         lit = st.number_input("Litros", min_value=0.0)
         val = st.number_input("Valor Total (R$)", min_value=0.0)
         if st.form_submit_button("Registar Abastecimento"):
-            executar_comando_sql("INSERT INTO combustivel", (eq, lit, val, "Posto Central", "Motorista", datetime.now().strftime("%d/%m/%Y")))
-            st.success("Abastecimento guardado.")
-            st.rerun()
+            if lista_tags_veiculos:
+                executar_comando_sql("INSERT INTO combustivel", (eq, lit, val, "Posto Central", "Motorista", datetime.now().strftime("%d/%m/%Y")))
+                st.success("Abastecimento guardado.")
+                st.rerun()
+            else:
+                st.error("Cadastre um veículo primeiro.")
 
 elif menu == "Ordens de Serviço (OS)":
     st.title("Gestão de Ordens de Serviço (OS)")
@@ -735,12 +753,15 @@ elif menu == "Ordens de Serviço (OS)":
                 st.download_button("Baixar PDF da OS", data=pdf_bytes, file_name=f"OS_{os_selecionada}.pdf", mime="application/pdf")
     with t_os_fechar:
         with st.form("form_os_novo"):
-            tag = st.text_input("TAG do Equipamento")
-            desc = st.text_area("Descrição do Problema")
-            if st.form_submit_button("Abrir OS") and tag:
-                executar_comando_sql("INSERT INTO manutencoes", (tag, "Corretiva", "Falha Mecânica", desc, datetime.now().strftime("%d/%m/%Y"), datetime.now().strftime("%H:%M"), "Oficina", 0.0, "Mecânica", "Própria"))
-                st.success("OS aberta com sucesso.")
-                st.rerun()
+            tag = st.selectbox("TAG do Equipamento (Automático)", lista_tags_veiculos if lista_tags_veiculos else ["Nenhum veículo cadastrado"])
+            desc = st.text_area("Descrição do Problema / Manutenção")
+            if st.form_submit_button("Abrir OS"):
+                if lista_tags_veiculos:
+                    executar_comando_sql("INSERT INTO manutencoes", (tag, "Corretiva", "Falha Mecânica", desc, datetime.now().strftime("%d/%m/%Y"), datetime.now().strftime("%H:%M"), "Oficina", 0.0, "Mecânica", "Própria"))
+                    st.success("OS aberta com sucesso.")
+                    st.rerun()
+                else:
+                    st.error("Cadastre um veículo primeiro.")
 
 elif menu == "Gestão & Alertas de Multas":
     st.title("Controle de Multas")
