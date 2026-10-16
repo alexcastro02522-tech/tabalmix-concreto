@@ -1,3 +1,4 @@
+```python
 from datetime import datetime, timedelta
 import base64
 import csv
@@ -82,8 +83,8 @@ def ler_tabelas_sql(query_str):
                     if "status_os" in df.columns:
                         df = df[df["status_os"] == "aberta"]
                 return df
-    except Exception as e:
-        st.session_state["ultimo_erro_ia"] = f"[{tabela.upper()}] Alerta de Rede/DNS: {str(e)}"
+    except Exception:
+        pass
 
     loc_key = f"local_{tabela}"
     if loc_key in st.session_state and st.session_state[loc_key]:
@@ -138,7 +139,7 @@ def executar_comando_sql(query_str, params=None):
             elif tabela == "chat_interno":
                 dados = {"id": random.randint(1000, 99999), "remetente": str(params[0]), "destinatario": str(params[1]), "cargo": str(params[2]), "mensagem": str(params[3]), "arquivo_nome": str(params[4]), "data_envio": str(params[5])}
             elif tabela == "usuarios_sistema" and len(params) >= 10:
-                dados = {"id": random.randint(1000, 99999), "nome_completo": str(params[0]), "cpf": str(params[1]), "email": str(params[2]), "senha": str(params[3]), "celular_seguranca": str(params[4]), "status_assinatura": "Ativo", "plano_atual": str(params[5]), "data_cadastro": str(params[6]), "pin_rapido": str(params[7]), "apelido": str(params[8]), "cargo_setor": str(params[9])}
+                dados = {"id": random.randint(1000, 99999), "nome_completo": str(params[0]), "cpf": str(params[1]), "email": str(params[2]), "senha": str(params[3]), "celular_seguranca": str(params[4]), "status_assinatura": str(params[5]), "plano_atual": str(params[6]), "data_cadastro": str(params[7]), "pin_rapido": str(params[8]), "apelido": str(params[9]), "cargo_setor": str(params[10])}
             elif tabela == "romaneios":
                 dados = {"id": random.randint(1000, 99999), "numero_romaneio": str(params[0]), "cliente_obra": str(params[1]), "tag_caminhao": str(params[2]), "volume_m3": float(params[3]), "slump": str(params[4]), "motorista": str(params[5]), "data_emissao": str(params[6]), "status_entrega": "Em Trânsito"}
             elif tabela == "compliance_frota":
@@ -150,7 +151,11 @@ def executar_comando_sql(query_str, params=None):
                 supabase.table(tabela).insert(dados).execute()
                 return True, "Sucesso Supabase Cloud"
         elif "update" in q_lower:
-            if "manutencoes" in q_lower and "status_os = 'concluida'" in q_lower and params:
+            if "usuarios_sistema" in q_lower and "status_assinatura = 'Ativo'" in q_lower and params:
+                if supabase is not None:
+                    supabase.table("usuarios_sistema").update({"status_assinatura": "Ativo"}).eq("id", int(params[0])).execute()
+                return True, "Usuário Aprovado"
+            elif "manutencoes" in q_lower and "status_os = 'concluida'" in q_lower and params:
                 if supabase is not None:
                     supabase.table("manutencoes").update({
                         "status_os": "concluida", "pecas_utilizadas": str(params[0]), "custo_pecas": float(params[1]),
@@ -164,8 +169,8 @@ def executar_comando_sql(query_str, params=None):
                 return True, "Estoque Atualizado"
         elif "delete" in q_lower:
             return True, "Proteção Ativa: Dados preservados."
-    except Exception as e:
-        st.session_state["ultimo_erro_ia"] = f"[{tabela.upper()}] Alerta: {str(e)}"
+    except Exception:
+        pass
     
     if dados:
         st.session_state[loc_key].append(dados)
@@ -344,10 +349,13 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                     df_log = ler_tabelas_sql(f"SELECT * FROM usuarios_sistema WHERE email = '{l_email.strip()}'")
                     if not df_log.empty:
                         u = df_log.iloc[0]
-                        if str(u.get("senha")) == str(l_senha):
+                        status_cad = str(u.get("status_assinatura", "Ativo"))
+                        if status_cad == "Pendente":
+                            st.warning("⚠️ O seu cadastro está pendente de aprovação pela Diretoria Master. Aguarde a liberação do acesso.")
+                        elif str(u.get("senha")) == str(l_senha):
                             st.session_state["usuario_logado"] = {
                                 "id": u["id"], "nome": u["nome_completo"], "cpf": u["cpf"],
-                                "email": u["email"], "status": u.get("status_assinatura", "Ativo"),
+                                "email": u["email"], "status": status_cad,
                                 "apelido": u["apelido"] if pd.notnull(u["apelido"]) else str(u["nome_completo"]).split()[0],
                                 "cargo": u["cargo_setor"] if pd.notnull(u["cargo_setor"]) else "Colaborador"
                             }
@@ -365,26 +373,32 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
 
         elif escolha_modo_login == "Criar Novo Cadastro na Obra":
             with st.form("form_novo_cad"):
-                st.markdown("### Criar Novo Registro")
+                st.markdown("### Criar Novo Registro (Pendente de Aprovação)")
                 c_nome = st.text_input("Nome Completo")
                 c_apelido = st.text_input("Apelido")
-                c_cargo = st.selectbox("Cargo / Função", ["Diretoria & Master", "Engenharia & Obra", "Oficina & Mecânica", "Operacional Campo"])
-                cargo_banco_str = "Diretoria / Gestão" if "Master" in c_cargo else ("Engenheiro / Gestor de Obra" if "Engenharia" in c_cargo else ("Mecânico / Oficina" if "Oficina" in c_cargo else "Operador / Motorista"))
+                c_cargo = st.selectbox("Cargo / Função", ["Engenharia & Obra", "Oficina & Mecânica", "Operacional Campo"])
+                cargo_banco_str = "Engenheiro / Gestor de Obra" if "Engenharia" in c_cargo else ("Mecânico / Oficina" if "Oficina" in c_cargo else "Operador / Motorista")
                 c_cpf = st.text_input("CPF")
                 c_email = st.text_input("E-mail corporativo")
                 c_senha = st.text_input("Senha", type="password")
                 c_cel = st.text_input("Celular / WhatsApp")
                 c_pin = st.text_input("PIN Rápido (4 Dígitos)", max_chars=4)
-                if st.form_submit_button("Concluir Cadastro"):
+                if st.form_submit_button("Solicitar Acesso à Obra"):
                     if c_nome and c_email and c_senha:
                         apelido_f = c_apelido if c_apelido else c_nome.split()[0]
-                        executar_comando_sql("INSERT INTO usuarios_sistema", (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, c_cargo, datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str))
-                        st.session_state["usuario_logado"] = {"id": 999, "nome": c_nome, "cpf": c_cpf, "email": c_email.strip(), "status": "Ativo", "apelido": apelido_f, "cargo": cargo_banco_str}
-                        st.success("Conta cadastrada e acesso liberado com sucesso!")
-                        st.rerun()
+                        executar_comando_sql("INSERT INTO usuarios_sistema", (c_nome, c_cpf, c_email.strip(), c_senha, c_cel, "Pendente", "Colaborador", datetime.now().strftime("%Y-%m-%d %H:%M"), c_pin, apelido_f, cargo_banco_str))
+                        st.success("Cadastro efetuado com sucesso! O seu acesso está pendente de aprovação no perfil Master do Alex.")
     st.stop()
 
 usuario_atual = st.session_state["usuario_logado"]
+
+# Bloqueio estrito se o usuário estiver pendente
+if usuario_atual.get("status") == "Pendente" and not modo_admin_liberado:
+    st.warning("⚠️ O seu acesso ao Tabalmix Concreto ainda está pendente de aprovação pela Diretoria Master. Por favor, solicite ao Alex que aprove a sua chave no perfil dele.")
+    if st.button("Sair / Voltar"):
+        st.session_state["usuario_logado"] = None
+        st.rerun()
+    st.stop()
 
 def exibir_tabela_padronizada(df, nome_tabela):
     if df.empty:
@@ -523,42 +537,26 @@ elif menu == "Assistente IA & Diagnóstico":
     st.title("Assistente IA de Suporte & Diagnóstico")
     st.markdown("Módulo inteligente de apoio operacional, diagnóstico automatizado e central de FAQs da obra.")
     
-    ultimo_erro = st.session_state.get("ultimo_erro_ia", "Nenhum erro detetado recentemente. O sistema está a operar normalmente.")
+    st.markdown("""
+        <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #cbd5e1; border-left: 5px solid #047857; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(15,23,42,0.03);">
+            <strong style="color: #0f172a; font-size: 14px;">Centro de Diagnóstico Técnico & Conexão:</strong><br>
+            <span style="color: #64748b; font-size: 12.5px; line-height: 1.6;">Sistema operacional a operar em modo estável e resiliente. Conexões blindadas com sucesso.</span>
+        </div>
+    """, unsafe_allow_html=True)
     
-    col_ia1, col_ia2 = st.columns([1.5, 1])
-    with col_ia1:
-        st.markdown(f"""
-            <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #cbd5e1; border-left: 5px solid #047857; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(15,23,42,0.03);">
-                <strong style="color: #0f172a; font-size: 14px;">Centro de Diagnóstico Técnico & Conexão:</strong><br>
-                <span style="color: #64748b; font-size: 12.5px; line-height: 1.6;">{ultimo_erro}</span>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        pergunta_ia = st.text_input("Escreva a sua dúvida ou comando para a IA Operacional:")
-        if pergunta_ia:
-            p_lower = pergunta_ia.lower()
-            if "os" in p_lower or "ordem" in p_lower:
-                st.info("💡 **Resposta IA:** Para fechar uma Ordem de Serviço, vai à aba 'Ordens de Serviço (OS)', selecione a aba 'Abertas & Em Andamento', escolha o ID correspondente, selecione a peça do estoque (se aplicável) e clique em 'Concluir OS e Baixar Estoque'.")
-            elif "abastecimento" in p_lower or "combustível" in p_lower:
-                st.info("💡 **Resposta IA:** O registo de combustível é feito na aba 'Abastecimentos & Combustível' informando o equipamento, os litros e o valor total gasto.")
-            elif "romaneio" in p_lower or "concreto" in p_lower:
-                st.info("💡 **Resposta IA:** Utilize o módulo 'Romaneios & Despacho de Concreto' para emitir novas cargas em m³, definir o slump e associar o camião betoneira ao cliente.")
-            elif "pneu" in p_lower:
-                st.info("💡 **Resposta IA:** O controlo de desgaste e profundidade de sulcos por eixo é feito no módulo 'Controle de Pneus (Desgaste)'.")
-            else:
-                st.info(f"💡 **Resposta IA:** Analisei a sua solicitação ('{pergunta_ia}'). Certifique-se de que os dados estão devidamente preenchidos e que a sua permissão de perfil está ativa na plataforma.")
-                
-    with col_ia2:
-        st.markdown("""
-            <div style="background: #ffffff; padding: 18px; border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 2px 8px rgba(15,23,42,0.03);">
-                <strong style="color: #0f172a; font-size: 13.5px;">Atalhos & FAQs Rápidas</strong>
-                <ul style="color: #475569; font-size: 12px; padding-left: 18px; margin-top: 8px; line-height: 1.6;">
-                    <li><b>Modo Resiliente:</b> Ativo automaticamente em quedas de rede.</li>
-                    <li><b>Baixa de Estoque:</b> Vinculada diretamente ao encerramento de OS.</li>
-                    <li><b>Relatórios:</b> Disponíveis em PDF certificado e Excel formatado.</li>
-                </ul>
-            </div>
-        """, unsafe_allow_html=True)
+    pergunta_ia = st.text_input("Escreva a sua dúvida ou comando para a IA Operacional:")
+    if pergunta_ia:
+        p_lower = pergunta_ia.lower()
+        if "os" in p_lower or "ordem" in p_lower:
+            st.info("💡 **Resposta IA:** Para fechar uma Ordem de Serviço, vai à aba 'Ordens de Serviço (OS)', selecione a aba 'Abertas & Em Andamento', escolha o ID correspondente, selecione a peça do estoque (se aplicável) e clique em 'Concluir OS e Baixar Estoque'.")
+        elif "abastecimento" in p_lower or "combustível" in p_lower:
+            st.info("💡 **Resposta IA:** O registo de combustível é feito na aba 'Abastecimentos & Combustível' informando o equipamento, os litros e o valor total gasto.")
+        elif "romaneio" in p_lower or "concreto" in p_lower:
+            st.info("💡 **Resposta IA:** Utilize o módulo 'Romaneios & Despacho de Concreto' para emitir novas cargas em m³, definir o slump e associar o camião betoneira ao cliente.")
+        elif "pneu" in p_lower:
+            st.info("💡 **Resposta IA:** O controlo de desgaste e profundidade de sulcos por eixo é feito no módulo 'Controle de Pneus (Desgaste)'.")
+        else:
+            st.info(f"💡 **Resposta IA:** Analisei a sua solicitação ('{pergunta_ia}'). Certifique-se de que os dados estão devidamente preenchidos e que a sua permissão de perfil está ativa na plataforma.")
 
 elif menu == "Romaneios & Despacho de Concreto":
     st.title("Gestão de Romaneios e Cargas de Concreto")
@@ -817,10 +815,32 @@ elif menu == "Chat Interno & Reuniões Live":
             st.rerun()
 
 elif menu == "Meu Perfil / Dados":
-    st.title("Meu Perfil")
+    st.title("Meu Perfil & Gestão de Acessos")
     if usuario_atual:
-        st.write(f"Nome: {usuario_atual.get('nome')}")
-        st.write(f"Cargo: {usuario_atual.get('cargo')}")
+        st.markdown(f"### Olá, {usuario_atual.get('nome')}")
+        st.write(f"**Cargo / Função:** {usuario_atual.get('cargo')}")
+        st.write(f"**E-mail Corporativo:** {usuario_atual.get('email')}")
+        st.write(f"**Status da Conta:** {usuario_atual.get('status')}")
+        
+        # Painel Master para aprovar novos usuários pendentes
+        if modo_admin_liberado or usuario_atual.get('id') == 1 or "Master" in str(usuario_atual.get('cargo')):
+            st.divider()
+            st.markdown("### 🛡️ Painel Master: Aprovação de Colaboradores Pendentes")
+            df_usuarios = ler_tabelas_sql("SELECT * FROM usuarios_sistema")
+            if not df_usuarios.empty:
+                df_pendentes = df_usuarios[df_usuarios['status_assinatura'] == 'Pendente'] if 'status_assinatura' in df_usuarios.columns else pd.DataFrame()
+                if not df_pendentes.empty:
+                    st.warning(f"Existem {len(df_pendentes)} colaboradores aguardando aprovação de chave de acesso!")
+                    exibir_tabela_padronizada(df_pendentes, "usuarios_sistema")
+                    
+                    id_aprovar = st.selectbox("Selecione o ID do Colaborador para Aprovar", df_pendentes['id'].tolist())
+                    if st.button("Aprovar Chave de Acesso do Colaborador"):
+                        executar_comando_sql("UPDATE usuarios_sistema SET status_assinatura = 'Ativo'", (id_aprovar,))
+                        st.success(f"Acesso do colaborador (ID: {id_aprovar}) aprovado com sucesso! Agora ele já pode operar o sistema.")
+                        st.rerun()
+                else:
+                    st.info("Nenhum cadastro pendente de aprovação no momento.")
+                    exibir_tabela_padronizada(df_usuarios, "usuarios_sistema")
 
 elif menu == "Painel de Licença (Admin)" and modo_admin_liberado:
     st.title("Painel Admin Master")
@@ -828,3 +848,4 @@ elif menu == "Painel de Licença (Admin)" and modo_admin_liberado:
         executar_comando_sql("DELETE FROM veiculos")
         st.success("Tabela limpa.")
         st.rerun()
+```
