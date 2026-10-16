@@ -12,8 +12,9 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import streamlit as st
 from supabase import create_client, Client
-SUPABASE_URL = "https://dqdtjofuytnokjnjcyxc.supabase.co"
-SUPABASE_KEY = "sb_publishable_m75yp7ciWqKwULD7365gA_cd3GS1pg"
+
+SUPABASE_URL = "https://ctibigorhynwnkuzqfjm.supabase.co"
+SUPABASE_KEY = "sb_publishable_m75yp7ycIwqKwULd7365gA_cd3GSlpg"
 
 @st.cache_resource
 def init_supabase():
@@ -24,7 +25,6 @@ def init_supabase():
 
 supabase = init_supabase()
 
-# --- INICIALIZAÇÃO DE ESTADO LOCAL (FALLBACK GARANTIDO E COMPLETO) ---
 for chave_est in [
     "local_veiculos", "local_chat_interno", "local_usuarios_sistema", 
     "local_manutencoes", "local_combustivel", "local_mobilizacoes", 
@@ -43,7 +43,6 @@ def testar_conexao_supabase():
         pass
     return False
 
-# --- FUNÇÕES HÍBRIDAS ULTRA-RESILIENTES (SUPABASE + FALLBACK) ---
 def ler_tabelas_sql(query_str):
     q_lower = query_str.lower()
     tabela = "veiculos"
@@ -183,26 +182,40 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-st.markdown("<style>header[data-testid='stHeader'] {background: transparent !important;} header[data-testid='stHeader'] [data-testid='baseButton-header'] {font-size: 0px !important;} header[data-testid='stHeader'] [data-testid='baseButton-header']::after {content: '☰ Menu' !important; font-size: 13px !important; font-weight: 700 !important; color: #047857 !important; background: #ffffff !important; padding: 4px 10px !important; border-radius: 8px !important; border: 1px solid #cbd5e1 !important; display: inline-block !important;}</style>", unsafe_allow_html=True)
-
+# --- DESIGN CLEAN & LIGHT DE PRIMEIRO MUNDO (ESTILO ESTÚDIO PROFISSIONAL) ---
 st.markdown("""
     <style>
+    header[data-testid='stHeader'] {background: #ffffff !important; border-bottom: 1px solid #e2e8f0;} 
+    header[data-testid='stHeader'] [data-testid='baseButton-header'] {font-size: 0px !important;} 
+    header[data-testid='stHeader'] [data-testid='baseButton-header']::after {content: '☰ Menu' !important; font-size: 13px !important; font-weight: 700 !important; color: #047857 !important; background: #f8fafc !important; padding: 4px 10px !important; border-radius: 8px !important; border: 1px solid #cbd5e1 !important; display: inline-block !important;}
+    
     .block-container { padding-top: 1.5rem !important; padding-bottom: 3.5rem !important; max-width: 100% !important; }
-    [data-testid="stSidebar"] { background: #f8fafc !important; border-right: 1px solid #e2e8f0; }
-    .stApp { background: #f1f5f9 !important; color: #0f172a !important; }
-    h1, h2, h3, h4 { color: #0f172a !important; font-weight: 800; }
-    input, textarea, select { background-color: #ffffff !important; color: #0f172a !important; }
+    [data-testid="stSidebar"] { background: #ffffff !important; border-right: 1px solid #e2e8f0; }
+    .stApp { background: #f4f6f9 !important; color: #1e293b !important; }
+    h1, h2, h3, h4 { color: #0f172a !important; font-weight: 800; letter-spacing: -0.5px; }
+    
+    input, textarea, select { background-color: #ffffff !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important; border-radius: 8px !important; }
+    
     .metric-card-corporate {
         background: #ffffff; border: 1px solid #e2e8f0; border-left: 5px solid #047857;
-        padding: 22px 20px; border-radius: 14px; box-shadow: 0 4px 12px rgba(15, 23, 42, 0.03); margin-bottom: 12px;
+        padding: 22px 20px; border-radius: 12px; box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04); margin-bottom: 12px;
     }
     .metric-title { font-size: 11px; font-weight: 700; text-transform: uppercase; color: #64748b; margin-bottom: 6px; }
     .metric-value { font-size: 24px; font-weight: 900; color: #0f172a; }
     .metric-sub { font-size: 11.5px; font-weight: 600; color: #047857; margin-top: 4px; }
+    
+    .manifesto-card {
+        background: linear-gradient(135deg, #f0fdf4 0%, #e6f4ea 100%);
+        border: 1px solid #bbf7d0; border-radius: 12px; padding: 20px;
+        box-shadow: 0 4px 12px rgba(4, 120, 87, 0.05); margin-bottom: 25px; text-align: center;
+    }
+    
     .stButton button {
         background: linear-gradient(135deg, #047857 0%, #065f46 100%) !important; 
-        color: white !important; font-weight: 700 !important; border-radius: 10px !important; border: none !important;
+        color: white !important; font-weight: 700 !important; border-radius: 8px !important; border: none !important;
+        box-shadow: 0 2px 6px rgba(4, 120, 87, 0.2); transition: all 0.2s ease;
     }
+    .stButton button:hover { opacity: 0.95; transform: translateY(-1px); }
     </style>
 """, unsafe_allow_html=True)
 
@@ -308,19 +321,19 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
             with open("caminhoes.jpg", "rb") as image_file:
                 encoded_logo_login = base64.b64encode(image_file.read()).decode()
             st.markdown(f"""
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 10px 30px rgba(4,120,87,0.15); margin-top: 10px; margin-bottom: 20px; color: white;">
-                    <div style="border-radius: 12px; overflow: hidden; max-height: 100px; border: 2px solid rgba(255,255,255,0.8); margin-bottom: 12px;">
+                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 10px 30px rgba(15,23,42,0.06); margin-top: 10px; margin-bottom: 20px;">
+                    <div style="border-radius: 12px; overflow: hidden; max-height: 100px; border: 2px solid #e2e8f0; margin-bottom: 12px;">
                         <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 100px; object-fit: cover; display: block;">
                     </div>
-                    <h1 style="color: white !important; margin: 0; font-size: 22px; font-weight: 800;">TABALMIX CONCRETO</h1>
-                    <p style="color: #e2e8f0; font-size: 11px; margin: 4px 0 0 0; text-transform: uppercase; font-weight: 600;">Gestão Corporativa • Castro Tech & Supabase</p>
+                    <h1 style="color: #0f172a !important; margin: 0; font-size: 22px; font-weight: 800;">TABALMIX CONCRETO</h1>
+                    <p style="color: #64748b; font-size: 11px; margin: 4px 0 0 0; text-transform: uppercase; font-weight: 600;">Gestão Corporativa • Castro Tech & Supabase</p>
                 </div>
             """, unsafe_allow_html=True)
         except Exception:
             st.markdown("""
-                <div style="background: linear-gradient(135deg, #065f46 0%, #047857 100%); border-radius: 16px; padding: 25px; text-align: center; color: white; margin-bottom: 20px;">
-                    <h1 style="color: white !important; margin: 0; font-size: 22px; font-weight: 800;">TABALMIX CONCRETO</h1>
-                    <p style="color: #e2e8f0; font-size: 11px; text-transform: uppercase;">Castro Tech Architecture</p>
+                <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 25px; text-align: center; margin-bottom: 20px;">
+                    <h1 style="color: #0f172a !important; margin: 0; font-size: 22px; font-weight: 800;">TABALMIX CONCRETO</h1>
+                    <p style="color: #64748b; font-size: 11px; text-transform: uppercase;">Castro Tech Architecture</p>
                 </div>
             """, unsafe_allow_html=True)
 
@@ -384,14 +397,14 @@ def exibir_tabela_padronizada(df, nome_tabela):
     st.dataframe(df, use_container_width=True, hide_index=True)
 
 with st.sidebar:
-    st.markdown("<div style='text-align:center; font-weight:900; font-size:16px;'>TABALMIX CONCRETO</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align:center; font-weight:900; font-size:16px; color:#0f172a;'>TABALMIX CONCRETO</div>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:center; font-size:10.5px; color:#64748b; margin-bottom:10px;'>Castro Tech Architecture</div>", unsafe_allow_html=True)
     
     conectado_nuvem = testar_conexao_supabase()
     if conectado_nuvem:
         st.markdown("<div style='background:#d1fae5; color:#065f46; padding:6px 10px; border-radius:8px; font-size:11px; font-weight:700; text-align:center; margin-bottom:10px;'>🟢 Conectado ao Supabase Cloud</div>", unsafe_allow_html=True)
     else:
-        st.markdown("<div style='background:#fee2e2; color:#991b1b; padding:6px 10px; border-radius:8px; font-size:11px; font-weight:700; text-align:center; margin-bottom:10px;'>🟡 Modo Local Resiliente (Offline)</div>", unsafe_allow_html=True)
+        st.markdown("<div style='background:#fef3c7; color:#b45309; padding:6px 10px; border-radius:8px; font-size:11px; font-weight:700; text-align:center; margin-bottom:10px;'>🛡️ Modo Resiliente (Offline)</div>", unsafe_allow_html=True)
 
     if modo_admin_liberado:
         st.success("Modo Admin Ativo")
@@ -430,6 +443,16 @@ if menu == "Visão Geral":
     st.title("Painel Executivo de Operações")
     st.markdown("<p style='color: #64748b; margin-top: -10px; margin-bottom: 25px;'>Monitoramento corporativo em tempo real — Castro Tech</p>", unsafe_allow_html=True)
     
+    st.markdown("""
+        <div class="manifesto-card">
+            <h3 style="color: #047857 !important; margin: 0 0 6px 0; font-size: 14px; text-transform: uppercase; font-weight: 900;">Manifesto Executivo</h3>
+            <p style="color: #334155; font-size: 12.5px; margin: 0; font-weight: 600; line-height: 1.5;">
+                TABALMIX CONCRETO — Sistema de Gestão de Frota & Operações. Forjado no campo, projetado para resistir a falhas de rede. Gerindo betoneiras, frota e canteiros com precisão cirúrgica. Cada linha de código é o nosso suor.
+            </p>
+            <p style="color: #047857; font-size: 11px; margin: 6px 0 0 0; font-weight: 700;">— Castro Tech Architecture</p>
+        </div>
+    """, unsafe_allow_html=True)
+
     df_veiculos = ler_tabelas_sql("SELECT * FROM veiculos")
     df_manut = ler_tabelas_sql("SELECT * FROM manutencoes")
     df_comb = ler_tabelas_sql("SELECT * FROM combustivel")
@@ -463,7 +486,7 @@ if menu == "Visão Geral":
             st.download_button("Baixar Relatório Excel", data=excel_geral, file_name="relatorio_frota.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         with col_dl3:
             msg_wpp = urllib.parse.quote("RELATÓRIO EXECUTIVO TABALMIX CONCRETO - Frota sincronizada.")
-            st.markdown(f'<a href="https://api.whatsapp.com/send?text={msg_wpp}" target="_blank"><button style="background:linear-gradient(135deg, #047857 0%, #065f46 100%); color:white; font-weight:700; border-radius:10px; border:none; padding:0.65rem 1.6rem; width:100%; cursor:pointer;">Compartilhar no WhatsApp</button></a>', unsafe_allow_html=True)
+            st.markdown(f'<a href="https://api.whatsapp.com/send?text={msg_wpp}" target="_blank"><button style="background:linear-gradient(135deg, #047857 0%, #065f46 100%); color:white; font-weight:700; border-radius:8px; border:none; padding:0.65rem 1.6rem; width:100%; cursor:pointer;">Compartilhar no WhatsApp</button></a>', unsafe_allow_html=True)
     else:
         st.info("Nenhum veículo registado.")
 
@@ -485,8 +508,8 @@ elif menu == "Assistente IA & Diagnóstico":
     
     ultimo_erro = st.session_state.get("ultimo_erro_ia", "Nenhum erro detetado recentemente. O sistema está a operar normalmente.")
     st.markdown(f"""
-        <div style="background: #e2e8f0; padding: 15px; border-radius: 10px; border-left: 5px solid #047857; margin-bottom: 20px;">
-            <strong>Diagnóstico Técnico Atual:</strong><br>{ultimo_erro}
+        <div style="background: #ffffff; padding: 15px; border-radius: 10px; border: 1px solid #cbd5e1; border-left: 5px solid #047857; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(15,23,42,0.03);">
+            <strong>Diagnóstico Técnico Atual:</strong><br><span style="color: #64748b; font-size: 13px;">{ultimo_erro}</span>
         </div>
     """, unsafe_allow_html=True)
 
@@ -494,13 +517,13 @@ elif menu == "Assistente IA & Diagnóstico":
     if pergunta_ia:
         p_lower = pergunta_ia.lower()
         if "os" in p_lower or "ordem" in p_lower:
-            st.info("💡 **Dica da IA:** Para fechar uma Ordem de Serviço, vai à aba 'Ordens de Serviço (OS)', seleciona a aba 'Abertas', escolhe o ID da OS e clica em 'Concluir OS e Baixar Estoque' para atualizar automaticamente o inventário.")
+            st.info("💡 **Dica da IA:** Para fechar uma Ordem de Serviço, vai à aba 'Ordens de Serviço (OS)', seleciona a aba 'Abertas', escolhe o ID da OS e clica em 'Concluir OS e Baixar Estoque'.")
         elif "abastecimento" in p_lower:
-            st.info("💡 **Dica da IA:** O registo de combustível é feito na aba 'Abastecimentos & Combustível' preenchendo os litros e o valor total gasto no posto.")
+            st.info("💡 **Dica da IA:** O registo de combustível é feito na aba 'Abastecimentos & Combustível' preenchendo os litros e o valor total gasto.")
         elif "romaneio" in p_lower or "concreto" in p_lower:
-            st.info("💡 **Dica da IA:** Utilize o novo módulo 'Romaneios & Despacho de Concreto' para gerir o volume em m³ e o abatimento (Slump) entregue nas obras.")
+            st.info("💡 **Dica da IA:** Utilize o módulo 'Romaneios & Despacho de Concreto' para gerir o volume em m³ e o abatimento (Slump) entregue nas obras.")
         else:
-            st.info("💡 **Dica da IA:** Certifica-te de que tens permissão de perfil adequada e que os dados obrigatórios do formulário estão preenchidos.")
+            st.info("💡 **Dica da IA:** Certifica-te de que tens permissão de perfil adequada e que os dados obrigatórios estão preenchidos.")
 
 elif menu == "Romaneios & Despacho de Concreto":
     st.title("Gestão de Romaneios e Cargas de Concreto")
