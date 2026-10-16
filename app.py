@@ -12,9 +12,9 @@ from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import streamlit as st
 from supabase import create_client, Client
+SUPABASE_URL = "https://dqdtjofuytnokjnjcyxc.supabase.co"
+SUPABASE_KEY = "sb_publishable_m75yp7ciWqKwULD7365gA_cd3GS1pg"
 
-SUPABASE_URL = "https://ctibigorhynwnkuzqfjm.supabase.co"
-SUPABASE_KEY = "sb_publishable_m75yp7ycIwqKwULd7365gA_cd3GSlpg"
 
 @st.cache_resource
 def init_supabase():
