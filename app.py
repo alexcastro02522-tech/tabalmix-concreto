@@ -318,8 +318,8 @@ if st.session_state["usuario_logado"] is None and not modo_admin_liberado:
                 encoded_logo_login = base64.b64encode(image_file.read()).decode()
             st.markdown(f"""
                 <div style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 25px; text-align: center; box-shadow: 0 10px 30px rgba(15,23,42,0.06); margin-top: 10px; margin-bottom: 20px;">
-                    <div style="border-radius: 12px; overflow: hidden; max-height: 100px; border: 2px solid #e2e8f0; margin-bottom: 12px;">
-                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 100px; object-fit: cover; display: block;">
+                    <div style="border-radius: 12px; overflow: hidden; max-height: 120px; border: 2px solid #e2e8f0; margin-bottom: 12px;">
+                        <img src="data:image/jpeg;base64,{encoded_logo_login}" style="width: 100%; height: 120px; object-fit: cover; display: block;">
                     </div>
                     <h1 style="color: #0f172a !important; margin: 0; font-size: 22px; font-weight: 800;">TABALMIX CONCRETO</h1>
                     <p style="color: #64748b; font-size: 11px; margin: 4px 0 0 0; text-transform: uppercase; font-weight: 600;">Gestão Corporativa • Castro Tech & Supabase</p>
@@ -393,6 +393,17 @@ def exibir_tabela_padronizada(df, nome_tabela):
     st.dataframe(df, use_container_width=True, hide_index=True)
 
 with st.sidebar:
+    try:
+        with open("caminhoes.jpg", "rb") as image_file:
+            encoded_logo_sidebar = base64.b64encode(image_file.read()).decode()
+        st.markdown(f"""
+            <div style="border-radius: 10px; overflow: hidden; border: 1px solid #cbd5e1; margin-bottom: 15px; box-shadow: 0 4px 12px rgba(15,23,42,0.06);">
+                <img src="data:image/jpeg;base64,{encoded_logo_sidebar}" style="width: 100%; height: 110px; object-fit: cover; display: block;">
+            </div>
+        """, unsafe_allow_html=True)
+    except Exception:
+        pass
+
     st.markdown("<div style='text-align:center; font-weight:900; font-size:16px; color:#0f172a;'>TABALMIX CONCRETO</div>", unsafe_allow_html=True)
     st.markdown("<div style='text-align:center; font-size:10.5px; color:#64748b; margin-bottom:10px;'>Castro Tech Architecture</div>", unsafe_allow_html=True)
     
@@ -435,7 +446,6 @@ if modo_admin_liberado:
 
 menu = st.sidebar.radio("Navegação", lista_menus, label_visibility="collapsed")
 
-# Buscar lista atualizada de veículos para seletores automáticos em todo o sistema
 df_veiculos_global = ler_tabelas_sql("SELECT * FROM veiculos")
 lista_tags_veiculos = df_veiculos_global['tag_prefixo'].tolist() if not df_veiculos_global.empty and 'tag_prefixo' in df_veiculos_global.columns else []
 
@@ -443,6 +453,17 @@ if menu == "Visão Geral":
     st.title("Painel Executivo de Operações")
     st.markdown("<p style='color: #64748b; margin-top: -10px; margin-bottom: 25px;'>Monitoramento corporativo em tempo real — Castro Tech</p>", unsafe_allow_html=True)
     
+    try:
+        with open("caminhoes.jpg", "rb") as image_file:
+            encoded_banner = base64.b64encode(image_file.read()).decode()
+        st.markdown(f"""
+            <div style="border-radius: 14px; overflow: hidden; border: 1px solid #cbd5e1; margin-bottom: 25px; box-shadow: 0 8px 24px rgba(15,23,42,0.08); max-height: 220px;">
+                <img src="data:image/jpeg;base64,{encoded_banner}" style="width: 100%; height: 220px; object-fit: cover; display: block;">
+            </div>
+        """, unsafe_allow_html=True)
+    except Exception:
+        pass
+
     st.markdown("""
         <div class="manifesto-card">
             <h3 style="color: #047857 !important; margin: 0 0 6px 0; font-size: 14px; text-transform: uppercase; font-weight: 900;">Manifesto Executivo</h3>
