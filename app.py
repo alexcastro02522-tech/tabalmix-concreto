@@ -29,7 +29,8 @@ supabase = init_supabase()
 for chave_est in [
     "local_veiculos", "local_chat_interno", "local_usuarios_sistema", 
     "local_manutencoes", "local_combustivel", "local_mobilizacoes", 
-    "local_multas", "local_pecas", "local_clientes", "local_reunioes_live"
+    "local_multas", "local_pecas", "local_clientes", "local_reunioes_live",
+    "local_romaneios", "local_compliance_frota", "local_pneus_frota"
 ]:
     if chave_est not in st.session_state:
         st.session_state[chave_est] = []
@@ -57,6 +58,9 @@ def ler_tabelas_sql(query_str):
     elif "reunioes_live" in q_lower: tabela = "reunioes_live"
     elif "chaves_licenca" in q_lower: tabela = "chaves_licenca"
     elif "multas" in q_lower: tabela = "multas"
+    elif "romaneios" in q_lower: tabela = "romaneios"
+    elif "compliance_frota" in q_lower: tabela = "compliance_frota"
+    elif "pneus_frota" in q_lower: tabela = "pneus_frota"
 
     try:
         if supabase is not None:
@@ -101,6 +105,9 @@ def executar_comando_sql(query_str, params=None):
     elif "chat_interno" in q_lower: tabela = "chat_interno"
     elif "reunioes_live" in q_lower: tabela = "reunioes_live"
     elif "usuarios_sistema" in q_lower: tabela = "usuarios_sistema"
+    elif "romaneios" in q_lower: tabela = "romaneios"
+    elif "compliance_frota" in q_lower: tabela = "compliance_frota"
+    elif "pneus_frota" in q_lower: tabela = "pneus_frota"
 
     dados = {}
     loc_key = f"local_{tabela}"
@@ -134,6 +141,12 @@ def executar_comando_sql(query_str, params=None):
                 dados = {"id": random.randint(1000, 99999), "remetente": str(params[0]), "destinatario": str(params[1]), "cargo": str(params[2]), "mensagem": str(params[3]), "arquivo_nome": str(params[4]), "data_envio": str(params[5])}
             elif tabela == "usuarios_sistema" and len(params) >= 10:
                 dados = {"id": random.randint(1000, 99999), "nome_completo": str(params[0]), "cpf": str(params[1]), "email": str(params[2]), "senha": str(params[3]), "celular_seguranca": str(params[4]), "status_assinatura": "Ativo", "plano_atual": str(params[5]), "data_cadastro": str(params[6]), "pin_rapido": str(params[7]), "apelido": str(params[8]), "cargo_setor": str(params[9])}
+            elif tabela == "romaneios":
+                dados = {"id": random.randint(1000, 99999), "numero_romaneio": str(params[0]), "cliente_obra": str(params[1]), "tag_caminhao": str(params[2]), "volume_m3": float(params[3]), "slump": str(params[4]), "motorista": str(params[5]), "data_emissao": str(params[6]), "status_entrega": "Em Trânsito"}
+            elif tabela == "compliance_frota":
+                dados = {"id": random.randint(1000, 99999), "ativo_motorista": str(params[0]), "tipo_documento": str(params[1]), "numero_doc": str(params[2]), "data_vencimento": str(params[3]), "status_legal": str(params[4])}
+            elif tabela == "pneus_frota":
+                dados = {"id": random.randint(1000, 99999), "tag_veiculo": str(params[0]), "posicao_eixo": str(params[1]), "marca_pneu": str(params[2]), "sulco_mm": float(params[3]), "estado": str(params[4])}
 
             if supabase is not None and dados:
                 supabase.table(tabela).insert(dados).execute()
@@ -394,6 +407,9 @@ lista_menus = [
     "Visão Geral",
     "Robô de Testes Reais (QA)",
     "Assistente IA & Diagnóstico",
+    "Romaneios & Despacho de Concreto",
+    "Compliance & CNH (Legal)",
+    "Controle de Pneus (Desgaste)",
     "Consulta / Busca Geral",
     "Cadastro de Equipamentos",
     "Mobilização / Desmobilização",
@@ -419,19 +435,21 @@ if menu == "Visão Geral":
     df_manut = ler_tabelas_sql("SELECT * FROM manutencoes")
     df_comb = ler_tabelas_sql("SELECT * FROM combustivel")
     df_multas = ler_tabelas_sql("SELECT * FROM multas")
+    df_rom = ler_tabelas_sql("SELECT * FROM romaneios")
 
     total_frota = len(df_veiculos) if not df_veiculos.empty else 0
     os_abertas = len(df_manut[df_manut["status_os"] == "aberta"]) if not df_manut.empty and "status_os" in df_manut.columns else 0
     total_multas = len(df_multas) if not df_multas.empty else 0
     gasto_comb = df_comb['valor_total'].sum() if not df_comb.empty and 'valor_total' in df_comb.columns else 0.0
     total_litros = df_comb['litros'].sum() if not df_comb.empty and 'litros' in df_comb.columns else 0.0
+    total_m3_entregue = df_rom['volume_m3'].sum() if not df_rom.empty and 'volume_m3' in df_rom.columns else 0.0
 
     c1, c2, c3, c4, c5 = st.columns(5)
     with c1: st.markdown(f'<div class="metric-card-corporate"><div class="metric-title">Total Frota</div><div class="metric-value">{total_frota}</div><div class="metric-sub">Veículos Ativos</div></div>', unsafe_allow_html=True)
     with c2: st.markdown(f'<div class="metric-card-corporate"><div class="metric-title">OS Abertas</div><div class="metric-value">{os_abertas}</div><div class="metric-sub">Em Manutenção</div></div>', unsafe_allow_html=True)
-    with c3: st.markdown(f'<div class="metric-card-corporate"><div class="metric-title">Multas</div><div class="metric-value">{total_multas}</div><div class="metric-sub">Registradas</div></div>', unsafe_allow_html=True)
+    with c3: st.markdown(f'<div class="metric-card-corporate"><div class="metric-title">Volume Concreto</div><div class="metric-value" style="font-size: 20px;">{total_m3_entregue:,.1f} m³</div><div class="metric-sub">Entregue</div></div>', unsafe_allow_html=True)
     with c4: st.markdown(f'<div class="metric-card-corporate"><div class="metric-title">Gasto Combust.</div><div class="metric-value" style="font-size: 20px;">R$ {gasto_comb:,.2f}</div><div class="metric-sub">Diesel</div></div>', unsafe_allow_html=True)
-    with c5: st.markdown(f'<div class="metric-card-corporate"><div class="metric-title">Total Litros</div><div class="metric-value" style="font-size: 22px;">{total_litros:,.1f} L</div><div class="metric-sub">Consumo</div></div>', unsafe_allow_html=True)
+    with c5: st.markdown(f'<div class="metric-card-corporate"><div class="metric-title">Multas</div><div class="metric-value">{total_multas}</div><div class="metric-sub">Registradas</div></div>', unsafe_allow_html=True)
 
     st.divider()
     st.markdown("### Frota Ativa Sincronizada")
@@ -480,8 +498,65 @@ elif menu == "Assistente IA & Diagnóstico":
             st.info("💡 **Dica da IA:** Para fechar uma Ordem de Serviço, vai à aba 'Ordens de Serviço (OS)', seleciona a aba 'Abertas', escolhe o ID da OS e clica em 'Concluir OS e Baixar Estoque' para atualizar automaticamente o inventário.")
         elif "abastecimento" in p_lower:
             st.info("💡 **Dica da IA:** O registo de combustível é feito na aba 'Abastecimentos & Combustível' preenchendo os litros e o valor total gasto no posto.")
+        elif "romaneio" in p_lower or "concreto" in p_lower:
+            st.info("💡 **Dica da IA:** Utilize o novo módulo 'Romaneios & Despacho de Concreto' para gerir o volume em m³ e o abatimento (Slump) entregue nas obras.")
         else:
             st.info("💡 **Dica da IA:** Certifica-te de que tens permissão de perfil adequada e que os dados obrigatórios do formulário estão preenchidos.")
+
+elif menu == "Romaneios & Despacho de Concreto":
+    st.title("Gestão de Romaneios e Cargas de Concreto")
+    st.markdown("Controle de expedição de betoneiras, volume entregue (m³), slump e obras.")
+    t_rom_list, t_rom_add = st.tabs(["Romaneios Emitidos", "Emitir Novo Romaneio"])
+    with t_rom_list:
+        exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM romaneios"), "romaneios")
+    with t_rom_add:
+        with st.form("form_romaneio"):
+            n_rom = st.text_input("Número do Romaneio", value=f"ROM-{random.randint(1000,9999)}")
+            cli_obra = st.text_input("Cliente / Obra de Destino")
+            caminhao = st.text_input("TAG do Caminhão Betoneira")
+            vol = st.number_input("Volume de Concreto (m³)", min_value=0.0, value=8.0)
+            slump = st.selectbox("Abatimento (Slump)", ["S100 (±20)", "S120 (±20)", "S140 (±20)", "S160 (±20)"])
+            motorista_r = st.text_input("Motorista Responsável")
+            if st.form_submit_button("Gerar e Emitir Romaneio"):
+                executar_comando_sql("INSERT INTO romaneios", (n_rom, cli_obra, caminhao, vol, slump, motorista_r, datetime.now().strftime("%d/%m/%Y %H:%M")))
+                st.success("Romaneio emitido com sucesso!")
+                st.rerun()
+
+elif menu == "Compliance & CNH (Legal)":
+    st.title("Compliance Legal & Documentos da Frota")
+    st.markdown("Monitoramento de validade de CNH de motoristas, CRV e licenças operacionais.")
+    t_comp_list, t_comp_add = st.tabs(["Documentos Registrados", "Cadastrar Vencimento"])
+    with t_comp_list:
+        exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM compliance_frota"), "compliance_frota")
+    with t_comp_add:
+        with st.form("form_compliance"):
+            motorista_ativo = st.text_input("Motorista ou Veículo (TAG/Placa)")
+            tipo_doc = st.selectbox("Tipo de Documento", ["CNH Categoria D/E", "CRV Veicular", "Licença Ambiental", "Seguro Frota"])
+            num_documento = st.text_input("Número do Documento")
+            venc = st.text_input("Data de Vencimento (DD/MM/AAAA)", value=datetime.now().strftime("%d/%m/%Y"))
+            status_leg = st.selectbox("Status", ["Regular", "Próximo ao Vencimento", "Vencido"])
+            if st.form_submit_button("Salvar Documento"):
+                executar_comando_sql("INSERT INTO compliance_frota", (motorista_ativo, tipo_doc, num_documento, venc, status_leg))
+                st.success("Documento registado no compliance.")
+                st.rerun()
+
+elif menu == "Controle de Pneus (Desgaste)":
+    st.title("Controle de Pneus e Desgaste por Eixo")
+    st.markdown("Gestão preventiva de sulcos, marcas e recapagem de pneus da frota pesada.")
+    t_pneu_list, t_pneu_add = st.tabs(["Inventário de Pneus", "Registar Pneu / Medição"])
+    with t_pneu_list:
+        exibir_tabela_padronizada(ler_tabelas_sql("SELECT * FROM pneus_frota"), "pneus_frota")
+    with t_pneu_add:
+        with st.form("form_pneu"):
+            v_tag = st.text_input("TAG do Veículo")
+            eixo = st.selectbox("Posição no Eixo", ["Dianteiro Esquerdo", "Dianteiro Direito", "Tração Esq. Interno", "Tração Esq. Externo", "Tração Dir. Interno", "Tração Dir. Externo"])
+            marca = st.text_input("Marca / Modelo do Pneu", value="Michelin / Bridgestone")
+            sulco = st.number_input("Profundidade do Sulco (mm)", min_value=0.0, value=15.0)
+            estado_pneu = st.selectbox("Estado", ["Novo", "Bom Desgaste", "Apto para Recapagem", "Descartado"])
+            if st.form_submit_button("Salvar Pneu"):
+                executar_comando_sql("INSERT INTO pneus_frota", (v_tag, eixo, marca, sulco, estado_pneu))
+                st.success("Registar pneu efetuado com sucesso!")
+                st.rerun()
 
 elif menu == "Consulta / Busca Geral":
     st.title("Consulta Avançada de Frota e Ativos")
